@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest, Member } from '../types';
+import { validateMember } from '../validators/memberValidator';
 
 /**
  * Lista todos os membros da igreja
@@ -28,21 +29,36 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca os membros da igreja
+    // Busca os membros da igreja com informações do cargo
     const { data: members, error: membersError } = await supabase
       .from('members')
-      .select('*')
+      .select(`
+        *,
+        roles (
+          id,
+          name,
+          description
+        )
+      `)
       .eq('church_id', church.id)
       .order('name', { ascending: true });
 
     if (membersError) {
+      console.error('Erro detalhado:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
       });
     }
 
-    res.json(members);
+    // Formatar a resposta para manter compatibilidade
+    const formattedMembers = members.map(member => ({
+      ...member,
+      role: member.roles,
+      roles: undefined // Remove o campo roles da resposta
+    }));
+
+    res.json(formattedMembers);
 
   } catch (error) {
     console.error('Erro ao listar membros:', error);
@@ -81,28 +97,68 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca o membro específico
+    // Primeiro, vamos verificar se o cargo existe
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .select('*')
+      .select('role_id')
+      .eq('id', id)
+      .single();
+
+    if (memberError) {
+      console.error('Erro ao buscar membro:', memberError);
+      return res.status(404).json({
+        error: 'Membro não encontrado',
+        details: 'Não foi possível encontrar o membro solicitado'
+      });
+    }
+
+    console.log('Role ID do membro:', member.role_id);
+
+    if (member.role_id) {
+      // Verificar se o cargo existe
+      const { data: role, error: roleError } = await supabase
+        .from('roles')
+        .select('*')
+        .eq('id', member.role_id)
+        .single();
+
+      console.log('Cargo encontrado:', role);
+      console.log('Erro ao buscar cargo:', roleError);
+    }
+
+    // Busca o membro específico com informações do cargo
+    const { data: memberWithRole, error: memberWithRoleError } = await supabase
+      .from('members')
+      .select(`
+        *,
+        roles (
+          id,
+          name,
+          description
+        )
+      `)
       .eq('id', id)
       .eq('church_id', church.id)
       .single();
 
-    if (memberError) {
-      if (memberError.code === 'PGRST116') {
-        return res.status(404).json({
-          error: 'Membro não encontrado',
-          details: 'Não foi possível encontrar o membro solicitado'
-        });
-      }
+    if (memberWithRoleError) {
+      console.error('Erro detalhado:', memberWithRoleError);
       return res.status(500).json({
         error: 'Erro ao buscar membro',
-        details: memberError.message
+        details: memberWithRoleError.message
       });
     }
 
-    res.json(member);
+    console.log('Membro com cargo:', memberWithRole);
+
+    // Formatar a resposta para manter compatibilidade
+    const formattedMember = {
+      ...memberWithRole,
+      role: memberWithRole.roles,
+      roles: undefined // Remove o campo roles da resposta
+    };
+
+    res.json(formattedMember);
 
   } catch (error) {
     console.error('Erro ao buscar membro:', error);

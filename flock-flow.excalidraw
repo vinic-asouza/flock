@@ -1,0 +1,52 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "qyr70UYqkXHFr7wYTqe-U",
+      "type": "text",
+      "x": 523.75,
+      "y": 165,
+      "width": 126.70503234863281,
+      "height": 62.77747672775835,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 2,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "index": "b8V",
+      "roundness": null,
+      "seed": 300916186,
+      "version": 165,
+      "versionNonce": 92659206,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1749579031632,
+      "link": null,
+      "locked": false,
+      "text": "Flock",
+      "fontSize": 50.22198138220668,
+      "fontFamily": 5,
+      "textAlign": "left",
+      "verticalAlign": "top",
+      "containerId": null,
+      "originalText": "Flock",
+      "autoResize": true,
+      "lineHeight": 1.25
+    }
+  ],
+  "appState": {
+    "gridSize": 20,
+    "gridStep": 5,
+    "gridModeEnabled": false,
+    "viewBackgroundColor": "#ffffff",
+    "lockedMultiSelections": {}
+  },
+  "files": {}
+}

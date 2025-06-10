@@ -51,7 +51,7 @@
       "method": "POST",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n\t\"name\": \"João da Silva\",\n\t\"birth\": \"1990-01-01\",\n\t\"gender\": \"Masculino\",\n\t\"marital_status\": \"Casado\",\n\t\"nationality\": \"Brasileiro\",\n\t\"document\": \"12345678900\",\n\t\"spouse\": \"Maria da Silva\",\n\t\"address\": \"Rua Exemplo, 123\",\n\t\"complement\": \"Apto 101\",\n\t\"cep\": \"12345678\",\n\t\"neighborhood\": \"Centro\",\n\t\"city\": \"São Paulo\",\n\t\"state\": \"SP\",\n\t\"phone\": \"1199999999\",\n\t\"whatsapp\": \"11999999999\",\n\t\"email\": \"joao@exemplo.com\",\n\t\"baptism_date\": \"2010-01-01\",\n\t\"role\": \"Membro\",\n\t\"occupation\": \"Engenheiro\",\n\t\"admission\": \"Batismo\",\n\t\"admission_date\": \"2010-01-01\",\n\t\"congregation\": \"Sede\"\n}"
+        "text": "{\n\t\"name\": \"João da Silva\",\n\t\"birth\": \"1990-01-01\",\n\t\"gender\": \"Masculino\",\n\t\"marital_status\": \"Casado\",\n\t\"nationality\": \"Brasileiro\",\n\t\"document\": \"12345678900\",\n\t\"spouse\": \"Maria da Silva\",\n\t\"address\": \"Rua Exemplo, 123\",\n\t\"complement\": \"Apto 101\",\n\t\"cep\": \"12345678\",\n\t\"neighborhood\": \"Centro\",\n\t\"city\": \"São Paulo\",\n\t\"state\": \"SP\",\n\t\"phone\": \"1199999999\",\n\t\"whatsapp\": \"11999999999\",\n\t\"email\": \"joao@exemplo.com\",\n\t\"baptism_date\": \"2010-01-01\",\n\t\"role_id\": \"{{ _.role_id }}\",\n\t\"occupation\": \"Engenheiro\",\n\t\"admission\": \"Batismo\",\n\t\"admission_date\": \"2010-01-01\",\n\t\"congregation\": \"Sede\",\n\t\"active\": true\n}"
       },
       "parameters": [],
       "headers": [
@@ -77,7 +77,7 @@
       "method": "PUT",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n\t\"name\": \"João da Silva Atualizado\",\n\t\"phone\": \"11988888888\",\n\t\"email\": \"joao.novo@exemplo.com\"\n}"
+        "text": "{\n\t\"name\": \"João da Silva Atualizado\",\n\t\"phone\": \"11988888888\",\n\t\"email\": \"joao.novo@exemplo.com\",\n\t\"role_id\": \"{{ _.role_id }}\"\n}"
       },
       "parameters": [],
       "headers": [
@@ -297,13 +297,15 @@
       "data": {
         "base_url": "http://localhost:4000",
         "auth_token": "",
-        "member_id": ""
+        "member_id": "",
+        "role_id": ""
       },
       "dataPropertyOrder": {
         "&": [
           "base_url",
           "auth_token",
-          "member_id"
+          "member_id",
+          "role_id"
         ]
       },
       "isPrivate": false,
@@ -325,6 +327,130 @@
       "name": "Base Environment",
       "parentId": "wrk_flock",
       "_type": "environment"
+    },
+    {
+      "_id": "req_flock_list_roles",
+      "parentId": "fld_flock_roles",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/roles",
+      "name": "Listar Cargos",
+      "description": "Lista todos os cargos da igreja",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_get_role",
+      "parentId": "fld_flock_roles",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/roles/{{ _.role_id }}",
+      "name": "Buscar Cargo",
+      "description": "Busca um cargo específico",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_create_role",
+      "parentId": "fld_flock_roles",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/roles",
+      "name": "Criar Cargo",
+      "description": "Cria um novo cargo",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"name\": \"Pastor\",\n\t\"description\": \"Líder espiritual da igreja\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_update_role",
+      "parentId": "fld_flock_roles",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/roles/{{ _.role_id }}",
+      "name": "Atualizar Cargo",
+      "description": "Atualiza um cargo existente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"name\": \"Pastor Titular\",\n\t\"description\": \"Pastor principal da igreja\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_delete_role",
+      "parentId": "fld_flock_roles",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/roles/{{ _.role_id }}",
+      "name": "Remover Cargo",
+      "description": "Remove um cargo (não é possível remover se houver membros associados)",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "fld_flock_roles",
+      "created": 1704881400000,
+      "description": "Endpoints de gerenciamento de cargos",
+      "environment": {
+        "role_id": ""
+      },
+      "environmentPropertyOrder": {
+        "&": [
+          "role_id"
+        ]
+      },
+      "metaSortKey": -1704881400000,
+      "modified": 1704881400000,
+      "name": "Cargos",
+      "parentId": "fld_flock_api",
+      "_type": "request_group"
     }
   ]
 } 

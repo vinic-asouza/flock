@@ -13,12 +13,21 @@ export interface Church {
   created_at: Date;
 }
 
+export interface Role {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface Member {
   id: string;
   church_id: string;
   name: string;
   birth: Date;
-  gender: 'Masculino' | 'Feminino' | 'Outro';
+  gender: 'Masculino' | 'Feminino';
   marital_status: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro';
   nationality?: string;
   document?: string;
@@ -33,7 +42,7 @@ export interface Member {
   whatsapp?: string;
   email?: string;
   baptism_date?: Date;
-  role?: string;
+  role_id?: string;
   occupation?: string;
   admission?: string;
   admission_date?: Date;

@@ -17,10 +17,10 @@ const memberSchema = Joi.object<Partial<Member>>({
     }),
 
   gender: Joi.string()
-    .valid('Masculino', 'Feminino', 'Outro')
+    .valid('Masculino', 'Feminino')
     .required()
     .messages({
-      'any.only': 'Gênero deve ser Masculino, Feminino ou Outro',
+      'any.only': 'Gênero deve ser Masculino ou Feminino',
       'any.required': 'Gênero é obrigatório'
     }),
 
@@ -98,9 +98,13 @@ const memberSchema = Joi.object<Partial<Member>>({
     .optional()
     .allow(null),
 
-  role: Joi.string()
+  role_id: Joi.string()
+    .uuid()
     .optional()
-    .allow(null, ''),
+    .allow(null)
+    .messages({
+      'string.guid': 'ID do cargo inválido'
+    }),
 
   occupation: Joi.string()
     .optional()
