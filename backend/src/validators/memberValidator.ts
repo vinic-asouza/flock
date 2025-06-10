@@ -1,0 +1,127 @@
+import Joi from 'joi';
+import { Member } from '../types';
+
+const memberSchema = Joi.object<Partial<Member>>({
+  name: Joi.string()
+    .required()
+    .messages({
+      'string.empty': 'Nome é obrigatório',
+      'any.required': 'Nome é obrigatório'
+    }),
+
+  birth: Joi.date()
+    .required()
+    .messages({
+      'date.base': 'Data de nascimento inválida',
+      'any.required': 'Data de nascimento é obrigatória'
+    }),
+
+  gender: Joi.string()
+    .valid('Masculino', 'Feminino', 'Outro')
+    .required()
+    .messages({
+      'any.only': 'Gênero deve ser Masculino, Feminino ou Outro',
+      'any.required': 'Gênero é obrigatório'
+    }),
+
+  marital_status: Joi.string()
+    .valid('Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro')
+    .required()
+    .messages({
+      'any.only': 'Estado civil deve ser Solteiro, Casado, Divorciado, Viúvo ou Outro',
+      'any.required': 'Estado civil é obrigatório'
+    }),
+
+  nationality: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  document: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  spouse: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  address: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  complement: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  cep: Joi.string()
+    .length(8)
+    .pattern(/^[0-9]+$/)
+    .optional()
+    .allow(null, '')
+    .messages({
+      'string.length': 'CEP deve ter 8 dígitos',
+      'string.pattern.base': 'CEP deve conter apenas números'
+    }),
+
+  neighborhood: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  city: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  state: Joi.string()
+    .length(2)
+    .optional()
+    .allow(null, '')
+    .messages({
+      'string.length': 'Estado deve ter 2 caracteres'
+    }),
+
+  phone: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  whatsapp: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  email: Joi.string()
+    .email()
+    .optional()
+    .allow(null, '')
+    .messages({
+      'string.email': 'Email inválido'
+    }),
+
+  baptism_date: Joi.date()
+    .optional()
+    .allow(null),
+
+  role: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  occupation: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  admission: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  admission_date: Joi.date()
+    .optional()
+    .allow(null),
+
+  congregation: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  active: Joi.boolean()
+    .default(true)
+});
+
+export const validateMember = (data: Partial<Member>) => {
+  return memberSchema.validate(data, { abortEarly: false });
+}; 

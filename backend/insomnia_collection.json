@@ -1,0 +1,330 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-10T10:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v8.4.5",
+  "resources": [
+    {
+      "_id": "req_flock_list_members",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members",
+      "name": "Listar Membros",
+      "description": "Lista todos os membros da igreja",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_get_member",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members/{{ _.member_id }}",
+      "name": "Buscar Membro",
+      "description": "Busca um membro específico",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_create_member",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members",
+      "name": "Criar Membro",
+      "description": "Cria um novo membro",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"name\": \"João da Silva\",\n\t\"birth\": \"1990-01-01\",\n\t\"gender\": \"Masculino\",\n\t\"marital_status\": \"Casado\",\n\t\"nationality\": \"Brasileiro\",\n\t\"document\": \"12345678900\",\n\t\"spouse\": \"Maria da Silva\",\n\t\"address\": \"Rua Exemplo, 123\",\n\t\"complement\": \"Apto 101\",\n\t\"cep\": \"12345678\",\n\t\"neighborhood\": \"Centro\",\n\t\"city\": \"São Paulo\",\n\t\"state\": \"SP\",\n\t\"phone\": \"1199999999\",\n\t\"whatsapp\": \"11999999999\",\n\t\"email\": \"joao@exemplo.com\",\n\t\"baptism_date\": \"2010-01-01\",\n\t\"role\": \"Membro\",\n\t\"occupation\": \"Engenheiro\",\n\t\"admission\": \"Batismo\",\n\t\"admission_date\": \"2010-01-01\",\n\t\"congregation\": \"Sede\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_update_member",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members/{{ _.member_id }}",
+      "name": "Atualizar Membro",
+      "description": "Atualiza um membro existente",
+      "method": "PUT",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"name\": \"João da Silva Atualizado\",\n\t\"phone\": \"11988888888\",\n\t\"email\": \"joao.novo@exemplo.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_delete_member",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members/{{ _.member_id }}",
+      "name": "Remover Membro",
+      "description": "Remove um membro (soft delete)",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "fld_flock_members",
+      "created": 1704881400000,
+      "description": "Endpoints de gerenciamento de membros",
+      "environment": {
+        "member_id": ""
+      },
+      "environmentPropertyOrder": {
+        "&": [
+          "member_id"
+        ]
+      },
+      "metaSortKey": -1704881400000,
+      "modified": 1704881400000,
+      "name": "Membros",
+      "parentId": "fld_flock_api",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_flock_health_check",
+      "parentId": "fld_flock_api",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/health",
+      "name": "Health Check",
+      "description": "Verifica se a API está funcionando",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {},
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_register_church",
+      "parentId": "fld_flock_api",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/auth/register",
+      "name": "Registrar Igreja",
+      "description": "Registra uma nova igreja no sistema",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"email\": \"igreja@exemplo.com\",\n\t\"password\": \"senha123\",\n\t\"name\": \"Igreja Exemplo\",\n\t\"denomination\": \"Denominação Exemplo\",\n\t\"address\": \"Rua Exemplo, 123\",\n\t\"city\": \"Cidade Exemplo\",\n\t\"state\": \"SP\",\n\t\"cnpj\": \"12345678901234\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_login",
+      "parentId": "fld_flock_api",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/auth/login",
+      "name": "Login",
+      "description": "Realiza login de uma igreja",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"email\": \"igreja@exemplo.com\",\n\t\"password\": \"senha123\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_forgot_password",
+      "parentId": "fld_flock_api",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/password/forgot",
+      "name": "Esqueci a Senha",
+      "description": "Solicita email de recuperação de senha",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"email\": \"igreja@exemplo.com\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_reset_password",
+      "parentId": "fld_flock_api",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/password/reset",
+      "name": "Redefinir Senha",
+      "description": "Redefine a senha usando o token de recuperação",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"newPassword\": \"nova123\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_change_password",
+      "parentId": "fld_flock_api",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/password/change",
+      "name": "Alterar Senha",
+      "description": "Altera a senha do usuário logado",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n\t\"currentPassword\": \"senha123\",\n\t\"newPassword\": \"nova123\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "fld_flock_api",
+      "created": 1704881400000,
+      "description": "Endpoints da API do Flock",
+      "environment": {
+        "base_url": "http://localhost:4000",
+        "auth_token": ""
+      },
+      "environmentPropertyOrder": {
+        "&": [
+          "base_url",
+          "auth_token"
+        ]
+      },
+      "metaSortKey": -1704881400000,
+      "modified": 1704881400000,
+      "name": "Flock API",
+      "parentId": "wrk_flock",
+      "_type": "request_group"
+    },
+    {
+      "_id": "wrk_flock",
+      "created": 1704881400000,
+      "description": "Workspace do Projeto Flock",
+      "modified": 1704881400000,
+      "name": "Flock",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_flock_development",
+      "color": null,
+      "created": 1704881400000,
+      "data": {
+        "base_url": "http://localhost:4000",
+        "auth_token": "",
+        "member_id": ""
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url",
+          "auth_token",
+          "member_id"
+        ]
+      },
+      "isPrivate": false,
+      "metaSortKey": 1704881400000,
+      "modified": 1704881400000,
+      "name": "Development",
+      "parentId": "env_flock",
+      "_type": "environment"
+    },
+    {
+      "_id": "env_flock",
+      "color": null,
+      "created": 1704881400000,
+      "data": {},
+      "dataPropertyOrder": null,
+      "isPrivate": false,
+      "metaSortKey": 1704881400000,
+      "modified": 1704881400000,
+      "name": "Base Environment",
+      "parentId": "wrk_flock",
+      "_type": "environment"
+    }
+  ]
+} 
