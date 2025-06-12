@@ -29,7 +29,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca os membros da igreja com informações do cargo
+    // Busca os membros da igreja com informações do cargo e congregação
     const { data: members, error: membersError } = await supabase
       .from('members')
       .select(`
@@ -38,6 +38,15 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
           id,
           name,
           description
+        ),
+        congregations (
+          id,
+          name,
+          address,
+          city,
+          state,
+          leader,
+          phone
         )
       `)
       .eq('church_id', church.id)
@@ -55,7 +64,9 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     const formattedMembers = members.map(member => ({
       ...member,
       role: member.roles,
-      roles: undefined // Remove o campo roles da resposta
+      congregation: member.congregations,
+      roles: undefined, // Remove o campo roles da resposta
+      congregations: undefined // Remove o campo congregations da resposta
     }));
 
     res.json(formattedMembers);
@@ -97,37 +108,8 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Primeiro, vamos verificar se o cargo existe
-    const { data: member, error: memberError } = await supabase
-      .from('members')
-      .select('role_id')
-      .eq('id', id)
-      .single();
-
-    if (memberError) {
-      console.error('Erro ao buscar membro:', memberError);
-      return res.status(404).json({
-        error: 'Membro não encontrado',
-        details: 'Não foi possível encontrar o membro solicitado'
-      });
-    }
-
-    console.log('Role ID do membro:', member.role_id);
-
-    if (member.role_id) {
-      // Verificar se o cargo existe
-      const { data: role, error: roleError } = await supabase
-        .from('roles')
-        .select('*')
-        .eq('id', member.role_id)
-        .single();
-
-      console.log('Cargo encontrado:', role);
-      console.log('Erro ao buscar cargo:', roleError);
-    }
-
-    // Busca o membro específico com informações do cargo
-    const { data: memberWithRole, error: memberWithRoleError } = await supabase
+    // Busca o membro específico com informações do cargo e congregação
+    const { data: memberWithDetails, error: memberError } = await supabase
       .from('members')
       .select(`
         *,
@@ -135,27 +117,36 @@ export const getMember = async (req: AuthRequest, res: Response) => {
           id,
           name,
           description
+        ),
+        congregations (
+          id,
+          name,
+          address,
+          city,
+          state,
+          leader,
+          phone
         )
       `)
       .eq('id', id)
       .eq('church_id', church.id)
       .single();
 
-    if (memberWithRoleError) {
-      console.error('Erro detalhado:', memberWithRoleError);
-      return res.status(500).json({
-        error: 'Erro ao buscar membro',
-        details: memberWithRoleError.message
+    if (memberError) {
+      console.error('Erro detalhado:', memberError);
+      return res.status(404).json({
+        error: 'Membro não encontrado',
+        details: 'Não foi possível encontrar o membro solicitado'
       });
     }
 
-    console.log('Membro com cargo:', memberWithRole);
-
     // Formatar a resposta para manter compatibilidade
     const formattedMember = {
-      ...memberWithRole,
-      role: memberWithRole.roles,
-      roles: undefined // Remove o campo roles da resposta
+      ...memberWithDetails,
+      role: memberWithDetails.roles,
+      congregation: memberWithDetails.congregations,
+      roles: undefined, // Remove o campo roles da resposta
+      congregations: undefined // Remove o campo congregations da resposta
     };
 
     res.json(formattedMember);

@@ -13,6 +13,19 @@ export interface Church {
   created_at: Date;
 }
 
+export interface Congregation {
+  id: string;
+  church_id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  leader?: string;
+  phone?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface Role {
   id: string;
   church_id: string;
@@ -46,7 +59,7 @@ export interface Member {
   occupation?: string;
   admission?: string;
   admission_date?: Date;
-  congregation?: string;
+  congregation_id?: string;
   active: boolean;
   created_at: Date;
   updated_at: Date;
