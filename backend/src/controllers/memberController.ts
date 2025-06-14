@@ -355,4 +355,75 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
       details: error instanceof Error ? error.message : 'Erro desconhecido'
     });
   }
+};
+
+/**
+ * Cria múltiplos membros de uma vez
+ */
+export const createBatchMembers = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    // Primeiro busca a igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    const members = req.body;
+
+    if (!Array.isArray(members)) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: 'O corpo da requisição deve ser um array de membros'
+      });
+    }
+
+    // Processa cada membro para adicionar o church_id e garantir que active seja true
+    const membersWithChurchId = members.map(member => ({
+      ...member,
+      church_id: church.id,
+      active: true
+    }));
+
+    // Insere os membros em lote
+    const { data, error: insertError } = await supabase
+      .from('members')
+      .insert(membersWithChurchId)
+      .select();
+
+    if (insertError) {
+      console.error('Erro ao inserir membros:', insertError);
+      return res.status(500).json({
+        error: 'Erro ao criar membros',
+        details: insertError.message
+      });
+    }
+
+    res.status(201).json({
+      message: 'Membros criados com sucesso',
+      count: members.length,
+      data
+    });
+
+  } catch (error) {
+    console.error('Erro ao criar membros em lote:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
 }; 

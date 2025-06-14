@@ -248,4 +248,94 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
+};
+
+export const createCongregationsBatch = async (req: AuthRequest, res: Response) => {
+  try {
+    console.log('Dados recebidos:', req.body);
+    
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        details: 'O corpo da requisição deve ser um array de congregações'
+      });
+    }
+
+    // Buscar church_id do usuário autenticado
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user?.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({ error: 'Igreja não encontrada' });
+    }
+
+    // Validar cada congregação
+    for (const congregation of req.body) {
+      const { error: validationError } = createCongregationSchema.validate(congregation);
+      if (validationError) {
+        return res.status(400).json({ 
+          error: 'Dados inválidos',
+          details: `Erro na validação da congregação: ${validationError.details[0].message}`
+        });
+      }
+    }
+
+    // Verificar se já existem congregações com os mesmos nomes
+    const congregationNames = req.body.map(congregation => congregation.name);
+    const { data: existingCongregations, error: existingCongregationsError } = await supabase
+      .from('congregations')
+      .select('name')
+      .eq('church_id', church.id)
+      .in('name', congregationNames);
+
+    if (existingCongregationsError) {
+      return res.status(400).json({ 
+        error: 'Erro ao verificar congregações existentes',
+        details: existingCongregationsError.message
+      });
+    }
+
+    if (existingCongregations && existingCongregations.length > 0) {
+      const existingNames = existingCongregations.map(congregation => congregation.name).join(', ');
+      return res.status(400).json({ 
+        error: 'Congregações já existentes',
+        details: `As seguintes congregações já existem: ${existingNames}`
+      });
+    }
+
+    // Preparar dados para inserção
+    const congregationsToInsert = req.body.map(congregation => ({
+      church_id: church.id,
+      name: congregation.name,
+      address: congregation.address,
+      city: congregation.city,
+      state: congregation.state,
+      leader: congregation.leader || null,
+      phone: congregation.phone || null
+    }));
+
+    // Inserir congregações em lote
+    const { data: congregations, error: createError } = await supabase
+      .from('congregations')
+      .insert(congregationsToInsert)
+      .select();
+
+    if (createError) {
+      return res.status(400).json({ 
+        error: 'Erro ao criar congregações',
+        details: createError.message
+      });
+    }
+
+    return res.status(201).json(congregations);
+  } catch (error) {
+    console.error('Erro completo:', error);
+    return res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
 }; 

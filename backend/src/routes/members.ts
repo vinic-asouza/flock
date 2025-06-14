@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listMembers, getMember, createMember, updateMember, deleteMember } from '../controllers/memberController';
+import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers } from '../controllers/memberController';
 import authMiddleware from '../middlewares/auth';
 
 const router = Router();
@@ -15,6 +15,9 @@ router.get('/:id', getMember);
 
 // Criar um novo membro
 router.post('/', createMember);
+
+// Criar múltiplos membros
+router.post('/batch', createBatchMembers);
 
 // Atualizar um membro
 router.put('/:id', updateMember);

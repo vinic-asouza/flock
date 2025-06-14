@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Pastor",
+    "description": "Líder espiritual da igreja, responsável pela pregação, ensino e direção espiritual"
+  },
+  {
+    "name": "Presbítero",
+    "description": "Auxiliar na liderança espiritual, responsável pelo cuidado pastoral e aconselhamento"
+  },
+  {
+    "name": "Diácono",
+    "description": "Servo auxiliar na igreja, responsável por serviços administrativos e assistência aos necessitados"
+  },
+  {
+    "name": "Liderança",
+    "description": "Líder de ministério ou departamento, responsável por coordenar atividades específicas da igreja"
+  }
+] 

@@ -240,4 +240,90 @@ export const deleteRole = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
+};
+
+export const createRolesBatch = async (req: AuthRequest, res: Response) => {
+  try {
+    console.log('Dados recebidos:', req.body);
+    
+    if (!Array.isArray(req.body)) {
+      return res.status(400).json({ 
+        error: 'Dados inválidos',
+        details: 'O corpo da requisição deve ser um array de cargos'
+      });
+    }
+
+    // Buscar church_id do usuário autenticado
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user?.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({ error: 'Igreja não encontrada' });
+    }
+
+    // Validar cada cargo
+    for (const role of req.body) {
+      const { error: validationError } = createRoleSchema.validate(role);
+      if (validationError) {
+        return res.status(400).json({ 
+          error: 'Dados inválidos',
+          details: `Erro na validação do cargo: ${validationError.details[0].message}`
+        });
+      }
+    }
+
+    // Verificar se já existem cargos com os mesmos nomes
+    const roleNames = req.body.map(role => role.name);
+    const { data: existingRoles, error: existingRolesError } = await supabase
+      .from('roles')
+      .select('name')
+      .eq('church_id', church.id)
+      .in('name', roleNames);
+
+    if (existingRolesError) {
+      return res.status(400).json({ 
+        error: 'Erro ao verificar cargos existentes',
+        details: existingRolesError.message
+      });
+    }
+
+    if (existingRoles && existingRoles.length > 0) {
+      const existingNames = existingRoles.map(role => role.name).join(', ');
+      return res.status(400).json({ 
+        error: 'Cargos já existentes',
+        details: `Os seguintes cargos já existem: ${existingNames}`
+      });
+    }
+
+    // Preparar dados para inserção
+    const rolesToInsert = req.body.map(role => ({
+      church_id: church.id,
+      name: role.name,
+      description: role.description || null
+    }));
+
+    // Inserir cargos em lote
+    const { data: roles, error: createError } = await supabase
+      .from('roles')
+      .insert(rolesToInsert)
+      .select();
+
+    if (createError) {
+      return res.status(400).json({ 
+        error: 'Erro ao criar cargos',
+        details: createError.message
+      });
+    }
+
+    return res.status(201).json(roles);
+  } catch (error) {
+    console.error('Erro completo:', error);
+    return res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
 }; 
