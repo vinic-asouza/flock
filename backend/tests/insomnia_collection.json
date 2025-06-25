@@ -10,8 +10,263 @@
       "modified": 1704881400000,
       "created": 1704881400000,
       "url": "{{ _.base_url }}/api/members",
-      "name": "Listar Membros",
-      "description": "Lista todos os membros da igreja",
+      "name": "Listar Membros (Com Filtros)",
+      "description": "Lista todos os membros da igreja com paginação e filtros avançados",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        {
+          "name": "page",
+          "value": "1",
+          "description": "Número da página (padrão: 1)"
+        },
+        {
+          "name": "limit",
+          "value": "10",
+          "description": "Itens por página (padrão: 10, máximo: 100)"
+        },
+        {
+          "name": "search",
+          "value": "",
+          "description": "Busca por nome, email, telefone, WhatsApp ou documento"
+        },
+        {
+          "name": "active",
+          "value": "",
+          "description": "Filtra por status ativo (true/false)"
+        },
+        {
+          "name": "role_id",
+          "value": "",
+          "description": "Filtra por cargo específico"
+        },
+        {
+          "name": "congregation_id",
+          "value": "",
+          "description": "Filtra por congregação específica"
+        },
+        {
+          "name": "gender",
+          "value": "",
+          "description": "Filtra por gênero (Masculino/Feminino)"
+        },
+        {
+          "name": "marital_status",
+          "value": "",
+          "description": "Filtra por estado civil (Solteiro/Casado/Divorciado/Viúvo/Outro)"
+        },
+        {
+          "name": "nationality",
+          "value": "",
+          "description": "Filtra por nacionalidade (busca parcial)"
+        },
+        {
+          "name": "occupation",
+          "value": "",
+          "description": "Filtra por ocupação (busca parcial)"
+        },
+        {
+          "name": "city",
+          "value": "",
+          "description": "Filtra por cidade (busca parcial)"
+        },
+        {
+          "name": "state",
+          "value": "",
+          "description": "Filtra por estado (exato)"
+        },
+        {
+          "name": "birth_date_from",
+          "value": "",
+          "description": "Data de nascimento a partir de (YYYY-MM-DD)"
+        },
+        {
+          "name": "birth_date_to",
+          "value": "",
+          "description": "Data de nascimento até (YYYY-MM-DD)"
+        },
+        {
+          "name": "baptism_date_from",
+          "value": "",
+          "description": "Data de batismo a partir de (YYYY-MM-DD)"
+        },
+        {
+          "name": "baptism_date_to",
+          "value": "",
+          "description": "Data de batismo até (YYYY-MM-DD)"
+        },
+        {
+          "name": "admission_date_from",
+          "value": "",
+          "description": "Data de admissão a partir de (YYYY-MM-DD)"
+        },
+        {
+          "name": "admission_date_to",
+          "value": "",
+          "description": "Data de admissão até (YYYY-MM-DD)"
+        },
+        {
+          "name": "age_from",
+          "value": "",
+          "description": "Idade mínima (0-150)"
+        },
+        {
+          "name": "age_to",
+          "value": "",
+          "description": "Idade máxima (0-150)"
+        },
+        {
+          "name": "sort_by",
+          "value": "name",
+          "description": "Campo para ordenação (padrão: name)"
+        },
+        {
+          "name": "sort_order",
+          "value": "asc",
+          "description": "Ordem da classificação (asc/desc)"
+        }
+      ],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_members_reports",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members/reports",
+      "name": "Relatórios de Membros",
+      "description": "Gera relatórios estatísticos dos membros",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_list_members_simple",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?page=1&limit=10",
+      "name": "Listar Membros (Simples)",
+      "description": "Lista membros com paginação básica",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_search_members",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?search=João&page=1&limit=20",
+      "name": "Buscar Membros por Nome",
+      "description": "Exemplo de busca por nome",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_filter_by_age",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?age_from=18&age_to=35&page=1&limit=20",
+      "name": "Filtrar por Faixa Etária",
+      "description": "Exemplo de filtro por faixa etária (18-35 anos)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_filter_by_baptism",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?baptism_date_from=2020-01-01&baptism_date_to=2023-12-31&page=1&limit=10",
+      "name": "Filtrar por Data de Batismo",
+      "description": "Exemplo de filtro por período de batismo",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_filter_by_gender_marital",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?gender=Masculino&marital_status=Casado&page=1&limit=15",
+      "name": "Filtrar por Gênero e Estado Civil",
+      "description": "Exemplo de filtro combinado por gênero e estado civil",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_sort_by_birth",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?sort_by=birth&sort_order=asc&page=1&limit=10",
+      "name": "Ordenar por Data de Nascimento",
+      "description": "Exemplo de ordenação por data de nascimento (mais velhos primeiro)",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.auth_token }}"
+      },
+      "_type": "request"
+    },
+    {
+      "_id": "req_flock_complex_filter",
+      "parentId": "fld_flock_members",
+      "modified": 1704881400000,
+      "created": 1704881400000,
+      "url": "{{ _.base_url }}/api/members?search=Maria&active=true&role_id={{ _.role_id }}&congregation_id={{ _.congregation_id }}&gender=Feminino&age_from=25&age_to=50&marital_status=Casado&occupation=Professor&city=São Paulo&state=SP&baptism_date_from=2020-01-01&sort_by=name&sort_order=asc&page=1&limit=15",
+      "name": "Filtro Complexo",
+      "description": "Exemplo de filtro complexo combinando múltiplos parâmetros",
       "method": "GET",
       "body": {},
       "parameters": [],
@@ -113,7 +368,7 @@
     {
       "_id": "fld_flock_members",
       "created": 1704881400000,
-      "description": "Endpoints de gerenciamento de membros",
+      "description": "Endpoints de gerenciamento de membros com filtros avançados e relatórios",
       "environment": {
         "member_id": ""
       },

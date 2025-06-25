@@ -1,0 +1,103 @@
+{
+  "examples": [
+    {
+      "description": "Listar primeira página com 10 membros",
+      "method": "GET",
+      "url": "/api/members?page=1&limit=10",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Buscar membros por nome",
+      "method": "GET",
+      "url": "/api/members?search=João&page=1&limit=20",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Filtrar membros ativos",
+      "method": "GET",
+      "url": "/api/members?active=true&page=1&limit=15",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Filtrar membros inativos",
+      "method": "GET",
+      "url": "/api/members?active=false&page=1&limit=15",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Filtrar por cargo específico",
+      "method": "GET",
+      "url": "/api/members?role_id=123&page=1&limit=10",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Filtrar por congregação específica",
+      "method": "GET",
+      "url": "/api/members?congregation_id=456&page=1&limit=10",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Combinação de filtros",
+      "method": "GET",
+      "url": "/api/members?search=Maria&active=true&role_id=123&congregation_id=456&page=2&limit=10",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Segunda página com 5 membros",
+      "method": "GET",
+      "url": "/api/members?page=2&limit=5",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Busca por email",
+      "method": "GET",
+      "url": "/api/members?search=@gmail.com&page=1&limit=10",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    },
+    {
+      "description": "Busca por telefone",
+      "method": "GET",
+      "url": "/api/members?search=99999&page=1&limit=10",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
+    }
+  ],
+  "expected_response_structure": {
+    "data": "Array de membros",
+    "pagination": {
+      "page": "Número da página atual",
+      "limit": "Itens por página",
+      "total": "Total de registros",
+      "totalPages": "Total de páginas",
+      "hasNextPage": "Boolean",
+      "hasPrevPage": "Boolean",
+      "nextPage": "Número da próxima página ou null",
+      "prevPage": "Número da página anterior ou null"
+    },
+    "filters": {
+      "search": "Termo de busca ou null",
+      "active": "Status ativo ou null",
+      "role_id": "ID do cargo ou null",
+      "congregation_id": "ID da congregação ou null"
+    }
+  }
+} 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers } from '../controllers/memberController';
+import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers, getMemberReports } from '../controllers/memberController';
 import authMiddleware from '../middlewares/auth';
 
 const router = Router();
@@ -7,8 +7,11 @@ const router = Router();
 // Todas as rotas de membros requerem autenticação
 router.use(authMiddleware);
 
-// Listar todos os membros
+// Listar todos os membros (com paginação e filtros avançados)
 router.get('/', listMembers);
+
+// Gerar relatórios de membros
+router.get('/reports', getMemberReports);
 
 // Buscar um membro específico
 router.get('/:id', getMember);
