@@ -17,7 +17,7 @@ export const forgotPassword = async (req: Request<{}, {}, { email: string }>, re
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.APP_URL || 'http://localhost:4000'}/reset-password`
+      redirectTo: `${process.env.FRONT_URL || 'http://localhost:3000'}/reset-password`
     });
 
     if (error) {
@@ -104,9 +104,9 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
 /**
  * Redefine a senha usando o token de recuperação
  */
-export const resetPassword = async (req: Request<{}, {}, { newPassword: string }>, res: Response) => {
+export const resetPassword = async (req: Request<{}, {}, { newPassword: string, token: string }>, res: Response) => {
   try {
-    const { newPassword } = req.body;
+    const { newPassword, token } = req.body;
 
     if (!newPassword) {
       return res.status(400).json({
@@ -115,14 +115,46 @@ export const resetPassword = async (req: Request<{}, {}, { newPassword: string }
       });
     }
 
-    const { error } = await supabase.auth.updateUser({
+    if (!token) {
+      return res.status(400).json({
+        error: 'Token não fornecido',
+        details: 'O token de recuperação é obrigatório'
+      });
+    }
+
+    // Para reset de senha com token, precisamos primeiro verificar se o token é válido
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      return res.status(400).json({
+        error: 'Token inválido ou expirado',
+        details: userError?.message || 'Não foi possível validar o token'
+      });
+    }
+
+    // Agora vamos atualizar a senha usando o token diretamente
+    // Para isso, precisamos criar uma sessão temporária
+    const { data: { session }, error: sessionError } = await supabase.auth.setSession({
+      access_token: token,
+      refresh_token: token
+    });
+
+    if (sessionError || !session) {
+      return res.status(400).json({
+        error: 'Erro ao criar sessão temporária',
+        details: sessionError?.message || 'Não foi possível criar uma sessão válida'
+      });
+    }
+
+    // Agora podemos atualizar a senha
+    const { error: updateError } = await supabase.auth.updateUser({
       password: newPassword
     });
 
-    if (error) {
+    if (updateError) {
       return res.status(400).json({
         error: 'Erro ao redefinir senha',
-        details: error.message
+        details: updateError.message
       });
     }
 
