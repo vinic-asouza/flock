@@ -98,7 +98,7 @@ export default function MembersPage() {
           Adicionar Membro
         </Link>
       </div>
-      <MemberSearchInput value={filters.search} onChange={handleSearchChange} />
+      <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={false} />
       <MemberFiltersBar
         filters={filters}
         onChange={handleFilterChange}

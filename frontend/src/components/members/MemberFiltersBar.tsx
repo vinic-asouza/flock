@@ -25,7 +25,7 @@ export function MemberFiltersBar({
   sorting, 
   onSortingChange 
 }: MemberFiltersBarProps) {
-  const { roles, congregations, loading, error } = useFiltersData();
+  const { roles, congregations, loading: filtersLoading, error } = useFiltersData();
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [showSortingDropdown, setShowSortingDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,7 +45,7 @@ export function MemberFiltersBar({
     };
   }, []);
 
-  if (loading) {
+  if (filtersLoading) {
     return (
       <div className="flex items-center gap-2 text-gray-500">
         <Loader className="animate-spin" size={16} />
@@ -144,10 +144,14 @@ export function MemberFiltersBar({
           <button
             type="button"
             onClick={() => setOpenSelect(openSelect === 'congregation' ? null : 'congregation')}
-            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={filtersLoading}
           >
             <span>
-              {filters.congregationId ? congregations.find(c => c.id === filters.congregationId)?.name || 'Todas as congregações' : 'Todas as congregações'}
+              {filters.congregationId 
+                ? congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada'
+                : filtersLoading ? 'Carregando...' : 'Todas as congregações'
+              }
             </span>
             <ChevronDown 
               size={16} 
@@ -169,19 +173,23 @@ export function MemberFiltersBar({
                 >
                   Todas as congregações
                 </button>
-                {congregations.map(cong => (
-                  <button
-                    key={cong.id}
-                    type="button"
-                    onClick={() => {
-                      onChange({ congregationId: cong.id });
-                      setOpenSelect(null);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                  >
-                    {cong.name}
-                  </button>
-                ))}
+                {filtersLoading ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">Carregando congregações...</div>
+                ) : (
+                  congregations.map(cong => (
+                    <button
+                      key={cong.id}
+                      type="button"
+                      onClick={() => {
+                        onChange({ congregationId: cong.id });
+                        setOpenSelect(null);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    >
+                      {cong.name}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -195,10 +203,14 @@ export function MemberFiltersBar({
           <button
             type="button"
             onClick={() => setOpenSelect(openSelect === 'role' ? null : 'role')}
-            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={filtersLoading}
           >
             <span>
-              {filters.roleId ? roles.find(r => r.id === filters.roleId)?.name || 'Todas as funções' : 'Todas as funções'}
+              {filters.roleId 
+                ? roles.find(r => r.id === filters.roleId)?.name || 'Função selecionada'
+                : filtersLoading ? 'Carregando...' : 'Todas as funções'
+              }
             </span>
             <ChevronDown 
               size={16} 
@@ -220,19 +232,23 @@ export function MemberFiltersBar({
                 >
                   Todas as funções
                 </button>
-                {roles.map(role => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => {
-                      onChange({ roleId: role.id });
-                      setOpenSelect(null);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.roleId === role.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                  >
-                    {role.name}
-                  </button>
-                ))}
+                {filtersLoading ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">Carregando funções...</div>
+                ) : (
+                  roles.map(role => (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => {
+                        onChange({ roleId: role.id });
+                        setOpenSelect(null);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.roleId === role.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    >
+                      {role.name}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -333,4 +349,4 @@ export function MemberFiltersBar({
       </div>
     </div>
   );
-} 
+}

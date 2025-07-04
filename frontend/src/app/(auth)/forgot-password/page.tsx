@@ -103,6 +103,7 @@ export default function ForgotPasswordPage() {
           type="email"
           placeholder="igreja@exemplo.com"
           error={errors.email?.message}
+          isLoading={isOperationLoading}
           {...register('email')}
         />
 

@@ -234,6 +234,7 @@ export default function ResetPasswordPage() {
           type="password"
           placeholder="••••••••"
           error={errors.newPassword?.message}
+          isLoading={isOperationLoading}
           {...register('newPassword')}
         />
 
@@ -242,6 +243,7 @@ export default function ResetPasswordPage() {
           type="password"
           placeholder="••••••••"
           error={errors.confirmPassword?.message}
+          isLoading={isOperationLoading}
           {...register('confirmPassword')}
         />
 

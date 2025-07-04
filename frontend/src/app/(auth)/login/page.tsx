@@ -120,6 +120,7 @@ function LoginPageComponent() {
           type="email"
           placeholder="igreja@exemplo.com"
           error={errors.email?.message}
+          isLoading={isOperationLoading}
           {...register('email')}
         />
 
@@ -128,6 +129,7 @@ function LoginPageComponent() {
           type="password"
           placeholder="••••••••"
           error={errors.password?.message}
+          isLoading={isOperationLoading}
           {...register('password')}
         />
 

@@ -340,6 +340,7 @@ export default function RegisterPage() {
           type="email"
           placeholder="igreja@exemplo.com"
           error={errors.email?.message}
+          isLoading={isOperationLoading}
           {...register('email')}
         />
 
@@ -348,6 +349,7 @@ export default function RegisterPage() {
           type="password"
           placeholder="••••••••"
           error={errors.password?.message}
+          isLoading={isOperationLoading}
           {...register('password')}
         />
 
@@ -356,6 +358,7 @@ export default function RegisterPage() {
           type="password"
           placeholder="••••••••"
           error={errors.confirmPassword?.message}
+          isLoading={isOperationLoading}
           {...register('confirmPassword')}
         />
 
@@ -382,7 +385,8 @@ export default function RegisterPage() {
             Denominação
           </label>
           <select
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors cursor-pointer"
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isOperationLoading}
             {...register('denomination')}
           >
             <option value="">Selecione uma denominação</option>
@@ -411,9 +415,9 @@ export default function RegisterPage() {
               Estado
             </label>
             <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors cursor-pointer"
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               {...register('state')}
-              disabled={isLoadingStates}
+              disabled={isLoadingStates || isOperationLoading}
             >
               <option value="">
                 {isLoadingStates ? 'Carregando...' : 'Selecione o estado'}
@@ -434,9 +438,9 @@ export default function RegisterPage() {
               Cidade
             </label>
             <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors cursor-pointer"
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               {...register('city')}
-              disabled={!selectedState || isLoadingCities}
+              disabled={!selectedState || isLoadingCities || isOperationLoading}
             >
               <option value="">
                 {!selectedState 
@@ -467,8 +471,9 @@ export default function RegisterPage() {
             placeholder="00.000.000/0000-00"
             value={cnpjDisplay}
             onChange={handleCNPJChange}
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-colors"
+            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             maxLength={18}
+            disabled={isOperationLoading}
           />
           {errors.cnpj && (
             <p className="text-sm text-red-600 mt-1">{errors.cnpj.message}</p>
