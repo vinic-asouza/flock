@@ -16,8 +16,10 @@ class ApiService {
   private api: AxiosInstance;
 
   constructor() {
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    
     this.api = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+      baseURL,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -151,6 +153,87 @@ class ApiService {
       return church ? JSON.parse(church) : null;
     }
     return null;
+  }
+
+  // Listar membros paginados
+  async listMembers(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    active?: boolean;
+    role_id?: string;
+    congregation_id?: string;
+    gender?: string;
+    marital_status?: string;
+    nationality?: string;
+    state?: string;
+    city?: string;
+    neighborhood?: string;
+    age_from?: string | number;
+    age_to?: string | number;
+    occupation?: string;
+    baptism_date_from?: string;
+    baptism_date_to?: string;
+    admission_date_from?: string;
+    admission_date_to?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+  }) {
+    const queryParams = new URLSearchParams();
+    
+    // Paginação
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    
+    // Busca
+    if (params.search) queryParams.append('search', params.search);
+    
+    // Filtros básicos
+    if (params.active !== undefined) queryParams.append('active', params.active.toString());
+    if (params.role_id) queryParams.append('role_id', params.role_id);
+    if (params.congregation_id) queryParams.append('congregation_id', params.congregation_id);
+    
+    // Filtros demográficos
+    if (params.gender) queryParams.append('gender', params.gender);
+    if (params.marital_status) queryParams.append('marital_status', params.marital_status);
+    if (params.nationality) queryParams.append('nationality', params.nationality);
+    if (params.occupation) queryParams.append('occupation', params.occupation);
+    if (params.city) queryParams.append('city', params.city);
+    if (params.state) queryParams.append('state', params.state);
+    if (params.neighborhood) queryParams.append('neighborhood', params.neighborhood);
+    
+    // Filtros de idade
+    if (params.age_from !== undefined) queryParams.append('age_from', params.age_from.toString());
+    if (params.age_to !== undefined) queryParams.append('age_to', params.age_to.toString());
+    
+    // Filtros de data
+    if (params.baptism_date_from) queryParams.append('baptism_date_from', params.baptism_date_from);
+    if (params.baptism_date_to) queryParams.append('baptism_date_to', params.baptism_date_to);
+    if (params.admission_date_from) queryParams.append('admission_date_from', params.admission_date_from);
+    if (params.admission_date_to) queryParams.append('admission_date_to', params.admission_date_to);
+    
+    // Ordenação
+    if (params.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params.sort_order) queryParams.append('sort_order', params.sort_order);
+
+    const url = `/members?${queryParams.toString()}`;
+    const response = await this.api.get(url);
+    return {
+      data: response.data.data,
+      pagination: response.data.pagination,
+    };
+  }
+
+  // Listar cargos
+  async listRoles() {
+    const response = await this.api.get('/roles');
+    return response.data;
+  }
+
+  // Listar congregações
+  async listCongregations() {
+    const response = await this.api.get('/congregations');
+    return response.data;
   }
 }
 

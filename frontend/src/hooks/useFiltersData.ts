@@ -1,0 +1,63 @@
+import { useState, useEffect } from 'react';
+import apiService from '@/services/api';
+
+interface Role {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Congregation {
+  id: string;
+  church_id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  leader?: string;
+  phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export function useFiltersData() {
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [congregations, setCongregations] = useState<Congregation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Carregar cargos e congregações em paralelo
+        const [rolesData, congregationsData] = await Promise.all([
+          apiService.listRoles(),
+          apiService.listCongregations()
+        ]);
+
+        setRoles(rolesData);
+        setCongregations(congregationsData);
+      } catch (err) {
+        console.error('❌ Erro ao carregar dados dos filtros:', err);
+        setError('Erro ao carregar dados dos filtros');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  return {
+    roles,
+    congregations,
+    loading,
+    error
+  };
+} 
