@@ -1,7 +1,7 @@
 'use client';
 
 import { X, Trash2 } from 'lucide-react';
-import { MemberFilters } from '@/app/(dashboard)/members/page';
+import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
 
 interface ActiveFiltersChipsProps {

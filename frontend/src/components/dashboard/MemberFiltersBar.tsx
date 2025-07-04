@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronDown, Filter, ArrowUpDown, Loader } from 'lucide-react';
-import { MemberFilters } from '@/app/(dashboard)/members/page';
+import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useState, useEffect, useRef } from 'react';
 

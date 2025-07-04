@@ -1,6 +1,6 @@
 'use client';
 
-import { MemberFilters } from '@/app/(dashboard)/members/page';
+import { MemberFilters } from '@/app/(main)/members/page';
 import { useIbgeData } from '@/hooks/useIbgeData';
 import { useEffect, useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';

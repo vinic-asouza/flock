@@ -1,21 +1,21 @@
 Fase 1: Estrutura e Layout Base
-[ ] Criar estrutura de pastas para o módulo de membros (/features/members ou /app/(dashboard)/members)
-[ ] Implementar layout base das páginas (listagem, formulário, detalhes)
-[ ] Garantir responsividade e consistência visual com o restante do sistema
-[ ] Criar componentes reutilizáveis: filtros, tabela/lista, chips de filtro, paginação, modal de confirmação
+[x] Criar estrutura de pastas para o módulo de membros (/features/members ou /app/(dashboard)/members)
+[x] Implementar layout base das páginas (listagem, formulário, detalhes)
+[x] Garantir responsividade e consistência visual com o restante do sistema
+[x] Criar componentes reutilizáveis: filtros, tabela/lista, chips de filtro, paginação, modal de confirmação
 
 Fase 2: Listagem de Membros
-[ ] Implementar chamada à API /members com paginação, busca e filtros básicos
-[ ] Exibir membros em lista com informações principais (nome, idade, status, cargo, congregação, contato)
-[ ] Implementar filtros rápidos (status, função, congregação)
-[ ] Implementar busca por nome, email ou telefone
-[ ] Implementar ordenação (nome, idade, data de batismo, data de cadastro)
-[ ] Implementar paginação
-[ ] Exibir chips de filtros ativos e botão para limpar filtros
+[x] Implementar chamada à API /members com paginação, busca e filtros básicos
+[x] Exibir membros em lista com informações principais (nome, idade, status, cargo, congregação, contato)
+[x] Implementar filtros rápidos (status, função, congregação)
+[x] Implementar busca por nome, email ou telefone
+[x] Implementar ordenação (nome, idade, data de batismo, data de cadastro)
+[x] Implementar paginação
+[x] Exibir chips de filtros ativos e botão para limpar filtros
 
 Fase 3: Filtros Avançados
-[ ] Implementar modal ou área expandida para filtros avançados (estado civil, nacionalidade, faixa etária, datas, cidade, estado)
-[ ] Sincronizar filtros avançados com a query da API
+[x] Implementar modal ou área expandida para filtros avançados (estado civil, nacionalidade, faixa etária, datas, cidade, estado)
+[x] Sincronizar filtros avançados com a query da API
 [ ] Garantir UX fluida (ex: loading, feedback de filtros aplicados)
 
 Fase 4: CRUD de Membros

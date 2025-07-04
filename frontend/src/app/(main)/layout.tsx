@@ -4,11 +4,11 @@ import { ReactNode } from 'react';
 import { Sidebar } from '@/components/dashboard/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 
-interface DashboardLayoutProps {
+interface MainLayoutProps {
   children: ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function MainLayout({ children }: MainLayoutProps) {
   const { user } = useAuth();
 
   return (

@@ -5,7 +5,7 @@ import { MemberCard } from './MemberCard';
 import { Pagination } from './Pagination';
 import apiService from '@/services/api';
 import { Loader } from 'lucide-react';
-import { MemberFilters } from '@/app/(dashboard)/members/page';
+import { MemberFilters } from '@/app/(main)/members/page';
 
 interface Member {
   id: string;
