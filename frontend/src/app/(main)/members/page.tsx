@@ -1,13 +1,18 @@
 'use client';
 
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
 import { MemberList } from '@/components/members/MemberList';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { MemberFiltersBar } from '@/components/members/MemberFiltersBar';
 import { MemberFiltersAdvanced } from '@/components/members/MemberFiltersAdvanced';
 import { ActiveFiltersChips } from '@/components/members/ActiveFiltersChips';
+import { CreateMemberModal } from '@/components/members/CreateMemberModal';
+import { ViewMemberModal } from '@/components/members/ViewMemberModal';
+import { EditMemberModal } from '@/components/members/EditMemberModal';
+import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
+import { Button } from '@/components/ui/Button';
+import { Plus } from 'lucide-react';
+import { MembersProvider, useMembers } from '@/context/MembersContext';
 
 export type MemberFilters = {
   search: string;
@@ -23,6 +28,8 @@ export type MemberFilters = {
   ageFrom: string;
   ageTo: string;
   occupation: string;
+  birthDateFrom: string;
+  birthDateTo: string;
   baptismDateFrom: string;
   baptismDateTo: string;
   admissionDateFrom: string;
@@ -43,6 +50,8 @@ const initialFilters: MemberFilters = {
   ageFrom: '',
   ageTo: '',
   occupation: '',
+  birthDateFrom: '',
+  birthDateTo: '',
   baptismDateFrom: '',
   baptismDateTo: '',
   admissionDateFrom: '',
@@ -54,11 +63,26 @@ const initialSorting = {
   sort_order: 'asc' as 'asc' | 'desc'
 };
 
-export default function MembersPage() {
+function MembersPageContent() {
   const [total, setTotal] = useState<number | null>(null);
   const [filters, setFilters] = useState<MemberFilters>(initialFilters);
   const [sorting, setSorting] = useState<{ sort_by: string; sort_order: 'asc' | 'desc' }>(initialSorting);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  // Estados dos modais
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [selectedMemberName, setSelectedMemberName] = useState<string>('');
+
+  const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic, syncWithServer } = useMembers();
+
+  // Carregar membros iniciais
+  useEffect(() => {
+    loadMembers(filters, sorting, 1);
+  }, []); // Executar apenas uma vez na montagem
 
   const handleFilterChange = useCallback((changes: Partial<MemberFilters>) => {
     setFilters((prev) => ({ ...prev, ...changes }));
@@ -86,17 +110,54 @@ export default function MembersPage() {
     setSorting(initialSorting);
   }, []);
 
+  // Handlers dos modais
+  const handleViewMember = useCallback((id: string, name: string) => {
+    setSelectedMemberId(id);
+    setSelectedMemberName(name);
+    setViewModalOpen(true);
+  }, []);
+
+  const handleEditMember = useCallback((id: string) => {
+    setSelectedMemberId(id);
+    setEditModalOpen(true);
+  }, []);
+
+  const handleDeleteMember = useCallback((id: string, name: string) => {
+    setSelectedMemberId(id);
+    setSelectedMemberName(name);
+    setDeleteModalOpen(true);
+  }, []);
+
+  // Handlers para atualização otimista
+  const handleCreateSuccess = useCallback((memberData: any) => {
+    // Adicionar otimisticamente
+    addMemberOptimistic(memberData);
+    setCreateModalOpen(false);
+  }, [addMemberOptimistic]);
+
+  const handleEditSuccess = useCallback((memberData: any) => {
+    // Atualizar otimisticamente
+    updateMemberOptimistic(memberData.id, memberData);
+    setEditModalOpen(false);
+  }, [updateMemberOptimistic]);
+
+  const handleDeleteSuccess = useCallback((memberId: string) => {
+    // Remover otimisticamente
+    removeMemberOptimistic(memberId);
+    setDeleteModalOpen(false);
+  }, [removeMemberOptimistic]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Membros</h1>
-        <Link
-          href="/members/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md font-medium shadow-sm hover:bg-primary/90 transition-colors"
+        <Button
+          onClick={() => setCreateModalOpen(true)}
+          className="inline-flex items-center gap-2"
         >
           <Plus size={18} />
           Adicionar Membro
-        </Link>
+        </Button>
       </div>
       <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={false} />
       <MemberFiltersBar
@@ -120,7 +181,58 @@ export default function MembersPage() {
       {typeof total === 'number' && (
         <div className="text-gray-500 text-sm mb-2">{total} membros encontrados</div>
       )}
-      <MemberList onTotalChange={setTotal} filters={filters} sorting={sorting} />
+      <MemberList 
+        onTotalChange={setTotal} 
+        filters={filters} 
+        sorting={sorting}
+        onView={handleViewMember}
+        onEdit={handleEditMember}
+        onDelete={handleDeleteMember}
+      />
+
+      {/* Modais */}
+      <CreateMemberModal
+        isOpen={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
+
+      <ViewMemberModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        memberId={selectedMemberId}
+        onEdit={() => {
+          setViewModalOpen(false);
+          setEditModalOpen(true);
+        }}
+        onDelete={() => {
+          setViewModalOpen(false);
+          setDeleteModalOpen(true);
+        }}
+      />
+
+      <EditMemberModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        memberId={selectedMemberId}
+        onSuccess={handleEditSuccess}
+      />
+
+      <DeleteMemberModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        memberId={selectedMemberId}
+        memberName={selectedMemberName}
+        onSuccess={handleDeleteSuccess}
+      />
     </div>
+  );
+}
+
+export default function MembersPage() {
+  return (
+    <MembersProvider>
+      <MembersPageContent />
+    </MembersProvider>
   );
 } 

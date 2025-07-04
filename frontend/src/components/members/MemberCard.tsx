@@ -1,7 +1,6 @@
 'use client';
 
 import { Eye, Edit, Trash2, Mail, MessageCircle } from 'lucide-react';
-import Link from 'next/link';
 
 interface MemberCardProps {
   member: {
@@ -16,9 +15,9 @@ interface MemberCardProps {
     whatsapp?: string | null;
     email?: string | null;
   };
-  onView?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  onView?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 function calcularIdade(birth: string): number | null {
@@ -81,21 +80,21 @@ export function MemberCard({ member, onView, onEdit, onDelete }: MemberCardProps
       <div className="flex gap-2 mt-3 md:mt-0 md:ml-4">
         <button
           title="Visualizar"
-          onClick={() => onView?.(member.id)}
+          onClick={onView}
           className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
         >
           <Eye size={18} />
         </button>
         <button
           title="Editar"
-          onClick={() => onEdit?.(member.id)}
+          onClick={onEdit}
           className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
         >
           <Edit size={18} />
         </button>
         <button
           title="Excluir"
-          onClick={() => onDelete?.(member.id)}
+          onClick={onDelete}
           className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
         >
           <Trash2 size={18} />

@@ -172,6 +172,8 @@ class ApiService {
     age_from?: string | number;
     age_to?: string | number;
     occupation?: string;
+    birth_date_from?: string;
+    birth_date_to?: string;
     baptism_date_from?: string;
     baptism_date_to?: string;
     admission_date_from?: string;
@@ -206,9 +208,15 @@ class ApiService {
     if (params.age_from !== undefined) queryParams.append('age_from', params.age_from.toString());
     if (params.age_to !== undefined) queryParams.append('age_to', params.age_to.toString());
     
-    // Filtros de data
+    // Filtros de data de nascimento
+    if (params.birth_date_from) queryParams.append('birth_date_from', params.birth_date_from);
+    if (params.birth_date_to) queryParams.append('birth_date_to', params.birth_date_to);
+    
+    // Filtros de data de batismo
     if (params.baptism_date_from) queryParams.append('baptism_date_from', params.baptism_date_from);
     if (params.baptism_date_to) queryParams.append('baptism_date_to', params.baptism_date_to);
+    
+    // Filtros de data de admissão
     if (params.admission_date_from) queryParams.append('admission_date_from', params.admission_date_from);
     if (params.admission_date_to) queryParams.append('admission_date_to', params.admission_date_to);
     
@@ -233,6 +241,30 @@ class ApiService {
   // Listar congregações
   async listCongregations() {
     const response = await this.api.get('/congregations');
+    return response.data;
+  }
+
+  // Criar membro
+  async createMember(data: any) {
+    const response = await this.api.post('/members', data);
+    return response.data;
+  }
+
+  // Atualizar membro
+  async updateMember(id: string, data: any) {
+    const response = await this.api.put(`/members/${id}`, data);
+    return response.data;
+  }
+
+  // Buscar membro por ID
+  async getMember(id: string) {
+    const response = await this.api.get(`/members/${id}`);
+    return response.data;
+  }
+
+  // Excluir membro
+  async deleteMember(id: string) {
+    const response = await this.api.delete(`/members/${id}`);
     return response.data;
   }
 }

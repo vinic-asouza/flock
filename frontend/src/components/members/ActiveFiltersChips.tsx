@@ -70,6 +70,12 @@ export function ActiveFiltersChips({
         return filters.ageFrom ? null : `Idade: até ${value}`; // Não mostrar se já há "de"
       case 'occupation':
         return `Ocupação: ${value}`;
+      case 'birthDateFrom':
+        return filters.birthDateTo ? 
+          `Nascimento: ${new Date(value).toLocaleDateString('pt-BR')} - ${new Date(filters.birthDateTo).toLocaleDateString('pt-BR')}` : 
+          `Nascimento: de ${new Date(value).toLocaleDateString('pt-BR')}`;
+      case 'birthDateTo':
+        return filters.birthDateFrom ? null : `Nascimento: até ${new Date(value).toLocaleDateString('pt-BR')}`;
       case 'baptismDateFrom':
         return filters.baptismDateTo ? 
           `Batismo: ${new Date(value).toLocaleDateString('pt-BR')} - ${new Date(filters.baptismDateTo).toLocaleDateString('pt-BR')}` : 
@@ -115,6 +121,17 @@ export function ActiveFiltersChips({
         return true; // Mostrar apenas o "de"
       }
       if (key === 'ageTo' && ageTo && !ageFrom) {
+        return true; // Mostrar apenas o "até" se não há "de"
+      }
+      return false;
+    }
+    if (key === 'birthDateFrom' || key === 'birthDateTo') {
+      const birthFrom = filters.birthDateFrom;
+      const birthTo = filters.birthDateTo;
+      if (key === 'birthDateFrom' && birthFrom && birthTo) {
+        return true; // Mostrar apenas o "de"
+      }
+      if (key === 'birthDateTo' && birthTo && !birthFrom) {
         return true; // Mostrar apenas o "até" se não há "de"
       }
       return false;

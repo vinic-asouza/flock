@@ -16,7 +16,7 @@ Fase 2: Listagem de Membros
 Fase 3: Filtros Avançados
 [x] Implementar modal ou área expandida para filtros avançados (estado civil, nacionalidade, faixa etária, datas, cidade, estado)
 [x] Sincronizar filtros avançados com a query da API
-[ ] Garantir UX fluida (ex: loading, feedback de filtros aplicados)
+[x] Garantir UX fluida (ex: loading, feedback de filtros aplicados)
 
 Fase 4: CRUD de Membros
 [ ] Implementar formulário de criação de membro (com validação, máscaras e UX amigável)
