@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MemberCard } from './MemberCard';
-import { Pagination } from './Pagination';
+import { Pagination } from '../commom/Pagination';
 import apiService from '@/services/api';
 import { Loader } from 'lucide-react';
 import { MemberFilters } from '@/app/(main)/members/page';

@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import { MemberList } from '@/components/dashboard/MemberList';
-import { MemberSearchInput } from '@/components/dashboard/MemberSearchInput';
+import { MemberList } from '@/components/members/MemberList';
+import { MemberSearchInput } from '@/components/members/MemberSearchInput';
 import { useState, useCallback } from 'react';
-import { MemberFiltersBar } from '@/components/dashboard/MemberFiltersBar';
-import { MemberFiltersAdvanced } from '@/components/dashboard/MemberFiltersAdvanced';
-import { ActiveFiltersChips } from '@/components/dashboard/ActiveFiltersChips';
+import { MemberFiltersBar } from '@/components/members/MemberFiltersBar';
+import { MemberFiltersAdvanced } from '@/components/members/MemberFiltersAdvanced';
+import { ActiveFiltersChips } from '@/components/members/ActiveFiltersChips';
 
 export type MemberFilters = {
   search: string;

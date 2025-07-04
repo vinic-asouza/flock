@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Sidebar } from '@/components/dashboard/Sidebar';
+import { Sidebar } from '@/components/main/Sidebar';
 import { useAuth } from '@/context/AuthContext';
 
 interface MainLayoutProps {
