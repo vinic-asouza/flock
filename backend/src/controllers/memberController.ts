@@ -156,7 +156,13 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     }
 
     if (congregation_id) {
-      query = query.eq('congregation_id', congregation_id);
+      if (congregation_id === 'sede') {
+        // Filtrar membros sem congregação (congregation_id IS NULL)
+        query = query.is('congregation_id', null);
+      } else {
+        // Filtrar por congregação específica
+        query = query.eq('congregation_id', congregation_id);
+      }
     }
 
     // Aplica filtros por campos específicos

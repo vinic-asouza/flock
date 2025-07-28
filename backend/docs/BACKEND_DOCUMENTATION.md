@@ -362,7 +362,7 @@ GET /api/members/reports
 #### Filtros Básicos
 - `active` (opcional): Filtra por status ativo (true/false)
 - `role_id` (opcional): Filtra por cargo específico
-- `congregation_id` (opcional): Filtra por congregação específica
+- `congregation_id` (opcional): Filtra por congregação específica. Use "sede" para filtrar membros sem congregação
 
 #### Filtros por Campos Específicos
 - `gender` (opcional): Filtra por gênero ('Masculino' ou 'Feminino')
@@ -399,6 +399,11 @@ GET /api/members?search=João&page=1&limit=20
 #### Filtrar membros ativos de um cargo específico
 ```
 GET /api/members?active=true&role_id=123&page=1&limit=15
+```
+
+#### Filtrar membros da sede (sem congregação)
+```
+GET /api/members?congregation_id=sede&page=1&limit=15
 ```
 
 #### Filtrar por faixa etária

@@ -50,6 +50,9 @@ export function ActiveFiltersChips({
         const role = roles.find(r => r.id === value);
         return role ? role.name : '';
       case 'congregationId':
+        if (value === 'sede') {
+          return 'Sede';
+        }
         const congregation = congregations.find(c => c.id === value);
         return congregation ? congregation.name : '';
       case 'gender':
