@@ -29,9 +29,9 @@ export function Sidebar({ churchName }: SidebarProps) {
   };
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 min-h-screen">
-      <div className="flex items-center h-16 px-6 border-b border-gray-100">
-        <span className="font-bold text-lg text-primary truncate" title={churchName}>{churchName}</span>
+    <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-screen">
+      <div className="flex items-center min-h-16 px-6 border-b border-gray-100">
+        <span className="font-bold text-base text-primary leading-tight whitespace-pre-line" title={churchName}>{churchName}</span>
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1">
         {navItems.map(({ label, href, icon: Icon }) => (
