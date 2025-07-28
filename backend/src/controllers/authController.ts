@@ -14,7 +14,7 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       });
     }
 
-    const { email, password, cnpj, ...churchData } = req.body;
+    const { email, password, phone, cnpj, ...churchData } = req.body;
 
     // Verificar se já existe uma igreja com o CNPJ informado
     const { data: existingChurch, error: cnpjCheckError } = await supabase
@@ -41,6 +41,7 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      phone,
       options: {
         emailRedirectTo: `${process.env.APP_URL || 'http://localhost:4000'}/auth/callback`
       }

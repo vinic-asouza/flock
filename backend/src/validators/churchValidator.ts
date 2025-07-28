@@ -18,6 +18,18 @@ const churchSchema = Joi.object<ChurchRegistrationData>({
       'any.required': 'Senha é obrigatória'
     }),
 
+  phone: Joi.string()
+    .required()
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .max(11)
+    .messages({
+      'any.required': 'Telefone é obrigatório',
+      'string.pattern.base': 'Telefone deve conter apenas números',
+      'string.min': 'Telefone deve ter pelo menos 10 dígitos',
+      'string.max': 'Telefone deve ter no máximo 11 dígitos'
+    }),
+
   name: Joi.string()
     .required()
     .messages({
@@ -58,6 +70,26 @@ const churchSchema = Joi.object<ChurchRegistrationData>({
       'string.length': 'CNPJ deve ter 14 dígitos',
       'string.pattern.base': 'CNPJ deve conter apenas números',
       'any.required': 'CNPJ é obrigatório'
+    }),
+
+  email_church: Joi.string()
+    .email()
+    .optional()
+    .allow('')
+    .messages({
+      'string.email': 'Email da igreja inválido'
+    }),
+
+  phone_church: Joi.string()
+    .optional()
+    .allow('')
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .max(11)
+    .messages({
+      'string.pattern.base': 'Telefone da igreja deve conter apenas números',
+      'string.min': 'Telefone da igreja deve ter pelo menos 10 dígitos',
+      'string.max': 'Telefone da igreja deve ter no máximo 11 dígitos'
     })
 });
 

@@ -10,6 +10,8 @@ export interface Church {
   city: string;
   state: string;
   cnpj: string;
+  email_church?: string;
+  phone_church?: string;
   created_at: Date;
 }
 
@@ -75,10 +77,13 @@ export interface AuthRequest extends Request {
 export interface ChurchRegistrationData {
   email: string;
   password: string;
+  phone?: string;
   name: string;
   denomination: string;
   address: string;
   city: string;
   state: string;
   cnpj: string;
+  email_church?: string;
+  phone_church?: string;
 } 

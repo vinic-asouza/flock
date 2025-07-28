@@ -21,12 +21,15 @@ const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   confirmPassword: z.string().min(6, 'Confirmação de senha deve ter pelo menos 6 caracteres'),
+  phone: z.string().min(1, 'Telefone é obrigatório'),
   name: z.string().min(2, 'Nome da igreja deve ter pelo menos 2 caracteres'),
   denomination: z.string().min(2, 'Denominação deve ter pelo menos 2 caracteres'),
   address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
   city: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
   state: z.string().length(2, 'Estado deve ter 2 caracteres'),
   cnpj: z.string().length(14, 'CNPJ deve ter 14 dígitos').regex(/^\d+$/, 'CNPJ deve conter apenas números'),
+  email_church: z.string().email('Email da igreja inválido').optional().or(z.literal('')),
+  phone_church: z.string().optional().or(z.literal('')),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
@@ -91,6 +94,39 @@ const removeCNPJFormatting = (value: string): string => {
   return value.replace(/\D/g, '');
 };
 
+// Função para formatar telefone
+const formatPhone = (value: string): string => {
+  // Remove tudo que não é número
+  const numbers = value.replace(/\D/g, '');
+  
+  // Limita a 11 dígitos (DDD + 9 dígitos)
+  const limitedNumbers = numbers.slice(0, 11);
+  
+  // Se tem 11 dígitos, assume que é celular (formato: (XX) 9XXXX-XXXX)
+  if (limitedNumbers.length === 11) {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
+  }
+  // Se tem 10 dígitos, assume que é telefone fixo (formato: (XX) XXXX-XXXX)
+  else if (limitedNumbers.length === 10) {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`;
+  }
+  // Para menos de 10 dígitos, aplica formatação progressiva
+  else if (limitedNumbers.length <= 2) {
+    return `(${limitedNumbers}`;
+  } else if (limitedNumbers.length <= 6) {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`;
+  } else if (limitedNumbers.length <= 10) {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`;
+  } else {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
+  }
+};
+
+// Função para remover formatação do telefone
+const removePhoneFormatting = (value: string): string => {
+  return value.replace(/\D/g, '');
+};
+
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(globalRegisterError);
   const [errorDetails, setErrorDetails] = useState<string | null>(globalRegisterErrorDetails);
@@ -100,6 +136,8 @@ export default function RegisterPage() {
   const [isLoadingStates, setIsLoadingStates] = useState(true);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   const [cnpjDisplay, setCnpjDisplay] = useState('');
+  const [phoneDisplay, setPhoneDisplay] = useState('');
+  const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
   const { register: registerChurch, isOperationLoading } = useAuth();
   const router = useRouter();
   
@@ -185,6 +223,14 @@ export default function RegisterPage() {
         if (key === 'cnpj' && value) {
           setCnpjDisplay(formatCNPJ(value));
         }
+        // Restaurar telefone formatado se existir
+        if (key === 'phone' && value) {
+          setPhoneDisplay(formatPhone(value));
+        }
+        // Restaurar telefone da igreja formatado se existir
+        if (key === 'phone_church' && value) {
+          setPhoneChurchDisplay(formatPhone(value));
+        }
       });
     }
   }, [setValue]);
@@ -210,6 +256,28 @@ export default function RegisterPage() {
     setValue('cnpj', unformatted);
   };
 
+  // Função para lidar com mudanças no telefone
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatPhone(value);
+    setPhoneDisplay(formatted);
+    
+    // Atualizar o valor no formulário sem formatação
+    const unformatted = removePhoneFormatting(formatted);
+    setValue('phone', unformatted);
+  };
+
+  // Função para lidar com mudanças no telefone da igreja
+  const handlePhoneChurchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatPhone(value);
+    setPhoneChurchDisplay(formatted);
+    
+    // Atualizar o valor no formulário sem formatação
+    const unformatted = removePhoneFormatting(formatted);
+    setValue('phone_church', unformatted);
+  };
+
   const onSubmit = async (data: RegisterFormData) => {
     try {
       setError(null);
@@ -222,7 +290,11 @@ export default function RegisterPage() {
       const { confirmPassword, ...dataToSend } = data;
       const cleanData = {
         ...dataToSend,
-        cnpj: removeCNPJFormatting(dataToSend.cnpj)
+        cnpj: removeCNPJFormatting(dataToSend.cnpj),
+        phone: removePhoneFormatting(dataToSend.phone), // Garantir que o telefone esteja sem formatação
+        // Garantir que campos opcionais vazios sejam undefined
+        email_church: dataToSend.email_church || undefined,
+        phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined
       };
       
       await registerChurch(cleanData);
@@ -231,6 +303,8 @@ export default function RegisterPage() {
       globalFormData = null;
       reset();
       setCnpjDisplay('');
+      setPhoneDisplay('');
+      setPhoneChurchDisplay(''); // Limpar o display do telefone da igreja
       
       setSuccess(true);
       
@@ -345,6 +419,17 @@ export default function RegisterPage() {
         />
 
         <Input
+          label="Telefone"
+          type="tel"
+          placeholder="(11) 99999-9999"
+          error={errors.phone?.message}
+          isLoading={isOperationLoading}
+          {...register('phone')}
+          value={phoneDisplay}
+          onChange={handlePhoneChange}
+        />
+
+        <Input
           label="Senha"
           type="password"
           placeholder="••••••••"
@@ -400,6 +485,26 @@ export default function RegisterPage() {
             <p className="text-sm text-red-600 mt-1">{errors.denomination.message}</p>
           )}
         </div>
+
+        <Input
+          label="Email da Igreja (opcional)"
+          type="email"
+          placeholder="contato@igreja.com"
+          error={errors.email_church?.message}
+          isLoading={isOperationLoading}
+          {...register('email_church')}
+        />
+
+        <Input
+          label="Telefone da Igreja (opcional)"
+          type="tel"
+          placeholder="(11) 3333-3333"
+          error={errors.phone_church?.message}
+          isLoading={isOperationLoading}
+          {...register('phone_church')}
+          value={phoneChurchDisplay}
+          onChange={handlePhoneChurchChange}
+        />
 
         <Input
           label="Endereço"

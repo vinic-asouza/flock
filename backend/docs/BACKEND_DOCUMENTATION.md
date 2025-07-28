@@ -77,14 +77,24 @@ Content-Type: application/json
 {
   "email": "igreja@exemplo.com",
   "password": "senha123456",
+  "phone": "(11) 99999-9999",
   "name": "Igreja Exemplo",
   "denomination": "Batista",
   "address": "Rua das Flores, 123",
   "city": "São Paulo",
   "state": "SP",
-  "cnpj": "12345678901234"
+  "cnpj": "12345678901234",
+  "email_church": "contato@igreja.com",
+  "phone_church": "(11) 3333-3333"
 }
 ```
+
+**Campos Opcionais:**
+- `email_church`: Email de contato da igreja
+- `phone_church`: Telefone de contato da igreja
+
+**Campos Obrigatórios:**
+- `phone`: Telefone do usuário administrador (apenas números, 10-11 dígitos)
 
 **Resposta de Sucesso (201):**
 ```json
@@ -99,6 +109,8 @@ Content-Type: application/json
     "city": "São Paulo",
     "state": "SP",
     "cnpj": "12345678901234",
+    "email_church": "contato@igreja.com",
+    "phone_church": "(11) 3333-3333",
     "created_at": "2024-01-10T10:00:00.000Z"
   }
 }
