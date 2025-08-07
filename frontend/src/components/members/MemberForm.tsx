@@ -63,6 +63,21 @@ interface Member {
   role_id?: string;
   congregation_id?: string;
   active: boolean;
+  // Campos retornados pela API com detalhes completos
+  role?: {
+    id: string;
+    name: string;
+    description?: string;
+  } | null;
+  congregation?: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    leader?: string;
+    phone?: string;
+  } | null;
 }
 
 interface MemberFormProps {
@@ -119,13 +134,14 @@ const formatDateToISO = (formattedDate: string): string | null => {
 export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode }: MemberFormProps) {
   const { roles, congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
-  
+
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
   const [cepDisplay, setCepDisplay] = useState('');
   const [birthDisplay, setBirthDisplay] = useState('');
   const [baptismDateDisplay, setBaptismDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
+  const [formReady, setFormReady] = useState(false);
 
   const {
     register,
@@ -136,34 +152,56 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     reset,
   } = useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
-    defaultValues: member ? {
-      ...member,
-      // Garantir que campos opcionais sejam strings vazias se undefined
-      email: member.email || '',
-      phone: member.phone || '',
-      whatsapp: member.whatsapp || '',
-      document: member.document || '',
-      spouse: member.spouse || '',
-      complement: member.complement || '',
-      cep: member.cep ? member.cep.replace(/\D/g, '') : '',
-      // Converter datas do formato ISO para DD/MM/AAAA
-      birth: formatDateFromISO(member.birth),
-      baptism_date: formatDateFromISO(member.baptism_date),
-      admission_date: formatDateFromISO(member.admission_date),
-      admission: member.admission || '',
-      role_id: member.role_id || '',
-      congregation_id: member.congregation_id || '',
-      // Garantir que gender e marital_status sejam do tipo correto
-      gender: member.gender as 'Masculino' | 'Feminino',
-      marital_status: member.marital_status as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro',
-    } : {
+    defaultValues: mode === 'create' ? {
       active: true,
       gender: 'Masculino',
       marital_status: 'Solteiro',
+    } : {
+      // Para modo edit, deixar vazio e usar reset
     },
   });
 
   const selectedState = watch('state');
+
+  // Resetar formulário quando member mudar (para modo edit)
+  useEffect(() => {
+    if (member && mode === 'edit') {
+      // Usar setValue para definir cada campo individualmente
+      setValue('name', member.name);
+      setValue('email', member.email || '');
+      setValue('phone', member.phone || '');
+      setValue('whatsapp', member.whatsapp || '');
+      setValue('birth', formatDateFromISO(member.birth));
+      setValue('gender', member.gender as 'Masculino' | 'Feminino');
+      setValue('marital_status', member.marital_status as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro');
+      setValue('nationality', member.nationality || '');
+      setValue('document', member.document || '');
+      setValue('spouse', member.spouse || '');
+      setValue('occupation', member.occupation || '');
+      setValue('address', member.address || '');
+      setValue('complement', member.complement || '');
+      setValue('neighborhood', member.neighborhood || '');
+      setValue('city', member.city || '');
+      setValue('state', member.state || '');
+      setValue('cep', member.cep ? member.cep.replace(/\D/g, '') : '');
+      setValue('baptism_date', formatDateFromISO(member.baptism_date));
+      setValue('admission', member.admission || '');
+      setValue('admission_date', formatDateFromISO(member.admission_date));
+      setValue('active', member.active);
+      
+      // Definir role_id e congregation_id
+      const roleId = member.role?.id || member.role_id || '';
+      const congregationId = member.congregation?.id || member.congregation_id || '';
+      
+      setValue('role_id', roleId);
+      setValue('congregation_id', congregationId);
+      
+      // Marcar formulário como pronto
+      setFormReady(true);
+    } else if (mode === 'create') {
+      setFormReady(true);
+    }
+  }, [member, mode, setValue]);
 
   // Carregar cidades quando estado mudar
   useEffect(() => {
@@ -174,6 +212,16 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       }
     }
   }, [selectedState, states, fetchCities]);
+
+  // Carregar cidades quando member for carregado no modo edit
+  useEffect(() => {
+    if (member && mode === 'edit' && member.state && states.length > 0) {
+      const state = states.find(s => s.sigla === member.state);
+      if (state) {
+        fetchCities(state.id.toString());
+      }
+    }
+  }, [member, mode, states, fetchCities]);
 
   // Inicializar displays formatados
   useEffect(() => {
@@ -190,7 +238,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
     const value = e.target.value;
     const formatted = formatPhone(value);
-    
+
     if (field === 'phone') {
       setPhoneDisplay(formatted);
       setValue('phone', value.replace(/\D/g, ''));
@@ -210,7 +258,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'baptism_date' | 'admission_date') => {
     const value = e.target.value;
     const numbers = value.replace(/\D/g, '');
-    
+
     // Aplicar máscara DD/MM/AAAA
     let formatted = '';
     if (numbers.length <= 2) {
@@ -220,7 +268,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     } else {
       formatted = `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
     }
-    
+
     // Atualizar display e valor do formulário
     if (field === 'birth') {
       setBirthDisplay(formatted);
@@ -248,7 +296,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       };
 
       await onSubmit(memberData);
-      
+
       // Limpar displays formatados após sucesso
       setPhoneDisplay('');
       setWhatsappDisplay('');
@@ -269,7 +317,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Informações Básicas
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Nome Completo *"
@@ -392,7 +440,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Endereço
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Endereço"
@@ -425,7 +473,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             <select
               className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isLoading}
-              {...register('state')}
+              value={watch('state') || ''}
+              onChange={(e) => setValue('state', e.target.value)}
             >
               <option value="">Selecione o estado</option>
               {states.map((state) => (
@@ -446,13 +495,14 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             <select
               className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!selectedState || loadingCities || isLoading}
-              {...register('city')}
+              value={watch('city') || ''}
+              onChange={(e) => setValue('city', e.target.value)}
             >
               <option value="">
-                {!selectedState 
-                  ? 'Selecione o estado primeiro' 
-                  : loadingCities 
-                    ? 'Carregando...' 
+                {!selectedState
+                  ? 'Selecione o estado primeiro'
+                  : loadingCities
+                    ? 'Carregando...'
                     : 'Selecione a cidade'
                 }
               </option>
@@ -483,7 +533,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Informações Eclesiásticas
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Data de Batismo"
@@ -503,13 +553,26 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             isLoading={isLoading}
           />
 
-          <Input
-            label="Tipo de Admissão"
-            placeholder="Ex: Batismo, Transferência, etc."
-            error={errors.admission?.message}
-            isLoading={isLoading}
-            {...register('admission')}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Admissão
+            </label>
+            <select
+              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading}
+              value={watch('admission') || ''}
+              onChange={(e) => setValue('admission', e.target.value)}
+            >
+              <option value="">Selecione o tipo de admissão</option>
+              <option value="Batismo">Batismo</option>
+              <option value="Transferencia">Transferência</option>
+              <option value="Profissão de fé">Profissão de fé</option>
+              <option value="Outro">Outro</option>
+            </select>
+            {errors.admission && (
+              <p className="text-sm text-red-600 mt-1">{errors.admission.message}</p>
+            )}
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -518,7 +581,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             <select
               className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={filtersLoading || isLoading}
-              {...register('role_id')}
+              value={watch('role_id') || ''}
+              onChange={(e) => setValue('role_id', e.target.value)}
             >
               <option value="">Selecione uma função</option>
               {roles.map((role) => (
@@ -536,7 +600,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             <select
               className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={filtersLoading || isLoading}
-              {...register('congregation_id')}
+              value={watch('congregation_id') || ''}
+              onChange={(e) => setValue('congregation_id', e.target.value)}
             >
               <option value="">Selecione uma congregação</option>
               {congregations.map((congregation) => (

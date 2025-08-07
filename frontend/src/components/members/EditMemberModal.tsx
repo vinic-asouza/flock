@@ -31,6 +31,21 @@ interface Member {
   role_id?: string;
   congregation_id?: string;
   active: boolean;
+  // Campos retornados pela API com detalhes completos
+  role?: {
+    id: string;
+    name: string;
+    description?: string;
+  } | null;
+  congregation?: {
+    id: string;
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    leader?: string;
+    phone?: string;
+  } | null;
 }
 
 interface EditMemberModalProps {
