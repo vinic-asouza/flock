@@ -27,7 +27,7 @@ app.use(morgan('dev'));
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100 // limite de 100 requisições por windowMs
+  max: 1000000 // limite de 100 requisições por windowMs
 });
 app.use(limiter);
 
