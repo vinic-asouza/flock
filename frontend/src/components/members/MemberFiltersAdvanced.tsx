@@ -23,6 +23,70 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
 
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Estados locais para debounce dos inputs de texto
+  const [nationalityInput, setNationalityInput] = useState(filters.nationality);
+  const [neighborhoodInput, setNeighborhoodInput] = useState(filters.neighborhood);
+  const [occupationInput, setOccupationInput] = useState(filters.occupation);
+  const [ageFromInput, setAgeFromInput] = useState(filters.ageFrom);
+  const [ageToInput, setAgeToInput] = useState(filters.ageTo);
+  
+  // Refs para as funções onChange
+  const onChangeRef = useRef(onChange);
+
+  // Atualizar a ref quando onChange mudar
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  // Sincronizar estados locais com os filtros externos
+  useEffect(() => {
+    setNationalityInput(filters.nationality);
+    setNeighborhoodInput(filters.neighborhood);
+    setOccupationInput(filters.occupation);
+    setAgeFromInput(filters.ageFrom);
+    setAgeToInput(filters.ageTo);
+  }, [filters.nationality, filters.neighborhood, filters.occupation, filters.ageFrom, filters.ageTo]);
+
+  // Debounce para Nacionalidade
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onChangeRef.current({ nationality: nationalityInput });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [nationalityInput]);
+
+  // Debounce para Bairro
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onChangeRef.current({ neighborhood: neighborhoodInput });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [neighborhoodInput]);
+
+  // Debounce para Ocupação
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onChangeRef.current({ occupation: occupationInput });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [occupationInput]);
+
+  // Debounce para Idade (de)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onChangeRef.current({ ageFrom: ageFromInput });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [ageFromInput]);
+
+  // Debounce para Idade (até)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      onChangeRef.current({ ageTo: ageToInput });
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [ageToInput]);
 
   // Fechar dropdowns quando clicar fora
   useEffect(() => {
@@ -214,8 +278,8 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
         <input
           type="text"
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-          value={filters.nationality}
-          onChange={e => onChange({ nationality: e.target.value })}
+          value={nationalityInput}
+          onChange={e => setNationalityInput(e.target.value)}
           placeholder="Ex: Brasileira"
         />
       </div>
@@ -342,8 +406,8 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
         <input
           type="text"
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-          value={filters.neighborhood}
-          onChange={e => onChange({ neighborhood: e.target.value })}
+          value={neighborhoodInput}
+          onChange={e => setNeighborhoodInput(e.target.value)}
           placeholder="Digite o bairro"
         />
       </div>
@@ -356,8 +420,8 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
             min={0}
             max={150}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-            value={filters.ageFrom}
-            onChange={e => onChange({ ageFrom: e.target.value })}
+            value={ageFromInput}
+            onChange={e => setAgeFromInput(e.target.value)}
             placeholder="Mín"
           />
         </div>
@@ -368,8 +432,8 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
             min={0}
             max={150}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-            value={filters.ageTo}
-            onChange={e => onChange({ ageTo: e.target.value })}
+            value={ageToInput}
+            onChange={e => setAgeToInput(e.target.value)}
             placeholder="Máx"
           />
         </div>
@@ -380,8 +444,8 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
         <input
           type="text"
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-          value={filters.occupation}
-          onChange={e => onChange({ occupation: e.target.value })}
+          value={occupationInput}
+          onChange={e => setOccupationInput(e.target.value)}
           placeholder="Digite a ocupação"
         />
       </div>

@@ -103,6 +103,7 @@ class ApiService {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('flock_token');
       localStorage.removeItem('flock_church');
+      localStorage.removeItem('flock_session');
     }
   }
 
@@ -112,6 +113,7 @@ class ApiService {
     this.setToken(response.data.session.access_token);
     if (typeof window !== 'undefined') {
       localStorage.setItem('flock_church', JSON.stringify(response.data.church));
+      localStorage.setItem('flock_session', JSON.stringify(response.data.session));
     }
     return response.data;
   }

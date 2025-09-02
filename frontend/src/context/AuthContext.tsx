@@ -47,50 +47,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const token = localStorage.getItem('flock_token');
         const churchData = localStorage.getItem('flock_church');
+        const sessionData = localStorage.getItem('flock_session');
         
-        if (token && churchData) {
+        if (token && churchData && sessionData) {
           const church = JSON.parse(churchData);
-          setUser(church);
+          const session = JSON.parse(sessionData);
           
-          // Criar uma sessão básica com o token existente
-          const session: Session = {
-            access_token: token,
-            token_type: 'bearer',
-            expires_in: 3600,
-            expires_at: Date.now() + 3600 * 1000, // 1 hora a partir de agora
-            refresh_token: '',
-            user: {
-              id: church.user_id,
-              aud: 'authenticated',
-              role: 'authenticated',
-              email: '',
-              email_confirmed_at: '',
-              phone: '',
-              confirmed_at: '',
-              last_sign_in_at: '',
-              app_metadata: {
-                provider: 'email',
-                providers: ['email']
-              },
-              user_metadata: {
-                email: '',
-                email_verified: false,
-                phone_verified: false,
-                sub: church.user_id
-              },
-              identities: [],
-              created_at: '',
-              updated_at: '',
-              is_anonymous: false
-            }
-          };
-          setSession(session);
+          // Verificar se a sessão ainda é válida
+          if (session.expires_at && Date.now() < session.expires_at) {
+            setUser(church);
+            setSession(session);
+          } else {
+            // Sessão expirada, limpar dados
+            localStorage.removeItem('flock_token');
+            localStorage.removeItem('flock_church');
+            localStorage.removeItem('flock_session');
+          }
         }
       } catch (error) {
         console.error('Erro ao inicializar autenticação:', error);
         // Limpar dados corrompidos
         localStorage.removeItem('flock_token');
         localStorage.removeItem('flock_church');
+        localStorage.removeItem('flock_session');
       } finally {
         setIsLoading(false);
       }
