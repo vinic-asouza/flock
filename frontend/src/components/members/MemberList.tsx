@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import { MemberCard } from './MemberCard';
+import { MemberCardGrid } from './MemberCardGrid';
+import { ViewMode } from './ViewModeSelector';
 import { Pagination } from '../commom/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
@@ -12,7 +14,10 @@ export function MemberList({
   sorting,
   onView,
   onEdit,
-  onDelete
+  onDelete,
+  viewModeSelector,
+  viewMode,
+  isViewModeLoaded
 }: { 
   onTotalChange?: (total: number) => void; 
   filters: MemberFilters;
@@ -20,6 +25,9 @@ export function MemberList({
   onView?: (id: string, name: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string, name: string) => void;
+  viewModeSelector?: React.ReactNode;
+  viewMode: ViewMode;
+  isViewModeLoaded?: boolean;
 }) {
   const {
     members,
@@ -77,7 +85,7 @@ export function MemberList({
     setPage(newPage);
   };
 
-  if (loading) {
+  if (loading || !isViewModeLoaded) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -125,15 +133,37 @@ export function MemberList({
 
   return (
     <div className="flex flex-col gap-2">
-      {members.map((member) => (
-        <MemberCard
-          key={member.id}
-          member={member}
-          onView={() => handleView(member.id, member.name)}
-          onEdit={() => handleEdit(member.id)}
-          onDelete={() => handleDelete(member.id, member.name)}
-        />
-      ))}
+      {/* Seletor de modo de visualização (se fornecido) */}
+      {viewModeSelector}
+
+      {/* Lista de membros */}
+      {viewMode === 'list' ? (
+        <div className="flex flex-col gap-2">
+          {members.map((member) => (
+            <MemberCard
+              key={member.id}
+              member={member}
+              onView={() => handleView(member.id, member.name)}
+              onEdit={() => handleEdit(member.id)}
+              onDelete={() => handleDelete(member.id, member.name)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {members.map((member) => (
+            <MemberCardGrid
+              key={member.id}
+              member={member}
+              onView={() => handleView(member.id, member.name)}
+              onEdit={() => handleEdit(member.id)}
+              onDelete={() => handleDelete(member.id, member.name)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Paginação */}
       {pagination && (
         <Pagination
           page={pagination.page}

@@ -2,6 +2,7 @@
 
 import { MemberList } from '@/components/members/MemberList';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
+import { ViewModeSelector } from '@/components/members/ViewModeSelector';
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MemberFiltersBar } from '@/components/members/MemberFiltersBar';
@@ -14,6 +15,7 @@ import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
+import { useViewMode } from '@/hooks/useViewMode';
 
 export type MemberFilters = {
   search: string;
@@ -71,6 +73,7 @@ function MembersPageContent() {
   const [sorting, setSorting] = useState<{ sort_by: string; sort_order: 'asc' | 'desc' }>(initialSorting);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const { viewMode, setViewMode, isLoaded } = useViewMode('list');
   
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -246,9 +249,6 @@ function MembersPageContent() {
         sorting={sorting}
         onRemoveSorting={() => setSorting(initialSorting)}
       />
-      {typeof total === 'number' && (
-        <div className="text-gray-500 text-sm mb-2">{total} membros encontrados</div>
-      )}
       <MemberList 
         onTotalChange={setTotal} 
         filters={filters} 
@@ -256,6 +256,16 @@ function MembersPageContent() {
         onView={handleViewMember}
         onEdit={handleEditMember}
         onDelete={handleDeleteMember}
+        viewMode={viewMode}
+        isViewModeLoaded={isLoaded}
+        viewModeSelector={
+          <div className="flex items-center justify-between mb-2">
+            {typeof total === 'number' && (
+              <div className="text-gray-500 text-sm">{total} membros encontrados</div>
+            )}
+            <ViewModeSelector mode={viewMode} onModeChange={setViewMode} />
+          </div>
+        }
       />
 
       {/* Modais */}

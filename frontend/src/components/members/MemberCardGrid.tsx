@@ -2,7 +2,7 @@
 
 import { Eye, Edit, Trash2, Mail, MessageCircle } from 'lucide-react';
 
-interface MemberCardProps {
+interface MemberCardGridProps {
   member: {
     id: string;
     name: string;
@@ -33,51 +33,61 @@ function calcularIdade(birth: string): number | null {
   return age;
 }
 
-export function MemberCard({ member, onView, onEdit, onDelete }: MemberCardProps) {
+export function MemberCardGrid({ member, onView, onEdit, onDelete }: MemberCardGridProps) {
   const idade = calcularIdade(member.birth);
+
   return (
-    <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg px-6 py-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full">
       <div className="flex-1 min-w-0">
-        {/* Linha 1: Nome e selos */}
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="font-semibold text-gray-900 text-base truncate max-w-xs md:max-w-sm" title={member.name}>{member.name}</span>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${member.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'}`}>{member.active ? 'Ativo' : 'Inativo'}</span>
-          {member.role?.name && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{member.role.name}</span>
-          )}
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+        {/* Linha 1: Nome, status ativo e congregação */}
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <span className="font-semibold text-gray-900 text-base truncate" title={member.name}>
+            {member.name}
+          </span>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            member.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'
+          }`}>
+            {member.active ? 'Ativo' : 'Inativo'}
+          </span>
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
             {member.congregation?.name || 'Sede'}
           </span>
         </div>
-        {/* Linha 2: Dados menores */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-          <span>{idade !== null ? `${idade} Anos` : '-'}</span>
+        
+        {/* Linha 2: Idade, sexo e estado civil */}
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
+          <span>{idade !== null ? `${idade} anos` : '-'}</span>
           <span>{member.gender}</span>
           <span>{member.marital_status}</span>
+        </div>
+        
+        {/* Linha 3: WhatsApp e Email */}
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-3">
           {member.whatsapp && (
             <a
               href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
+              className="flex items-center gap-1 hover:text-green-600 transition-colors"
             >
-              <MessageCircle size={16} className="transition-colors" />
+              <MessageCircle size={14} />
               {member.whatsapp}
             </a>
           )}
           {member.email && (
             <a
               href={`mailto:${member.email}`}
-              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+              className="flex items-center gap-1 hover:text-blue-600 transition-colors"
             >
-              <Mail size={16} className="transition-colors" />
+              <Mail size={14} />
               {member.email}
             </a>
           )}
         </div>
       </div>
-      {/* Ações */}
-      <div className="flex gap-2 mt-3 md:mt-0 md:ml-4">
+      
+      {/* Linha 4: Ações alinhadas à direita */}
+      <div className="flex gap-2 justify-end">
         <button
           title="Visualizar"
           onClick={onView}
@@ -102,4 +112,4 @@ export function MemberCard({ member, onView, onEdit, onDelete }: MemberCardProps
       </div>
     </div>
   );
-} 
+}
