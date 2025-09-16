@@ -1,19 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiService from '@/services/api';
 import { Role } from '@/types/role';
-
-interface Congregation {
-  id: string;
-  church_id: string;
-  name: string;
-  address: string;
-  city: string;
-  state: string;
-  leader?: string;
-  phone?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Congregation } from '@/types/congregation';
 
 export function useFiltersData() {
   const [roles, setRoles] = useState<Role[]>([]);

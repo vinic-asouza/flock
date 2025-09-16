@@ -276,6 +276,36 @@ class ApiService {
     return response.data;
   }
 
+  // Criar congregação
+  async createCongregation(data: { name: string; address: string; city: string; state: string; leader?: string; phone?: string }) {
+    const response = await this.api.post('/congregations', data);
+    return response.data;
+  }
+
+  // Buscar congregação por ID
+  async getCongregation(id: string) {
+    const response = await this.api.get(`/congregations/${id}`);
+    return response.data;
+  }
+
+  // Atualizar congregação
+  async updateCongregation(id: string, data: { name?: string; address?: string; city?: string; state?: string; leader?: string; phone?: string }) {
+    const response = await this.api.put(`/congregations/${id}`, data);
+    return response.data;
+  }
+
+  // Excluir congregação
+  async deleteCongregation(id: string) {
+    const response = await this.api.delete(`/congregations/${id}`);
+    return response.data;
+  }
+
+  // Criar congregações em lote
+  async createCongregationsBatch(data: Array<{ name: string; address: string; city: string; state: string; leader?: string; phone?: string }>) {
+    const response = await this.api.post('/congregations/batch', data);
+    return response.data;
+  }
+
   // Criar membro
   async createMember(data: any) {
     const response = await this.api.post('/members', data);

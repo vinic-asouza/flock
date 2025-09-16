@@ -92,13 +92,18 @@ function MembersPageContent() {
       setIsInitializing(true);
       
       const roleIdFromUrl = searchParams.get('role_id');
+      const congregationIdFromUrl = searchParams.get('congregation_id');
       const statusFromUrl = searchParams.get('status');
       
       let filtersToUse = { ...initialFilters };
       
-      if (roleIdFromUrl || statusFromUrl) {
+      if (roleIdFromUrl || congregationIdFromUrl || statusFromUrl) {
         if (roleIdFromUrl) {
           filtersToUse.roleId = roleIdFromUrl;
+        }
+        
+        if (congregationIdFromUrl) {
+          filtersToUse.congregationId = congregationIdFromUrl;
         }
         
         if (statusFromUrl && (statusFromUrl === 'active' || statusFromUrl === 'inactive' || statusFromUrl === 'all')) {
@@ -195,8 +200,9 @@ function MembersPageContent() {
   // Mostrar loading durante inicialização
   if (isInitializing) {
     const roleIdFromUrl = searchParams.get('role_id');
+    const congregationIdFromUrl = searchParams.get('congregation_id');
     const statusFromUrl = searchParams.get('status');
-    const hasUrlFilters = roleIdFromUrl || statusFromUrl;
+    const hasUrlFilters = roleIdFromUrl || congregationIdFromUrl || statusFromUrl;
     
     return (
       <div className="flex flex-col items-center justify-center py-16">
