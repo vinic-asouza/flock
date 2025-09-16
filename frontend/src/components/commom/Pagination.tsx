@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
 interface PaginationProps {
   page: number;
@@ -27,16 +27,33 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   return (
     <nav className="flex justify-center mt-6">
       <ul className="inline-flex items-center gap-1">
+        {/* Botão para primeira página */}
+        <li>
+          <button
+            className="px-3 py-1 rounded-md border text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50 flex items-center justify-center"
+            onClick={() => onPageChange(1)}
+            disabled={page === 1}
+            aria-label="Primeira página"
+            title="Primeira página"
+          >
+            <ChevronsLeft size={18} />
+          </button>
+        </li>
+        
+        {/* Botão para página anterior */}
         <li>
           <button
             className="px-3 py-1 rounded-md border text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50 flex items-center justify-center"
             onClick={() => onPageChange(page - 1)}
             disabled={page === 1}
             aria-label="Página anterior"
+            title="Página anterior"
           >
             <ChevronLeft size={18} />
           </button>
         </li>
+        
+        {/* Números das páginas */}
         {getPages().map((p) => (
           <li key={p}>
             <button
@@ -47,19 +64,36 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
               }`}
               onClick={() => onPageChange(p)}
               aria-current={p === page ? 'page' : undefined}
+              title={`Página ${p}`}
             >
               {p}
             </button>
           </li>
         ))}
+        
+        {/* Botão para próxima página */}
         <li>
           <button
             className="px-3 py-1 rounded-md border text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50 flex items-center justify-center"
             onClick={() => onPageChange(page + 1)}
             disabled={page === totalPages}
             aria-label="Próxima página"
+            title="Próxima página"
           >
             <ChevronRight size={18} />
+          </button>
+        </li>
+        
+        {/* Botão para última página */}
+        <li>
+          <button
+            className="px-3 py-1 rounded-md border text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50 flex items-center justify-center"
+            onClick={() => onPageChange(totalPages)}
+            disabled={page === totalPages}
+            aria-label="Última página"
+            title="Última página"
+          >
+            <ChevronsRight size={18} />
           </button>
         </li>
       </ul>

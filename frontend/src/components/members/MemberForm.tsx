@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
 
@@ -364,42 +365,34 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             isLoading={isLoading}
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Gênero *
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-              {...register('gender')}
-            >
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-            </select>
-            {errors.gender && (
-              <p className="text-sm text-red-600 mt-1">{errors.gender.message}</p>
-            )}
-          </div>
+          <Select
+            label="Gênero *"
+            value={watch('gender') || ''}
+            onChange={(value) => setValue('gender', value as 'Masculino' | 'Feminino')}
+            options={[
+              { value: 'Masculino', label: 'Masculino' },
+              { value: 'Feminino', label: 'Feminino' }
+            ]}
+            placeholder="Selecione o gênero"
+            disabled={isLoading}
+            error={errors.gender?.message}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado Civil *
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-              {...register('marital_status')}
-            >
-              <option value="Solteiro">Solteiro</option>
-              <option value="Casado">Casado</option>
-              <option value="Divorciado">Divorciado</option>
-              <option value="Viúvo">Viúvo</option>
-              <option value="Outro">Outro</option>
-            </select>
-            {errors.marital_status && (
-              <p className="text-sm text-red-600 mt-1">{errors.marital_status.message}</p>
-            )}
-          </div>
+          <Select
+            label="Estado Civil *"
+            value={watch('marital_status') || ''}
+            onChange={(value) => setValue('marital_status', value as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro')}
+            options={[
+              { value: 'Solteiro', label: 'Solteiro' },
+              { value: 'Casado', label: 'Casado' },
+              { value: 'Divorciado', label: 'Divorciado' },
+              { value: 'Viúvo', label: 'Viúvo' },
+              { value: 'Outro', label: 'Outro' }
+            ]}
+            placeholder="Selecione o estado civil"
+            disabled={isLoading}
+            error={errors.marital_status?.message}
+          />
 
           <Input
             label="Nacionalidade"
@@ -466,56 +459,44 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             {...register('neighborhood')}
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-              value={watch('state') || ''}
-              onChange={(e) => setValue('state', e.target.value)}
-            >
-              <option value="">Selecione o estado</option>
-              {states.map((state) => (
-                <option key={state.sigla} value={state.sigla}>
-                  {state.nome}
-                </option>
-              ))}
-            </select>
-            {errors.state && (
-              <p className="text-sm text-red-600 mt-1">{errors.state.message}</p>
-            )}
-          </div>
+          <Select
+            label="Estado"
+            value={watch('state') || ''}
+            onChange={(value) => setValue('state', value)}
+            options={[
+              { value: '', label: 'Selecione o estado' },
+              ...states.map((state) => ({
+                value: state.sigla,
+                label: state.nome
+              }))
+            ]}
+            disabled={isLoading}
+            error={errors.state?.message}
+            searchable={true}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cidade
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={!selectedState || loadingCities || isLoading}
-              value={watch('city') || ''}
-              onChange={(e) => setValue('city', e.target.value)}
-            >
-              <option value="">
-                {!selectedState
+          <Select
+            label="Cidade"
+            value={watch('city') || ''}
+            onChange={(value) => setValue('city', value)}
+            options={[
+              { 
+                value: '', 
+                label: !selectedState
                   ? 'Selecione o estado primeiro'
                   : loadingCities
                     ? 'Carregando...'
                     : 'Selecione a cidade'
-                }
-              </option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.nome}>
-                  {city.nome}
-                </option>
-              ))}
-            </select>
-            {errors.city && (
-              <p className="text-sm text-red-600 mt-1">{errors.city.message}</p>
-            )}
-          </div>
+              },
+              ...cities.map((city) => ({
+                value: city.nome,
+                label: city.nome
+              }))
+            ]}
+            disabled={!selectedState || loadingCities || isLoading}
+            error={errors.city?.message}
+            searchable={true}
+          />
 
           <Input
             label="CEP"
@@ -553,64 +534,48 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             isLoading={isLoading}
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tipo de Admissão
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={isLoading}
-              value={watch('admission') || ''}
-              onChange={(e) => setValue('admission', e.target.value)}
-            >
-              <option value="">Selecione o tipo de admissão</option>
-              <option value="Batismo">Batismo</option>
-              <option value="Transferencia">Transferência</option>
-              <option value="Profissão de fé">Profissão de fé</option>
-              <option value="Outro">Outro</option>
-            </select>
-            {errors.admission && (
-              <p className="text-sm text-red-600 mt-1">{errors.admission.message}</p>
-            )}
-          </div>
+          <Select
+            label="Tipo de Admissão"
+            value={watch('admission') || ''}
+            onChange={(value) => setValue('admission', value)}
+            options={[
+              { value: '', label: 'Selecione o tipo de admissão' },
+              { value: 'Batismo', label: 'Batismo' },
+              { value: 'Transferencia', label: 'Transferência' },
+              { value: 'Profissão de fé', label: 'Profissão de fé' },
+              { value: 'Outro', label: 'Outro' }
+            ]}
+            disabled={isLoading}
+            error={errors.admission?.message}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Função
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={filtersLoading || isLoading}
-              value={watch('role_id') || ''}
-              onChange={(e) => setValue('role_id', e.target.value)}
-            >
-              <option value="">Selecione uma função</option>
-              {roles.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Função"
+            value={watch('role_id') || ''}
+            onChange={(value) => setValue('role_id', value)}
+            options={[
+              { value: '', label: 'Selecione uma função' },
+              ...roles.map((role) => ({
+                value: role.id,
+                label: role.name
+              }))
+            ]}
+            disabled={filtersLoading || isLoading}
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Congregação
-            </label>
-            <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={filtersLoading || isLoading}
-              value={watch('congregation_id') || ''}
-              onChange={(e) => setValue('congregation_id', e.target.value)}
-            >
-              <option value="">Selecione uma congregação</option>
-              {congregations.map((congregation) => (
-                <option key={congregation.id} value={congregation.id}>
-                  {congregation.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Congregação"
+            value={watch('congregation_id') || ''}
+            onChange={(value) => setValue('congregation_id', value)}
+            options={[
+              { value: '', label: 'Selecione uma congregação' },
+              ...congregations.map((congregation) => ({
+                value: congregation.id,
+                label: congregation.name
+              }))
+            ]}
+            disabled={filtersLoading || isLoading}
+          />
 
           <div className="flex items-center space-x-2">
             <input
