@@ -3,6 +3,7 @@
 import { MemberList } from '@/components/members/MemberList';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
 import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MemberFiltersBar } from '@/components/members/MemberFiltersBar';
 import { MemberFiltersAdvanced } from '@/components/members/MemberFiltersAdvanced';
 import { ActiveFiltersChips } from '@/components/members/ActiveFiltersChips';
@@ -64,10 +65,12 @@ const initialSorting = {
 };
 
 function MembersPageContent() {
+  const searchParams = useSearchParams();
   const [total, setTotal] = useState<number | null>(null);
   const [filters, setFilters] = useState<MemberFilters>(initialFilters);
   const [sorting, setSorting] = useState<{ sort_by: string; sort_order: 'asc' | 'desc' }>(initialSorting);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -79,10 +82,47 @@ function MembersPageContent() {
 
   const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic, syncWithServer } = useMembers();
 
-  // Carregar membros iniciais
+  // Aplicar filtros da URL se presentes e carregar membros
   useEffect(() => {
-    loadMembers(filters, sorting, 1);
-  }, []); // Executar apenas uma vez na montagem
+    let isMounted = true;
+    
+    const initializePage = async () => {
+      if (!isMounted) return;
+      
+      setIsInitializing(true);
+      
+      const roleIdFromUrl = searchParams.get('role_id');
+      const statusFromUrl = searchParams.get('status');
+      
+      let filtersToUse = { ...initialFilters };
+      
+      if (roleIdFromUrl || statusFromUrl) {
+        if (roleIdFromUrl) {
+          filtersToUse.roleId = roleIdFromUrl;
+        }
+        
+        if (statusFromUrl && (statusFromUrl === 'active' || statusFromUrl === 'inactive' || statusFromUrl === 'all')) {
+          filtersToUse.status = statusFromUrl as 'all' | 'active' | 'inactive';
+        }
+        
+        if (isMounted) {
+          setFilters(filtersToUse);
+        }
+      }
+      
+      // Carregar membros com os filtros (seja da URL ou iniciais)
+      if (isMounted) {
+        await loadMembers(filtersToUse, sorting, 1);
+        setIsInitializing(false);
+      }
+    };
+    
+    initializePage();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [searchParams]); // Executar quando searchParams mudar
 
   const handleFilterChange = useCallback((changes: Partial<MemberFilters>) => {
     setFilters((prev) => ({ ...prev, ...changes }));
@@ -139,6 +179,11 @@ function MembersPageContent() {
     // Atualizar otimisticamente
     updateMemberOptimistic(memberData.id, memberData);
     setEditModalOpen(false);
+    
+    // Disparar evento para recarregar a lista
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('memberUpdated'));
+    }, 100);
   }, [updateMemberOptimistic]);
 
   const handleDeleteSuccess = useCallback((memberId: string) => {
@@ -146,6 +191,23 @@ function MembersPageContent() {
     removeMemberOptimistic(memberId);
     setDeleteModalOpen(false);
   }, [removeMemberOptimistic]);
+
+  // Mostrar loading durante inicialização
+  if (isInitializing) {
+    const roleIdFromUrl = searchParams.get('role_id');
+    const statusFromUrl = searchParams.get('status');
+    const hasUrlFilters = roleIdFromUrl || statusFromUrl;
+    
+    return (
+      <div className="flex flex-col items-center justify-center py-16">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-lg font-medium text-gray-900 mb-2">Carregando membros...</p>
+        <p className="text-sm text-gray-500">
+          {hasUrlFilters ? 'Aplicando filtros da URL' : 'Buscando informações'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

@@ -38,6 +38,22 @@ export function MemberList({
     }
   }, [filters, sorting, currentPage, loadMembers]);
 
+  // Recarregar lista quando necessário
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (sorting) {
+        loadMembers(filters, sorting, currentPage);
+      }
+    };
+
+    // Adicionar listener para eventos de atualização
+    window.addEventListener('memberUpdated', handleRefresh);
+    
+    return () => {
+      window.removeEventListener('memberUpdated', handleRefresh);
+    };
+  }, [filters, sorting, currentPage, loadMembers]);
+
   // Notificar mudança no total
   useEffect(() => {
     if (pagination && onTotalChange) {

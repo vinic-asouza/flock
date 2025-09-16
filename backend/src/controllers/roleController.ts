@@ -101,8 +101,32 @@ export const getRoles = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Erro ao buscar cargos' });
     }
 
-    return res.json(roles);
+    // Para cada cargo, buscar a contagem de membros ativos
+    const rolesWithMemberCount = await Promise.all(
+      roles.map(async (role) => {
+        // Contar membros ativos com este cargo
+        const { count: activeMembersCount, error: countError } = await supabase
+          .from('members')
+          .select('*', { count: 'exact', head: true })
+          .eq('church_id', church.id)
+          .eq('role_id', role.id)
+          .eq('active', true);
+
+        if (countError) {
+          console.error(`Erro ao contar membros para o cargo ${role.name}:`, countError);
+          return { ...role, activeMembersCount: 0 };
+        }
+
+        return {
+          ...role,
+          activeMembersCount: activeMembersCount || 0
+        };
+      })
+    );
+
+    return res.json(rolesWithMemberCount);
   } catch (error) {
+    console.error('Erro ao buscar cargos:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };
@@ -134,8 +158,24 @@ export const getRole = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Cargo não encontrado' });
     }
 
-    return res.json(role);
+    // Contar membros ativos com este cargo
+    const { count: activeMembersCount, error: countError } = await supabase
+      .from('members')
+      .select('*', { count: 'exact', head: true })
+      .eq('church_id', church.id)
+      .eq('role_id', role.id)
+      .eq('active', true);
+
+    if (countError) {
+      console.error(`Erro ao contar membros para o cargo ${role.name}:`, countError);
+    }
+
+    return res.json({
+      ...role,
+      activeMembersCount: activeMembersCount || 0
+    });
   } catch (error) {
+    console.error('Erro ao buscar cargo:', error);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 };

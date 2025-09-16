@@ -240,6 +240,36 @@ class ApiService {
     return response.data;
   }
 
+  // Criar cargo
+  async createRole(data: { name: string; description?: string }) {
+    const response = await this.api.post('/roles', data);
+    return response.data;
+  }
+
+  // Buscar cargo por ID
+  async getRole(id: string) {
+    const response = await this.api.get(`/roles/${id}`);
+    return response.data;
+  }
+
+  // Atualizar cargo
+  async updateRole(id: string, data: { name?: string; description?: string }) {
+    const response = await this.api.put(`/roles/${id}`, data);
+    return response.data;
+  }
+
+  // Excluir cargo
+  async deleteRole(id: string) {
+    const response = await this.api.delete(`/roles/${id}`);
+    return response.data;
+  }
+
+  // Criar cargos em lote
+  async createRolesBatch(data: Array<{ name: string; description?: string }>) {
+    const response = await this.api.post('/roles/batch', data);
+    return response.data;
+  }
+
   // Listar congregações
   async listCongregations() {
     const response = await this.api.get('/congregations');

@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react';
 import apiService from '@/services/api';
-
-interface Role {
-  id: string;
-  church_id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
+import { Role } from '@/types/role';
 
 interface Congregation {
   id: string;

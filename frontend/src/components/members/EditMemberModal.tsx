@@ -88,8 +88,11 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       
       const response = await apiService.updateMember(memberId, data);
       
-      // Passar os dados do membro atualizado
-      onSuccess({ ...response, id: memberId });
+      // Buscar os dados atualizados do membro para garantir que temos todos os dados
+      const updatedMember = await apiService.getMember(memberId);
+      
+      // Passar os dados do membro atualizado com a estrutura completa
+      onSuccess(updatedMember);
       onClose();
     } catch (err: any) {
       setError(err.message || 'Erro ao atualizar membro');

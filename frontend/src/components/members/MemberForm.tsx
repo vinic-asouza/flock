@@ -32,8 +32,8 @@ const memberSchema = z.object({
   baptism_date: z.string().optional().or(z.literal('')),
   admission: z.string().optional().or(z.literal('')),
   admission_date: z.string().optional().or(z.literal('')),
-  role_id: z.string().optional().or(z.literal('')),
-  congregation_id: z.string().optional().or(z.literal('')),
+  role_id: z.string().optional().or(z.literal('')).nullable(),
+  congregation_id: z.string().optional().or(z.literal('')).nullable(),
   active: z.boolean(),
 });
 
@@ -291,9 +291,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         birth: formatDateToISO(data.birth) || '',
         baptism_date: data.baptism_date ? formatDateToISO(data.baptism_date) || undefined : undefined,
         admission_date: data.admission_date ? formatDateToISO(data.admission_date) || undefined : undefined,
-        // Tratar campos UUID opcionais - enviar undefined em vez de string vazia
-        role_id: data.role_id || undefined,
-        congregation_id: data.congregation_id || undefined,
+        // Tratar campos UUID opcionais - enviar null quando vazio
+        role_id: data.role_id || null,
+        congregation_id: data.congregation_id || null,
       };
 
       await onSubmit(memberData);
@@ -554,7 +554,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             value={watch('role_id') || ''}
             onChange={(value) => setValue('role_id', value)}
             options={[
-              { value: '', label: 'Selecione uma função' },
+              { value: '', label: 'Nenhuma' },
               ...roles.map((role) => ({
                 value: role.id,
                 label: role.name
@@ -568,7 +568,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             value={watch('congregation_id') || ''}
             onChange={(value) => setValue('congregation_id', value)}
             options={[
-              { value: '', label: 'Selecione uma congregação' },
+              { value: '', label: 'Nenhuma' },
               ...congregations.map((congregation) => ({
                 value: congregation.id,
                 label: congregation.name

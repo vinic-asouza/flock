@@ -118,9 +118,13 @@ const memberSchema = Joi.object<Partial<Member>>({
     .optional()
     .allow(null),
 
-  congregation: Joi.string()
+  congregation_id: Joi.string()
+    .uuid()
     .optional()
-    .allow(null, ''),
+    .allow(null)
+    .messages({
+      'string.guid': 'ID da congregação inválido'
+    }),
 
   active: Joi.boolean()
     .default(true)
