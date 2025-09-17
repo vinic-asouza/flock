@@ -41,9 +41,9 @@ export function MemberCard({ member, onView, onEdit, onDelete }: MemberCardProps
         {/* Linha 1: Nome e selos */}
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <span className="font-semibold text-gray-900 text-base truncate max-w-xs md:max-w-sm" title={member.name}>{member.name}</span>
-          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${member.active ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-500'}`}>{member.active ? 'Ativo' : 'Inativo'}</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>{member.active ? 'Ativo' : 'Inativo'}</span>
           {member.role?.name && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">{member.role.name}</span>
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{member.role.name}</span>
           )}
           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
             {member.congregation?.name || 'Sede'}
