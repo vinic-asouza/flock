@@ -9,7 +9,9 @@ import {
   RegisterResponse,
   ApiResponse,
   ApiError,
-  Church
+  Church,
+  MemberReports,
+  ReportFilters
 } from '@/types';
 
 class ApiService {
@@ -327,6 +329,41 @@ class ApiService {
   // Excluir membro
   async deleteMember(id: string) {
     const response = await this.api.delete(`/members/${id}`);
+    return response.data;
+  }
+
+  // Relatórios de membros
+  async getMemberReports(filters?: ReportFilters): Promise<MemberReports> {
+    const queryParams = new URLSearchParams();
+    
+    // Filtros básicos
+    if (filters?.active !== undefined) queryParams.append('active', filters.active.toString());
+    if (filters?.role_id) queryParams.append('role_id', filters.role_id);
+    if (filters?.congregation_id) queryParams.append('congregation_id', filters.congregation_id);
+    
+    // Filtros demográficos
+    if (filters?.gender) queryParams.append('gender', filters.gender);
+    if (filters?.marital_status) queryParams.append('marital_status', filters.marital_status);
+    if (filters?.nationality) queryParams.append('nationality', filters.nationality);
+    if (filters?.occupation) queryParams.append('occupation', filters.occupation);
+    if (filters?.city) queryParams.append('city', filters.city);
+    if (filters?.state) queryParams.append('state', filters.state);
+    
+    // Filtros temporais
+    if (filters?.birth_date_from) queryParams.append('birth_date_from', filters.birth_date_from);
+    if (filters?.birth_date_to) queryParams.append('birth_date_to', filters.birth_date_to);
+    if (filters?.baptism_date_from) queryParams.append('baptism_date_from', filters.baptism_date_from);
+    if (filters?.baptism_date_to) queryParams.append('baptism_date_to', filters.baptism_date_to);
+    if (filters?.admission_date_from) queryParams.append('admission_date_from', filters.admission_date_from);
+    if (filters?.admission_date_to) queryParams.append('admission_date_to', filters.admission_date_to);
+    if (filters?.age_from !== undefined) queryParams.append('age_from', filters.age_from.toString());
+    if (filters?.age_to !== undefined) queryParams.append('age_to', filters.age_to.toString());
+    
+    // Busca geral
+    if (filters?.search) queryParams.append('search', filters.search);
+
+    const url = `/members/reports?${queryParams.toString()}`;
+    const response = await this.api.get(url);
     return response.data;
   }
 }

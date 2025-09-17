@@ -145,3 +145,6 @@ export interface ApiError {
   details?: string | string[];
   message?: string;
 }
+
+// Re-export dos tipos de relatórios
+export * from './reports';

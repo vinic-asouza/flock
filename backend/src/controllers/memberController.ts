@@ -674,6 +674,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Parâmetros de filtro
+    const congregation_id = req.query.congregation_id as string || '';
+
     // Primeiro busca a igreja do usuário
     const { data: church, error: churchError } = await supabase
       .from('churches')
@@ -688,8 +691,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca todos os membros da igreja para análise
-    const { data: allMembers, error: membersError } = await supabase
+    // Constrói a query base
+    let query = supabase
       .from('members')
       .select(`
         *,
@@ -709,6 +712,20 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('church_id', church.id);
+
+    // Aplica filtro por congregação
+    if (congregation_id) {
+      if (congregation_id === 'sede') {
+        // Filtrar membros sem congregação (congregation_id IS NULL)
+        query = query.is('congregation_id', null);
+      } else {
+        // Filtrar por congregação específica
+        query = query.eq('congregation_id', congregation_id);
+      }
+    }
+
+    // Busca os membros filtrados
+    const { data: allMembers, error: membersError } = await query;
 
     if (membersError) {
       console.error('Erro detalhado:', membersError);
@@ -814,6 +831,30 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       return acc;
     }, {} as Record<string, number>);
 
+    // Análise de batismos por mês (para o ano selecionado se fornecido)
+    const baptismByMonth = allMembers.reduce((acc, member) => {
+      if (member.baptism_date) {
+        const date = new Date(member.baptism_date);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const key = `${year}-${month}`;
+        acc[key] = (acc[key] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Análise de admissões por mês (para o ano selecionado se fornecido)
+    const admissionByMonth = allMembers.reduce((acc, member) => {
+      if (member.admission_date) {
+        const date = new Date(member.admission_date);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const key = `${year}-${month}`;
+        acc[key] = (acc[key] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
     // Top 10 ocupações
     const occupationStats = allMembers.reduce((acc, member) => {
       const occupation = member.occupation || 'Não informado';
@@ -863,9 +904,14 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       },
       timeline: {
         baptismsByYear: baptismByYear,
-        admissionsByYear: admissionByYear
+        admissionsByYear: admissionByYear,
+        baptismsByMonth: baptismByMonth,
+        admissionsByMonth: admissionByMonth
       },
       topOccupations,
+      filters: {
+        congregation_id: congregation_id || null
+      },
       generatedAt: new Date().toISOString()
     });
 

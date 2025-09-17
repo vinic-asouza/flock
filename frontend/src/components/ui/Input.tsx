@@ -7,10 +7,11 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   helperText?: string;
   clickable?: boolean;
   isLoading?: boolean;
+  icon?: React.ReactNode;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, clickable, isLoading = false, ...props }, ref) => {
+  ({ className, clickable, isLoading = false, icon, ...props }, ref) => {
     const inputId = props.id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
     return (
@@ -24,11 +25,17 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
         )}
         <div className="relative">
+          {icon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              {icon}
+            </div>
+          )}
           <input
             ref={ref}
             id={inputId}
             className={clsx(
-              'block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-[15px] text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors',
+              'block w-full rounded-md border border-gray-300 bg-white py-2 text-[15px] text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors',
+              icon ? 'pl-10 pr-3' : 'px-3',
               clickable && 'cursor-pointer',
               props.error && 'border-red-500 focus-visible:ring-red-500',
               isLoading && 'opacity-50 cursor-not-allowed',
