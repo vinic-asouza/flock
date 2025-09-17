@@ -81,9 +81,6 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
           {activeMembersCount > 0 ? (
             <div className="space-y-4">
               <div className="p-4 bg-orange-50 border border-orange-200 rounded-md">
-                <p className="text-sm text-orange-800 font-medium mb-2">
-                  Congregação com membros vinculados
-                </p>
                 <p className="text-sm text-orange-700">
                   Esta congregação possui <strong>{activeMembersCount} membro{activeMembersCount !== 1 ? 's' : ''} ativo{activeMembersCount !== 1 ? 's' : ''}</strong> vinculado{activeMembersCount !== 1 ? 's' : ''}.
                 </p>

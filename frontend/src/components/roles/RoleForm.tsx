@@ -5,45 +5,126 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Role } from '@/types/role';
+import { useState, useEffect } from 'react';
+
+// Lista de cargos pré-definidos
+const PREDEFINED_ROLES = [
+  'Pastor(a) titular',
+  'Pastor(a) auxiliar',
+  'Licenciado(a)',
+  'Presbítero(a)',
+  'Bispo(a)',
+  'Apóstolo(a)',
+  'Missionário(a)',
+  'Evangelista',
+  'Diácono(isa)',
+  'Obreiro(a)',
+  'Liderança',
+  'Líder de célula/pg',
+  'Líder de ministério',
+  'Conselho',
+  'Secretário(a)',
+  'Administrativo',
+  'Outro'
+];
 
 // Schema de validação
 const roleSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   description: z.string().optional().or(z.literal('')),
+  selectedRole: z.string().min(1, 'Selecione um cargo'),
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
 
 interface RoleFormProps {
   role?: Role | null;
-  onSubmit: (data: RoleFormData) => Promise<void>;
+  onSubmit: (data: { name: string; description: string }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
   mode: 'create' | 'edit';
 }
 
 export function RoleForm({ role, onSubmit, onCancel, isLoading = false, mode }: RoleFormProps) {
+  const isCustomRole = mode === 'edit' && role?.name && !PREDEFINED_ROLES.includes(role.name);
+  const [selectedRole, setSelectedRole] = useState(mode === 'edit' && role?.name ? (isCustomRole ? 'Outro' : role.name) : '');
+  const [showCustomInput, setShowCustomInput] = useState(isCustomRole);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
+    watch,
   } = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: mode === 'create' ? {
       name: '',
       description: '',
+      selectedRole: '',
     } : {
       name: role?.name || '',
       description: role?.description || '',
+      selectedRole: isCustomRole ? 'Outro' : (role?.name || ''),
     },
   });
 
+  const watchedName = watch('name');
+
+  // Sincronizar estado quando role mudar (importante para edição)
+  useEffect(() => {
+    if (role && mode === 'edit') {
+      const isCustom = !PREDEFINED_ROLES.includes(role.name);
+      setSelectedRole(isCustom ? 'Outro' : role.name);
+      setShowCustomInput(isCustom);
+      setValue('name', role.name);
+      setValue('selectedRole', isCustom ? 'Outro' : role.name);
+    }
+  }, [role, mode, setValue]);
+
+  // Função para lidar com a seleção de cargo
+  const handleRoleSelect = (value: string) => {
+    setSelectedRole(value);
+    setValue('selectedRole', value);
+    
+    if (value === 'Outro') {
+      setShowCustomInput(true);
+      setValue('name', '');
+    } else {
+      setShowCustomInput(false);
+      setValue('name', value);
+    }
+  };
+
+  // Função para lidar com mudanças no input customizado
+  const handleCustomNameChange = (value: string) => {
+    setValue('name', value);
+  };
+
   const handleFormSubmit = async (data: RoleFormData) => {
     try {
-      await onSubmit(data);
+      // Determinar o nome final do cargo
+      let finalName = '';
+      
+      if (data.selectedRole === 'Outro') {
+        finalName = data.name;
+      } else {
+        finalName = data.selectedRole;
+      }
+      
+      // Criar objeto com os dados finais
+      const finalData = {
+        name: finalName,
+        description: data.description || '',
+      };
+      
+      await onSubmit(finalData);
       reset();
+      setSelectedRole('');
+      setShowCustomInput(false);
     } catch (error) {
       // Erro será tratado pelo componente pai
     }
@@ -57,13 +138,27 @@ export function RoleForm({ role, onSubmit, onCancel, isLoading = false, mode }: 
         </h3>
 
         <div className="grid grid-cols-1 gap-4">
-          <Input
-            label="Nome do Cargo *"
-            placeholder="Digite o nome do cargo"
-            error={errors.name?.message}
-            isLoading={isLoading}
-            {...register('name')}
+          <Select
+            label="Selecione o Cargo *"
+            value={selectedRole}
+            onChange={handleRoleSelect}
+            options={PREDEFINED_ROLES.map(role => ({ value: role, label: role }))}
+            placeholder="Selecione um cargo"
+            searchable={true}
+            disabled={isLoading}
+            error={errors.selectedRole?.message}
           />
+          
+          {showCustomInput && (
+            <Input
+              label="Nome do Cargo Personalizado *"
+              placeholder="Digite o nome do cargo"
+              error={errors.name?.message}
+              isLoading={isLoading}
+              value={watchedName}
+              onChange={(e) => handleCustomNameChange(e.target.value)}
+            />
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
