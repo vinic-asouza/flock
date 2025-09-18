@@ -26,8 +26,8 @@ export interface Demographics {
 }
 
 export interface ChurchStructure {
-  roles: Record<string, number>;
-  congregations: Record<string, number>;
+  roles: Record<string, { count: number; id: string | null }>;
+  congregations: Record<string, { count: number; id: string | null }>;
 }
 
 export interface Timeline {

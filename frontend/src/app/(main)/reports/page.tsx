@@ -229,7 +229,12 @@ export default function ReportsPage() {
             <div className="border-t border-gray-200"></div>
 
             {/* Gráficos de Demografia */}
-            <DemographicsCharts data={reportsData.demographics} loading={loading} />
+            <DemographicsCharts 
+              data={reportsData.demographics} 
+              loading={loading}
+              viewMode={viewMode}
+              selectedCongregationId={selectedCongregationId}
+            />
 
             {/* Divisória */}
             <div className="border-t border-gray-200"></div>
@@ -239,6 +244,8 @@ export default function ReportsPage() {
               data={reportsData.churchStructure} 
               loading={loading}
               hideCongregations={viewMode === 'sede' || viewMode === 'congregation'}
+              viewMode={viewMode}
+              selectedCongregationId={selectedCongregationId}
             />
 
             {/* Divisória */}

@@ -740,49 +740,64 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     const activeMembers = allMembers.filter(m => m.active).length;
     const inactiveMembers = totalMembers - activeMembers;
 
-    // Estatísticas por gênero
-    const genderStats = allMembers.reduce((acc, member) => {
+    // Filtrar apenas membros ativos para dados demográficos
+    const activeMembersOnly = allMembers.filter(m => m.active);
+
+    // Estatísticas por gênero (apenas membros ativos)
+    const genderStats = activeMembersOnly.reduce((acc, member) => {
       const gender = member.gender || 'Não informado';
       acc[gender] = (acc[gender] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Estatísticas por estado civil
-    const maritalStats = allMembers.reduce((acc, member) => {
+    // Estatísticas por estado civil (apenas membros ativos)
+    const maritalStats = activeMembersOnly.reduce((acc, member) => {
       const status = member.marital_status || 'Não informado';
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Estatísticas por cargo
-    const roleStats = allMembers.reduce((acc, member) => {
+    // Estatísticas por cargo (apenas membros ativos)
+    const roleStats = activeMembersOnly.reduce((acc, member) => {
       const roleName = member.roles?.name || 'Sem cargo';
-      acc[roleName] = (acc[roleName] || 0) + 1;
+      const roleId = member.roles?.id || null;
+      
+      if (!acc[roleName]) {
+        acc[roleName] = { count: 0, id: roleId };
+      }
+      acc[roleName].count++;
       return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<string, { count: number; id: string | null }>);
 
-    // Estatísticas por congregação
-    const congregationStats = allMembers.reduce((acc, member) => {
+
+    // Estatísticas por congregação (apenas membros ativos)
+    const congregationStats = activeMembersOnly.reduce((acc, member) => {
       const congregationName = member.congregations?.name || 'Sem congregação';
-      acc[congregationName] = (acc[congregationName] || 0) + 1;
+      const congregationId = member.congregations?.id || null;
+      
+      if (!acc[congregationName]) {
+        acc[congregationName] = { count: 0, id: congregationId };
+      }
+      acc[congregationName].count++;
       return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<string, { count: number; id: string | null }>);
 
-    // Estatísticas por cidade
-    const cityStats = allMembers.reduce((acc, member) => {
+
+    // Estatísticas por cidade (apenas membros ativos)
+    const cityStats = activeMembersOnly.reduce((acc, member) => {
       const city = member.city || 'Não informado';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Estatísticas por estado
-    const stateStats = allMembers.reduce((acc, member) => {
+    // Estatísticas por estado (apenas membros ativos)
+    const stateStats = activeMembersOnly.reduce((acc, member) => {
       const state = member.state || 'Não informado';
       acc[state] = (acc[state] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Análise de faixa etária
+    // Análise de faixa etária (apenas membros ativos)
     const ageRanges = {
       '0-12': 0,
       '13-17': 0,
@@ -794,7 +809,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     };
 
     const today = new Date();
-    allMembers.forEach(member => {
+    activeMembersOnly.forEach(member => {
       if (member.birth) {
         const birthDate = new Date(member.birth);
         const age = today.getFullYear() - birthDate.getFullYear();

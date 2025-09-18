@@ -660,10 +660,10 @@ Informações sobre a ordenação aplicada
 Estatísticas gerais dos membros
 
 #### demographics (Relatórios)
-Estatísticas demográficas por categoria
+Estatísticas demográficas por categoria (apenas membros ativos)
 
 #### churchStructure (Relatórios)
-Estatísticas da estrutura da igreja
+Estatísticas da estrutura da igreja (apenas membros ativos)
 
 #### timeline (Relatórios)
 Análise temporal de batismos e admissões

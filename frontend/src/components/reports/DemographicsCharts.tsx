@@ -1,16 +1,24 @@
 'use client';
 
+import { useState } from 'react';
 import { Demographics } from '@/types';
 import { PieChart } from '@/components/reports/charts/PieChart';
 import { BarChart } from '@/components/reports/charts/BarChart';
-import { Users, Heart, Calendar } from 'lucide-react';
+import { MembersModal } from './MembersModal';
+import { Users, Heart, Calendar, Eye } from 'lucide-react';
 
 interface DemographicsChartsProps {
   data: Demographics;
   loading?: boolean;
+  viewMode?: 'all' | 'sede' | 'congregation';
+  selectedCongregationId?: string;
 }
 
-export function DemographicsCharts({ data, loading = false }: DemographicsChartsProps) {
+export function DemographicsCharts({ data, loading = false, viewMode = 'all', selectedCongregationId }: DemographicsChartsProps) {
+  const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
+  const [isMaritalStatusModalOpen, setIsMaritalStatusModalOpen] = useState(false);
+  const [isAgeRangeModalOpen, setIsAgeRangeModalOpen] = useState(false);
+
   // Converter dados de gênero para formato do gráfico
   const genderData = Object.entries(data.gender).map(([label, value]) => ({
     label,
@@ -60,37 +68,106 @@ export function DemographicsCharts({ data, loading = false }: DemographicsCharts
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Gráfico de Gênero */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-[#090725]/10">
-              <Users size={18} className="text-[#090725]" />
-            </div>
-            Distribuição por Gênero
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-[#090725]/10">
+                <Users size={18} className="text-[#090725]" />
+              </div>
+              Distribuição por Gênero
+            </h3>
+            {/* Botão para visualizar membros */}
+            <button
+              onClick={() => setIsGenderModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Eye size={14} />
+              Visualizar
+            </button>
+          </div>
           <PieChart data={genderData} />
         </div>
 
         {/* Gráfico de Estado Civil */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-[#090725]/10">
-              <Heart size={18} className="text-[#090725]" />
-            </div>
-            Estado Civil
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-[#090725]/10">
+                <Heart size={18} className="text-[#090725]" />
+              </div>
+              Estado Civil
+            </h3>
+            {/* Botão para visualizar membros */}
+            <button
+              onClick={() => setIsMaritalStatusModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Eye size={14} />
+              Visualizar
+            </button>
+          </div>
           <PieChart data={maritalStatusData} />
         </div>
 
         {/* Gráfico de Faixa Etária */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h3 className="text-base font-medium text-gray-900 mb-3 flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-[#090725]/10">
-              <Calendar size={18} className="text-[#090725]" />
-            </div>
-            Faixa Etária
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-[#090725]/10">
+                <Calendar size={18} className="text-[#090725]" />
+              </div>
+              Faixa Etária
+            </h3>
+            {/* Botão para visualizar membros */}
+            <button
+              onClick={() => setIsAgeRangeModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Eye size={14} />
+              Visualizar
+            </button>
+          </div>
           <BarChart data={ageRangeData} orientation="horizontal" />
         </div>
       </div>
+
+      {/* Modal de Membros por Gênero */}
+      <MembersModal
+        isOpen={isGenderModalOpen}
+        onClose={() => setIsGenderModalOpen(false)}
+        title="Membros por Gênero"
+        icon={<Users size={20} className="text-[#090725]" />}
+        tabs={genderData.map(g => ({ ...g, value: g.label, count: g.value }))}
+        filterKey="gender"
+        viewMode={viewMode}
+        selectedCongregationId={selectedCongregationId}
+        sideLayout={true}
+      />
+
+      {/* Modal de Membros por Estado Civil */}
+      <MembersModal
+        isOpen={isMaritalStatusModalOpen}
+        onClose={() => setIsMaritalStatusModalOpen(false)}
+        title="Membros por Estado Civil"
+        icon={<Heart size={20} className="text-[#090725]" />}
+        tabs={maritalStatusData.map(m => ({ ...m, value: m.label, count: m.value }))}
+        filterKey="marital_status"
+        viewMode={viewMode}
+        selectedCongregationId={selectedCongregationId}
+        sideLayout={true}
+      />
+
+      {/* Modal de Membros por Faixa Etária */}
+      <MembersModal
+        isOpen={isAgeRangeModalOpen}
+        onClose={() => setIsAgeRangeModalOpen(false)}
+        title="Membros por Faixa Etária"
+        icon={<Calendar size={20} className="text-[#090725]" />}
+        tabs={ageRangeData.map(a => ({ ...a, value: a.label, count: a.value }))}
+        filterKey="age_range"
+        viewMode={viewMode}
+        selectedCongregationId={selectedCongregationId}
+        sideLayout={true}
+      />
     </div>
   );
 }

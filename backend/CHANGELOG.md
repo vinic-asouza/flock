@@ -34,6 +34,17 @@
 - **Compatibilidade mantida**: Dados dos membros continuam no mesmo formato
 - **Busca expandida**: Agora inclui WhatsApp, cônjuge e documento na busca geral
 
+### Fixed
+- **Dados Demográficos**: Agora consideram apenas membros ativos nas estatísticas
+  - Estatísticas de gênero, estado civil, faixa etária, cargos e congregações filtradas por membros ativos
+  - Relatórios demográficos mais precisos e relevantes
+
+### Changed
+- **Estrutura de Cargos e Congregações**: Modificada para incluir ID junto com contagem
+  - Campo `roles` agora retorna `{ count: number, id: string | null }` em vez de apenas `number`
+  - Campo `congregations` agora retorna `{ count: number, id: string | null }` em vez de apenas `number`
+  - Permite filtragem correta por ID nos modais de visualização
+
 ### Documentation
 - Criada documentação completa da paginação e filtros avançados em `docs/pagination.md`
 - Exemplos de uso e estrutura de resposta para todos os filtros
