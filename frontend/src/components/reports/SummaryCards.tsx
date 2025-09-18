@@ -36,7 +36,7 @@ export function SummaryCards({ data, loading = false, filterInfo, congregationNa
       iconColor: 'text-[#dc2626]',
     },
     {
-      title: 'Total de Membros',
+      title: 'Histórico',
       value: data.totalMembers,
       icon: Users,
       color: 'text-[#090725]',

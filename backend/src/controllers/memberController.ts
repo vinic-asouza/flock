@@ -855,6 +855,71 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       return acc;
     }, {} as Record<string, number>);
 
+    // Formatar todos os membros para manter compatibilidade com o frontend
+    const formattedMembers = allMembers.map(member => ({
+      ...member,
+      role: member.roles,
+      congregation: member.congregations,
+      roles: undefined,
+      congregations: undefined
+    }));
+
+    // Membros por ano (batizados ou admitidos)
+    const membersByYear = formattedMembers.reduce((acc, member) => {
+      // Verifica se o membro foi batizado ou admitido no ano
+      const baptismYear = member.baptism_date ? new Date(member.baptism_date).getFullYear() : null;
+      const admissionYear = member.admission_date ? new Date(member.admission_date).getFullYear() : null;
+      
+      // Se foi batizado, adiciona ao ano do batismo
+      if (baptismYear) {
+        if (!acc[baptismYear]) acc[baptismYear] = [];
+        acc[baptismYear].push(member);
+      }
+      
+      // Se foi admitido (e não batizado no mesmo ano), adiciona ao ano da admissão
+      if (admissionYear && admissionYear !== baptismYear) {
+        if (!acc[admissionYear]) acc[admissionYear] = [];
+        acc[admissionYear].push(member);
+      }
+      
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Membros por mês (batizados ou admitidos)
+    const membersByMonth = formattedMembers.reduce((acc, member) => {
+      // Verifica se o membro foi batizado ou admitido no mês
+      const baptismDate = member.baptism_date ? new Date(member.baptism_date) : null;
+      const admissionDate = member.admission_date ? new Date(member.admission_date) : null;
+      
+      // Se foi batizado, adiciona ao mês do batismo
+      if (baptismDate) {
+        const year = baptismDate.getFullYear();
+        const month = String(baptismDate.getMonth() + 1).padStart(2, '0');
+        const key = `${year}-${month}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(member);
+      }
+      
+      // Se foi admitido (e não batizado no mesmo mês), adiciona ao mês da admissão
+      if (admissionDate) {
+        const year = admissionDate.getFullYear();
+        const month = String(admissionDate.getMonth() + 1).padStart(2, '0');
+        const key = `${year}-${month}`;
+        
+        // Só adiciona se não foi batizado no mesmo mês
+        const baptismKey = member.baptism_date ? 
+          `${new Date(member.baptism_date).getFullYear()}-${String(new Date(member.baptism_date).getMonth() + 1).padStart(2, '0')}` : 
+          null;
+        
+        if (key !== baptismKey) {
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(member);
+        }
+      }
+      
+      return acc;
+    }, {} as Record<string, any[]>);
+
     // Top 10 ocupações
     const occupationStats = allMembers.reduce((acc, member) => {
       const occupation = member.occupation || 'Não informado';
@@ -906,7 +971,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         baptismsByYear: baptismByYear,
         admissionsByYear: admissionByYear,
         baptismsByMonth: baptismByMonth,
-        admissionsByMonth: admissionByMonth
+        admissionsByMonth: admissionByMonth,
+        membersByYear: membersByYear,
+        membersByMonth: membersByMonth
       },
       topOccupations,
       filters: {

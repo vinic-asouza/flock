@@ -35,6 +35,51 @@ export interface Timeline {
   admissionsByYear: Record<string, number>;
   baptismsByMonth: Record<string, number>;
   admissionsByMonth: Record<string, number>;
+  membersByYear?: Record<string, Member[]>;
+  membersByMonth?: Record<string, Member[]>;
+}
+
+export interface Member {
+  id: string;
+  name: string;
+  birth: string;
+  active: boolean;
+  role?: { 
+    id: string;
+    name: string; 
+    description?: string;
+  } | null;
+  congregation?: { 
+    id: string;
+    name: string; 
+    address: string;
+    city: string;
+    state: string;
+    leader?: string;
+    phone?: string;
+  } | null;
+  congregation_id?: string | null;
+  gender: string;
+  marital_status: string;
+  nationality?: string;
+  document?: string;
+  spouse?: string;
+  address?: string;
+  complement?: string;
+  cep?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  baptism_date?: string;
+  role_id?: string;
+  occupation?: string;
+  admission?: string;
+  admission_date?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TopOccupation {

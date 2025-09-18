@@ -588,6 +588,40 @@ Retorna estatísticas agregadas dos membros para relatórios.
       "2021": 22,
       "2022": 28,
       "2023": 35
+    },
+    "baptismsByMonth": {
+      "2023-01": 3,
+      "2023-02": 2,
+      "2023-03": 4
+    },
+    "admissionsByMonth": {
+      "2023-01": 4,
+      "2023-02": 3,
+      "2023-03": 5
+    },
+    "membersByYear": {
+      "2023": [
+        {
+          "id": "uuid-1",
+          "name": "João Silva",
+          "birth": "1990-05-15",
+          "congregation": {
+            "name": "Congregação Central"
+          }
+        }
+      ]
+    },
+    "membersByMonth": {
+      "2023-03": [
+        {
+          "id": "uuid-2",
+          "name": "Maria Santos",
+          "birth": "1985-08-20",
+          "congregation": {
+            "name": "Congregação Norte"
+          }
+        }
+      ]
     }
   },
   "topOccupations": [

@@ -219,7 +219,11 @@ export default function ReportsPage() {
             <div className="border-t border-gray-200"></div>
 
             {/* Timeline */}
-            <TimelineCharts data={reportsData.timeline} loading={loading} />
+            <TimelineCharts 
+              data={reportsData.timeline} 
+              loading={loading}
+              showCongregationColumn={viewMode === 'all'}
+            />
 
             {/* Divisória */}
             <div className="border-t border-gray-200"></div>

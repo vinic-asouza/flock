@@ -15,7 +15,8 @@
   - **Estatísticas Gerais**: total, ativos, inativos, percentuais
   - **Demografia**: distribuição por gênero, estado civil, faixa etária, cidade, estado
   - **Estrutura da Igreja**: distribuição por cargos e congregações
-  - **Análise Temporal**: batismos e admissões por ano
+  - **Análise Temporal**: batismos e admissões por ano e mês
+  - **Dados de Membros**: listas de membros por ano e mês para visualização detalhada
   - **Top Ocupações**: ranking das 10 ocupações mais comuns
   - **Métricas Recentes**: membros e batismos dos últimos 30 dias
 

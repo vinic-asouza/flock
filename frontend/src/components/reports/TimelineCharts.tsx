@@ -1,19 +1,70 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Timeline } from '@/types';
+import { Timeline, Member } from '@/types';
 import { LineChart } from '@/components/reports/charts/LineChart';
 import { Select } from '@/components/ui/Select';
-import { Calendar, Droplets, UserPlus, TrendingUp } from 'lucide-react';
+import { Calendar, Droplets, UserPlus, TrendingUp, Users, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 
 interface TimelineChartsProps {
   data: Timeline;
   loading?: boolean;
+  showCongregationColumn?: boolean;
 }
 
-export function TimelineCharts({ data, loading = false }: TimelineChartsProps) {
+export function TimelineCharts({ data, loading = false, showCongregationColumn = true }: TimelineChartsProps) {
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [yearlyMembersPage, setYearlyMembersPage] = useState(1);
+  const [monthlyMembersPage, setMonthlyMembersPage] = useState(1);
+
+  // Função para calcular idade
+  const calcularIdade = (birth: string): number | null => {
+    if (!birth) return null;
+    const today = new Date();
+    const birthDate = new Date(birth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Função para obter cor da congregação (agora sempre cinza)
+  const getCongregationColor = () => {
+    return 'bg-gray-200 text-gray-800';
+  };
+
+  // Função para determinar tipo de entrada do membro
+  const getMemberEntryType = (member: Member) => {
+    const baptismDate = member.baptism_date ? new Date(member.baptism_date) : null;
+    const admissionDate = member.admission_date ? new Date(member.admission_date) : null;
+    
+    // Se não tem nenhuma data, considera admissão
+    if (!baptismDate && !admissionDate) return 'admission';
+    
+    // Se só tem batismo, considera batismo
+    if (baptismDate && !admissionDate) return 'baptism';
+    
+    // Se só tem admissão, considera admissão
+    if (!baptismDate && admissionDate) return 'admission';
+    
+    // Se tem ambas as datas
+    if (baptismDate && admissionDate) {
+      // Se as datas são iguais, considera batismo
+      if (baptismDate.getTime() === admissionDate.getTime()) return 'baptism';
+      
+      // Se batismo é anterior à admissão, considera admissão
+      if (baptismDate < admissionDate) return 'admission';
+      
+      // Caso contrário, considera batismo
+      return 'baptism';
+    }
+    
+    return 'admission';
+  };
 
   // Obter anos disponíveis
   const availableYears = useMemo(() => {
@@ -107,6 +158,48 @@ export function TimelineCharts({ data, loading = false }: TimelineChartsProps) {
     };
   }, [selectedMonth, monthlyData]);
 
+  // Obter membros do ano selecionado (paginados)
+  const yearlyMembers = useMemo(() => {
+    if (!selectedYear || !data.membersByYear || !data.membersByYear[selectedYear]) return [];
+    return data.membersByYear[selectedYear];
+  }, [selectedYear, data]);
+
+  const yearlyMembersPaginated = useMemo(() => {
+    const startIndex = (yearlyMembersPage - 1) * 5;
+    const endIndex = startIndex + 5;
+    return yearlyMembers.slice(startIndex, endIndex);
+  }, [yearlyMembers, yearlyMembersPage]);
+
+  const yearlyMembersTotalPages = useMemo(() => {
+    return Math.ceil(yearlyMembers.length / 5);
+  }, [yearlyMembers.length]);
+
+  // Obter membros do mês selecionado (paginados)
+  const monthlyMembers = useMemo(() => {
+    if (!selectedYear || !selectedMonth || !data.membersByMonth) return [];
+    const yearMonthKey = `${selectedYear}-${selectedMonth.padStart(2, '0')}`;
+    return data.membersByMonth[yearMonthKey] || [];
+  }, [selectedYear, selectedMonth, data]);
+
+  const monthlyMembersPaginated = useMemo(() => {
+    const startIndex = (monthlyMembersPage - 1) * 5;
+    const endIndex = startIndex + 5;
+    return monthlyMembers.slice(startIndex, endIndex);
+  }, [monthlyMembers, monthlyMembersPage]);
+
+  const monthlyMembersTotalPages = useMemo(() => {
+    return Math.ceil(monthlyMembers.length / 5);
+  }, [monthlyMembers.length]);
+
+  // Resetar páginas quando mudar ano/mês
+  useMemo(() => {
+    setYearlyMembersPage(1);
+  }, [selectedYear]);
+
+  useMemo(() => {
+    setMonthlyMembersPage(1);
+  }, [selectedMonth]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -139,42 +232,114 @@ export function TimelineCharts({ data, loading = false }: TimelineChartsProps) {
             <h3 className="text-base font-medium text-gray-900">Dados Anuais</h3>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="w-32 flex items-center">
-              <Select
-                value={selectedYear}
-                onChange={setSelectedYear}
-                options={availableYears}
-                placeholder="Selecione o ano"
-                label=""
-              />
-            </div>
-            
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-50">
-                  <Droplets size={14} className="text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Batismos</div>
-                  <div className="text-xl font-bold text-[#090725]">
-                    {yearlyTotals.baptisms}
-                  </div>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-32 flex items-center">
+                <Select
+                  value={selectedYear}
+                  onChange={setSelectedYear}
+                  options={availableYears}
+                  placeholder="Selecione o ano"
+                  label=""
+                />
               </div>
               
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-green-50">
-                  <UserPlus size={14} className="text-green-600" />
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <Droplets size={18} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Batismos</div>
+                    <div className="text-xl font-bold text-[#090725]">
+                      {yearlyTotals.baptisms}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500">Admissões</div>
-                  <div className="text-xl font-bold text-[#090725]">
-                    {yearlyTotals.admissions}
+                
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <UserPlus size={18} className="text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Admissões</div>
+                    <div className="text-xl font-bold text-[#090725]">
+                      {yearlyTotals.admissions}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Lista de Membros Anuais */}
+            {selectedYear && yearlyMembers.length > 0 && (
+              <div className="border-t border-gray-100 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900">
+                    Novos Membros ({yearlyMembers.length})
+                  </h4>
+                  
+                  {/* Paginação Anual */}
+                  {yearlyMembersTotalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setYearlyMembersPage(prev => Math.max(1, prev - 1))}
+                        disabled={yearlyMembersPage === 1}
+                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft size={14} className="text-gray-600" />
+                      </button>
+                      <span className="text-xs text-gray-500 px-2">
+                        {yearlyMembersPage}/{yearlyMembersTotalPages}
+                      </span>
+                      <button
+                        onClick={() => setYearlyMembersPage(prev => Math.min(yearlyMembersTotalPages, prev + 1))}
+                        disabled={yearlyMembersPage === yearlyMembersTotalPages}
+                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight size={14} className="text-gray-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-1.5">
+                  {yearlyMembersPaginated.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 rounded">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {getMemberEntryType(member) === 'baptism' ? (
+                            <Droplets size={12} className="text-blue-600 flex-shrink-0" />
+                          ) : (
+                            <UserPlus size={12} className="text-green-600 flex-shrink-0" />
+                          )}
+                          <div className="text-[13px] font-medium text-gray-900 truncate">
+                            {member.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {calcularIdade(member.birth)} anos
+                          </div>
+                          <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
+                            {member.congregation ? member.congregation.name : 'Sede'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Atalho Gerenciar Membros */}
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <Link 
+                    href="/members"
+                    className="inline-flex items-center gap-1 text-xs text-[#090725] hover:text-[#090725]/80 font-medium"
+                  >
+                    <ExternalLink size={12} />
+                    Gerenciar Membros
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -187,42 +352,114 @@ export function TimelineCharts({ data, loading = false }: TimelineChartsProps) {
             <h3 className="text-base font-medium text-gray-900">Dados Mensais</h3>
           </div>
           
-          <div className="flex items-center gap-4">
-            <div className="w-32 flex items-center">
-              <Select
-                value={selectedMonth}
-                onChange={setSelectedMonth}
-                options={availableMonths}
-                placeholder="Selecione o mês"
-                label=""
-              />
-            </div>
-            
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-blue-50">
-                  <Droplets size={14} className="text-blue-600" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Batismos</div>
-                  <div className="text-xl font-bold text-[#090725]">
-                    {monthlyTotals.baptisms}
-                  </div>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-32 flex items-center">
+                <Select
+                  value={selectedMonth}
+                  onChange={setSelectedMonth}
+                  options={availableMonths}
+                  placeholder="Selecione o mês"
+                  label=""
+                />
               </div>
               
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-green-50">
-                  <UserPlus size={14} className="text-green-600" />
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <Droplets size={18} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Batismos</div>
+                    <div className="text-xl font-bold text-[#090725]">
+                      {monthlyTotals.baptisms}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500">Admissões</div>
-                  <div className="text-xl font-bold text-[#090725]">
-                    {monthlyTotals.admissions}
+                
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-green-50">
+                    <UserPlus size={18} className="text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Admissões</div>
+                    <div className="text-xl font-bold text-[#090725]">
+                      {monthlyTotals.admissions}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Lista de Membros Mensais */}
+            {selectedYear && selectedMonth && monthlyMembers.length > 0 && (
+              <div className="border-t border-gray-100 pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900">
+                    Novos Membros ({monthlyMembers.length})
+                  </h4>
+                  
+                  {/* Paginação Mensal */}
+                  {monthlyMembersTotalPages > 1 && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setMonthlyMembersPage(prev => Math.max(1, prev - 1))}
+                        disabled={monthlyMembersPage === 1}
+                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft size={14} className="text-gray-600" />
+                      </button>
+                      <span className="text-xs text-gray-500 px-2">
+                        {monthlyMembersPage}/{monthlyMembersTotalPages}
+                      </span>
+                      <button
+                        onClick={() => setMonthlyMembersPage(prev => Math.min(monthlyMembersTotalPages, prev + 1))}
+                        disabled={monthlyMembersPage === monthlyMembersTotalPages}
+                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight size={14} className="text-gray-600" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-1.5">
+                  {monthlyMembersPaginated.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 rounded">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          {getMemberEntryType(member) === 'baptism' ? (
+                            <Droplets size={12} className="text-blue-600 flex-shrink-0" />
+                          ) : (
+                            <UserPlus size={12} className="text-green-600 flex-shrink-0" />
+                          )}
+                          <div className="text-[13px] font-medium text-gray-900 truncate">
+                            {member.name}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {calcularIdade(member.birth)} anos
+                          </div>
+                          <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
+                            {member.congregation ? member.congregation.name : 'Sede'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Atalho Gerenciar Membros */}
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <Link 
+                    href="/members"
+                    className="inline-flex items-center gap-1 text-xs text-[#090725] hover:text-[#090725]/80 font-medium"
+                  >
+                    <ExternalLink size={12} />
+                    Gerenciar Membros
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { LineChartData } from '@/types';
 
 interface LineChartProps {
@@ -8,6 +9,8 @@ interface LineChartProps {
 }
 
 export function LineChart({ data, height = 300 }: LineChartProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<{ type: 'baptisms' | 'admissions', index: number, x: number, y: number } | null>(null);
+
   if (!data || data.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-500">
@@ -47,30 +50,14 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
     .join(' ');
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full overflow-x-auto relative">
       <svg width={width} height={height} className="mx-auto">
-        {/* Grid horizontal */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const y = padding + (ratio * chartHeight);
-          return (
-            <line
-              key={ratio}
-              x1={padding}
-              y1={y}
-              x2={width - padding}
-              y2={y}
-              stroke="#E5E7EB"
-              strokeWidth="1"
-            />
-          );
-        })}
-
         {/* Linha de batismos */}
         <polyline
           points={baptismsPoints}
           fill="none"
           stroke="#3B82F6"
-          strokeWidth="3"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -80,69 +67,44 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
           points={admissionsPoints}
           fill="none"
           stroke="#10B981"
-          strokeWidth="3"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
         {/* Pontos de batismos */}
-        {data.map((d, index) => (
-          <circle
-            key={`baptisms-${index}`}
-            cx={getX(index) + padding}
-            cy={getY(d.baptisms) + padding}
-            r="4"
-            fill="#3B82F6"
-            className="hover:r-6 transition-all cursor-pointer"
-          />
-        ))}
+        {data.map((d, index) => {
+          const x = getX(index) + padding;
+          const y = getY(d.baptisms) + padding;
+          return (
+            <circle
+              key={`baptisms-${index}`}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#3B82F6"
+              className="hover:r-7 transition-all cursor-pointer"
+              onMouseEnter={() => setHoveredPoint({ type: 'baptisms', index, x, y })}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+          );
+        })}
 
         {/* Pontos de admissões */}
-        {data.map((d, index) => (
-          <circle
-            key={`admissions-${index}`}
-            cx={getX(index) + padding}
-            cy={getY(d.admissions) + padding}
-            r="4"
-            fill="#10B981"
-            className="hover:r-6 transition-all cursor-pointer"
-          />
-        ))}
-
-        {/* Eixo Y */}
-        <line
-          x1={padding}
-          y1={padding}
-          x2={padding}
-          y2={height - padding}
-          stroke="#374151"
-          strokeWidth="2"
-        />
-
-        {/* Eixo X */}
-        <line
-          x1={padding}
-          y1={height - padding}
-          x2={width - padding}
-          y2={height - padding}
-          stroke="#374151"
-          strokeWidth="2"
-        />
-
-        {/* Labels do eixo Y */}
-        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-          const value = Math.round(ratio * maxValue);
-          const y = padding + (ratio * chartHeight);
+        {data.map((d, index) => {
+          const x = getX(index) + padding;
+          const y = getY(d.admissions) + padding;
           return (
-            <text
-              key={ratio}
-              x={padding - 10}
-              y={y + 4}
-              textAnchor="end"
-              className="text-xs fill-gray-600"
-            >
-              {value}
-            </text>
+            <circle
+              key={`admissions-${index}`}
+              cx={x}
+              cy={y}
+              r="5"
+              fill="#10B981"
+              className="hover:r-7 transition-all cursor-pointer"
+              onMouseEnter={() => setHoveredPoint({ type: 'admissions', index, x, y })}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
           );
         })}
 
@@ -159,6 +121,20 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
           </text>
         ))}
       </svg>
+
+      {/* Tooltip */}
+      {hoveredPoint && (
+        <div
+          className="absolute bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none z-10"
+          style={{
+            left: `${hoveredPoint.x + 10}px`,
+            top: `${hoveredPoint.y - 10}px`,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          {data[hoveredPoint.index].year}: {data[hoveredPoint.index][hoveredPoint.type]}
+        </div>
+      )}
 
       {/* Legenda */}
       <div className="flex justify-center gap-6 mt-4">
