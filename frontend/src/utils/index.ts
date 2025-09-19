@@ -98,3 +98,114 @@ export function toSlug(str: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
 }
+
+/**
+ * Mapeamento de siglas de estados brasileiros para nomes completos
+ */
+export const STATE_NAMES: Record<string, string> = {
+  'AC': 'Acre',
+  'AL': 'Alagoas',
+  'AP': 'Amapá',
+  'AM': 'Amazonas',
+  'BA': 'Bahia',
+  'CE': 'Ceará',
+  'DF': 'Distrito Federal',
+  'ES': 'Espírito Santo',
+  'GO': 'Goiás',
+  'MA': 'Maranhão',
+  'MT': 'Mato Grosso',
+  'MS': 'Mato Grosso do Sul',
+  'MG': 'Minas Gerais',
+  'PA': 'Pará',
+  'PB': 'Paraíba',
+  'PR': 'Paraná',
+  'PE': 'Pernambuco',
+  'PI': 'Piauí',
+  'RJ': 'Rio de Janeiro',
+  'RN': 'Rio Grande do Norte',
+  'RS': 'Rio Grande do Sul',
+  'RO': 'Rondônia',
+  'RR': 'Roraima',
+  'SC': 'Santa Catarina',
+  'SP': 'São Paulo',
+  'SE': 'Sergipe',
+  'TO': 'Tocantins'
+};
+
+/**
+ * Converte uma sigla de estado para o nome completo
+ */
+export function getStateName(stateCode: string): string {
+  return STATE_NAMES[stateCode.toUpperCase()] || stateCode;
+}
+
+/**
+ * Converte um nome de estado para a sigla
+ */
+export function getStateCode(stateName: string): string {
+  const entry = Object.entries(STATE_NAMES).find(
+    ([code, name]) => name.toLowerCase() === stateName.toLowerCase()
+  );
+  return entry ? entry[0] : stateName;
+}
+
+/**
+ * Organiza dados geográficos em estrutura hierárquica
+ * Como não temos mapeamento direto cidade->estado nos dados de relatório,
+ * vamos usar uma abordagem mais simples: mostrar todas as cidades quando um estado é selecionado
+ */
+export function organizeGeographicData(cities: Record<string, number>, states: Record<string, number>) {
+  // Criar estrutura hierárquica: Estado -> Cidades
+  const hierarchicalData: Record<string, { 
+    name: string; 
+    count: number; 
+    cities: Record<string, number> 
+  }> = {};
+
+  // Organizar por estados
+  Object.entries(states).forEach(([stateCode, stateCount]) => {
+    hierarchicalData[stateCode] = {
+      name: getStateName(stateCode),
+      count: stateCount,
+      cities: {}
+    };
+  });
+
+  // Para cada estado, vamos mostrar todas as cidades disponíveis
+  // O filtro real acontecerá na API quando o usuário selecionar cidade
+  Object.keys(hierarchicalData).forEach(stateCode => {
+    Object.entries(cities).forEach(([cityName, cityCount]) => {
+      hierarchicalData[stateCode].cities[cityName] = cityCount;
+    });
+  });
+
+  return hierarchicalData;
+}
+
+/**
+ * Extrai lista de estados com membros, ordenados por quantidade
+ */
+export function getStatesWithMembers(geographicData: Record<string, { name: string; count: number; cities: Record<string, number> }>) {
+  return Object.entries(geographicData)
+    .map(([code, data]) => ({
+      code,
+      name: data.name,
+      count: data.count
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Extrai lista de cidades de um estado específico, ordenadas por quantidade
+ */
+export function getCitiesOfState(geographicData: Record<string, { name: string; count: number; cities: Record<string, number> }>, stateCode: string) {
+  const stateData = geographicData[stateCode];
+  if (!stateData) return [];
+
+  return Object.entries(stateData.cities)
+    .map(([name, count]) => ({
+      name,
+      count
+    }))
+    .sort((a, b) => b.count - a.count);
+}

@@ -20,6 +20,7 @@ const memberSchema = z.object({
   gender: z.enum(['Masculino', 'Feminino']),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro']),
   nationality: z.string().optional().or(z.literal('')),
+  nationality_other: z.string().optional().or(z.literal('')),
   document: z.string().optional().or(z.literal('')),
   spouse: z.string().optional().or(z.literal('')),
   occupation: z.string().optional().or(z.literal('')),
@@ -143,6 +144,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [baptismDateDisplay, setBaptismDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   const [formReady, setFormReady] = useState(false);
+  const [nationalityOtherError, setNationalityOtherError] = useState('');
 
   const {
     register,
@@ -163,6 +165,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   });
 
   const selectedState = watch('state');
+  const selectedNationality = watch('nationality');
+  const nationalityOtherValue = watch('nationality_other');
 
   // Resetar formulário quando member mudar (para modo edit)
   useEffect(() => {
@@ -175,7 +179,15 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setValue('birth', formatDateFromISO(member.birth));
       setValue('gender', member.gender as 'Masculino' | 'Feminino');
       setValue('marital_status', member.marital_status as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro');
-      setValue('nationality', member.nationality || '');
+      // Tratar nacionalidade: se não for "Brasileiro(a)", assumir que é "Outra"
+      const nationality = member.nationality || '';
+      if (nationality === 'Brasileiro(a)' || nationality === '') {
+        setValue('nationality', nationality);
+        setValue('nationality_other', '');
+      } else {
+        setValue('nationality', 'Outra');
+        setValue('nationality_other', nationality);
+      }
       setValue('document', member.document || '');
       setValue('spouse', member.spouse || '');
       setValue('occupation', member.occupation || '');
@@ -223,6 +235,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       }
     }
   }, [member, mode, states, fetchCities]);
+
+  // Limpar erro de nacionalidade quando usuário digitar
+  useEffect(() => {
+    if (nationalityOtherError && nationalityOtherValue && nationalityOtherValue.trim() !== '') {
+      setNationalityOtherError('');
+    }
+  }, [nationalityOtherValue, nationalityOtherError]);
 
   // Inicializar displays formatados
   useEffect(() => {
@@ -285,12 +304,24 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
   const handleFormSubmit = async (data: MemberFormData) => {
     try {
+      // Validar nacionalidade: se "Outra" for selecionada, nationality_other deve estar preenchido
+      if (data.nationality === 'Outra' && (!data.nationality_other || data.nationality_other.trim() === '')) {
+        setNationalityOtherError('Por favor, especifique a nacionalidade');
+        return;
+      } else {
+        setNationalityOtherError('');
+      }
+
       // Converter datas para formato ISO antes de enviar
       const memberData = {
         ...data,
         birth: formatDateToISO(data.birth) || '',
         baptism_date: data.baptism_date ? formatDateToISO(data.baptism_date) || undefined : undefined,
         admission_date: data.admission_date ? formatDateToISO(data.admission_date) || undefined : undefined,
+        // Tratar nacionalidade: se for "Outra", usar o valor do campo nationality_other; senão usar o valor selecionado
+        nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
+        // Remover campo nationality_other do payload
+        nationality_other: undefined,
         // Tratar campos UUID opcionais - enviar null quando vazio
         role_id: data.role_id || null,
         congregation_id: data.congregation_id || null,
@@ -305,6 +336,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setBirthDisplay('');
       setBaptismDateDisplay('');
       setAdmissionDateDisplay('');
+      setNationalityOtherError('');
       reset();
     } catch (error) {
       // Erro será tratado pelo componente pai
@@ -375,7 +407,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             ]}
             placeholder="Selecione o gênero"
             disabled={isLoading}
-            error={errors.gender?.message}
           />
 
           <Select
@@ -391,16 +422,30 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             ]}
             placeholder="Selecione o estado civil"
             disabled={isLoading}
-            error={errors.marital_status?.message}
           />
 
-          <Input
+          <Select
             label="Nacionalidade"
-            placeholder="Brasileira"
-            error={errors.nationality?.message}
-            isLoading={isLoading}
-            {...register('nationality')}
+            value={watch('nationality') || ''}
+            onChange={(value) => setValue('nationality', value)}
+            options={[
+              { value: '', label: 'Selecione a nacionalidade' },
+              { value: 'Brasileiro(a)', label: 'Brasileiro(a)' },
+              { value: 'Outra', label: 'Outra' }
+            ]}
+            placeholder="Selecione a nacionalidade"
+            disabled={isLoading}
           />
+
+          {selectedNationality === 'Outra' && (
+            <Input
+              label="Especifique a nacionalidade *"
+              placeholder="Digite a nacionalidade"
+              error={nationalityOtherError}
+              isLoading={isLoading}
+              {...register('nationality_other')}
+            />
+          )}
 
           <Input
             label="Profissão"
@@ -471,7 +516,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               }))
             ]}
             disabled={isLoading}
-            error={errors.state?.message}
             searchable={true}
           />
 
@@ -494,7 +538,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               }))
             ]}
             disabled={!selectedState || loadingCities || isLoading}
-            error={errors.city?.message}
             searchable={true}
           />
 
@@ -546,7 +589,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               { value: 'Outro', label: 'Outro' }
             ]}
             disabled={isLoading}
-            error={errors.admission?.message}
           />
 
           <Select

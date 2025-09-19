@@ -78,7 +78,7 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
             {/* Botão para visualizar membros */}
             <button
               onClick={() => setIsGenderModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <Eye size={14} />
               Visualizar
@@ -99,7 +99,7 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
             {/* Botão para visualizar membros */}
             <button
               onClick={() => setIsMaritalStatusModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <Eye size={14} />
               Visualizar
@@ -120,7 +120,7 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
             {/* Botão para visualizar membros */}
             <button
               onClick={() => setIsAgeRangeModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
               <Eye size={14} />
               Visualizar

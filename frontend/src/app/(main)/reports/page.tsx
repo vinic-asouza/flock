@@ -256,6 +256,8 @@ export default function ReportsPage() {
               cities={reportsData.demographics.cities}
               states={reportsData.demographics.states}
               loading={loading}
+              viewMode={viewMode}
+              selectedCongregationId={selectedCongregationId}
             />
 
             {/* Divisória */}

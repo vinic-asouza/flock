@@ -153,9 +153,6 @@ export function MembersModal({
           <div className="flex-1 flex overflow-hidden">
             {/* Sidebar com Tabs */}
             <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50">
-              <div className="p-4 border-b border-gray-200 bg-gray-50">
-                <h3 className="text-sm font-medium text-gray-900">Selecione a faixa etária:</h3>
-              </div>
               <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                 <div className="space-y-2">
                   {tabs.map((tab) => (

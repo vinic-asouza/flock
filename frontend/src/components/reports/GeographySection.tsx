@@ -1,15 +1,26 @@
 'use client';
 
-import { MapPin, Users } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Users, Eye } from 'lucide-react';
 import { BarChart } from '@/components/reports/charts/BarChart';
+import { GeographyModal } from '@/components/reports/GeographyModal';
 
 interface GeographySectionProps {
   cities: Record<string, number>;
   states: Record<string, number>;
   loading?: boolean;
+  viewMode?: 'all' | 'sede' | 'congregation';
+  selectedCongregationId?: string;
 }
 
-export function GeographySection({ cities, states, loading = false }: GeographySectionProps) {
+export function GeographySection({ 
+  cities, 
+  states, 
+  loading = false, 
+  viewMode = 'all', 
+  selectedCongregationId 
+}: GeographySectionProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   // Converter dados de cidades para formato do gráfico
   const citiesData = Object.entries(cities)
     .map(([label, value]) => ({
@@ -56,25 +67,46 @@ export function GeographySection({ cities, states, loading = false }: GeographyS
         Distribuição Geográfica
       </h2>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Cidades */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <Users size={20} />
-            Distribuição por Cidades
-          </h3>
-          <BarChart data={citiesData} orientation="horizontal" />
-        </div>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Cidades */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
+              Cidades
+            </h3>
+            <BarChart data={citiesData} orientation="horizontal" />
+          </div>
 
-        {/* Estados */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin size={20} />
-            Distribuição por Estados
-          </h3>
-          <BarChart data={statesData} orientation="horizontal" />
+          {/* Estados */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Estados
+              </h3>
+              {/* Botão para visualizar membros */}
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <Eye size={14} />
+                Visualizar
+              </button>
+            </div>
+            <BarChart data={statesData} orientation="horizontal" />
+          </div>
         </div>
       </div>
+
+      {/* Modal de Membros por Localização */}
+      <GeographyModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Membros por Localização"
+        cities={cities}
+        states={states}
+        viewMode={viewMode}
+        selectedCongregationId={selectedCongregationId}
+      />
     </div>
   );
 }
