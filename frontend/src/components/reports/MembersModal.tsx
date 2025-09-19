@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Users, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
-import { MemberCardCompact } from '@/components/members/MemberCardCompact';
+import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { apiService } from '@/services/api';
 
 interface MembersModalProps {
