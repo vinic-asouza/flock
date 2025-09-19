@@ -14,7 +14,8 @@ export function MemberList({
   sorting,
   onView,
   onEdit,
-  onDelete,
+  onDeactivate,
+  onReactivate,
   viewModeSelector,
   viewMode,
   isViewModeLoaded
@@ -24,7 +25,8 @@ export function MemberList({
   sorting?: { sort_by: string; sort_order: 'asc' | 'desc' };
   onView?: (id: string, name: string) => void;
   onEdit?: (id: string) => void;
-  onDelete?: (id: string, name: string) => void;
+  onDeactivate?: (id: string, name: string) => void;
+  onReactivate?: (id: string, name: string) => void;
   viewModeSelector?: React.ReactNode;
   viewMode: ViewMode;
   isViewModeLoaded?: boolean;
@@ -77,8 +79,12 @@ export function MemberList({
     onEdit?.(id);
   };
 
-  const handleDelete = (id: string, name: string) => {
-    onDelete?.(id, name);
+  const handleDeactivate = (id: string, name: string) => {
+    onDeactivate?.(id, name);
+  };
+
+  const handleReactivate = (id: string, name: string) => {
+    onReactivate?.(id, name);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -145,7 +151,8 @@ export function MemberList({
               member={member}
               onView={() => handleView(member.id, member.name)}
               onEdit={() => handleEdit(member.id)}
-              onDelete={() => handleDelete(member.id, member.name)}
+              onDeactivate={() => handleDeactivate(member.id, member.name)}
+              onReactivate={() => handleReactivate(member.id, member.name)}
             />
           ))}
         </div>
@@ -157,7 +164,8 @@ export function MemberList({
               member={member}
               onView={() => handleView(member.id, member.name)}
               onEdit={() => handleEdit(member.id)}
-              onDelete={() => handleDelete(member.id, member.name)}
+              onDeactivate={() => handleDeactivate(member.id, member.name)}
+              onReactivate={() => handleReactivate(member.id, member.name)}
             />
           ))}
         </div>

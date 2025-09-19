@@ -12,10 +12,13 @@ import { CreateMemberModal } from '@/components/members/CreateMemberModal';
 import { ViewMemberModal } from '@/components/members/ViewMemberModal';
 import { EditMemberModal } from '@/components/members/EditMemberModal';
 import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
+import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
+import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useViewMode } from '@/hooks/useViewMode';
+import { apiService } from '@/services/api';
 
 export type MemberFilters = {
   search: string;
@@ -80,6 +83,8 @@ function MembersPageContent() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
+  const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
 
@@ -176,6 +181,128 @@ function MembersPageContent() {
     setDeleteModalOpen(true);
   }, []);
 
+  const handleDeactivateMember = useCallback((id: string, name: string) => {
+    setSelectedMemberId(id);
+    setSelectedMemberName(name);
+    setDeactivateModalOpen(true);
+  }, []);
+
+  const handleConfirmDeactivate = useCallback(async () => {
+    if (!selectedMemberId || !selectedMemberName) return;
+
+    try {
+      // Buscar dados atuais do membro
+      const currentMember = await apiService.getMember(selectedMemberId);
+      
+      // Preparar dados para atualização (mantendo todos os campos obrigatórios)
+      const updateData = {
+        name: currentMember.name,
+        birth: currentMember.birth,
+        gender: currentMember.gender,
+        marital_status: currentMember.marital_status,
+        nationality: currentMember.nationality || null,
+        document: currentMember.document || null,
+        spouse: currentMember.spouse || null,
+        address: currentMember.address || null,
+        complement: currentMember.complement || null,
+        cep: currentMember.cep || null,
+        neighborhood: currentMember.neighborhood || null,
+        city: currentMember.city || null,
+        state: currentMember.state || null,
+        phone: currentMember.phone || null,
+        whatsapp: currentMember.whatsapp || null,
+        email: currentMember.email || null,
+        baptism_date: currentMember.baptism_date || null,
+        role_id: currentMember.role_id || null,
+        occupation: currentMember.occupation || null,
+        admission: currentMember.admission || null,
+        admission_date: currentMember.admission_date || null,
+        congregation_id: currentMember.congregation_id || null,
+        active: false // Campo que queremos alterar
+      };
+
+      // Atualizar o membro
+      await apiService.updateMember(selectedMemberId, updateData);
+
+      // Atualizar otimisticamente na lista
+      updateMemberOptimistic(selectedMemberId, { ...currentMember, active: false });
+      
+      // Disparar evento para recarregar a lista
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('memberUpdated'));
+      }, 100);
+
+      // Mostrar feedback de sucesso
+      console.log(`Membro ${selectedMemberName} foi inativado com sucesso`);
+      
+    } catch (error) {
+      console.error('Erro ao inativar membro:', error);
+      // Você pode adicionar um toast de erro aqui
+      throw error; // Re-throw para o modal lidar com o erro
+    }
+  }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
+
+  const handleReactivateMember = useCallback((id: string, name: string) => {
+    setSelectedMemberId(id);
+    setSelectedMemberName(name);
+    setReactivateModalOpen(true);
+  }, []);
+
+  const handleConfirmReactivate = useCallback(async () => {
+    if (!selectedMemberId || !selectedMemberName) return;
+
+    try {
+      // Buscar dados atuais do membro
+      const currentMember = await apiService.getMember(selectedMemberId);
+      
+      // Preparar dados para atualização (mantendo todos os campos obrigatórios)
+      const updateData = {
+        name: currentMember.name,
+        birth: currentMember.birth,
+        gender: currentMember.gender,
+        marital_status: currentMember.marital_status,
+        nationality: currentMember.nationality || null,
+        document: currentMember.document || null,
+        spouse: currentMember.spouse || null,
+        address: currentMember.address || null,
+        complement: currentMember.complement || null,
+        cep: currentMember.cep || null,
+        neighborhood: currentMember.neighborhood || null,
+        city: currentMember.city || null,
+        state: currentMember.state || null,
+        phone: currentMember.phone || null,
+        whatsapp: currentMember.whatsapp || null,
+        email: currentMember.email || null,
+        baptism_date: currentMember.baptism_date || null,
+        role_id: currentMember.role_id || null,
+        occupation: currentMember.occupation || null,
+        admission: currentMember.admission || null,
+        admission_date: currentMember.admission_date || null,
+        congregation_id: currentMember.congregation_id || null,
+        active: true // Campo que queremos alterar
+      };
+
+      // Atualizar o membro
+      await apiService.updateMember(selectedMemberId, updateData);
+
+      // Atualizar otimisticamente na lista
+      updateMemberOptimistic(selectedMemberId, { ...currentMember, active: true });
+      
+      // Disparar evento para recarregar a lista
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('memberUpdated'));
+      }, 100);
+
+      // Mostrar feedback de sucesso
+      console.log(`Membro ${selectedMemberName} foi reativado com sucesso`);
+      
+    } catch (error) {
+      console.error('Erro ao reativar membro:', error);
+      // Você pode adicionar um toast de erro aqui
+      throw error; // Re-throw para o modal lidar com o erro
+    }
+  }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
+
   // Handlers para atualização otimista
   const handleCreateSuccess = useCallback((memberData: any) => {
     // Adicionar otimisticamente
@@ -255,7 +382,8 @@ function MembersPageContent() {
         sorting={sorting}
         onView={handleViewMember}
         onEdit={handleEditMember}
-        onDelete={handleDeleteMember}
+        onDeactivate={handleDeactivateMember}
+        onReactivate={handleReactivateMember}
         viewMode={viewMode}
         isViewModeLoaded={isLoaded}
         viewModeSelector={
@@ -275,19 +403,27 @@ function MembersPageContent() {
         onSuccess={handleCreateSuccess}
       />
 
-      <ViewMemberModal
-        isOpen={viewModalOpen}
-        onClose={() => setViewModalOpen(false)}
-        memberId={selectedMemberId}
-        onEdit={() => {
-          setViewModalOpen(false);
-          setEditModalOpen(true);
-        }}
-        onDelete={() => {
-          setViewModalOpen(false);
-          setDeleteModalOpen(true);
-        }}
-      />
+        <ViewMemberModal
+          isOpen={viewModalOpen}
+          onClose={() => setViewModalOpen(false)}
+          memberId={selectedMemberId}
+          onEdit={() => {
+            setViewModalOpen(false);
+            setEditModalOpen(true);
+          }}
+          onDeactivate={() => {
+            setViewModalOpen(false);
+            setDeactivateModalOpen(true);
+          }}
+          onReactivate={() => {
+            setViewModalOpen(false);
+            setReactivateModalOpen(true);
+          }}
+          onDeletePermanently={() => {
+            setViewModalOpen(false);
+            setDeleteModalOpen(true);
+          }}
+        />
 
       <EditMemberModal
         isOpen={editModalOpen}
@@ -302,6 +438,20 @@ function MembersPageContent() {
         memberId={selectedMemberId}
         memberName={selectedMemberName}
         onSuccess={handleDeleteSuccess}
+      />
+
+      <ConfirmDeactivateModal
+        isOpen={deactivateModalOpen}
+        onClose={() => setDeactivateModalOpen(false)}
+        memberName={selectedMemberName}
+        onConfirm={handleConfirmDeactivate}
+      />
+
+      <ConfirmReactivateModal
+        isOpen={reactivateModalOpen}
+        onClose={() => setReactivateModalOpen(false)}
+        memberName={selectedMemberName}
+        onConfirm={handleConfirmReactivate}
       />
     </div>
   );

@@ -48,18 +48,22 @@ export function CreateMemberModal({ isOpen, onClose, onSuccess }: CreateMemberMo
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
-          <p className="text-sm font-medium text-red-600">{error}</p>
+      <div className="flex flex-col min-h-[75vh]">
+        {error && (
+          <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
+            <p className="text-sm font-medium text-red-600">{error}</p>
+          </div>
+        )}
+        
+        <div className="flex-1">
+          <MemberForm
+            mode="create"
+            onSubmit={handleSubmit}
+            onCancel={handleClose}
+            isLoading={isLoading}
+          />
         </div>
-      )}
-      
-      <MemberForm
-        mode="create"
-        onSubmit={handleSubmit}
-        onCancel={handleClose}
-        isLoading={isLoading}
-      />
+      </div>
     </Modal>
   );
 } 

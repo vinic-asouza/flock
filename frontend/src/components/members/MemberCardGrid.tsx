@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Edit, Trash2, Mail, MessageCircle } from 'lucide-react';
+import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle } from 'lucide-react';
 
 interface MemberCardGridProps {
   member: {
@@ -17,7 +17,8 @@ interface MemberCardGridProps {
   };
   onView?: () => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDeactivate?: () => void;
+  onReactivate?: () => void;
 }
 
 function calcularIdade(birth: string): number | null {
@@ -33,11 +34,11 @@ function calcularIdade(birth: string): number | null {
   return age;
 }
 
-export function MemberCardGrid({ member, onView, onEdit, onDelete }: MemberCardGridProps) {
+export function MemberCardGrid({ member, onView, onEdit, onDeactivate, onReactivate }: MemberCardGridProps) {
   const idade = calcularIdade(member.birth);
 
   return (
-    <div className="flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full">
+    <div className={`flex flex-col border border-gray-200 rounded-lg px-6 py-4 h-full ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e flags */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -95,27 +96,50 @@ export function MemberCardGrid({ member, onView, onEdit, onDelete }: MemberCardG
       
       {/* Linha 4: Ações alinhadas à direita */}
       <div className="flex gap-2 justify-end">
-        <button
-          title="Visualizar"
-          onClick={onView}
-          className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
-        >
-          <Eye size={18} />
-        </button>
-        <button
-          title="Editar"
-          onClick={onEdit}
-          className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
-        >
-          <Edit size={18} />
-        </button>
-        <button
-          title="Excluir"
-          onClick={onDelete}
-          className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
-        >
-          <Trash2 size={18} />
-        </button>
+        {member.active ? (
+          // Botões para membros ativos
+          <>
+            <button
+              title="Visualizar"
+              onClick={onView}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+            >
+              <Eye size={18} />
+            </button>
+            <button
+              title="Editar"
+              onClick={onEdit}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+            >
+              <Edit size={18} />
+            </button>
+            <button
+              title="Inativar"
+              onClick={onDeactivate}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors"
+            >
+              <UserMinus size={18} />
+            </button>
+          </>
+        ) : (
+          // Botões para membros inativos
+          <>
+            <button
+              title="Visualizar"
+              onClick={onView}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+            >
+              <Eye size={18} />
+            </button>
+            <button
+              title="Reativar"
+              onClick={onReactivate}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors"
+            >
+              <UserPlus size={18} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -118,27 +118,31 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       closeOnOverlayClick={!isLoading && !isLoadingMember}
       closeOnEscape={!isLoading && !isLoadingMember}
     >
-      {isLoadingMember && (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary" size={32} />
-        </div>
-      )}
+      <div className="flex flex-col min-h-[75vh]">
+        {isLoadingMember && (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="animate-spin text-primary" size={32} />
+          </div>
+        )}
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
-          <p className="text-sm font-medium text-red-600">{error}</p>
-        </div>
-      )}
+        {error && (
+          <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
+            <p className="text-sm font-medium text-red-600">{error}</p>
+          </div>
+        )}
 
-      {member && !isLoadingMember && (
-        <MemberForm
-          member={member}
-          mode="edit"
-          onSubmit={handleSubmit}
-          onCancel={handleClose}
-          isLoading={isLoading}
-        />
-      )}
+        {member && !isLoadingMember && (
+          <div className="flex-1">
+            <MemberForm
+              member={member}
+              mode="edit"
+              onSubmit={handleSubmit}
+              onCancel={handleClose}
+              isLoading={isLoading}
+            />
+          </div>
+        )}
+      </div>
     </Modal>
   );
 } 
