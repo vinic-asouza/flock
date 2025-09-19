@@ -49,6 +49,10 @@ export function useGeographyData(
 
   // Filtrar cidades baseado no estado selecionado
   const filteredCities = useMemo(() => {
+    console.log(`Filtrando cidades para estado: ${selectedState}`);
+    console.log(`Cidades disponíveis:`, cities.map(c => c.name));
+    console.log(`Cidades do IBGE:`, ibgeCities.map(c => c.nome));
+    
     if (!selectedState) {
       return cities; // Mostrar todas as cidades se nenhum estado estiver selecionado
     }
@@ -57,12 +61,15 @@ export function useGeographyData(
     if (ibgeCities.length > 0) {
       const stateCities = ibgeCities.map(city => city.nome);
       
-      return cities.filter(city => 
+      // Filtrar cidades que estão no estado selecionado
+      const filtered = cities.filter(city => 
         stateCities.some(ibgeCity => 
-          ibgeCity.toLowerCase().includes(city.name.toLowerCase()) ||
-          city.name.toLowerCase().includes(ibgeCity.toLowerCase())
+          ibgeCity.toLowerCase() === city.name.toLowerCase()
         )
       );
+      
+      console.log(`Cidades filtradas:`, filtered.map(c => c.name));
+      return filtered;
     }
 
     // Fallback: mostrar todas as cidades se não conseguir filtrar
@@ -74,8 +81,14 @@ export function useGeographyData(
     if (selectedState) {
       const ibgeState = ibgeStates.find(state => state.sigla === selectedState);
       if (ibgeState) {
+        console.log(`Buscando cidades para o estado: ${selectedState} (${ibgeState.nome})`);
         fetchCities(ibgeState.id.toString());
+      } else {
+        console.log(`Estado não encontrado no IBGE: ${selectedState}`);
       }
+    } else {
+      // Limpar cidades quando nenhum estado estiver selecionado
+      fetchCities('');
     }
   }, [selectedState, ibgeStates, fetchCities]);
 

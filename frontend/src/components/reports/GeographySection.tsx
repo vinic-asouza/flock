@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { MapPin, Users, Eye } from 'lucide-react';
 import { BarChart } from '@/components/reports/charts/BarChart';
-import { GeographyModal } from '@/components/reports/GeographyModal';
+import { MemberModalWithSelect } from './MemberModalWithSelect';
+import { useGeographyData } from '@/hooks/useGeographyData';
+import { getStateName } from '@/utils';
 
 interface GeographySectionProps {
   cities: Record<string, number>;
@@ -21,6 +23,55 @@ export function GeographySection({
   selectedCongregationId 
 }: GeographySectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Usar hook personalizado para gerenciar dados geográficos
+  const {
+    states: statesOptions,
+    filteredCities: citiesOptions,
+    selectedState,
+    selectedCity,
+    setSelectedState,
+    setSelectedCity
+  } = useGeographyData(cities, states);
+
+  const selectedValues = {
+    state: selectedState,
+    city: selectedCity
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    if (key === 'state') {
+      setSelectedState(value);
+      // O hook já limpa a cidade automaticamente
+    } else if (key === 'city') {
+      setSelectedCity(value);
+    }
+  };
+
+  const filters = [
+    {
+      key: 'state',
+      label: 'Estado',
+      placeholder: 'Selecione um estado',
+      options: statesOptions.map(state => ({
+        value: state.code,
+        label: state.name,
+        count: state.count
+      })),
+      disabled: false
+    },
+    {
+      key: 'city',
+      label: `Cidade ${selectedState ? `(${getStateName(selectedState)})` : ''}`,
+      placeholder: selectedState ? "Selecione uma cidade" : "Primeiro selecione um estado",
+      options: citiesOptions.map(city => ({
+        value: city.name,
+        label: city.name,
+        count: city.count
+      })),
+      disabled: !selectedState
+    }
+  ];
   // Converter dados de cidades para formato do gráfico
   const citiesData = Object.entries(cities)
     .map(([label, value]) => ({
@@ -98,12 +149,14 @@ export function GeographySection({
       </div>
 
       {/* Modal de Membros por Localização */}
-      <GeographyModal
+      <MemberModalWithSelect
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Membros por Localização"
-        cities={cities}
-        states={states}
+        icon={<MapPin size={20} className="text-[#090725]" />}
+        filters={filters}
+        selectedValues={selectedValues}
+        onFilterChange={handleFilterChange}
         viewMode={viewMode}
         selectedCongregationId={selectedCongregationId}
       />

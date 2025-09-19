@@ -5,6 +5,7 @@ import { Demographics } from '@/types';
 import { PieChart } from '@/components/reports/charts/PieChart';
 import { BarChart } from '@/components/reports/charts/BarChart';
 import { MembersModal } from './MembersModal';
+import { AgeRangeModal } from '@/components/reports/AgeRangeModal';
 import { Users, Heart, Calendar, Eye } from 'lucide-react';
 
 interface DemographicsChartsProps {
@@ -36,8 +37,10 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
   // Converter dados de faixa etária para formato do gráfico
   const ageRangeData = Object.entries(data.ageRanges).map(([range, value]) => ({
     label: getAgeRangeLabel(range),
-    value: value as number,
+    value: value as number, // Para o gráfico, value é o número
+    count: value as number,
     color: getAgeRangeColor(range),
+    rangeKey: range, // Adicionar o range original para uso no modal
   }));
 
   if (loading) {
@@ -70,9 +73,6 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-[#090725]/10">
-                <Users size={18} className="text-[#090725]" />
-              </div>
               Distribuição por Gênero
             </h3>
             {/* Botão para visualizar membros */}
@@ -91,9 +91,6 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-[#090725]/10">
-                <Heart size={18} className="text-[#090725]" />
-              </div>
               Estado Civil
             </h3>
             {/* Botão para visualizar membros */}
@@ -112,9 +109,6 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-[#090725]/10">
-                <Calendar size={18} className="text-[#090725]" />
-              </div>
               Faixa Etária
             </h3>
             {/* Botão para visualizar membros */}
@@ -157,16 +151,14 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
       />
 
       {/* Modal de Membros por Faixa Etária */}
-      <MembersModal
+      <AgeRangeModal
         isOpen={isAgeRangeModalOpen}
         onClose={() => setIsAgeRangeModalOpen(false)}
         title="Membros por Faixa Etária"
         icon={<Calendar size={20} className="text-[#090725]" />}
-        tabs={ageRangeData.map(a => ({ ...a, value: a.label, count: a.value }))}
-        filterKey="age_range"
+        tabs={ageRangeData.map(a => ({ ...a, value: a.rangeKey }))}
         viewMode={viewMode}
         selectedCongregationId={selectedCongregationId}
-        sideLayout={true}
       />
     </div>
   );

@@ -1,0 +1,294 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { X, Users, Loader2, ChevronLeft, ChevronRight, Download, XCircle } from 'lucide-react';
+import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
+import { Select } from '@/components/ui/Select';
+import { apiService } from '@/services/api';
+
+interface SelectOption {
+  value: string;
+  label: string;
+  count?: number;
+}
+
+interface SelectFilter {
+  key: string;
+  label: string;
+  placeholder: string;
+  options: SelectOption[];
+  disabled?: boolean;
+}
+
+interface MemberModalWithSelectProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  icon: React.ReactNode;
+  filters: SelectFilter[];
+  selectedValues: Record<string, string>;
+  onFilterChange: (key: string, value: string) => void;
+  viewMode?: 'all' | 'sede' | 'congregation';
+  selectedCongregationId?: string;
+  itemsPerPage?: number;
+}
+
+export function MemberModalWithSelect({ 
+  isOpen, 
+  onClose, 
+  title,
+  icon,
+  filters,
+  selectedValues,
+  onFilterChange,
+  viewMode = 'all', 
+  selectedCongregationId,
+  itemsPerPage = 6
+}: MemberModalWithSelectProps) {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Buscar membros quando mudar filtros
+  useEffect(() => {
+    if (isOpen) {
+      fetchMembers();
+    }
+  }, [isOpen, selectedValues, currentPage, viewMode, selectedCongregationId]);
+
+  // Resetar página quando mudar filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedValues]);
+
+  // Fechar modal com Escape
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  const fetchMembers = async () => {
+    setLoading(true);
+    try {
+      const params: any = {
+        page: currentPage,
+        limit: itemsPerPage,
+        active: true // Filtrar apenas membros ativos
+      };
+
+      // Aplicar filtros selecionados
+      filters.forEach(filter => {
+        const value = selectedValues[filter.key];
+        if (value) {
+          params[filter.key] = value;
+        }
+      });
+
+      // Aplicar filtro baseado no ViewSelector da página principal
+      if (viewMode === 'sede') {
+        params.congregation_id = 'sede';
+      } else if (viewMode === 'congregation' && selectedCongregationId) {
+        params.congregation_id = selectedCongregationId;
+      }
+
+      console.log('MemberModalWithSelect - Parâmetros da API:', {
+        viewMode,
+        selectedCongregationId,
+        params
+      });
+
+      const response = await apiService.listMembers(params);
+      setMembers(response.data || []);
+      setPagination(response.pagination || null);
+    } catch (error) {
+      console.error('Erro ao buscar membros:', error);
+      setMembers([]);
+      setPagination(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearAllFilters = () => {
+    filters.forEach(filter => {
+      onFilterChange(filter.key, '');
+    });
+  };
+
+  const hasActiveFilters = Object.values(selectedValues).some(value => value !== '');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div 
+        className="relative bg-white rounded-lg shadow-xl w-full h-[90vh] flex flex-col mx-4 max-w-6xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-[#090725]/10">
+              {icon}
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {title}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+            >
+              <Download size={12} />
+              Exportar
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X size={20} className="text-gray-500" />
+            </button>
+          </div>
+        </div>
+
+        {/* Filtros Horizontais */}
+        <div className="p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+          <div className="space-y-4">
+            {/* Seletores */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filters.map((filter) => (
+                <Select
+                  key={filter.key}
+                  label={filter.label}
+                  options={filter.options}
+                  value={selectedValues[filter.key] || ''}
+                  onChange={(value) => onFilterChange(filter.key, value)}
+                  placeholder={filter.placeholder}
+                  disabled={filter.disabled}
+                  showCount={true}
+                  searchable={true}
+                />
+              ))}
+            </div>
+
+            {/* Filtros ativos na mesma linha dos seletores */}
+            {hasActiveFilters && (
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-medium text-gray-700">Filtros ativos:</span>
+                  {filters.map((filter) => {
+                    const value = selectedValues[filter.key];
+                    if (!value) return null;
+                    
+                    const selectedOption = filter.options.find(opt => opt.value === value);
+                    return (
+                      <span key={filter.key as string} className="bg-white px-2 py-1 rounded border border-gray-300 text-xs text-gray-700">
+                        {filter.label}: <span className="font-medium">{selectedOption?.label || value}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-white px-2 py-1 rounded border border-gray-300 transition-colors whitespace-nowrap"
+                >
+                  <XCircle size={12} />
+                  Limpar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-hidden p-6 min-h-0">
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="flex items-center gap-2 text-gray-500">
+                <Loader2 size={20} className="animate-spin" />
+                Carregando membros...
+              </div>
+            </div>
+          ) : (
+            <div className="h-full flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {members.length > 0 ? (
+                  <div className="space-y-3">
+                    {members.map((member) => (
+                      <MemberCardCompact key={member.id} member={member} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-gray-500">
+                    <div className="text-center">
+                      <Users size={48} className="mx-auto mb-2 text-gray-300" />
+                      <p>Nenhum membro encontrado</p>
+                      <p className="text-sm text-gray-400">
+                        {hasActiveFilters 
+                          ? 'para os filtros selecionados'
+                          : 'Selecione um filtro para visualizar os membros'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Paginação */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-600">
+                      Página {pagination.page} de {pagination.totalPages} 
+                      ({pagination.total} membro(s) total)
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft size={16} className="text-gray-600" />
+                      </button>
+                      <span className="text-sm text-gray-600 px-2">
+                        {currentPage}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                        disabled={currentPage === pagination.totalPages}
+                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight size={16} className="text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

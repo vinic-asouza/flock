@@ -226,9 +226,6 @@ export function TimelineCharts({ data, loading = false, showCongregationColumn =
         {/* Card Anual */}
         <div className="bg-white rounded-lg border border-[#090725]/10 p-4">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-1.5 rounded-lg bg-[#090725]/10">
-              <Calendar size={16} className="text-[#090725]" />
-            </div>
             <h3 className="text-base font-medium text-gray-900">Dados Anuais</h3>
           </div>
           
@@ -346,9 +343,6 @@ export function TimelineCharts({ data, loading = false, showCongregationColumn =
         {/* Card Mensal */}
         <div className="bg-white rounded-lg border border-[#090725]/10 p-4">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-1.5 rounded-lg bg-[#090725]/10">
-              <Calendar size={16} className="text-[#090725]" />
-            </div>
             <h3 className="text-base font-medium text-gray-900">Dados Mensais</h3>
           </div>
           
@@ -467,9 +461,6 @@ export function TimelineCharts({ data, loading = false, showCongregationColumn =
       {/* Gráfico */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-[#090725]/10">
-            <TrendingUp size={16} className="text-[#090725]" />
-          </div>
           Gráfico de Evolução Mensal
         </h3>
         <LineChart data={monthlyData} />

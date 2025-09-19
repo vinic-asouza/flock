@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
+import { useProfessions } from '@/hooks/useProfessions';
 
 // Schema de validação
 const memberSchema = z.object({
@@ -24,6 +25,7 @@ const memberSchema = z.object({
   document: z.string().optional().or(z.literal('')),
   spouse: z.string().optional().or(z.literal('')),
   occupation: z.string().optional().or(z.literal('')),
+  occupation_other: z.string().optional().or(z.literal('')),
   address: z.string().optional().or(z.literal('')),
   complement: z.string().optional().or(z.literal('')),
   neighborhood: z.string().optional().or(z.literal('')),
@@ -136,6 +138,7 @@ const formatDateToISO = (formattedDate: string): string | null => {
 export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode }: MemberFormProps) {
   const { roles, congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
+  const { professions, loading: professionsLoading, searchProfessions } = useProfessions();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
@@ -145,6 +148,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   const [formReady, setFormReady] = useState(false);
   const [nationalityOtherError, setNationalityOtherError] = useState('');
+  const [occupationOtherError, setOccupationOtherError] = useState('');
 
   const {
     register,
@@ -167,6 +171,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const selectedState = watch('state');
   const selectedNationality = watch('nationality');
   const nationalityOtherValue = watch('nationality_other');
+  const selectedOccupation = watch('occupation');
+  const occupationOtherValue = watch('occupation_other');
+  const selectedMaritalStatus = watch('marital_status');
 
   // Resetar formulário quando member mudar (para modo edit)
   useEffect(() => {
@@ -190,7 +197,16 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       }
       setValue('document', member.document || '');
       setValue('spouse', member.spouse || '');
-      setValue('occupation', member.occupation || '');
+      // Tratar profissão: se não estiver na lista padrão, assumir que é "Outra"
+      const occupation = member.occupation || '';
+      const isStandardOccupation = professions.some(p => p.name === occupation);
+      if (isStandardOccupation || occupation === '') {
+        setValue('occupation', occupation);
+        setValue('occupation_other', '');
+      } else {
+        setValue('occupation', 'Outra');
+        setValue('occupation_other', occupation);
+      }
       setValue('address', member.address || '');
       setValue('complement', member.complement || '');
       setValue('neighborhood', member.neighborhood || '');
@@ -242,6 +258,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setNationalityOtherError('');
     }
   }, [nationalityOtherValue, nationalityOtherError]);
+
+  // Limpar erro de profissão quando usuário digitar
+  useEffect(() => {
+    if (occupationOtherError && occupationOtherValue && occupationOtherValue.trim() !== '') {
+      setOccupationOtherError('');
+    }
+  }, [occupationOtherValue, occupationOtherError]);
 
   // Inicializar displays formatados
   useEffect(() => {
@@ -312,6 +335,14 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         setNationalityOtherError('');
       }
 
+      // Validar profissão: se "Outra" for selecionada, occupation_other deve estar preenchido
+      if (data.occupation === 'Outra' && (!data.occupation_other || data.occupation_other.trim() === '')) {
+        setOccupationOtherError('Por favor, especifique a profissão');
+        return;
+      } else {
+        setOccupationOtherError('');
+      }
+
       // Converter datas para formato ISO antes de enviar
       const memberData = {
         ...data,
@@ -320,8 +351,11 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         admission_date: data.admission_date ? formatDateToISO(data.admission_date) || undefined : undefined,
         // Tratar nacionalidade: se for "Outra", usar o valor do campo nationality_other; senão usar o valor selecionado
         nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
-        // Remover campo nationality_other do payload
+        // Tratar profissão: se for "Outra", usar o valor do campo occupation_other; senão usar o valor selecionado
+        occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
+        // Remover campos auxiliares do payload
         nationality_other: undefined,
+        occupation_other: undefined,
         // Tratar campos UUID opcionais - enviar null quando vazio
         role_id: data.role_id || null,
         congregation_id: data.congregation_id || null,
@@ -337,6 +371,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setBaptismDateDisplay('');
       setAdmissionDateDisplay('');
       setNationalityOtherError('');
+      setOccupationOtherError('');
       reset();
     } catch (error) {
       // Erro será tratado pelo componente pai
@@ -447,13 +482,32 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             />
           )}
 
-          <Input
+          <Select
             label="Profissão"
-            placeholder="Digite a profissão"
-            error={errors.occupation?.message}
-            isLoading={isLoading}
-            {...register('occupation')}
+            value={selectedOccupation || ''}
+            onChange={(value) => setValue('occupation', value)}
+            options={[
+              { value: '', label: 'Selecione a profissão' },
+              ...professions.map((profession) => ({
+                value: profession.name,
+                label: profession.name
+              })),
+              { value: 'Outra', label: 'Outra' }
+            ]}
+            placeholder="Selecione a profissão"
+            disabled={professionsLoading || isLoading}
+            searchable={true}
           />
+
+          {selectedOccupation === 'Outra' && (
+            <Input
+              label="Especifique a profissão *"
+              placeholder="Digite a profissão"
+              error={occupationOtherError}
+              isLoading={isLoading}
+              {...register('occupation_other')}
+            />
+          )}
 
           <Input
             label="Documento"
@@ -463,13 +517,15 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             {...register('document')}
           />
 
-          <Input
-            label="Cônjuge"
-            placeholder="Nome do cônjuge"
-            error={errors.spouse?.message}
-            isLoading={isLoading}
-            {...register('spouse')}
-          />
+          {selectedMaritalStatus === 'Casado' && (
+            <Input
+              label="Cônjuge"
+              placeholder="Nome do cônjuge"
+              error={errors.spouse?.message}
+              isLoading={isLoading}
+              {...register('spouse')}
+            />
+          )}
         </div>
       </div>
 

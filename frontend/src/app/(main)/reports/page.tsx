@@ -264,7 +264,12 @@ export default function ReportsPage() {
             <div className="border-t border-gray-200"></div>
 
             {/* Ocupações */}
-            <OccupationsTable data={reportsData.topOccupations} loading={loading} />
+            <OccupationsTable 
+              data={reportsData.topOccupations} 
+              loading={loading}
+              viewMode={viewMode}
+              selectedCongregationId={selectedCongregationId}
+            />
           </>
         )}
       </div>

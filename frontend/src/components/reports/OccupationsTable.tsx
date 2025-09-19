@@ -1,14 +1,44 @@
 'use client';
 
-import { Briefcase, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Briefcase, Users, Eye } from 'lucide-react';
 import { TopOccupation } from '@/types';
+import { MemberModalWithSelect } from './MemberModalWithSelect';
 
 interface OccupationsTableProps {
   data: TopOccupation[];
   loading?: boolean;
+  viewMode?: 'all' | 'sede' | 'congregation';
+  selectedCongregationId?: string;
 }
 
-export function OccupationsTable({ data, loading = false }: OccupationsTableProps) {
+export function OccupationsTable({ data, loading = false, viewMode = 'all', selectedCongregationId }: OccupationsTableProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedOccupation, setSelectedOccupation] = useState('');
+
+  const selectedValues = {
+    occupation: selectedOccupation
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    if (key === 'occupation') {
+      setSelectedOccupation(value);
+    }
+  };
+
+  const filters = [
+    {
+      key: 'occupation',
+      label: 'Ocupação',
+      placeholder: 'Selecione uma ocupação',
+      options: data.map(occupation => ({
+        value: occupation.occupation,
+        label: occupation.occupation,
+        count: occupation.count
+      })),
+      disabled: false
+    }
+  ];
   if (loading) {
     return (
       <div className="space-y-4">
@@ -58,10 +88,20 @@ export function OccupationsTable({ data, loading = false }: OccupationsTableProp
       
       <div className="bg-white rounded-lg border border-[#090725]/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
-          <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <Users size={14} className="text-gray-500" />
-            Distribuição por Profissão
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <Users size={14} className="text-gray-500" />
+              Distribuição por Profissão
+            </h3>
+            {/* Botão para visualizar membros */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <Eye size={14} />
+              Visualizar
+            </button>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
@@ -160,6 +200,19 @@ export function OccupationsTable({ data, loading = false }: OccupationsTableProp
           </div>
         )}
       </div>
+
+      {/* Modal de Membros por Ocupação */}
+      <MemberModalWithSelect
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Membros por Ocupação"
+        icon={<Briefcase size={20} className="text-[#090725]" />}
+        filters={filters}
+        selectedValues={selectedValues}
+        onFilterChange={handleFilterChange}
+        viewMode={viewMode}
+        selectedCongregationId={selectedCongregationId}
+      />
     </div>
   );
 }
