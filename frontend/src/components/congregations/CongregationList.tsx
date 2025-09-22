@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { CongregationCard } from './CongregationCard';
+import { CongregationsSkeleton } from './CongregationsSkeleton';
 import { apiService } from '@/services/api';
 import { Congregation } from '@/types/congregation';
 
@@ -42,13 +43,7 @@ export function CongregationList({ onEdit, onDelete, refreshTrigger }: Congregat
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-lg font-medium text-gray-900 mb-2">Carregando congregações...</p>
-        <p className="text-sm text-gray-500">Buscando informações</p>
-      </div>
-    );
+    return <CongregationsSkeleton />;
   }
   
   if (error) {

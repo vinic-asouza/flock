@@ -14,6 +14,7 @@ import { EditMemberModal } from '@/components/members/EditMemberModal';
 import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
 import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
 import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
+import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
@@ -329,20 +330,7 @@ function MembersPageContent() {
 
   // Mostrar loading durante inicialização
   if (isInitializing) {
-    const roleIdFromUrl = searchParams.get('role_id');
-    const congregationIdFromUrl = searchParams.get('congregation_id');
-    const statusFromUrl = searchParams.get('status');
-    const hasUrlFilters = roleIdFromUrl || congregationIdFromUrl || statusFromUrl;
-    
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-lg font-medium text-gray-900 mb-2">Carregando membros...</p>
-        <p className="text-sm text-gray-500">
-          {hasUrlFilters ? 'Aplicando filtros da URL' : 'Buscando informações'}
-        </p>
-      </div>
-    );
+    return <MembersSkeleton />;
   }
 
   return (

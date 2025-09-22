@@ -95,17 +95,20 @@ export function TimelineCharts({ data, loading = false, showCongregationColumn =
     return months;
   }, []);
 
-  // Definir ano padrão (mais recente)
+  // Definir ano padrão (ano atual)
   useMemo(() => {
     if (availableYears.length > 0 && !selectedYear) {
-      setSelectedYear(availableYears[0].value);
+      const currentYear = new Date().getFullYear().toString();
+      const yearExists = availableYears.some(year => year.value === currentYear);
+      setSelectedYear(yearExists ? currentYear : availableYears[0].value);
     }
   }, [availableYears, selectedYear]);
 
-  // Definir mês padrão (janeiro)
+  // Definir mês padrão (mês atual)
   useMemo(() => {
     if (!selectedMonth) {
-      setSelectedMonth('01');
+      const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+      setSelectedMonth(currentMonth);
     }
   }, [selectedMonth]);
 

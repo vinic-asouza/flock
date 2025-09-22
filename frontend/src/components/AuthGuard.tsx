@@ -15,7 +15,7 @@ function AuthGuardComponent({ children }: AuthGuardProps) {
   useEffect(() => {
     // Só redirecionar se não estiver em uma operação de loading
     if (!isLoading && !isOperationLoading && isAuthenticated) {
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [isAuthenticated, isLoading, isOperationLoading, router]);
 
@@ -38,7 +38,7 @@ function AuthGuardComponent({ children }: AuthGuardProps) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-lg font-medium text-gray-900 mb-2">Redirecionando...</p>
-          <p className="text-sm text-gray-500">Você será direcionado para o dashboard</p>
+          <p className="text-sm text-gray-500">Você será direcionado para o painel</p>
         </div>
       </div>
     );

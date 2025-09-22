@@ -1,113 +1,304 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import Link from 'next/link';
+import { apiService } from '@/services/api';
+import { MemberReports, ReportFilters } from '@/types';
+import { Loader, RefreshCw, Download, Building, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { Sidebar } from '@/components/main/Sidebar';
+import { Header } from '@/components/main/Header';
+
+// Componentes que serão criados
+import { SummaryCards } from '@/components/reports/SummaryCards';
+import { DemographicsCharts } from '@/components/reports/DemographicsCharts';
+import { ChurchStructureCharts } from '@/components/reports/ChurchStructureCharts';
+import { TimelineCharts } from '@/components/reports/TimelineCharts';
+import { GeographySection } from '@/components/reports/GeographySection';
+import { OccupationsTable } from '@/components/reports/OccupationsTable';
+import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
+import { ExportModal } from '@/components/reports/ExportModal';
+import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
+  const [reportsData, setReportsData] = useState<MemberReports | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [selectedCongregationId, setSelectedCongregationId] = useState<string | undefined>();
+  const [selectedCongregationName, setSelectedCongregationName] = useState<string | undefined>();
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [waitingForCongregation, setWaitingForCongregation] = useState(false);
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.push('/dashboard');
+  // Carregar dados dos relatórios
+  const loadReports = async (view: ViewMode, congregationId?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Construir filtros baseados na visualização selecionada
+      const filters: ReportFilters = {};
+
+      if (view === 'sede') {
+        filters.congregation_id = 'sede';
+      } else if (view === 'congregation' && congregationId) {
+        filters.congregation_id = congregationId;
+      }
+
+      const data = await apiService.getMemberReports(filters);
+      setReportsData(data);
+      setLastUpdated(new Date().toLocaleString('pt-BR'));
+    } catch (err: any) {
+      console.error('Erro ao carregar relatórios:', err);
+      setError(err.message || 'Erro ao carregar relatórios');
+    } finally {
+      setLoading(false);
     }
-  }, [isAuthenticated, isLoading, router]);
+  };
 
-  if (isLoading) {
+  // Carregar dados iniciais
+  useEffect(() => {
+    // Não carregar dados se for congregação específica mas nenhuma congregação estiver selecionada
+    if (viewMode === 'congregation' && !selectedCongregationId) {
+      setWaitingForCongregation(true);
+      setLoading(false);
+      return;
+    }
+
+    setWaitingForCongregation(false);
+    loadReports(viewMode, selectedCongregationId);
+  }, [viewMode, selectedCongregationId]);
+
+
+  // Mudar visualização
+  const handleViewChange = (view: ViewMode, congregationId?: string, congregationName?: string) => {
+    setViewMode(view);
+    setSelectedCongregationId(congregationId);
+    setSelectedCongregationName(congregationName);
+  };
+
+  // Atualizar dados
+  const handleRefresh = () => {
+    loadReports(viewMode, selectedCongregationId);
+  };
+
+  // Exportar relatórios
+  const handleExport = (format: 'pdf' | 'excel' | 'csv') => {
+    // Implementar exportação
+    console.log('Exportar em formato:', format);
+    // Aqui você pode implementar a lógica de exportação
+    // Por exemplo, gerar PDF com jsPDF, Excel com xlsx, etc.
+  };
+
+  if (loading && !reportsData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <ProtectedRoute>
+        <div className="h-screen bg-gray-50 flex flex-col">
+          <Header />
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar churchName={user?.name || ''} />
+            <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+              <ReportsSkeleton />
+            </main>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-lg font-medium text-red-800 mb-2">Erro ao carregar relatórios</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={handleRefresh} variant="secondary">
+              <RefreshCw size={16} className="mr-2" />
+              Tentar novamente
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (isAuthenticated) {
-    return null; // Será redirecionado pelo useEffect
+  if (!reportsData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Nenhum dado disponível</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 sm:text-6xl">
-            Flock
-          </h1>
-          <p className="mt-6 text-xl text-gray-600 max-w-3xl mx-auto">
-            Sistema completo de gerenciamento de membros, cargos e congregações para igrejas.
-            Organize sua comunidade com ferramentas modernas e intuitivas.
-          </p>
-          
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <div>
-              <Link href="/login">
-                <Button
-                  size="lg"
-                  className="text-lg px-8 py-3"
-                >
-                  Entrar no Sistema
-                </Button>
-              </Link>
-            </div>
-            
-            <div>
-              <Link href="/register">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-lg px-8 py-3"
-                >
-                  Registrar Igreja
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-              <svg className="h-6 w-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900">Gerenciamento de Membros</h3>
-            <p className="mt-2 text-gray-600">
-              Cadastre e gerencie todos os membros da sua igreja com informações completas.
+    <ProtectedRoute>
+      <div className="h-screen bg-gray-50 flex flex-col">
+        <Header />
+        <div className="flex flex-1 overflow-hidden">
+          <Sidebar churchName={user?.name || ''} />
+          <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+          {/* Título da Página */}
+          <div className="px-6">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Relatórios
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              Análise detalhada dos membros da igreja
+              {lastUpdated && (
+                <span className="ml-2">
+                  • Atualizado em {lastUpdated}
+                </span>
+              )}
             </p>
           </div>
 
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-              <svg className="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
-              </svg>
+          {/* Header com Controles */}
+          <div className="px-6 py-4">
+            <div className="bg-white rounded-lg border border-[#090725]/10 px-6 py-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                {/* Coluna 1: Seletor de Visualização */}
+                <div className="flex-1">
+                  <ViewSelector
+                    selectedView={viewMode}
+                    selectedCongregationId={selectedCongregationId}
+                    onViewChange={handleViewChange}
+                  />
+                </div>
+
+                {/* Coluna 2: Botões de Ação */}
+                <div className="flex items-center justify-end lg:justify-end">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleRefresh}
+                      disabled={loading}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${loading
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                      Atualizar
+                    </button>
+
+                    <button
+                      onClick={() => setShowExportModal(true)}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+                    >
+                      <Download size={12} />
+                      Exportar
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h3 className="text-lg font-medium text-gray-900">Relatórios Avançados</h3>
-            <p className="mt-2 text-gray-600">
-              Análises demográficas e estatísticas detalhadas da sua comunidade.
-            </p>
           </div>
 
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 mb-4">
-              <svg className="h-6 w-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900">Multi-Tenant</h3>
-            <p className="mt-2 text-gray-600">
-              Dados completamente isolados por igreja, garantindo total privacidade.
-            </p>
+          {/* Conteúdo Principal */}
+          <div className="p-6 space-y-6">
+            {/* Aguardando seleção de congregação */}
+            {waitingForCongregation ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Building size={32} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-blue-900 mb-2">
+                      Selecione uma Congregação
+                    </h3>
+                    <p className="text-blue-700">
+                      Escolha uma congregação específica para visualizar os relatórios detalhados.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Cards de Resumo */}
+                <SummaryCards
+                  data={reportsData.summary}
+                  loading={loading}
+                  filterInfo={reportsData.filters}
+                  congregationName={selectedCongregationName}
+                />
+
+                {/* Divisória */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Timeline */}
+                <TimelineCharts
+                  data={reportsData.timeline}
+                  loading={loading}
+                  showCongregationColumn={viewMode === 'all'}
+                />
+
+                {/* Divisória */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Gráficos de Demografia */}
+                <DemographicsCharts
+                  data={reportsData.demographics}
+                  loading={loading}
+                  viewMode={viewMode}
+                  selectedCongregationId={selectedCongregationId}
+                />
+
+                {/* Divisória */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Estrutura da Igreja */}
+                <ChurchStructureCharts
+                  data={reportsData.churchStructure}
+                  loading={loading}
+                  hideCongregations={viewMode === 'sede' || viewMode === 'congregation'}
+                  viewMode={viewMode}
+                  selectedCongregationId={selectedCongregationId}
+                />
+
+                {/* Divisória */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Geografia */}
+                <GeographySection
+                  cities={reportsData.demographics.cities}
+                  states={reportsData.demographics.states}
+                  loading={loading}
+                  viewMode={viewMode}
+                  selectedCongregationId={selectedCongregationId}
+                />
+
+                {/* Divisória */}
+                <div className="border-t border-gray-200"></div>
+
+                {/* Ocupações */}
+                <OccupationsTable
+                  data={reportsData.topOccupations}
+                  loading={loading}
+                  viewMode={viewMode}
+                  selectedCongregationId={selectedCongregationId}
+                />
+              </>
+            )}
           </div>
+
+          {/* Modal de Exportação */}
+          {reportsData && (
+            <ExportModal
+              isOpen={showExportModal}
+              onClose={() => setShowExportModal(false)}
+              data={reportsData}
+              onExport={handleExport}
+            />
+          )}
+          </main>
         </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }
