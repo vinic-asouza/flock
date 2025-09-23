@@ -43,34 +43,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Verificar autenticação inicial
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
-        const token = localStorage.getItem('flock_token');
-        const churchData = localStorage.getItem('flock_church');
-        const sessionData = localStorage.getItem('flock_session');
+        console.log('Inicializando autenticação...');
         
-        if (token && churchData && sessionData) {
-          const church = JSON.parse(churchData);
-          const session = JSON.parse(sessionData);
+        // Aguardar um pouco para garantir que cookies foram processados
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verificar autenticação via API (cookies são enviados automaticamente)
+        const response = await apiService.isAuthenticated();
+        console.log('Resposta de autenticação:', response);
+        
+        if (response) {
+          // Obter dados da igreja
+          const church = await apiService.getChurch();
+          console.log('Dados da igreja:', church);
           
-          // Verificar se a sessão ainda é válida
-          if (session.expires_at && Date.now() < session.expires_at) {
+          if (church) {
+            console.log('Usuário autenticado, definindo estado...');
             setUser(church);
-            setSession(session);
+            // Criar sessão mock para compatibilidade
+            setSession({
+              access_token: 'stored_in_cookie',
+              token_type: 'bearer',
+              expires_in: 900, // 15 minutos
+              expires_at: Date.now() + 15 * 60 * 1000,
+              refresh_token: 'stored_in_cookie',
+              user: {
+                id: church.user_id,
+                email: '', // Email será obtido via API quando necessário
+                aud: 'authenticated',
+                role: 'authenticated',
+                email_confirmed_at: new Date().toISOString(),
+                phone: '',
+                confirmed_at: new Date().toISOString(),
+                last_sign_in_at: new Date().toISOString(),
+                app_metadata: { provider: 'email', providers: ['email'] },
+                user_metadata: { email: '', email_verified: true, phone_verified: false, sub: church.user_id },
+                identities: [],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_anonymous: false
+              }
+            });
           } else {
-            // Sessão expirada, limpar dados
-            localStorage.removeItem('flock_token');
-            localStorage.removeItem('flock_church');
-            localStorage.removeItem('flock_session');
+            console.log('Igreja não encontrada, usuário não autenticado');
+            setUser(null);
+            setSession(null);
           }
+        } else {
+          console.log('Usuário não autenticado');
+          setUser(null);
+          setSession(null);
         }
       } catch (error) {
         console.error('Erro ao inicializar autenticação:', error);
-        // Limpar dados corrompidos
-        localStorage.removeItem('flock_token');
-        localStorage.removeItem('flock_church');
-        localStorage.removeItem('flock_session');
+        // Limpar estado local
+        setUser(null);
+        setSession(null);
       } finally {
+        console.log('Finalizando inicialização de autenticação');
         setIsLoading(false);
       }
     };
@@ -83,7 +115,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsOperationLoading(true);
       const response = await apiService.login(data);
       setUser(response.church);
-      setSession(response.session);
+      // Criar sessão mock para compatibilidade (tokens estão em cookies)
+      setSession({
+        access_token: 'stored_in_cookie',
+        token_type: 'bearer',
+        expires_in: 900, // 15 minutos
+        expires_at: Date.now() + 15 * 60 * 1000,
+        refresh_token: 'stored_in_cookie',
+        user: {
+          id: response.church.user_id,
+          email: '', // Email será obtido via API quando necessário
+          aud: 'authenticated',
+          role: 'authenticated',
+          email_confirmed_at: new Date().toISOString(),
+          phone: '',
+          confirmed_at: new Date().toISOString(),
+          last_sign_in_at: new Date().toISOString(),
+          app_metadata: { provider: 'email', providers: ['email'] },
+          user_metadata: { email: '', email_verified: true, phone_verified: false, sub: response.church.user_id },
+          identities: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          is_anonymous: false
+        }
+      });
       setIsOperationLoading(false);
     } catch (error: unknown) {
       setIsOperationLoading(false);
@@ -105,18 +160,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async (): Promise<void> => {
     try {
+      console.log('Iniciando logout...');
       setIsOperationLoading(true);
+      
       // Chamar logout no servidor e limpar dados locais
       await apiService.logout();
+      
+      console.log('Logout no servidor concluído, limpando estado local...');
       setUser(null);
       setSession(null);
       setIsOperationLoading(false);
+      
+      console.log('Logout concluído com sucesso');
     } catch (error) {
+      console.error('Erro durante logout:', error);
       setIsOperationLoading(false);
+      
       // Mesmo com erro, limpar os dados locais
+      console.log('Limpando estado local mesmo com erro...');
       setUser(null);
       setSession(null);
-      console.error('Erro durante logout:', error);
     }
   }, []);
 
@@ -153,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const isAuthenticated = useMemo(() => !!user && !!session, [user, session]);
+  const isAuthenticated = useMemo(() => !!user, [user]);
 
 
 

@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth';
@@ -10,6 +11,7 @@ import passwordRoutes from './routes/password';
 import memberRoutes from './routes/members';
 import roleRoutes from './routes/roles';
 import congregationRoutes from './routes/congregations';
+import refreshRoutes from './routes/refresh';
 
 dotenv.config();
 
@@ -19,7 +21,13 @@ const app = express();
 app.use(helmet());
 
 // Configuração do CORS
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true, // Permitir cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  optionsSuccessStatus: 200 // Para suporte a navegadores legados
+}));
 
 // Logging
 app.use(morgan('dev'));
@@ -42,12 +50,16 @@ app.use(generalLimiter);
 // Parser para JSON
 app.use(express.json());
 
+// Parser para cookies
+app.use(cookieParser());
+
 // Rotas com rate limiting específico
 app.use('/api/auth', authRoutes);
 app.use('/api/password', passwordRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/congregations', congregationRoutes);
+app.use('/api/refresh', refreshRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

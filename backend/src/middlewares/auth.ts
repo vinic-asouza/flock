@@ -1,22 +1,25 @@
 import { Response, NextFunction } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest } from '../types';
+import { cookieConfig } from '../utils/cookieUtils';
 
 const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Verificar se o token está presente no header
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({
-        error: 'Token não fornecido'
-      });
+    // Primeiro, tentar obter token do cookie (método preferido)
+    let token = req.cookies[cookieConfig.names.accessToken];
+    
+    // Se não houver token no cookie, tentar do header Authorization (fallback)
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        token = authHeader.split(' ')[1];
+      }
     }
 
-    // Extrair o token do header (formato: "Bearer TOKEN")
-    const token = authHeader.split(' ')[1];
     if (!token) {
       return res.status(401).json({
-        error: 'Formato de token inválido'
+        error: 'Token não fornecido',
+        details: 'Faça login para acessar este recurso'
       });
     }
 

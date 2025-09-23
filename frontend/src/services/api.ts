@@ -23,18 +23,16 @@ class ApiService {
     this.api = axios.create({
       baseURL,
       timeout: 10000,
+      withCredentials: true, // Permitir cookies
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
-    // Interceptor para adicionar token de autenticação
+    // Interceptor para tratamento de erros (cookies são enviados automaticamente)
     this.api.interceptors.request.use(
       (config) => {
-        const token = this.getToken();
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
+        // Cookies são enviados automaticamente com withCredentials: true
         return config;
       },
       (error) => {
@@ -46,9 +44,12 @@ class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Token expirado ou inválido
-          this.removeToken();
+        // Não redirecionar para login se for o endpoint de verificação de auth
+        const isCheckAuthEndpoint = error.config?.url?.includes('/refresh/check');
+        
+        if (error.response?.status === 401 && !isCheckAuthEndpoint) {
+          // Token expirado ou inválido - redirecionar para login
+          // Cookies serão limpos automaticamente pelo servidor
           window.location.href = '/login';
         }
         
@@ -87,36 +88,13 @@ class ApiService {
     );
   }
 
-  // Gerenciamento de token
-  private getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('flock_token');
-    }
-    return null;
-  }
-
-  private setToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('flock_token', token);
-    }
-  }
-
-  private removeToken(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('flock_token');
-      localStorage.removeItem('flock_church');
-      localStorage.removeItem('flock_session');
-    }
-  }
+  // Gerenciamento de autenticação via cookies (gerenciado pelo servidor)
+  // Os tokens agora são armazenados em httpOnly cookies, não acessíveis via JavaScript
 
   // Métodos de autenticação
   async login(data: LoginData): Promise<LoginResponse> {
     const response: AxiosResponse<LoginResponse> = await this.api.post('/auth/login', data);
-    this.setToken(response.data.session.access_token);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('flock_church', JSON.stringify(response.data.church));
-      localStorage.setItem('flock_session', JSON.stringify(response.data.session));
-    }
+    // Tokens são armazenados automaticamente em cookies httpOnly pelo servidor
     return response.data;
   }
 
@@ -143,29 +121,42 @@ class ApiService {
   // Logout
   async logout(): Promise<void> {
     try {
-      // Chamar a rota de logout no backend para invalidar o token
+      // Chamar a rota de logout no backend para invalidar o token e limpar cookies
       await this.api.post('/auth/logout');
     } catch (error) {
-      // Mesmo com erro, limpar os dados locais
+      // Mesmo com erro, o servidor limpa os cookies automaticamente
       console.warn('Erro ao fazer logout no servidor:', error);
-    } finally {
-      // Sempre limpar os dados locais
-      this.removeToken();
     }
   }
 
   // Verificar se está autenticado
-  isAuthenticated(): boolean {
-    return !!this.getToken();
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const response = await this.api.get('/refresh/check');
+      return response.data.authenticated;
+    } catch (error) {
+      return false;
+    }
   }
 
-  // Obter dados da igreja
-  getChurch(): Church | null {
-    if (typeof window !== 'undefined') {
-      const church = localStorage.getItem('flock_church');
-      return church ? JSON.parse(church) : null;
+  // Obter dados da igreja (agora via API)
+  async getChurch(): Promise<Church | null> {
+    try {
+      const response = await this.api.get('/refresh/check');
+      return response.data.church || null;
+    } catch (error) {
+      return null;
     }
-    return null;
+  }
+
+  // Renovar token de acesso
+  async refreshToken(): Promise<boolean> {
+    try {
+      await this.api.post('/refresh/refresh');
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   // Listar membros paginados
