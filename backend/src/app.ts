@@ -24,17 +24,25 @@ app.use(cors());
 // Logging
 app.use(morgan('dev'));
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting geral - proteção contra DDoS e uso excessivo
+const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 1000000 // limite de 100 requisições por windowMs
+  max: 1000, // 1000 requisições por IP em 15 minutos
+  message: {
+    error: 'Muitas requisições',
+    details: 'Você excedeu o limite de requisições. Tente novamente em 15 minutos.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use(limiter);
+
+// Aplicar rate limiting geral
+app.use(generalLimiter);
 
 // Parser para JSON
 app.use(express.json());
 
-// Rotas
+// Rotas com rate limiting específico
 app.use('/api/auth', authRoutes);
 app.use('/api/password', passwordRoutes);
 app.use('/api/members', memberRoutes);
