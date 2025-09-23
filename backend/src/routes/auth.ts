@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { register, login } from '../controllers/authController';
+import { register, login, logout } from '../controllers/authController';
+import authMiddleware from '../middlewares/auth';
 
 const router = Router();
 
@@ -34,5 +35,8 @@ router.post('/register', registerLimiter, register);
 
 // Rota de login com rate limiting específico
 router.post('/login', authLimiter, login);
+
+// Rota de logout (requer autenticação)
+router.post('/logout', authMiddleware, logout);
 
 export default router; 

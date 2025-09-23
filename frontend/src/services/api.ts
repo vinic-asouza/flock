@@ -141,8 +141,17 @@ class ApiService {
   }
 
   // Logout
-  logout(): void {
-    this.removeToken();
+  async logout(): Promise<void> {
+    try {
+      // Chamar a rota de logout no backend para invalidar o token
+      await this.api.post('/auth/logout');
+    } catch (error) {
+      // Mesmo com erro, limpar os dados locais
+      console.warn('Erro ao fazer logout no servidor:', error);
+    } finally {
+      // Sempre limpar os dados locais
+      this.removeToken();
+    }
   }
 
   // Verificar se está autenticado

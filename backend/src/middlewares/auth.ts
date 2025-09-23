@@ -20,6 +20,14 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
       });
     }
 
+    // Verificar se o token está na blacklist (tokens revogados)
+    if (global.tokenBlacklist && global.tokenBlacklist.has(token)) {
+      return res.status(401).json({
+        error: 'Token revogado',
+        details: 'Este token foi invalidado. Faça login novamente.'
+      });
+    }
+
     // Verificar o token com o Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
@@ -30,7 +38,10 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
     }
 
     // Adicionar o usuário ao objeto da requisição
-    req.user = user;
+    req.user = {
+      id: user.id,
+      email: user.email || ''
+    };
     next();
 
   } catch (error) {

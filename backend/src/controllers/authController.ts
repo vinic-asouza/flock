@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import supabase from '../services/supabase';
 import { validateChurch } from '../validators/churchValidator';
-import { ChurchRegistrationData } from '../types';
+import { ChurchRegistrationData, AuthRequest } from '../types';
 
 export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res: Response) => {
   try {
@@ -141,6 +141,92 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
 
   } catch (error) {
     console.error('Erro no login:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+export const logout = async (req: AuthRequest, res: Response) => {
+  try {
+    // Verificar se o usuário está autenticado
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    // Extrair o token do header
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(400).json({
+        error: 'Token não fornecido',
+        details: 'Token de autorização é obrigatório para logout'
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.status(400).json({
+        error: 'Formato de token inválido',
+        details: 'Token deve estar no formato "Bearer TOKEN"'
+      });
+    }
+
+    // Verificar se o token é válido antes de invalidar
+    const { data: { user }, error: tokenError } = await supabase.auth.getUser(token);
+    
+    if (tokenError || !user) {
+      return res.status(401).json({
+        error: 'Token inválido',
+        details: 'Token fornecido não é válido ou expirou'
+      });
+    }
+
+    // Tentar fazer logout no Supabase (se suportado)
+    try {
+      await supabase.auth.signOut();
+    } catch (signOutError) {
+      // Se o Supabase não suportar logout server-side, continuamos com a blacklist
+      console.warn('Supabase signOut não suportado no servidor:', signOutError);
+    }
+
+    // Adicionar token à blacklist (implementação simples em memória)
+    // Em produção, usar Redis ou banco de dados
+    if (!global.tokenBlacklist) {
+      global.tokenBlacklist = new Set();
+    }
+    
+    // Calcular tempo de expiração do token
+    try {
+      const tokenPayload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      const currentTime = Math.floor(Date.now() / 1000);
+      const timeToExpire = tokenPayload.exp - currentTime;
+      
+      // Adicionar à blacklist com tempo de expiração
+      global.tokenBlacklist.add(token);
+      
+      // Remover da blacklist após expiração (timeout)
+      if (timeToExpire > 0) {
+        setTimeout(() => {
+          global.tokenBlacklist?.delete(token);
+        }, timeToExpire * 1000);
+      }
+    } catch (parseError) {
+      console.error('Erro ao processar token:', parseError);
+      // Mesmo com erro, adicionar à blacklist por segurança
+      global.tokenBlacklist.add(token);
+    }
+
+    res.json({
+      message: 'Logout realizado com sucesso',
+      details: 'Sua sessão foi encerrada com segurança'
+    });
+
+  } catch (error) {
+    console.error('Erro no logout:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

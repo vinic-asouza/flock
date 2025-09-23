@@ -106,18 +106,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async (): Promise<void> => {
     try {
       setIsOperationLoading(true);
-      // Simular um pequeno delay para mostrar o loading
-      await new Promise(resolve => setTimeout(resolve, 500));
-      apiService.logout();
+      // Chamar logout no servidor e limpar dados locais
+      await apiService.logout();
       setUser(null);
       setSession(null);
       setIsOperationLoading(false);
     } catch (error) {
       setIsOperationLoading(false);
       // Mesmo com erro, limpar os dados locais
-      apiService.logout();
       setUser(null);
       setSession(null);
+      console.error('Erro durante logout:', error);
     }
   }, []);
 
