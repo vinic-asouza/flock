@@ -12,9 +12,11 @@ const churchSchema = Joi.object<ChurchRegistrationData>({
   
   password: Joi.string()
     .min(8)
+    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .required()
     .messages({
       'string.min': 'A senha deve ter no mínimo 8 caracteres',
+      'string.pattern.base': 'A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número',
       'any.required': 'Senha é obrigatória'
     }),
 

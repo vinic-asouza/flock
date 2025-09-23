@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest } from '../types';
+import { validateChangePassword, validateResetPassword } from '../validators/passwordValidator';
 
 /**
  * Envia email para recuperação de senha
@@ -55,10 +56,12 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    if (!currentPassword || !newPassword) {
+    // Validar dados da requisição
+    const { error: validationError } = validateChangePassword({ currentPassword, newPassword });
+    if (validationError) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: 'Senha atual e nova senha são obrigatórias'
+        details: validationError.details.map(detail => detail.message)
       });
     }
 
@@ -108,17 +111,12 @@ export const resetPassword = async (req: Request<{}, {}, { newPassword: string, 
   try {
     const { newPassword, token } = req.body;
 
-    if (!newPassword) {
+    // Validar dados da requisição
+    const { error: validationError } = validateResetPassword({ newPassword, token });
+    if (validationError) {
       return res.status(400).json({
-        error: 'Senha não fornecida',
-        details: 'A nova senha é obrigatória'
-      });
-    }
-
-    if (!token) {
-      return res.status(400).json({
-        error: 'Token não fornecido',
-        details: 'O token de recuperação é obrigatório'
+        error: 'Dados inválidos',
+        details: validationError.details.map(detail => detail.message)
       });
     }
 

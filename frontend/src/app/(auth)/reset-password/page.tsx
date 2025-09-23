@@ -11,8 +11,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
 const resetPasswordSchema = z.object({
-  newPassword: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  confirmPassword: z.string().min(6, 'Confirmação de senha deve ter pelo menos 6 caracteres'),
+  newPassword: z.string()
+    .min(8, 'A senha deve ter pelo menos 8 caracteres')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número'),
+  confirmPassword: z.string()
+    .min(8, 'A confirmação de senha deve ter pelo menos 8 caracteres')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A confirmação de senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "As senhas não coincidem",
   path: ["confirmPassword"],
