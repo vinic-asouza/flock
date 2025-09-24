@@ -1,5 +1,6 @@
 import Joi from 'joi';
 import { ChurchRegistrationData } from '../types';
+import { cnpjSchema } from './cnpjSchema';
 
 const churchSchema = Joi.object<ChurchRegistrationData>({
   email: Joi.string()
@@ -64,15 +65,7 @@ const churchSchema = Joi.object<ChurchRegistrationData>({
       'string.length': 'Estado deve ter 2 caracteres'
     }),
 
-  cnpj: Joi.string()
-    .length(14)
-    .pattern(/^[0-9]+$/)
-    .required()
-    .messages({
-      'string.length': 'CNPJ deve ter 14 dígitos',
-      'string.pattern.base': 'CNPJ deve conter apenas números',
-      'any.required': 'CNPJ é obrigatório'
-    }),
+  cnpj: cnpjSchema,
 
   email_church: Joi.string()
     .email()
