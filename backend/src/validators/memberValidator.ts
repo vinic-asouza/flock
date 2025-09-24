@@ -33,20 +33,29 @@ const memberSchema = Joi.object<Partial<Member>>({
     }),
 
   nationality: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Nacionalidade é obrigatória',
+      'any.required': 'Nacionalidade é obrigatória'
+    }),
 
   document: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Documento é obrigatório',
+      'any.required': 'Documento é obrigatório'
+    }),
 
   spouse: Joi.string()
     .optional()
     .allow(null, ''),
 
   address: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Endereço é obrigatório',
+      'any.required': 'Endereço é obrigatório'
+    }),
 
   complement: Joi.string()
     .optional()
@@ -55,32 +64,43 @@ const memberSchema = Joi.object<Partial<Member>>({
   cep: Joi.string()
     .length(8)
     .pattern(/^[0-9]+$/)
-    .optional()
-    .allow(null, '')
+    .required()
     .messages({
+      'string.empty': 'CEP é obrigatório',
+      'any.required': 'CEP é obrigatório',
       'string.length': 'CEP deve ter 8 dígitos',
       'string.pattern.base': 'CEP deve conter apenas números'
     }),
 
   neighborhood: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Bairro é obrigatório',
+      'any.required': 'Bairro é obrigatório'
+    }),
 
   city: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Cidade é obrigatória',
+      'any.required': 'Cidade é obrigatória'
+    }),
 
   state: Joi.string()
     .length(2)
-    .optional()
-    .allow(null, '')
+    .required()
     .messages({
+      'string.empty': 'Estado é obrigatório',
+      'any.required': 'Estado é obrigatório',
       'string.length': 'Estado deve ter 2 caracteres'
     }),
 
   phone: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Telefone é obrigatório',
+      'any.required': 'Telefone é obrigatório'
+    }),
 
   whatsapp: Joi.string()
     .optional()
@@ -111,12 +131,18 @@ const memberSchema = Joi.object<Partial<Member>>({
     .allow(null, ''),
 
   admission: Joi.string()
-    .optional()
-    .allow(null, ''),
+    .required()
+    .messages({
+      'string.empty': 'Tipo de admissão é obrigatório',
+      'any.required': 'Tipo de admissão é obrigatório'
+    }),
 
   admission_date: Joi.date()
-    .optional()
-    .allow(null),
+    .required()
+    .messages({
+      'date.base': 'Data de admissão inválida',
+      'any.required': 'Data de admissão é obrigatória'
+    }),
 
   congregation_id: Joi.string()
     .uuid()

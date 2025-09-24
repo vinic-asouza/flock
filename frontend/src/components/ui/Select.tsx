@@ -20,6 +20,8 @@ interface SelectProps {
   disabled?: boolean;
   showCount?: boolean;
   searchable?: boolean;
+  error?: string;
+  helperText?: string;
 }
 
 export function Select({
@@ -31,7 +33,9 @@ export function Select({
   className = "",
   disabled = false,
   showCount = false,
-  searchable = false
+  searchable = false,
+  error,
+  helperText
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,9 +127,9 @@ export function Select({
   const selectedOption = options.find(option => option.value === value);
 
   return (
-    <div className={`relative ${className}`} ref={selectRef}>
+    <div className={`relative space-y-2 ${className}`} ref={selectRef}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-gray-700">
           {label}
         </label>
       )}
@@ -137,6 +141,8 @@ export function Select({
         disabled={disabled}
         className={`w-full flex items-center justify-between px-3 py-2 text-[15px] text-[#222] border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none transition-colors ${
           disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+        } ${
+          error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
         }`}
       >
         <span className={selectedOption ? 'text-[#222]' : 'text-[#888]'}>
@@ -210,6 +216,13 @@ export function Select({
             )}
           </div>
         </div>
+      )}
+      
+      {error && (
+        <p className="text-sm text-red-600">{error}</p>
+      )}
+      {helperText && !error && (
+        <p className="text-sm text-gray-500">{helperText}</p>
       )}
     </div>
   );
