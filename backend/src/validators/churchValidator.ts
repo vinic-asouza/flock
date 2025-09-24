@@ -90,4 +90,65 @@ const churchSchema = Joi.object<ChurchRegistrationData>({
 
 export const validateChurch = (data: ChurchRegistrationData) => {
   return churchSchema.validate(data, { abortEarly: false });
+};
+
+// Schema para atualização da igreja (todos os campos opcionais)
+const churchUpdateSchema = Joi.object({
+  name: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Nome da igreja deve ser uma string'
+    }),
+
+  denomination: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Denominação deve ser uma string'
+    }),
+
+  address: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Endereço deve ser uma string'
+    }),
+
+  city: Joi.string()
+    .optional()
+    .messages({
+      'string.base': 'Cidade deve ser uma string'
+    }),
+
+  state: Joi.string()
+    .optional()
+    .length(2)
+    .messages({
+      'string.base': 'Estado deve ser uma string',
+      'string.length': 'Estado deve ter 2 caracteres'
+    }),
+
+  cnpj: cnpjSchema.optional(),
+
+  email_church: Joi.string()
+    .email()
+    .optional()
+    .allow('')
+    .messages({
+      'string.email': 'Email da igreja inválido'
+    }),
+
+  phone_church: Joi.string()
+    .optional()
+    .allow('')
+    .pattern(/^[0-9]+$/)
+    .min(10)
+    .max(11)
+    .messages({
+      'string.pattern.base': 'Telefone da igreja deve conter apenas números',
+      'string.min': 'Telefone da igreja deve ter pelo menos 10 dígitos',
+      'string.max': 'Telefone da igreja deve ter no máximo 11 dígitos'
+    })
+});
+
+export const validateChurchUpdate = (data: any) => {
+  return churchUpdateSchema.validate(data, { abortEarly: false });
 }; 

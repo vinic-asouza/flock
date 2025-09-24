@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { DENOMINATIONS } from '@/utils';
 
 // Estado global para erros de registro (persiste entre re-renderizações)
 let globalRegisterError: string | null = null;
@@ -41,17 +42,7 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-const denominations = [
-  'Batista',
-  'Presbiteriana',
-  'Metodista',
-  'Luterana',
-  'Assembleia de Deus',
-  'Igreja do Evangelho Quadrangular',
-  'Igreja Universal do Reino de Deus',
-  'Igreja Mundial do Poder de Deus',
-  'Outra',
-];
+const denominations = DENOMINATIONS;
 
 // Estados brasileiros (fallback)
 const statesFallback = [

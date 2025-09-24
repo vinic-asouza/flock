@@ -366,6 +366,17 @@ class ApiService {
     const response = await this.api.get(url);
     return response.data;
   }
+
+  // Gerenciamento da Igreja
+  async getChurchData(): Promise<Church> {
+    const response = await this.api.get('/church');
+    return response.data.church;
+  }
+
+  async updateChurch(data: Partial<Church>): Promise<Church> {
+    const response = await this.api.put('/church', data);
+    return response.data.church;
+  }
 }
 
 // Instância singleton

@@ -100,6 +100,21 @@ export function toSlug(str: string): string {
 }
 
 /**
+ * Lista de denominações religiosas
+ */
+export const DENOMINATIONS = [
+  'Batista',
+  'Presbiteriana',
+  'Metodista',
+  'Luterana',
+  'Assembleia de Deus',
+  'Igreja do Evangelho Quadrangular',
+  'Igreja Universal do Reino de Deus',
+  'Igreja Mundial do Poder de Deus',
+  'Outra',
+];
+
+/**
  * Mapeamento de siglas de estados brasileiros para nomes completos
  */
 export const STATE_NAMES: Record<string, string> = {

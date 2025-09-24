@@ -216,9 +216,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const updateChurch = useCallback(async (data: Partial<Church>): Promise<Church> => {
+    try {
+      setIsOperationLoading(true);
+      const updatedChurch = await apiService.updateChurch(data);
+      setUser(updatedChurch);
+      setIsOperationLoading(false);
+      return updatedChurch;
+    } catch (error: unknown) {
+      setIsOperationLoading(false);
+      throw preserveErrorProperties(error);
+    }
+  }, []);
+
+  const refreshChurch = useCallback(async (): Promise<void> => {
+    try {
+      setIsOperationLoading(true);
+      const churchData = await apiService.getChurchData();
+      setUser(churchData);
+      setIsOperationLoading(false);
+    } catch (error: unknown) {
+      setIsOperationLoading(false);
+      throw preserveErrorProperties(error);
+    }
+  }, []);
+
   const isAuthenticated = useMemo(() => !!user, [user]);
-
-
 
   const value: AuthContextType = useMemo(() => ({
     user,
@@ -232,7 +255,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     forgotPassword,
     changePassword,
     resetPassword,
-  }), [user, session, isLoading, isOperationLoading, login, register, logout, forgotPassword, changePassword, resetPassword]);
+    updateChurch,
+    refreshChurch,
+  }), [user, session, isLoading, isOperationLoading, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch]);
 
   return (
     <AuthContext.Provider value={value}>

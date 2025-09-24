@@ -9,6 +9,8 @@ export interface Church {
   city: string;
   state: string;
   cnpj: string;
+  email_church?: string;
+  phone_church?: string;
   created_at: string;
 }
 
@@ -112,6 +114,8 @@ export interface AuthContextType {
   forgotPassword: (data: ForgotPasswordData) => Promise<void>;
   changePassword: (data: ChangePasswordData) => Promise<void>;
   resetPassword: (data: ResetPasswordData) => Promise<void>;
+  updateChurch: (data: Partial<Church>) => Promise<Church>;
+  refreshChurch: () => Promise<void>;
 }
 
 // Tipos para componentes de formulário
