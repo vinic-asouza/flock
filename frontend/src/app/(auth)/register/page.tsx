@@ -400,19 +400,6 @@ export default function RegisterPage() {
 
       {/* Formulário */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {(error || globalRegisterError) && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm font-medium text-red-600">
-              {error || globalRegisterError}
-            </p>
-            {(errorDetails || globalRegisterErrorDetails) && (
-              <p className="text-sm text-red-500 mt-1">
-                {errorDetails || globalRegisterErrorDetails}
-              </p>
-            )}
-          </div>
-        )}
-
         <Input
           label="Email"
           type="email"
@@ -597,6 +584,20 @@ export default function RegisterPage() {
           Registrar Igreja
         </Button>
       </form>
+
+      {/* Bloco de Erro - Posicionado após o formulário para melhor visibilidade */}
+      {(error || globalRegisterError) && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm font-medium text-red-600">
+            {error || globalRegisterError}
+          </p>
+          {(errorDetails || globalRegisterErrorDetails) && (
+            <p className="text-sm text-red-500 mt-1">
+              {errorDetails || globalRegisterErrorDetails}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Links */}
       <div className="text-center">
