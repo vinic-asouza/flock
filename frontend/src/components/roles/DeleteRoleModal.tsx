@@ -110,7 +110,7 @@ export function DeleteRoleModal({ isOpen, onClose, roleId, roleName, activeMembe
             {activeMembersCount > 0 ? (
               <>
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={handleClose}
                   disabled={isLoading}
                 >
@@ -128,7 +128,7 @@ export function DeleteRoleModal({ isOpen, onClose, roleId, roleName, activeMembe
             ) : (
               <>
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={handleClose}
                   disabled={isLoading}
                 >

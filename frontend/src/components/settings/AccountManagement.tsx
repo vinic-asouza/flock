@@ -1,0 +1,567 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/context/AuthContext';
+import apiService from '@/services/api';
+import { formatPhone } from '@/utils';
+import { Edit, Key, Trash2, Mail, Phone } from 'lucide-react';
+
+interface AccountData {
+  id: string;
+  email: string;
+  phone: string;
+  email_confirmed_at: string | null;
+  phone_confirmed_at: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+}
+
+interface ChangeEmailData {
+  newEmail: string;
+  password: string;
+}
+
+interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+interface ChangePhoneData {
+  newPhone: string;
+  password: string;
+}
+
+interface DeleteAccountData {
+  password: string;
+  confirmation: string;
+}
+
+export function AccountManagement() {
+  const { user, logout } = useAuth();
+  const [accountData, setAccountData] = useState<AccountData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  
+  // Estados para modais
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  
+  // Estados para erros específicos dos modais
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  
+  // Dados dos formulários
+  const [emailData, setEmailData] = useState<ChangeEmailData>({ newEmail: '', password: '' });
+  const [passwordData, setPasswordData] = useState<ChangePasswordData>({ 
+    currentPassword: '', 
+    newPassword: '', 
+    confirmPassword: '' 
+  });
+  const [phoneData, setPhoneData] = useState<ChangePhoneData>({ newPhone: '', password: '' });
+  const [deleteData, setDeleteData] = useState<DeleteAccountData>({ password: '', confirmation: '' });
+
+
+  // Carregar dados da conta
+  useEffect(() => {
+    const loadAccountData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const data = await apiService.getAccountData();
+        setAccountData(data);
+      } catch (error: any) {
+        console.error('Erro ao carregar dados da conta:', error);
+        setError(error.details ? error.details.join(', ') : error.message || 'Erro ao carregar dados da conta');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadAccountData();
+  }, []);
+
+  const handleChangeEmail = async () => {
+    try {
+      setIsSaving(true);
+      setEmailError(null);
+      setSuccess(null);
+
+      await apiService.changeEmail(emailData);
+      
+      setSuccess('Email alterado com sucesso! Verifique sua caixa de entrada para confirmar o novo email.');
+      setShowEmailModal(false);
+      setEmailData({ newEmail: '', password: '' });
+      
+    } catch (error: any) {
+      console.error('Erro ao alterar email:', error);
+      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao alterar email';
+      setEmailError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      setIsSaving(true);
+      setPasswordError(null);
+      setSuccess(null);
+
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        setPasswordError('As senhas não coincidem');
+        return;
+      }
+
+      await apiService.changeAccountPassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      setSuccess('Senha alterada com sucesso!');
+      setShowPasswordModal(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao alterar senha';
+      setPasswordError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length <= 11) {
+      setPhoneData(prev => ({
+        ...prev,
+        newPhone: cleaned
+      }));
+    }
+  };
+
+  // Função para limpar erros quando modais são fechados
+  const handleCloseEmailModal = () => {
+    setEmailError(null);
+    setShowEmailModal(false);
+  };
+
+  const handleClosePasswordModal = () => {
+    setPasswordError(null);
+    setShowPasswordModal(false);
+  };
+
+  const handleClosePhoneModal = () => {
+    setPhoneError(null);
+    setShowPhoneModal(false);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setDeleteError(null);
+    setShowDeleteModal(false);
+  };
+
+  const handleChangePhone = async () => {
+    try {
+      setIsSaving(true);
+      setPhoneError(null);
+      setSuccess(null);
+
+      await apiService.changePhone(phoneData);
+      
+      setSuccess('Telefone alterado com sucesso!');
+      setShowPhoneModal(false);
+      setPhoneData({ newPhone: '', password: '' });
+      
+    } catch (error: any) {
+      console.error('Erro ao alterar telefone:', error);
+      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao alterar telefone';
+      setPhoneError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsSaving(true);
+      setDeleteError(null);
+      setSuccess(null);
+
+      if (deleteData.confirmation !== 'EXCLUIR CONTA') {
+        setDeleteError('Confirmação deve ser exatamente "EXCLUIR CONTA"');
+        return;
+      }
+
+      await apiService.deleteAccount(deleteData);
+      
+      setSuccess('Conta excluída com sucesso! Você será redirecionado...');
+      
+      // Fazer logout e redirecionar
+      setTimeout(async () => {
+        await logout();
+        window.location.href = '/login';
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error('Erro ao excluir conta:', error);
+      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao excluir conta';
+      setDeleteError(errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Não confirmado';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <div className="p-4">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      {/* Mensagens de feedback */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800">{error}</p>
+        </div>
+      )}
+      
+      {success && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <p className="text-green-800">{success}</p>
+        </div>
+      )}
+
+      {/* Card único com informações da conta */}
+      <Card>
+        <div className="p-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+            Informações da Conta
+          </h2>
+          
+          {accountData && (
+            <div className="space-y-4">
+              {/* Email */}
+              <div className="flex items-center justify-between py-3">
+                <div className="flex items-center gap-3">
+                  <Mail className="text-gray-500" size={20} />
+                  <div>
+                    <p className="font-medium text-gray-900">{accountData.email}</p>
+                    <p className="text-sm text-gray-500">
+                      Confirmado em: {formatDate(accountData.email_confirmed_at)}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowEmailModal(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Edit size={16} />
+                  Alterar
+                </Button>
+              </div>
+
+              {/* Linha divisória */}
+              <div className="border-t border-gray-200"></div>
+
+              {/* Telefone - Desabilitado temporariamente */}
+              <div className="flex items-center justify-between py-3 opacity-50">
+                <div className="flex items-center gap-3">
+                  <Phone className="text-gray-400" size={20} />
+                  <div>
+                    <p className="font-medium text-gray-500">{accountData.phone || 'Não informado'}</p>
+                    <p className="text-sm text-gray-400">
+                      Confirmado em: {formatDate(accountData.phone_confirmed_at)}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowPhoneModal(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2 cursor-not-allowed"
+                  disabled
+                >
+                  <Edit size={16} />
+                  Alterar
+                </Button>
+              </div>
+
+              {/* Informações adicionais */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Conta criada em
+                  </label>
+                  <p className="text-sm text-gray-900">{formatDate(accountData.created_at)}</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Último acesso
+                  </label>
+                  <p className="text-sm text-gray-900">{formatDate(accountData.last_sign_in_at)}</p>
+                </div>
+              </div>
+
+              {/* Ações de segurança */}
+              <div className="flex flex-wrap gap-3 pt-3">
+                <Button
+                  onClick={() => setShowPasswordModal(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Key size={16} />
+                  Alterar Senha
+                </Button>
+                
+                <Button
+                  onClick={() => setShowDeleteModal(true)}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                >
+                  <Trash2 size={16} />
+                  Excluir Conta
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Modal para alterar email */}
+      <Modal
+        isOpen={showEmailModal}
+        onClose={handleCloseEmailModal}
+        title="Alterar Email"
+      >
+        <div className="space-y-4 p-4">
+          {emailError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{emailError}</p>
+            </div>
+          )}
+          
+          <Input
+            label="Novo Email"
+            type="email"
+            value={emailData.newEmail}
+            onChange={(e) => setEmailData(prev => ({ ...prev, newEmail: e.target.value }))}
+            placeholder="novo@email.com"
+          />
+          <Input
+            label="Senha Atual"
+            type="password"
+            value={emailData.password}
+            onChange={(e) => setEmailData(prev => ({ ...prev, password: e.target.value }))}
+            placeholder="Digite sua senha atual"
+          />
+          <div className="flex justify-end gap-3 pt-3">
+            <Button
+              onClick={handleCloseEmailModal}
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangeEmail}
+              disabled={isSaving}
+              variant="primary"
+            >
+              {isSaving ? 'Alterando...' : 'Alterar Email'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal para alterar senha */}
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={handleClosePasswordModal}
+        title="Alterar Senha"
+      >
+        <div className="space-y-4 p-4">
+          {passwordError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{passwordError}</p>
+            </div>
+          )}
+          
+          <Input
+            label="Senha Atual"
+            type="password"
+            value={passwordData.currentPassword}
+            onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+            placeholder="Digite sua senha atual"
+          />
+          <Input
+            label="Nova Senha"
+            type="password"
+            value={passwordData.newPassword}
+            onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+            placeholder="Digite a nova senha"
+          />
+          <Input
+            label="Confirmar Nova Senha"
+            type="password"
+            value={passwordData.confirmPassword}
+            onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+            placeholder="Confirme a nova senha"
+          />
+          <div className="flex justify-end gap-3 pt-3">
+            <Button
+              onClick={handleClosePasswordModal}
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              disabled={isSaving}
+              variant="primary"
+            >
+              {isSaving ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal para alterar telefone */}
+      <Modal
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        title="Alterar Telefone"
+      >
+        <div className="space-y-4 p-4">
+          {phoneError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{phoneError}</p>
+            </div>
+          )}
+          
+          <Input
+            label="Novo Telefone"
+            type="tel"
+            value={formatPhone(phoneData.newPhone)}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+            placeholder="(11) 99999-9999"
+          />
+          <Input
+            label="Senha Atual"
+            type="password"
+            value={phoneData.password}
+            onChange={(e) => setPhoneData(prev => ({ ...prev, password: e.target.value }))}
+            placeholder="Digite sua senha atual"
+          />
+          <div className="flex justify-end gap-3 pt-3">
+            <Button
+              onClick={() => setShowPhoneModal(false)}
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePhone}
+              disabled={isSaving}
+              variant="primary"
+            >
+              {isSaving ? 'Alterando...' : 'Alterar Telefone'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal para excluir conta */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Excluir Conta"
+      >
+        <div className="space-y-4 p-4">
+          {deleteError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{deleteError}</p>
+            </div>
+          )}
+          
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-800 font-medium mb-2">
+              ⚠️ ATENÇÃO: Esta ação é irreversível!
+            </p>
+            <p className="text-sm text-red-700 mb-2">
+              Ao excluir sua conta, todos os dados serão permanentemente removidos, incluindo:
+            </p>
+            <ul className="text-sm text-red-700 ml-4 list-disc">
+              <li>Dados da igreja</li>
+              <li>Lista de membros</li>
+              <li>Cargos e congregações</li>
+              <li>Relatórios e histórico</li>
+            </ul>
+          </div>
+          
+          <Input
+            label="Senha Atual"
+            type="password"
+            value={deleteData.password}
+            onChange={(e) => setDeleteData(prev => ({ ...prev, password: e.target.value }))}
+            placeholder="Digite sua senha atual"
+          />
+          
+          <Input
+            label="Confirmação"
+            value={deleteData.confirmation}
+            onChange={(e) => setDeleteData(prev => ({ ...prev, confirmation: e.target.value }))}
+            placeholder="Digite: EXCLUIR CONTA"
+          />
+          
+          <div className="flex justify-end gap-3 pt-3">
+            <Button
+              onClick={() => setShowDeleteModal(false)}
+              variant="secondary"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeleteAccount}
+              disabled={isSaving}
+              variant="primary"
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isSaving ? 'Excluindo...' : 'Excluir Conta'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
+  );
+}

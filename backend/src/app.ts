@@ -13,6 +13,8 @@ import roleRoutes from './routes/roles';
 import congregationRoutes from './routes/congregations';
 import refreshRoutes from './routes/refresh';
 import churchRoutes from './routes/church';
+import accountRoutes from './routes/account';
+import authCallbackRoutes from './routes/authCallback';
 
 dotenv.config();
 
@@ -62,6 +64,8 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/congregations', congregationRoutes);
 app.use('/api/refresh', refreshRoutes);
 app.use('/api/church', churchRoutes);
+app.use('/api/account', accountRoutes);
+app.use('/api/auth', authCallbackRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

@@ -110,7 +110,7 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
             {activeMembersCount > 0 ? (
               <>
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={handleClose}
                   disabled={isLoading}
                 >
@@ -128,7 +128,7 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
             ) : (
               <>
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   onClick={handleClose}
                   disabled={isLoading}
                 >

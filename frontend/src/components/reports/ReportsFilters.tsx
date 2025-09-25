@@ -78,7 +78,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">Filtros Avançados</h3>
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={onClose}
           className="p-2"
@@ -290,7 +290,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
       {/* Botões de Ação */}
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={handleClear}
           disabled={loading}
         >

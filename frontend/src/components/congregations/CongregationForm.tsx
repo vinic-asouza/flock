@@ -234,7 +234,7 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
       <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           onClick={onCancel}
           disabled={isLoading}
         >

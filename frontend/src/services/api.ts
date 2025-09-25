@@ -377,6 +377,37 @@ class ApiService {
     const response = await this.api.put('/church', data);
     return response.data.church;
   }
+
+  // Gerenciamento de Conta
+  async getAccountData(): Promise<any> {
+    const response = await this.api.get('/account');
+    return response.data.user;
+  }
+
+  async changeEmail(data: { newEmail: string; password: string }): Promise<any> {
+    const response = await this.api.put('/account/email', data);
+    return response.data;
+  }
+
+  async changeAccountPassword(data: { currentPassword: string; newPassword: string }): Promise<any> {
+    const response = await this.api.put('/account/password', data);
+    return response.data;
+  }
+
+  async changePhone(data: { newPhone: string; password: string }): Promise<any> {
+    const response = await this.api.put('/account/phone', data);
+    return response.data;
+  }
+
+  async deleteAccount(data: { password: string; confirmation: string }): Promise<any> {
+    const response = await this.api.delete('/account', { data });
+    return response.data;
+  }
+
+  async resendConfirmation(email: string): Promise<any> {
+    const response = await this.api.post('/account/resend-confirmation', { email });
+    return response.data;
+  }
 }
 
 // Instância singleton
