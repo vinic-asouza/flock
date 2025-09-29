@@ -1,23 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processando confirmação...');
 
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        const accessToken = searchParams.get('access_token');
-        const refreshToken = searchParams.get('refresh_token');
-        const error = searchParams.get('error');
-        const errorDescription = searchParams.get('error_description');
+        // Ler parâmetros do fragmento da URL (após #)
+        const hash = window.location.hash.substring(1); // Remove o #
+        const params = new URLSearchParams(hash);
+        
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const error = params.get('error');
+        const errorDescription = params.get('error_description');
+
+        // Debug: Log dos parâmetros encontrados
+        console.log('🔍 Parâmetros do callback:', {
+          hash: window.location.hash,
+          accessToken: accessToken ? '✅ Presente' : '❌ Ausente',
+          refreshToken: refreshToken ? '✅ Presente' : '❌ Ausente',
+          error,
+          errorDescription
+        });
 
         // Se há erro nos parâmetros
         if (error) {
@@ -30,10 +42,12 @@ export default function AuthCallbackPage() {
         if (!accessToken || !refreshToken) {
           setStatus('error');
           setMessage('Token de confirmação inválido ou expirado');
+          console.error('❌ Tokens ausentes:', { accessToken: !!accessToken, refreshToken: !!refreshToken });
           return;
         }
 
         // Processar confirmação com o backend
+        console.log('🚀 Enviando tokens para o backend...');
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/callback`, {
           method: 'POST',
           headers: {
@@ -46,18 +60,16 @@ export default function AuthCallbackPage() {
         });
 
         const data = await response.json();
+        console.log('📡 Resposta do backend:', { status: response.status, data });
 
         if (response.ok) {
           setStatus('success');
-          setMessage('Email confirmado com sucesso! Redirecionando...');
-          
-          // Redirecionar após 2 segundos
-          setTimeout(() => {
-            router.push('/settings?tab=account');
-          }, 2000);
+          setMessage('Email confirmado com sucesso! Agora você pode fazer login no sistema.');
+          console.log('✅ Confirmação bem-sucedida!');
         } else {
           setStatus('error');
-          setMessage(data.details || 'Erro ao confirmar email');
+          setMessage(data.details || data.error || 'Erro ao confirmar email');
+          console.error('❌ Erro do backend:', data);
         }
       } catch (error) {
         console.error('Erro no callback:', error);
@@ -67,14 +79,14 @@ export default function AuthCallbackPage() {
     };
 
     handleAuthCallback();
-  }, [searchParams, router]);
+  }, [router]);
 
   const handleRetry = () => {
     router.push('/login');
   };
 
-  const handleGoHome = () => {
-    router.push('/');
+  const handleGoToLogin = () => {
+    router.push('/login');
   };
 
   return (
@@ -110,11 +122,11 @@ export default function AuthCallbackPage() {
             </h2>
             <p className="text-sm text-gray-600 mb-6">{message}</p>
             <Button
-              onClick={handleGoHome}
+              onClick={handleGoToLogin}
               variant="primary"
               className="w-full"
             >
-              Ir para o Sistema
+              Fazer Login
             </Button>
           </div>
         )}
@@ -135,11 +147,11 @@ export default function AuthCallbackPage() {
                 Fazer Login
               </Button>
               <Button
-                onClick={handleGoHome}
+                onClick={handleGoToLogin}
                 variant="secondary"
                 className="w-full"
               >
-                Ir para o Sistema
+                Fazer Login
               </Button>
             </div>
           </div>

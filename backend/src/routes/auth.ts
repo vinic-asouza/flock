@@ -20,8 +20,8 @@ const authLimiter = rateLimit({
 
 // Rate limiting específico para registro - muito restritivo
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hora
-  max: 3, // 3 tentativas de registro por IP em 1 hora
+  windowMs: 15 * 60 * 1000, // 1 hora
+  max: 10, // 10 tentativas de registro por IP em 1 hora
   message: {
     error: 'Muitas tentativas de registro',
     details: 'Você excedeu o limite de tentativas de registro. Tente novamente em 1 hora.'
