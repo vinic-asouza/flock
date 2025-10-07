@@ -45,9 +45,12 @@ class ApiService {
       (response) => response,
       (error) => {
         // Não redirecionar para login se for o endpoint de verificação de auth
-        const isCheckAuthEndpoint = error.config?.url?.includes('/refresh/check');
+        const url: string = error.config?.url || '';
+        const isCheckAuthEndpoint = url.includes('/refresh/check');
+        const isLoginEndpoint = url.includes('/auth/login');
+        const isAlreadyOnLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
         
-        if (error.response?.status === 401 && !isCheckAuthEndpoint) {
+        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isAlreadyOnLogin) {
           // Token expirado ou inválido - redirecionar para login
           // Cookies serão limpos automaticamente pelo servidor
           window.location.href = '/login';

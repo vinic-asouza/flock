@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import supabase from '../services/supabase';
+import supabase, { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { validateEmailChange, validatePasswordChange, validateAccountDeletion } from '../validators/accountValidator';
 
@@ -305,8 +305,15 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Excluir usuário do Supabase Auth
-    const { error: deleteError } = await supabase.auth.admin.deleteUser(req.user.id);
+    // Excluir usuário do Supabase Auth (requer Service Role Key)
+    if (!supabaseAdmin) {
+      return res.status(500).json({
+        error: 'Configuração ausente',
+        details: 'SUPABASE_SERVICE_ROLE_KEY não configurada no servidor. Não é possível excluir a conta.'
+      });
+    }
+
+    const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(req.user.id);
 
     if (deleteError) {
       return res.status(400).json({
