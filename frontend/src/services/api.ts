@@ -411,6 +411,17 @@ class ApiService {
     const response = await this.api.post('/account/resend-confirmation', { email });
     return response.data;
   }
+
+  async getAuditLogs(params?: { page?: number; limit?: number; entity?: string; action?: string }): Promise<any> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.entity) queryParams.append('entity', params.entity);
+    if (params?.action) queryParams.append('action', params.action);
+    
+    const response = await this.api.get(`/account/logs?${queryParams.toString()}`);
+    return response.data;
+  }
 }
 
 // Instância singleton

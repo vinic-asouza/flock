@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Church, Shield } from 'lucide-react';
+import { Church, Shield, FileText } from 'lucide-react';
 import { ChurchManagement } from '@/components/settings/ChurchManagement';
 import { AccountManagement } from '@/components/settings/AccountManagement';
+import AuditLogs from '@/components/settings/AuditLogs';
 import { Card } from '@/components/ui/Card';
 
 export default function SettingsPage() {
@@ -21,6 +22,12 @@ export default function SettingsPage() {
             title: 'Conta',
             description: 'Configurações da sua conta',
             icon: Shield
+        },
+        {
+            id: 'logs',
+            title: 'Logs',
+            description: 'Histórico de operações do sistema',
+            icon: FileText
         }
     ];
 
@@ -59,6 +66,8 @@ export default function SettingsPage() {
                  {activeSection === 'church' && <ChurchManagement />}
 
                  {activeSection === 'account' && <AccountManagement />}
+
+                 {activeSection === 'logs' && <AuditLogs />}
              </div>
         </div>
     );

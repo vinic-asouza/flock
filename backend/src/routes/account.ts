@@ -6,7 +6,8 @@ import {
   changePassword, 
   changePhone, 
   deleteAccount, 
-  resendConfirmation 
+  resendConfirmation,
+  getAuditLogs
 } from '../controllers/accountController';
 import authMiddleware from '../middlewares/auth';
 
@@ -57,5 +58,8 @@ router.delete('/', sensitiveLimiter, deleteAccount);
 
 // Rota para reenviar confirmação de email
 router.post('/resend-confirmation', resendConfirmation);
+
+// Rota para listar logs de auditoria
+router.get('/logs', getAuditLogs);
 
 export default router;

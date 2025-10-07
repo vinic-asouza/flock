@@ -2,6 +2,7 @@ import { Response } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
+import { logAudit } from '../utils/auditLogger';
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -440,6 +441,22 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Log da operação de criação
+    console.log('🔍 Tentando criar log de auditoria:', {
+      userId: req.user?.id,
+      memberId: member.id,
+      churchId: church.id
+    });
+    
+    await logAudit(req, {
+      entity: 'member',
+      entityId: member.id,
+      action: 'create',
+      changesAfter: member
+    });
+    
+    console.log('✅ Log de auditoria criado');
+
     res.status(201).json(member);
 
   } catch (error) {
@@ -479,10 +496,10 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verifica se o membro pertence a esta igreja
+    // Verifica se o membro pertence a esta igreja e busca dados atuais
     const { data: existingMember, error: checkError } = await supabase
       .from('members')
-      .select('id')
+      .select('*')
       .eq('id', id)
       .eq('church_id', church.id)
       .single();
@@ -509,6 +526,15 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
         details: memberError.message
       });
     }
+
+    // Log da operação de atualização
+    await logAudit(req, {
+      entity: 'member',
+      entityId: member.id,
+      action: 'update',
+      changesBefore: existingMember,
+      changesAfter: member
+    });
 
     res.json(member);
 
@@ -549,10 +575,10 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verifica se o membro pertence a esta igreja
+    // Verifica se o membro pertence a esta igreja e busca dados atuais
     const { data: existingMember, error: checkError } = await supabase
       .from('members')
-      .select('id')
+      .select('*')
       .eq('id', id)
       .eq('church_id', church.id)
       .single();
@@ -577,6 +603,14 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
         details: memberError.message
       });
     }
+
+    // Log da operação de exclusão
+    await logAudit(req, {
+      entity: 'member',
+      entityId: existingMember.id,
+      action: 'delete',
+      changesBefore: existingMember
+    });
 
     res.json({
       message: 'Membro removido com sucesso'

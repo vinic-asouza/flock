@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import supabase, { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { validateEmailChange, validatePasswordChange, validateAccountDeletion } from '../validators/accountValidator';
+import { logAudit } from '../utils/auditLogger';
 
 /**
  * Buscar dados da conta do usuário
@@ -376,6 +377,99 @@ export const resendConfirmation = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('Erro ao reenviar confirmação:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+/**
+ * Listar logs de auditoria da conta
+ */
+export const getAuditLogs = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    // Buscar church_id do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    // Parâmetros de paginação e filtros
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+    const offset = (page - 1) * limit;
+    const entity = req.query.entity as string;
+    const action = req.query.action as string;
+
+    // Construir query
+    let query = supabase
+      .from('audit_logs')
+      .select('*', { count: 'exact' })
+      .eq('church_id', church.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    // Aplicar filtros
+    if (entity) {
+      query = query.eq('entity', entity);
+    }
+    if (action) {
+      query = query.eq('action', action);
+    }
+
+    console.log('🔍 Query de logs:', {
+      church_id: church.id,
+      entity,
+      action,
+      page,
+      limit,
+      offset
+    });
+
+    const { data: logs, error: logsError, count } = await query;
+
+    console.log('📊 Resultado da query:', {
+      logsCount: logs?.length || 0,
+      totalCount: count,
+      error: logsError?.message
+    });
+
+    if (logsError) {
+      return res.status(500).json({
+        error: 'Erro ao buscar logs',
+        details: logsError.message
+      });
+    }
+
+    res.json({
+      message: 'Logs recuperados com sucesso',
+      data: logs || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar logs de auditoria:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
