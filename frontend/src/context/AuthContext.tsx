@@ -62,6 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (church) {
             console.log('Usuário autenticado, definindo estado...');
             setUser(church);
+            
+            // Buscar dados da conta para obter o email
+            let userEmail = '';
+            try {
+              const accountData = await apiService.getAccountData();
+              userEmail = accountData.email || '';
+            } catch (error) {
+              console.warn('Erro ao buscar dados da conta:', error);
+            }
+            
             // Criar sessão mock para compatibilidade
             setSession({
               access_token: 'stored_in_cookie',
@@ -71,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               refresh_token: 'stored_in_cookie',
               user: {
                 id: church.user_id,
-                email: '', // Email será obtido via API quando necessário
+                email: userEmail,
                 aud: 'authenticated',
                 role: 'authenticated',
                 email_confirmed_at: new Date().toISOString(),
@@ -79,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 confirmed_at: new Date().toISOString(),
                 last_sign_in_at: new Date().toISOString(),
                 app_metadata: { provider: 'email', providers: ['email'] },
-                user_metadata: { email: '', email_verified: true, phone_verified: false, sub: church.user_id },
+                user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: church.user_id },
                 identities: [],
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
@@ -115,6 +125,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsOperationLoading(true);
       const response = await apiService.login(data);
       setUser(response.church);
+      
+      // Buscar dados da conta para obter o email
+      let userEmail = data.email; // Usar o email do login como fallback
+      try {
+        const accountData = await apiService.getAccountData();
+        userEmail = accountData.email || data.email;
+      } catch (error) {
+        console.warn('Erro ao buscar dados da conta após login:', error);
+      }
+      
       // Criar sessão mock para compatibilidade (tokens estão em cookies)
       setSession({
         access_token: 'stored_in_cookie',
@@ -124,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refresh_token: 'stored_in_cookie',
         user: {
           id: response.church.user_id,
-          email: '', // Email será obtido via API quando necessário
+          email: userEmail,
           aud: 'authenticated',
           role: 'authenticated',
           email_confirmed_at: new Date().toISOString(),
@@ -132,7 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           confirmed_at: new Date().toISOString(),
           last_sign_in_at: new Date().toISOString(),
           app_metadata: { provider: 'email', providers: ['email'] },
-          user_metadata: { email: '', email_verified: true, phone_verified: false, sub: response.church.user_id },
+          user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: response.church.user_id },
           identities: [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
