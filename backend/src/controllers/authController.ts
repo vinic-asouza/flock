@@ -114,6 +114,14 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
     });
 
     if (authError || !authData.user) {
+      const raw = (authError?.message || '').toLowerCase();
+      const isUnconfirmed = raw.includes('not confirmed') || raw.includes('confirm your email') || raw.includes('email not confirmed');
+      if (isUnconfirmed) {
+        return res.status(401).json({
+          error: 'Email não confirmado',
+          details: 'Necessário realizar confirmação de email. Verifique sua caixa de entrada.'
+        });
+      }
       return res.status(401).json({
         error: 'Credenciais inválidas',
         details: authError?.message

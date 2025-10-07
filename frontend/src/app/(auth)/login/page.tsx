@@ -80,6 +80,13 @@ function LoginPageComponent() {
         }
       }
       
+      // Mapear erro de email não confirmado para mensagem amigável
+      const combined = `${errorMessage} ${errorDetails || ''}`.toLowerCase();
+      if (combined.includes('email não confirmado') || combined.includes('confirm')) {
+        errorMessage = 'Necessário realizar confirmação de email';
+        errorDetails = 'Verifique sua caixa de entrada e clique no link de confirmação.';
+      }
+
       // Salvar no estado global para persistir durante re-renderizações
       globalLoginError = errorMessage;
       globalLoginErrorDetails = errorDetails;

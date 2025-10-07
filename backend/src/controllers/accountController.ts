@@ -115,10 +115,15 @@ export const changeEmail = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Atualizar email
-    const { error: updateError } = await supabase.auth.updateUser({
-      email: newEmail
-    });
+    // Atualizar email com redirecionamento para o callback do frontend
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Em supabase-js v2, updateUser aceita um segundo parâmetro com emailRedirectTo
+    // Se a versão não suportar, a URL de redirecionamento deve estar configurada no painel do Supabase
+    // Authentication → URL Configuration → Redirect URLs
+    const { error: updateError } = await (supabase.auth as any).updateUser(
+      { email: newEmail },
+      { emailRedirectTo: `${frontendUrl}/auth/callback` }
+    );
 
     if (updateError) {
       return res.status(400).json({

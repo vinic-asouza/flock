@@ -126,6 +126,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(globalRegisterError);
   const [errorDetails, setErrorDetails] = useState<string | null>(globalRegisterErrorDetails);
   const [success, setSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [states, setStates] = useState<State[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [isLoadingStates, setIsLoadingStates] = useState(true);
@@ -301,12 +302,11 @@ export default function RegisterPage() {
       setPhoneDisplay('');
       setPhoneChurchDisplay(''); // Limpar o display do telefone da igreja
       
+      // Guardar email para instrução de confirmação
+      setRegisteredEmail(cleanData.email);
+
       setSuccess(true);
       
-      // Aguardar um pouco para mostrar a mensagem de sucesso
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
     } catch (err: unknown) {
       let errorMessage = 'Erro ao registrar igreja';
       let errorDetails: string | null = null;
@@ -361,9 +361,15 @@ export default function RegisterPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Igreja Registrada!</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Verifique seu email</h1>
           <p className="mt-2 text-gray-600">
-            Sua igreja foi registrada com sucesso! Você será redirecionado para o login em alguns segundos...
+            Enviamos um link de confirmação para {registeredEmail || 'seu email'}. 
+          </p>
+          <p className="mt-1 text-gray-500">
+            Confirme o endereço para ativar sua conta. Após confirmar, clique no botão abaixo para acessar a página de login.
+          </p>
+          <p className="mt-1 text-gray-500">
+            
           </p>
         </div>
         
@@ -372,7 +378,7 @@ export default function RegisterPage() {
             className="w-full"
             onClick={() => router.push('/login')}
           >
-            Ir para o Login Agora
+            Ir para o Login
           </Button>
         </div>
       </div>

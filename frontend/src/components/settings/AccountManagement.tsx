@@ -224,11 +224,6 @@ export function AccountManagement() {
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Não confirmado';
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -273,9 +268,6 @@ export function AccountManagement() {
                   <Mail className="text-gray-500" size={20} />
                   <div>
                     <p className="font-medium text-gray-900">{accountData.email}</p>
-                    <p className="text-sm text-gray-500">
-                      Confirmado em: {formatDate(accountData.email_confirmed_at)}
-                    </p>
                   </div>
                 </div>
                 <Button
@@ -298,9 +290,6 @@ export function AccountManagement() {
                   <Phone className="text-gray-400" size={20} />
                   <div>
                     <p className="font-medium text-gray-500">{accountData.phone || 'Não informado'}</p>
-                    <p className="text-sm text-gray-400">
-                      Confirmado em: {formatDate(accountData.phone_confirmed_at)}
-                    </p>
                   </div>
                 </div>
                 <Button
@@ -313,23 +302,6 @@ export function AccountManagement() {
                   <Edit size={16} />
                   Alterar
                 </Button>
-              </div>
-
-              {/* Informações adicionais */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Conta criada em
-                  </label>
-                  <p className="text-sm text-gray-900">{formatDate(accountData.created_at)}</p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Último acesso
-                  </label>
-                  <p className="text-sm text-gray-900">{formatDate(accountData.last_sign_in_at)}</p>
-                </div>
               </div>
 
               {/* Ações de segurança */}

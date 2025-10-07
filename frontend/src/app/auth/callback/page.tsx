@@ -21,6 +21,8 @@ export default function AuthCallbackPage() {
         const refreshToken = params.get('refresh_token');
         const error = params.get('error');
         const errorDescription = params.get('error_description');
+        const type = params.get('type');
+        const messageParam = params.get('message');
 
         // Debug: Log dos parâmetros encontrados
         console.log('🔍 Parâmetros do callback:', {
@@ -30,6 +32,14 @@ export default function AuthCallbackPage() {
           error,
           errorDescription
         });
+
+        // Caso especial: fluxo de mudança de email do Supabase
+        // Primeiro clique confirma posse do email antigo e pode vir apenas com #message e type=email_change
+        if (!accessToken && !refreshToken && type === 'email_change' && messageParam) {
+          setStatus('success');
+          setMessage('Link confirmado. Verifique o link enviado para o novo email para concluir.');
+          return;
+        }
 
         // Se há erro nos parâmetros
         if (error) {
@@ -41,7 +51,7 @@ export default function AuthCallbackPage() {
         // Se não há tokens
         if (!accessToken || !refreshToken) {
           setStatus('error');
-          setMessage('Token de confirmação inválido ou expirado');
+          setMessage(messageParam || 'Token de confirmação inválido ou expirado');
           console.error('❌ Tokens ausentes:', { accessToken: !!accessToken, refreshToken: !!refreshToken });
           return;
         }
