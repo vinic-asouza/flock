@@ -62,11 +62,10 @@ export function MemberCardGrid({ member, onView, onEdit, onDeactivate, onReactiv
           </div>
         </div>
         
-        {/* Linha 2: Idade, sexo e estado civil */}
+        {/* Linha 2: Idade e sexo */}
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-2">
           <span>{idade !== null ? `${idade} anos` : '-'}</span>
           <span>{member.gender}</span>
-          <span>{member.marital_status}</span>
         </div>
         
         {/* Linha 3: WhatsApp e Email */}

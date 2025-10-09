@@ -54,7 +54,6 @@ export function MemberCard({ member, onView, onEdit, onDeactivate, onReactivate 
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
           <span>{idade !== null ? `${idade} Anos` : '-'}</span>
           <span>{member.gender}</span>
-          <span>{member.marital_status}</span>
           {member.whatsapp && (
             <a
               href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}

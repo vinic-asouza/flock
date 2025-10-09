@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, Mail, MessageCircle, MapPin, Calendar, User, Briefcase, Home, Trash2, UserMinus, UserPlus } from 'lucide-react';
+import { Loader, Mail, MessageCircle, MapPin, Calendar, User, Briefcase, Home, Trash2, UserMinus, UserPlus, Phone, Church } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface Member {
@@ -196,7 +196,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
 
                 <div className="space-y-4">
                   <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                    <Briefcase size={20} />
+                    <Church size={20} />
                     Informações Eclesiásticas
                   </h4>
 
@@ -230,7 +230,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                   Contato
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   {member.email && (
                     <div className="flex items-center gap-2">
                       <Mail size={16} className="text-gray-400" />
@@ -241,13 +241,13 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                   )}
                   {member.phone && (
                     <div className="flex items-center gap-2">
-                      <MessageCircle size={16} className="text-gray-400" />
+                      <Phone size={16} className="text-gray-400" />
                       <span className="text-gray-900">{formatarTelefone(member.phone)}</span>
                     </div>
                   )}
                   {member.whatsapp && (
                     <div className="flex items-center gap-2">
-                      <MessageCircle size={16} className="text-gray-400" />
+                      <MessageCircle size={16} className="text-green-600" />
                       <a
                         href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
                         target="_blank"

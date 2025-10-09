@@ -267,23 +267,9 @@ export function MemberFiltersBar({
         </div>
       </div>
       
-      {/* Mais opções */}
-      <div className="flex flex-col gap-1">
-        <label className="block text-xs font-medium text-gray-600 opacity-0">Ações</label>
-        <button
-          type="button"
-          onClick={onShowAdvanced}
-          className={`inline-flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors ${showAdvanced ? 'bg-gray-50 border-gray-300' : ''}`}
-        >
-          <Filter size={16} />
-          Mais opções
-          <ChevronDown size={16} className={`transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
-      
       {/* Ordenar */}
       <div className="flex flex-col gap-1">
-        <label className="block text-xs font-medium text-gray-600 opacity-0">Ordenação</label>
+        <label className="block text-xs font-medium text-gray-600">Ordenar por</label>
         <div className="relative">
           <button
             type="button"
@@ -358,6 +344,20 @@ export function MemberFiltersBar({
             </div>
           )}
         </div>
+      </div>
+      
+      {/* Mais opções */}
+      <div className="flex flex-col gap-1">
+        <label className="block text-xs font-medium text-gray-600 opacity-0">Ações</label>
+        <button
+          type="button"
+          onClick={onShowAdvanced}
+          className={`inline-flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors ${showAdvanced ? 'bg-gray-50 border-gray-300' : ''}`}
+        >
+          <Filter size={16} />
+          Mais opções
+          <ChevronDown size={16} className={`transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
+        </button>
       </div>
     </div>
   );
