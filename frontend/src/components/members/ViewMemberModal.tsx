@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, Mail, MessageCircle, MapPin, Calendar, User, Briefcase, Home, Trash2, UserMinus, UserPlus, Phone, Church } from 'lucide-react';
+import { Loader, Mail, MessageCircle, MapPin, Calendar, User, Briefcase, Home, Trash2, UserMinus, UserPlus, Phone, Church, Download } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface Member {
@@ -76,6 +76,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (isOpen && memberId) {
@@ -97,10 +98,33 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
   };
 
   const handleClose = () => {
-    if (!loading) {
+    if (!loading && !exporting) {
       setMember(null);
       setError(null);
       onClose();
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      setExporting(true);
+      const blob = await apiService.exportMemberPDF(memberId);
+      
+      // Criar URL temporária para download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `membro-${member?.name.replace(/\s+/g, '-').toLowerCase() || 'desconhecido'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpar
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao exportar PDF');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -148,6 +172,24 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                     )}
                   </div>
                 </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  disabled={exporting || loading}
+                >
+                  {exporting ? (
+                    <>
+                      <Loader className="animate-spin mr-2" size={16} />
+                      Exportando...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} className="mr-2" />
+                      Exportar PDF
+                    </>
+                  )}
+                </Button>
               </div>
 
               {/* Informações Básicas */}

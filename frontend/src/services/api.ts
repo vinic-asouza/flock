@@ -422,6 +422,14 @@ class ApiService {
     const response = await this.api.get(`/account/logs?${queryParams.toString()}`);
     return response.data;
   }
+
+  // Exportação de dados
+  async exportMemberPDF(memberId: string): Promise<Blob> {
+    const response = await this.api.get(`/export/member/${memberId}/pdf`, {
+      responseType: 'blob', // Importante para receber o arquivo como blob
+    });
+    return response.data;
+  }
 }
 
 // Instância singleton
