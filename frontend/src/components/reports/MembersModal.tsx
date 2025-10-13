@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Users, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
+import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { apiService } from '@/services/api';
 
 interface MembersModalProps {
@@ -35,6 +36,7 @@ export function MembersModal({
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Definir tab ativa inicial
   useEffect(() => {
@@ -106,6 +108,42 @@ export function MembersModal({
     }
   };
 
+  const handleExport = async (selectedFields: string[]) => {
+    try {
+      // Construir filtros baseados no estado atual do modal
+      const filters: any = {
+        [filterKey]: activeTab,
+        status: 'active' // Apenas membros ativos
+      };
+
+      // Aplicar filtro baseado no ViewSelector
+      if (viewMode === 'sede') {
+        filters.congregation_id = 'sede';
+      } else if (viewMode === 'congregation' && selectedCongregationId) {
+        filters.congregation_id = selectedCongregationId;
+      }
+
+      // Chamar API para exportar
+      const blob = await apiService.exportMembersList(filters, selectedFields);
+      
+      // Criar URL para download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const tabLabel = tabs.find(t => t.value === activeTab)?.label || activeTab;
+      link.download = `membros-${tabLabel.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar PDF. Tente novamente.');
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -135,6 +173,7 @@ export function MembersModal({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowExportModal(true)}
               className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
             >
               <Download size={12} />
@@ -343,6 +382,13 @@ export function MembersModal({
           </>
         )}
       </div>
+
+      {/* Modal de Exportação */}
+      <ExportMembersModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+      />
     </div>
   );
 }

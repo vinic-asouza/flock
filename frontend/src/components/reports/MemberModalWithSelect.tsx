@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Users, Loader2, ChevronLeft, ChevronRight, Download, XCircle } from 'lucide-react';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
+import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
 
@@ -49,6 +50,7 @@ export function MemberModalWithSelect({
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Buscar membros quando mudar filtros
   useEffect(() => {
@@ -131,6 +133,64 @@ export function MemberModalWithSelect({
 
   const hasActiveFilters = Object.values(selectedValues).some(value => value !== '');
 
+  const handleExport = async (selectedFields: string[]) => {
+    try {
+      // Construir filtros baseados nos valores selecionados
+      const exportFilters: any = {
+        status: 'active' // Apenas membros ativos
+      };
+
+      // Aplicar filtros selecionados
+      filters.forEach(filter => {
+        const value = selectedValues[filter.key];
+        if (value) {
+          exportFilters[filter.key] = value;
+        }
+      });
+
+      // Aplicar filtro baseado no ViewSelector
+      if (viewMode === 'sede') {
+        exportFilters.congregation_id = 'sede';
+      } else if (viewMode === 'congregation' && selectedCongregationId) {
+        exportFilters.congregation_id = selectedCongregationId;
+      }
+
+      // Chamar API para exportar
+      const blob = await apiService.exportMembersList(exportFilters, selectedFields);
+      
+      // Criar URL para download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Criar nome do arquivo baseado nos filtros ativos
+      const activeFilterLabels = filters
+        .map(filter => {
+          const value = selectedValues[filter.key];
+          if (!value) return null;
+          const option = filter.options.find(opt => opt.value === value);
+          return option?.label || value;
+        })
+        .filter(Boolean)
+        .join('-');
+      
+      const fileName = activeFilterLabels 
+        ? `membros-${activeFilterLabels.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`
+        : `membros-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar PDF. Tente novamente.');
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -158,6 +218,7 @@ export function MemberModalWithSelect({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowExportModal(true)}
               className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
             >
               <Download size={12} />
@@ -289,6 +350,13 @@ export function MemberModalWithSelect({
           )}
         </div>
       </div>
+
+      {/* Modal de Exportação */}
+      <ExportMembersModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+      />
     </div>
   );
 }

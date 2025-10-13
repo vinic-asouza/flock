@@ -18,7 +18,6 @@ import { TimelineCharts } from '@/components/reports/TimelineCharts';
 import { GeographySection } from '@/components/reports/GeographySection';
 import { OccupationsTable } from '@/components/reports/OccupationsTable';
 import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
-import { ExportModal } from '@/components/reports/ExportModal';
 import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
 
 export default function HomePage() {
@@ -29,9 +28,9 @@ export default function HomePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [selectedCongregationId, setSelectedCongregationId] = useState<string | undefined>();
   const [selectedCongregationName, setSelectedCongregationName] = useState<string | undefined>();
-  const [showExportModal, setShowExportModal] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [waitingForCongregation, setWaitingForCongregation] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // Carregar dados dos relatórios
   const loadReports = async (view: ViewMode, congregationId?: string) => {
@@ -85,12 +84,45 @@ export default function HomePage() {
     loadReports(viewMode, selectedCongregationId);
   };
 
-  // Exportar relatórios
-  const handleExport = (format: 'pdf' | 'excel' | 'csv') => {
-    // Implementar exportação
-    console.log('Exportar em formato:', format);
-    // Aqui você pode implementar a lógica de exportação
-    // Por exemplo, gerar PDF com jsPDF, Excel com xlsx, etc.
+  // Exportar relatórios em PDF
+  const handleExportPDF = async () => {
+    try {
+      setExporting(true);
+      
+      // Determinar congregação baseada no viewMode
+      let congregationParam: string | undefined;
+      if (viewMode === 'sede') {
+        congregationParam = 'sede';
+      } else if (viewMode === 'congregation' && selectedCongregationId) {
+        congregationParam = selectedCongregationId;
+      }
+      
+      const blob = await apiService.exportDashboardPDF(congregationParam);
+      
+      // Criar nome do arquivo baseado no filtro
+      let filename = 'relatorio-geral';
+      if (viewMode === 'sede') {
+        filename = 'relatorio-sede';
+      } else if (viewMode === 'congregation' && selectedCongregationName) {
+        filename = `relatorio-${selectedCongregationName.toLowerCase().replace(/\s+/g, '-')}`;
+      }
+      filename += `-${new Date().toISOString().split('T')[0]}.pdf`;
+      
+      // Download do arquivo
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Erro ao exportar PDF:', err);
+      setError(err.message || 'Erro ao exportar PDF');
+    } finally {
+      setExporting(false);
+    }
   };
 
   if (loading && !reportsData) {
@@ -187,11 +219,25 @@ export default function HomePage() {
                     </button>
 
                     <button
-                      onClick={() => setShowExportModal(true)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+                      onClick={handleExportPDF}
+                      disabled={exporting || loading}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        exporting || loading
+                          ? 'bg-gray-400 text-white cursor-not-allowed'
+                          : 'bg-primary text-white hover:bg-primary/90'
+                      }`}
                     >
-                      <Download size={12} />
-                      Exportar
+                      {exporting ? (
+                        <>
+                          <Loader size={12} className="animate-spin" />
+                          Exportando...
+                        </>
+                      ) : (
+                        <>
+                          <Download size={12} />
+                          Exportar PDF
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -287,15 +333,6 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Modal de Exportação */}
-          {reportsData && (
-            <ExportModal
-              isOpen={showExportModal}
-              onClose={() => setShowExportModal(false)}
-              data={reportsData}
-              onExport={handleExport}
-            />
-          )}
           </main>
         </div>
       </div>

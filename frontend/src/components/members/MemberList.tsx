@@ -7,6 +7,8 @@ import { ViewMode } from './ViewModeSelector';
 import { Pagination } from '../commom/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
+import { Button } from '../ui/Button';
+import { Download } from 'lucide-react';
 
 export function MemberList({ 
   onTotalChange, 
@@ -18,7 +20,8 @@ export function MemberList({
   onReactivate,
   viewModeSelector,
   viewMode,
-  isViewModeLoaded
+  isViewModeLoaded,
+  onExport
 }: { 
   onTotalChange?: (total: number) => void; 
   filters: MemberFilters;
@@ -30,6 +33,7 @@ export function MemberList({
   viewModeSelector?: React.ReactNode;
   viewMode: ViewMode;
   isViewModeLoaded?: boolean;
+  onExport?: () => void;
 }) {
   const {
     members,
@@ -139,8 +143,22 @@ export function MemberList({
 
   return (
     <div className="flex flex-col gap-2">
-      {/* Seletor de modo de visualização (se fornecido) */}
-      {viewModeSelector}
+      {/* Seletor de modo de visualização e botão exportar */}
+      <div className="flex items-center justify-between mb-2">
+        {typeof pagination?.total === 'number' && (
+          <div className="text-gray-500 text-sm">{pagination.total} membros encontrados</div>
+        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onExport}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+          >
+            <Download size={12} />
+            Exportar lista
+          </button>
+          {viewModeSelector}
+        </div>
+      </div>
 
       {/* Lista de membros */}
       {viewMode === 'list' ? (

@@ -14,6 +14,7 @@ import { EditMemberModal } from '@/components/members/EditMemberModal';
 import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
 import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
 import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
+import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
 import { Plus } from 'lucide-react';
@@ -66,8 +67,8 @@ const initialFilters: MemberFilters = {
 };
 
 const initialSorting = {
-  sort_by: 'name',
-  sort_order: 'asc' as 'asc' | 'desc'
+  sort_by: 'admission_date',
+  sort_order: 'desc' as 'asc' | 'desc'
 };
 
 function MembersPageContent() {
@@ -86,6 +87,7 @@ function MembersPageContent() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
 
@@ -328,6 +330,63 @@ function MembersPageContent() {
     setDeleteModalOpen(false);
   }, [removeMemberOptimistic]);
 
+  // Handler para exportação
+  const handleOpenExport = useCallback(() => {
+    setExportModalOpen(true);
+  }, []);
+
+  const handleExportMembers = useCallback(async (selectedFields: string[]) => {
+    try {
+      // Construir parâmetros de filtro
+      const params: any = {};
+      
+      // Adicionar filtros ativos
+      if (filters.search) params.search = filters.search;
+      if (filters.status && filters.status !== 'all') params.status = filters.status;
+      if (filters.roleId) params.role_id = filters.roleId;
+      if (filters.congregationId) params.congregation_id = filters.congregationId;
+      if (filters.gender) params.gender = filters.gender;
+      if (filters.maritalStatus) params.marital_status = filters.maritalStatus;
+      if (filters.nationality) params.nationality = filters.nationality;
+      if (filters.state) params.state = filters.state;
+      if (filters.city) params.city = filters.city;
+      if (filters.neighborhood) params.neighborhood = filters.neighborhood;
+      if (filters.ageFrom) params.age_from = filters.ageFrom;
+      if (filters.ageTo) params.age_to = filters.ageTo;
+      if (filters.occupation) params.occupation = filters.occupation;
+      if (filters.birthDateFrom) params.birth_date_from = filters.birthDateFrom;
+      if (filters.birthDateTo) params.birth_date_to = filters.birthDateTo;
+      if (filters.baptismDateFrom) params.baptism_date_from = filters.baptismDateFrom;
+      if (filters.baptismDateTo) params.baptism_date_to = filters.baptismDateTo;
+      if (filters.admissionDateFrom) params.admission_date_from = filters.admissionDateFrom;
+      if (filters.admissionDateTo) params.admission_date_to = filters.admissionDateTo;
+      
+      // Adicionar ordenação
+      if (sorting) {
+        params.sort_by = sorting.sort_by;
+        params.sort_order = sorting.sort_order;
+      }
+
+      // Chamar API para exportar
+      const blob = await apiService.exportMembersList(params, selectedFields);
+      
+      // Criar URL para download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `membros-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('PDF exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar PDF. Tente novamente.');
+    }
+  }, [filters, sorting]);
+
   // Mostrar loading durante inicialização
   if (isInitializing) {
     return <MembersSkeleton />;
@@ -372,16 +431,10 @@ function MembersPageContent() {
         onEdit={handleEditMember}
         onDeactivate={handleDeactivateMember}
         onReactivate={handleReactivateMember}
+        onExport={handleOpenExport}
         viewMode={viewMode}
         isViewModeLoaded={isLoaded}
-        viewModeSelector={
-          <div className="flex items-center justify-between mb-2">
-            {typeof total === 'number' && (
-              <div className="text-gray-500 text-sm">{total} membros encontrados</div>
-            )}
-            <ViewModeSelector mode={viewMode} onModeChange={setViewMode} />
-          </div>
-        }
+        viewModeSelector={<ViewModeSelector mode={viewMode} onModeChange={setViewMode} />}
       />
 
       {/* Modais */}
@@ -440,6 +493,12 @@ function MembersPageContent() {
         onClose={() => setReactivateModalOpen(false)}
         memberName={selectedMemberName}
         onConfirm={handleConfirmReactivate}
+      />
+
+      <ExportMembersModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onExport={handleExportMembers}
       />
     </div>
   );

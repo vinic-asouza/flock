@@ -430,6 +430,28 @@ class ApiService {
     });
     return response.data;
   }
+
+  async exportDashboardPDF(congregationId?: string): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (congregationId) {
+      params.append('congregation_id', congregationId);
+    }
+    
+    const response = await this.api.get(`/export/dashboard/pdf?${params.toString()}`, {
+      responseType: 'blob', // Importante para receber o arquivo como blob
+    });
+    return response.data;
+  }
+
+  async exportMembersList(filters: any, selectedFields: string[]): Promise<Blob> {
+    const response = await this.api.post('/export/members/list', {
+      filters,
+      fields: selectedFields
+    }, {
+      responseType: 'blob', // Importante para receber o arquivo como blob
+    });
+    return response.data;
+  }
 }
 
 // Instância singleton
