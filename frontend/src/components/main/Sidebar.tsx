@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Users, Home, Briefcase, Layers, BarChart2, Settings, Church } from 'lucide-react';
+import { useEffect, useState, useTransition } from 'react';
+import type { MouseEvent } from 'react';
+import { Users, Home, Briefcase, Layers, Settings, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
@@ -19,12 +21,45 @@ const navItems = [
 
 export function Sidebar({ churchName }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [loadingHref, setLoadingHref] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!isPending) {
+      setLoadingHref(null);
+    }
+  }, [pathname, isPending]);
+
+  const handleNavigation = (href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+    if (
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.button !== 0
+    ) {
+      return;
+    }
+
+    if (pathname === href) {
+      return;
+    }
+
+    event.preventDefault();
+    setLoadingHref(href);
+    startTransition(() => {
+      router.push(href);
+    });
+  };
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-screen">
       <nav className="flex-1 px-2 py-4 space-y-1">
         {navItems.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
+          const isLoading = loadingHref === href && isPending;
           
           return (
             <Link
@@ -35,14 +70,24 @@ export function Sidebar({ churchName }: SidebarProps) {
                   ? 'bg-primary text-white' 
                   : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                 }`}
+              onClick={handleNavigation(href)}
+              aria-disabled={isLoading}
             >
-              
-              <Icon 
-                size={18} 
-                className={`shrink-0 transition-colors ${
-                  isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                }`} 
-              />
+              {isLoading ? (
+                <Loader2
+                  size={18}
+                  className={`shrink-0 animate-spin ${
+                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                  }`}
+                />
+              ) : (
+                <Icon 
+                  size={18} 
+                  className={`shrink-0 transition-colors ${
+                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
+                  }`} 
+                />
+              )}
               <span className="flex-1">{label}</span>
               
               {/* Efeito de brilho sutil para item ativo */}

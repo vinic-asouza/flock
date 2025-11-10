@@ -8,7 +8,7 @@ export default function AuthLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="h-screen bg-gray-50">
+      <div className="h-screen bg-gray-50 overflow-hidden">
         <div className="flex h-screen">
           {/* Sidebar com informações da aplicação */}
           <div className="hidden lg:flex lg:w-1/2 bg-primary p-8 text-white">
@@ -62,7 +62,7 @@ export default function AuthLayout({
           
           {/* Área de formulário */}
           <div className="flex-1 flex justify-center p-8 overflow-y-auto">
-            <div className="w-full max-w-md py-8 pb-16">
+            <div className="w-full max-w-md py-8 pb-16 my-auto">
               {children}
             </div>
           </div>
