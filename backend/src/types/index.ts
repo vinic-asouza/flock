@@ -67,6 +67,24 @@ export interface Member {
   updated_at: Date;
 }
 
+export interface IntegrationMember {
+  id: string;
+  church_id: string;
+  name: string;
+  birth?: Date;
+  gender?: 'masculino' | 'feminino';
+  marital_status?: 'solteiro' | 'casado' | 'divorciado' | 'viuvo' | 'outro';
+  phone?: string;
+  whatsapp?: string;
+  expected_admission_type?: 'batismo' | 'transferencia' | 'profissao de fe' | 'outro';
+  expected_congregation_id?: string | null;
+  mentor_id?: string | null;
+  notes?: string | null;
+  status: 'em_progresso' | 'integrado' | 'descartado';
+  created_at: Date;
+  updated_at: Date;
+}
+
 export interface AuthRequest extends Request {
   user?: {
     id: string;

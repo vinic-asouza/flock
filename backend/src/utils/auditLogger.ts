@@ -2,9 +2,9 @@ import supabase from '../services/supabase';
 import { Request } from 'express';
 
 interface AuditLogData {
-  entity: 'member' | 'role' | 'congregation';
+  entity: 'member' | 'role' | 'congregation' | 'integration_member';
   entityId: string;
-  action: 'create' | 'update' | 'delete';
+  action: 'create' | 'update' | 'delete' | 'convert';
   changesBefore?: any;
   changesAfter?: any;
   ip?: string;

@@ -152,3 +152,4 @@ export interface ApiError {
 
 // Re-export dos tipos de relatórios
 export * from './reports';
+export * from './integration';

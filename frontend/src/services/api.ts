@@ -11,7 +11,10 @@ import {
   ApiError,
   Church,
   MemberReports,
-  ReportFilters
+  ReportFilters,
+  IntegrationMember,
+  IntegrationMemberPayload,
+  IntegrationFilters
 } from '@/types';
 
 class ApiService {
@@ -237,6 +240,85 @@ class ApiService {
       data: response.data.data,
       pagination: response.data.pagination,
     };
+  }
+
+  // Gerenciar integrantes
+  async listIntegrationMembers(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    expected_congregation_id?: string;
+    mentor_id?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+  }) {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.status && params.status !== 'todos') queryParams.append('status', params.status);
+    if (params.expected_congregation_id) queryParams.append('expected_congregation_id', params.expected_congregation_id);
+    if (params.mentor_id) queryParams.append('mentor_id', params.mentor_id);
+    if (params.sort_by) queryParams.append('sort_by', params.sort_by);
+    if (params.sort_order) queryParams.append('sort_order', params.sort_order);
+
+    const url = `/integration?${queryParams.toString()}`;
+    const response = await this.api.get(url);
+    return {
+      data: response.data.data as IntegrationMember[],
+      pagination: response.data.pagination,
+    };
+  }
+
+  async getIntegrationMember(id: string): Promise<IntegrationMember> {
+    const response = await this.api.get(`/integration/${id}`);
+    return response.data as IntegrationMember;
+  }
+
+  async createIntegrationMember(data: IntegrationMemberPayload): Promise<IntegrationMember> {
+    const response = await this.api.post('/integration', data);
+    return response.data as IntegrationMember;
+  }
+
+  async updateIntegrationMember(id: string, data: IntegrationMemberPayload): Promise<IntegrationMember> {
+    const response = await this.api.put(`/integration/${id}`, data);
+    return response.data as IntegrationMember;
+  }
+
+  async deleteIntegrationMember(id: string): Promise<{ message: string }> {
+    const response = await this.api.delete(`/integration/${id}`);
+    return response.data;
+  }
+
+  async convertIntegrationMember(id: string, data: any): Promise<{
+    member: any;
+    integrationMember: IntegrationMember;
+  }> {
+    const response = await this.api.post(`/integration/${id}/convert`, data);
+    return response.data;
+  }
+
+  async exportIntegrationMemberPDF(id: string): Promise<Blob> {
+    const response = await this.api.get(`/export/integration/${id}/pdf`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  }
+
+  async exportIntegrationList(filters: IntegrationFilters, selectedFields: string[]): Promise<Blob> {
+    const response = await this.api.post(
+      '/export/integration/list',
+      {
+        filters,
+        fields: selectedFields
+      },
+      {
+        responseType: 'blob'
+      }
+    );
+    return response.data;
   }
 
   // Listar cargos

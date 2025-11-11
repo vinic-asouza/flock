@@ -16,6 +16,7 @@ import churchRoutes from './routes/church';
 import accountRoutes from './routes/account';
 import authCallbackRoutes from './routes/authCallback';
 import exportRoutes from './routes/export';
+import integrationRoutes from './routes/integration';
 
 dotenv.config();
 
@@ -68,6 +69,7 @@ app.use('/api/church', churchRoutes);
 app.use('/api/account', accountRoutes);
 app.use('/api/auth', authCallbackRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/integration', integrationRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

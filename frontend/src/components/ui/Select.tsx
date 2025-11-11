@@ -22,6 +22,7 @@ interface SelectProps {
   searchable?: boolean;
   error?: string;
   helperText?: string;
+  onSearchChange?: (term: string) => void;
 }
 
 export function Select({
@@ -35,7 +36,8 @@ export function Select({
   showCount = false,
   searchable = false,
   error,
-  helperText
+  helperText,
+  onSearchChange,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,12 +59,13 @@ export function Select({
       if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
         setIsOpen(false);
         setSearchTerm('');
+        if (onSearchChange) onSearchChange('');
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [onSearchChange]);
 
   // Focar no input de busca quando abrir o dropdown (apenas se searchable for true)
   useEffect(() => {
@@ -79,10 +82,16 @@ export function Select({
     setFocusedIndex(-1);
   }, [filteredOptions]);
 
+  const handleSearchUpdate = (term: string) => {
+    setSearchTerm(term);
+    onSearchChange?.(term);
+  };
+
   const handleOptionClick = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
     setSearchTerm('');
+    onSearchChange?.('');
     setFocusedIndex(-1);
   };
 
@@ -101,6 +110,7 @@ export function Select({
         e.preventDefault();
         setIsOpen(false);
         setSearchTerm('');
+        onSearchChange?.('');
         setFocusedIndex(-1);
         break;
       case 'ArrowDown':
@@ -164,7 +174,7 @@ export function Select({
                 type="text"
                 placeholder="Buscar..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchUpdate(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'ArrowDown') {
                     e.preventDefault();
@@ -172,7 +182,7 @@ export function Select({
                   } else if (e.key === 'Escape') {
                     e.preventDefault();
                     setIsOpen(false);
-                    setSearchTerm('');
+                    handleSearchUpdate('');
                     setFocusedIndex(-1);
                   }
                 }}

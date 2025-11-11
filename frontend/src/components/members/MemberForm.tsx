@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -192,9 +192,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [baptismDateDisplay, setBaptismDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   const [cpfDisplay, setCpfDisplay] = useState('');
-  const [formReady, setFormReady] = useState(false);
   const [nationalityOtherError, setNationalityOtherError] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
+  const prevMemberRef = useRef<Member | null>(null);
 
   const {
     register,
@@ -221,62 +221,65 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const occupationOtherValue = watch('occupation_other');
   const selectedMaritalStatus = watch('marital_status');
 
-  // Resetar formulário quando member mudar (para modo edit)
+  // Preencher formulário quando member mudar
   useEffect(() => {
-    if (member && mode === 'edit') {
-      // Usar setValue para definir cada campo individualmente
-      setValue('name', member.name);
-      setValue('email', member.email || '');
-      setValue('phone', member.phone || '');
-      setValue('whatsapp', member.whatsapp || '');
-      setValue('birth', formatDateFromISO(member.birth));
-      setValue('gender', member.gender as 'Masculino' | 'Feminino');
-      setValue('marital_status', member.marital_status as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro');
-      // Tratar nacionalidade: se não for "Brasileiro(a)", assumir que é "Outra"
-      const nationality = member.nationality || '';
-      if (nationality === 'Brasileiro(a)' || nationality === '') {
-        setValue('nationality', nationality);
-        setValue('nationality_other', '');
-      } else {
-        setValue('nationality', 'Outra');
-        setValue('nationality_other', nationality);
-      }
-      setValue('document', member.document || '');
-      setValue('spouse', member.spouse || '');
-      // Tratar profissão: se não estiver na lista padrão, assumir que é "Outra"
-      const occupation = member.occupation || '';
-      const isStandardOccupation = professions.some(p => p.name === occupation);
-      if (isStandardOccupation || occupation === '') {
-        setValue('occupation', occupation);
-        setValue('occupation_other', '');
-      } else {
-        setValue('occupation', 'Outra');
-        setValue('occupation_other', occupation);
-      }
-      setValue('address', member.address || '');
-      setValue('complement', member.complement || '');
-      setValue('neighborhood', member.neighborhood || '');
-      setValue('city', member.city || '');
-      setValue('state', member.state || '');
-      setValue('cep', member.cep ? member.cep.replace(/\D/g, '') : '');
-      setValue('baptism_date', formatDateFromISO(member.baptism_date));
-      setValue('admission', member.admission || '');
-      setValue('admission_date', formatDateFromISO(member.admission_date));
-      setValue('active', member.active);
-      
-      // Definir role_id e congregation_id
-      const roleId = member.role?.id || member.role_id || '';
-      const congregationId = member.congregation?.id || member.congregation_id || '';
-      
-      setValue('role_id', roleId);
-      setValue('congregation_id', congregationId);
-      
-      // Marcar formulário como pronto
-      setFormReady(true);
-    } else if (mode === 'create') {
-      setFormReady(true);
+    if (!member) {
+      prevMemberRef.current = null;
+      return;
     }
-  }, [member, mode, setValue]);
+
+    if (prevMemberRef.current && prevMemberRef.current.id === member.id) {
+      return;
+    }
+
+    prevMemberRef.current = member;
+
+    setValue('name', member.name);
+    setValue('email', member.email || '');
+    setValue('phone', member.phone || '');
+    setValue('whatsapp', member.whatsapp || '');
+    setValue('birth', formatDateFromISO(member.birth));
+    setValue('gender', member.gender as 'Masculino' | 'Feminino');
+    setValue('marital_status', member.marital_status as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro');
+
+    const nationality = member.nationality || '';
+    if (nationality === 'Brasileiro(a)' || nationality === '') {
+      setValue('nationality', nationality);
+      setValue('nationality_other', '');
+    } else {
+      setValue('nationality', 'Outra');
+      setValue('nationality_other', nationality);
+    }
+
+    setValue('document', member.document || '');
+    setValue('spouse', member.spouse || '');
+
+    const occupation = member.occupation || '';
+    const isStandardOccupation = professions.some(p => p.name === occupation);
+    if (isStandardOccupation || occupation === '') {
+      setValue('occupation', occupation);
+      setValue('occupation_other', '');
+    } else {
+      setValue('occupation', 'Outra');
+      setValue('occupation_other', occupation);
+    }
+
+    setValue('address', member.address || '');
+    setValue('complement', member.complement || '');
+    setValue('neighborhood', member.neighborhood || '');
+    setValue('city', member.city || '');
+    setValue('state', member.state || '');
+    setValue('cep', member.cep ? member.cep.replace(/\D/g, '') : '');
+    setValue('baptism_date', formatDateFromISO(member.baptism_date));
+    setValue('admission', member.admission || '');
+    setValue('admission_date', formatDateFromISO(member.admission_date));
+    setValue('active', member.active);
+
+    const roleId = member.role?.id || member.role_id || '';
+    const congregationId = member.congregation?.id || member.congregation_id || '';
+    setValue('role_id', roleId);
+    setValue('congregation_id', congregationId);
+  }, [member, professions, setValue]);
 
   // Carregar cidades quando estado mudar
   useEffect(() => {
@@ -288,15 +291,15 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     }
   }, [selectedState, states, fetchCities]);
 
-  // Carregar cidades quando member for carregado no modo edit
+  // Carregar cidades quando member for carregado (modo edit ou prefill em create)
   useEffect(() => {
-    if (member && mode === 'edit' && member.state && states.length > 0) {
+    if (member && member.state && states.length > 0) {
       const state = states.find(s => s.sigla === member.state);
       if (state) {
         fetchCities(state.id.toString());
       }
     }
-  }, [member, mode, states, fetchCities]);
+  }, [member, states, fetchCities]);
 
   // Limpar erro de nacionalidade quando usuário digitar
   useEffect(() => {

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import type { MouseEvent } from 'react';
-import { Users, Home, Briefcase, Layers, Settings, Loader2 } from 'lucide-react';
+import { Users, Home, Briefcase, Layers, Settings, Loader2, UserPlus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ interface SidebarProps {
 const navItems = [
   { label: 'Painel', href: '/', icon: Home },
   { label: 'Membros', href: '/members', icon: Users },
+  { label: 'Integração', href: '/integration', icon: UserPlus },
   { label: 'Cargos', href: '/roles', icon: Briefcase },
   { label: 'Congregações', href: '/congregations', icon: Layers },
   { label: 'Configurações', href: '/settings', icon: Settings },

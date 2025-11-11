@@ -280,6 +280,562 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const integrationStatusLabels: Record<string, string> = {
+  em_progresso: 'Em progresso',
+  integrado: 'Integrado',
+  descartado: 'Descartado'
+};
+
+const integrationAdmissionLabels: Record<string, string> = {
+  batismo: 'Batismo',
+  transferencia: 'Transferência',
+  'profissao de fe': 'Profissão de Fé',
+  outro: 'Outro'
+};
+
+const integrationGenderLabels: Record<string, string> = {
+  masculino: 'Masculino',
+  feminino: 'Feminino'
+};
+
+const integrationMaritalLabels: Record<string, string> = {
+  solteiro: 'Solteiro',
+  casado: 'Casado',
+  divorciado: 'Divorciado',
+  viuvo: 'Viúvo',
+  outro: 'Outro'
+};
+
+const formatIntegrationDate = (date: string | null | undefined) => {
+  if (!date) return '-';
+  const parsed = new Date(date);
+  return isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString('pt-BR');
+};
+
+const formatIntegrationPhone = (phone: string | null | undefined) => {
+  if (!phone) return '-';
+  const numbers = phone.replace(/\D/g, '');
+  if (numbers.length === 10) {
+    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  }
+  if (numbers.length === 11) {
+    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+  return phone;
+};
+
+const formatIntegrationNotes = (notes: string | null | undefined) => {
+  if (!notes) return 'Nenhuma anotação registrada.';
+  return notes;
+};
+
+const getIntegrationSelect = () => `
+  *,
+  expected_congregation:congregations!integration_members_expected_congregation_id_fkey (
+    name,
+    city,
+    state
+  ),
+  mentor:members!integration_members_mentor_id_fkey (
+    name,
+    phone,
+    whatsapp
+  )
+`;
+
+export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    const { id } = req.params;
+
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    const { data: integrationMemberData, error: integrationError } = await supabase
+      .from('integration_members')
+      .select(getIntegrationSelect())
+      .eq('id', id)
+      .eq('church_id', church.id)
+      .single();
+
+    if (integrationError || !integrationMemberData) {
+      return res.status(404).json({
+        error: 'Integrante não encontrado',
+        details: integrationError?.message ?? 'Integrante não existente ou não pertence a esta igreja'
+      });
+    }
+
+    const integrationMember = integrationMemberData as any;
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 50, bottom: 50, left: 50, right: 50 }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=integrante-${integrationMember.name.replace(/\s+/g, '-').toLowerCase()}.pdf`
+    );
+
+    doc.pipe(res);
+
+    doc
+      .fontSize(20)
+      .font('Helvetica-Bold')
+      .text(church.name, { align: 'center' })
+      .moveDown(0.5);
+
+    doc
+      .fontSize(16)
+      .font('Helvetica')
+      .text('Ficha de Integração', { align: 'center' })
+      .moveDown(1);
+
+    const statusLabel = integrationStatusLabels[integrationMember.status] ?? integrationMember.status;
+    const statusColor =
+      integrationMember.status === 'integrado'
+        ? '#047857'
+        : integrationMember.status === 'descartado'
+        ? '#6B7280'
+        : '#2563EB';
+
+    doc
+      .fontSize(10)
+      .font('Helvetica-Bold')
+      .fillColor(statusColor)
+      .text(statusLabel.toUpperCase(), { align: 'center' })
+      .fillColor('#000000')
+      .moveDown(1);
+
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text(integrationMember.name, { align: 'center' })
+      .moveDown(1);
+
+    doc
+      .strokeColor('#E5E7EB')
+      .lineWidth(1)
+      .moveTo(50, doc.y)
+      .lineTo(545, doc.y)
+      .stroke()
+      .moveDown(1);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Informações Pessoais')
+      .moveDown(0.5);
+
+    doc.fontSize(11).font('Helvetica');
+
+    const personalInfo = [
+      { label: 'Data de Nascimento', value: formatIntegrationDate(integrationMember.birth) },
+      {
+        label: 'Gênero',
+        value: integrationMember.gender ? integrationGenderLabels[integrationMember.gender] ?? integrationMember.gender : '-'
+      },
+      {
+        label: 'Estado Civil',
+        value: integrationMember.marital_status
+          ? integrationMaritalLabels[integrationMember.marital_status] ?? integrationMember.marital_status
+          : '-'
+      }
+    ];
+
+    personalInfo.forEach(info => {
+      doc
+        .font('Helvetica-Bold')
+        .text(info.label + ': ', { continued: true })
+        .font('Helvetica')
+        .text(info.value ?? '-');
+    });
+
+    doc.moveDown(1);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Processo de Integração')
+      .moveDown(0.5);
+
+    const processInfo = [
+      {
+        label: 'Tipo de Admissão Previsto',
+        value: integrationMember.expected_admission_type
+          ? integrationAdmissionLabels[integrationMember.expected_admission_type] ?? integrationMember.expected_admission_type
+          : '-'
+      },
+      {
+        label: 'Congregação Prevista',
+        value: integrationMember.expected_congregation?.name || 'Sede'
+      },
+      {
+        label: 'Responsável/Discipulador',
+        value: integrationMember.mentor?.name || '-'
+      }
+    ];
+
+    processInfo.forEach(info => {
+      doc
+        .font('Helvetica-Bold')
+        .text(info.label + ': ', { continued: true })
+        .font('Helvetica')
+        .text(info.value ?? '-');
+    });
+
+    doc.moveDown(1);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Contato')
+      .moveDown(0.5);
+
+    if (integrationMember.phone) {
+      doc
+        .font('Helvetica-Bold')
+        .text('Telefone: ', { continued: true })
+        .font('Helvetica')
+        .text(formatIntegrationPhone(integrationMember.phone));
+    }
+
+    if (integrationMember.whatsapp) {
+      const whatsappNumber = integrationMember.whatsapp.replace(/\D/g, '');
+      doc
+        .font('Helvetica-Bold')
+        .text('WhatsApp: ', { continued: true })
+        .font('Helvetica')
+        .fillColor('#25D366')
+        .text(formatIntegrationPhone(integrationMember.whatsapp), {
+          link: `https://wa.me/${whatsappNumber}`,
+          underline: true
+        })
+        .fillColor('#000000');
+    }
+
+    if (integrationMember.mentor) {
+      const mentorContacts = [integrationMember.mentor.phone, integrationMember.mentor.whatsapp]
+        .filter(Boolean)
+        .map(contact => formatIntegrationPhone(contact!))
+        .join(' | ');
+
+      doc
+        .font('Helvetica-Bold')
+        .text('Contato do Responsável: ', { continued: true })
+        .font('Helvetica')
+        .text(mentorContacts || '-');
+    }
+
+    doc.moveDown(1);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Notas')
+      .moveDown(0.5);
+
+    doc.font('Helvetica').text(formatIntegrationNotes(integrationMember.notes), {
+      align: 'justify'
+    });
+
+    doc.moveDown(2);
+
+    doc
+      .fontSize(8)
+      .fillColor('#6B7280')
+      .text(`Documento gerado em ${new Date().toLocaleString('pt-BR')}`, { align: 'center' });
+
+    doc.end();
+  } catch (error) {
+    console.error('Erro ao gerar PDF de integração:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+export const exportIntegrationMembersList = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    const { filters, fields } = req.body;
+
+    if (!fields || !Array.isArray(fields) || fields.length === 0) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: 'Selecione pelo menos um campo para exportar'
+      });
+    }
+
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    let query = supabase
+      .from('integration_members')
+      .select(getIntegrationSelect())
+      .eq('church_id', church.id);
+
+    if (filters) {
+      if (filters.search) {
+        const safeSearch = filters.search.replace(/,/g, '');
+        query = query.or(`name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,whatsapp.ilike.%${safeSearch}%`);
+      }
+      if (filters.status && filters.status !== 'todos') {
+        query = query.eq('status', filters.status);
+      }
+      if (filters.expectedCongregationId) {
+        if (filters.expectedCongregationId === 'sede') {
+          query = query.is('expected_congregation_id', null);
+        } else {
+          query = query.eq('expected_congregation_id', filters.expectedCongregationId);
+        }
+      }
+      if (filters.mentorId) {
+        query = query.eq('mentor_id', filters.mentorId);
+      }
+    }
+
+    if (filters?.sort_by) {
+      query = query.order(filters.sort_by, { ascending: filters.sort_order === 'asc' });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    const { data: integrationMembersData, error: listError } = await query;
+
+    if (listError) {
+      return res.status(500).json({
+        error: 'Erro ao buscar integrantes',
+        details: listError.message
+      });
+    }
+
+    const integrationMembers = (integrationMembersData as any[]) || [];
+
+    if (integrationMembers.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum integrante encontrado',
+        details: 'Não há integrantes que correspondam aos filtros aplicados'
+      });
+    }
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 40, bottom: 40, left: 40, right: 40 }
+    });
+
+    const filename = `lista-integrantes-${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+
+    doc.pipe(res);
+
+    const fieldLabels: Record<string, string> = {
+      name: 'Nome',
+      birth: 'Data de Nascimento',
+      gender: 'Gênero',
+      marital_status: 'Estado Civil',
+      phone: 'Telefone',
+      whatsapp: 'WhatsApp',
+      expected_admission_type: 'Admissão Prevista',
+      expected_congregation: 'Congregação Prevista',
+      mentor: 'Responsável',
+      mentor_contact: 'Contato do Responsável',
+      status: 'Status',
+      notes: 'Notas',
+      created_at: 'Criado em',
+      updated_at: 'Atualizado em'
+    };
+
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text(church.name, { align: 'center' })
+      .moveDown(0.3);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica')
+      .text('Lista de Integrantes', { align: 'center' })
+      .moveDown(0.2);
+
+    doc
+      .fontSize(9)
+      .fillColor('#6B7280')
+      .text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, { align: 'center' })
+      .text(`Total: ${integrationMembers.length} integrantes`, { align: 'center' })
+      .fillColor('#000000')
+      .moveDown(1);
+
+    doc
+      .strokeColor('#E5E7EB')
+      .lineWidth(1)
+      .moveTo(40, doc.y)
+      .lineTo(doc.page.width - 40, doc.y)
+      .stroke()
+      .moveDown(0.5);
+
+    const pageWidth = doc.page.width - 80;
+    const columnWidth = pageWidth / fields.length;
+    const rowHeight = 25;
+    const headerHeight = 30;
+    let currentY = doc.y;
+
+    const drawHeader = () => {
+      doc.fontSize(8).font('Helvetica-Bold');
+      fields.forEach((field, index) => {
+        const x = 40 + index * columnWidth;
+        doc.rect(x, currentY, columnWidth, headerHeight).fillAndStroke('#F3F4F6', '#E5E7EB');
+        doc
+          .fillColor('#000000')
+          .text(fieldLabels[field] || field, x + 5, currentY + 8, {
+            width: columnWidth - 10,
+            align: 'left'
+          });
+      });
+      currentY += headerHeight;
+      doc.fontSize(7).font('Helvetica');
+    };
+
+    drawHeader();
+
+    integrationMembers.forEach((member: any, rowIndex: number) => {
+      if (currentY + rowHeight > doc.page.height - 60) {
+        doc.addPage();
+        currentY = 40;
+        drawHeader();
+      }
+
+      if (rowIndex % 2 === 0) {
+        doc.rect(40, currentY, pageWidth, rowHeight).fillAndStroke('#FAFAFA', '#E5E7EB');
+      } else {
+        doc.rect(40, currentY, pageWidth, rowHeight).stroke('#E5E7EB');
+      }
+
+      fields.forEach((field, colIndex) => {
+        const x = 40 + colIndex * columnWidth;
+        let value = '';
+
+        switch (field) {
+          case 'name':
+            value = member.name || '-';
+            break;
+          case 'birth':
+            value = formatIntegrationDate(member.birth);
+            break;
+          case 'gender':
+            value = member.gender ? integrationGenderLabels[member.gender] ?? member.gender : '-';
+            break;
+          case 'marital_status':
+            value = member.marital_status
+              ? integrationMaritalLabels[member.marital_status] ?? member.marital_status
+              : '-';
+            break;
+          case 'phone':
+            value = formatIntegrationPhone(member.phone);
+            break;
+          case 'whatsapp':
+            value = formatIntegrationPhone(member.whatsapp);
+            break;
+          case 'expected_admission_type':
+            value = member.expected_admission_type
+              ? integrationAdmissionLabels[member.expected_admission_type] ?? member.expected_admission_type
+              : '-';
+            break;
+          case 'expected_congregation':
+            value = member.expected_congregation?.name || 'Sede';
+            break;
+          case 'mentor':
+            value = member.mentor?.name || '-';
+            break;
+          case 'mentor_contact':
+            value = [member.mentor?.phone, member.mentor?.whatsapp].filter(Boolean).join(' | ') || '-';
+            break;
+          case 'status':
+            value = integrationStatusLabels[member.status] ?? member.status;
+            break;
+          case 'notes':
+            value = member.notes ? (member.notes.length > 80 ? `${member.notes.slice(0, 77)}...` : member.notes) : '-';
+            break;
+          case 'created_at':
+            value = formatIntegrationDate(member.created_at);
+            break;
+          case 'updated_at':
+            value = formatIntegrationDate(member.updated_at);
+            break;
+          default:
+            value = '-';
+        }
+
+        doc
+          .fillColor('#000000')
+          .text(value, x + 5, currentY + 8, {
+            width: columnWidth - 10,
+            align: 'left',
+            ellipsis: true
+          });
+      });
+
+      currentY += rowHeight;
+    });
+
+    doc
+      .fontSize(7)
+      .fillColor('#6B7280')
+      .text(
+        `Relatório gerado pelo sistema de gestão eclesiástica - ${church.name}`,
+        40,
+        doc.page.height - 30,
+        { align: 'center', width: pageWidth }
+      );
+
+    doc.end();
+  } catch (error) {
+    console.error('Erro ao gerar PDF da lista de integrantes:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+};
+
 export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
   try {
     console.log('📊 Iniciando exportação de dashboard PDF...');
