@@ -8,12 +8,17 @@ interface IntegrationFiltersBarProps {
   congregations: { id: string; name: string }[];
 }
 
-const statusLabels: Record<IntegrationFilters['status'], string> = {
+const statusLabels: Record<Exclude<IntegrationFilters['status'], 'descartado'>, string> = {
   todos: 'Todos',
   em_progresso: 'Em progresso',
-  integrado: 'Integrado',
-  descartado: 'Descartado'
+  integrado: 'Integrado'
 };
+
+const statusOptions: Array<Exclude<IntegrationFilters['status'], 'descartado'>> = [
+  'todos',
+  'em_progresso',
+  'integrado'
+];
 
 export function IntegrationFiltersBar({
   filters,
@@ -40,9 +45,10 @@ export function IntegrationFiltersBar({
     setOpenSelect(prev => (prev === key ? null : key));
   };
 
+  const currentStatus = filters.status === 'descartado' ? 'todos' : filters.status;
+
   return (
     <div ref={containerRef} className="flex flex-wrap gap-4 items-start w-full">
-      {/* Status */}
       <div className="flex flex-col gap-1">
         <label className="block text-xs font-medium text-gray-600">Status</label>
         <div className="relative">
@@ -51,7 +57,7 @@ export function IntegrationFiltersBar({
             onClick={() => handleToggle('status')}
             className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors"
           >
-            <span>{statusLabels[filters.status]}</span>
+            <span>{statusLabels[currentStatus]}</span>
             <ChevronDown
               size={16}
               className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'status' ? 'rotate-180' : ''}`}
@@ -61,7 +67,7 @@ export function IntegrationFiltersBar({
           {openSelect === 'status' && (
             <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
               <div className="py-1">
-                {(['todos', 'em_progresso', 'integrado', 'descartado'] as IntegrationFilters['status'][]).map(option => (
+                {statusOptions.map(option => (
                   <button
                     key={option}
                     type="button"
@@ -69,7 +75,7 @@ export function IntegrationFiltersBar({
                       onChange({ status: option });
                       setOpenSelect(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === option ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${currentStatus === option ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
                     {statusLabels[option]}
                   </button>
@@ -80,7 +86,6 @@ export function IntegrationFiltersBar({
         </div>
       </div>
 
-      {/* Congregação prevista */}
       <div className="flex flex-col gap-1">
         <label className="block text-xs font-medium text-gray-600">Congregação prevista</label>
         <div className="relative">

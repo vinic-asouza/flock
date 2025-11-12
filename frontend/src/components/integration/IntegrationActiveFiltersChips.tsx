@@ -6,7 +6,6 @@ interface IntegrationActiveFiltersChipsProps {
   onRemoveFilter: (key: keyof IntegrationFilters) => void;
   onClearAll: () => void;
   congregations: { id: string; name: string }[];
-  mentors: { id: string; name: string }[];
 }
 
 const statusLabels: Record<'em_progresso' | 'integrado' | 'descartado', string> = {
@@ -19,8 +18,7 @@ export function IntegrationActiveFiltersChips({
   filters,
   onRemoveFilter,
   onClearAll,
-  congregations,
-  mentors
+  congregations
 }: IntegrationActiveFiltersChipsProps) {
   const activeChips: { key: keyof IntegrationFilters; label: string }[] = [];
 
@@ -39,14 +37,6 @@ export function IntegrationActiveFiltersChips({
     activeChips.push({
       key: 'expectedCongregationId',
       label: `Congregação: ${label}`
-    });
-  }
-
-  if (filters.mentorId) {
-    const mentorName = mentors.find(m => m.id === filters.mentorId)?.name || 'Responsável selecionado';
-    activeChips.push({
-      key: 'mentorId',
-      label: `Responsável: ${mentorName}`
     });
   }
 

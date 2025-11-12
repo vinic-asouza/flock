@@ -49,7 +49,10 @@ export default function CongregationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Congregações</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Congregações</h1>
+          <p className="text-sm text-gray-600">Organize as congregações e acompanhe suas informações.</p>
+        </div>
         <Button
           onClick={() => setCreateModalOpen(true)}
           className="inline-flex items-center gap-2"

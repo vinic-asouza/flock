@@ -10,7 +10,6 @@ import { DeleteIntegrationModal } from '@/components/integration/DeleteIntegrati
 import { ConvertIntegrationModal } from '@/components/integration/ConvertIntegrationModal';
 import { IntegrationProvider, useIntegration } from '@/context/IntegrationContext';
 import { useFiltersData } from '@/hooks/useFiltersData';
-import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { IntegrationFilters, IntegrationMember } from '@/types';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
 import { IntegrationFiltersBar } from '@/components/integration/IntegrationFiltersBar';
@@ -39,7 +38,6 @@ function IntegrationPageContent() {
   } = useIntegration();
 
   const { congregations } = useFiltersData();
-  const { options: mentorOptions, loading: mentorsLoading } = useMemberOptions();
 
   const [filters, setFilters] = useState<IntegrationFilters>(initialFilters);
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,7 +148,10 @@ function IntegrationPageContent() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Integração</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Integração</h1>
+          <p className="text-sm text-gray-600">Gerencie integrantes em processo de integração e converta-os em membros.</p>
+        </div>
         <Button onClick={() => setCreateModalOpen(true)} className="inline-flex items-center gap-2">
           <Plus size={18} />
           Novo integrante
@@ -163,8 +164,6 @@ function IntegrationPageContent() {
         filters={filters}
         onChange={handleFilterChange}
         congregations={congregations}
-        mentors={mentorOptions}
-        loadingMentors={mentorsLoading}
       />
 
       <IntegrationActiveFiltersChips
@@ -172,7 +171,6 @@ function IntegrationPageContent() {
         onRemoveFilter={handleRemoveFilter}
         onClearAll={handleClearAllFilters}
         congregations={congregations}
-        mentors={mentorOptions}
       />
 
       <IntegrationList

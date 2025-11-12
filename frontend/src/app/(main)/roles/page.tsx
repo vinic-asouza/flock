@@ -51,7 +51,7 @@ export default function RolesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Cargos</h1>
-          <p className="text-gray-600 mt-1">Gerencie os cargos da sua igreja</p>
+          <p className="text-sm text-gray-600">Gerencie os cargos da sua igreja</p>
         </div>
         <Button
           onClick={() => setCreateModalOpen(true)}
