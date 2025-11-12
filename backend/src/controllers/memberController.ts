@@ -996,6 +996,150 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       return new Date(member.baptism_date) >= thirtyDaysAgo;
     }).length;
 
+    const integrationSelect = `
+      id,
+      name,
+      status,
+      created_at,
+      expected_congregation:congregations!integration_members_expected_congregation_id_fkey (
+        id,
+        name
+      ),
+      mentor:members!integration_members_mentor_id_fkey (
+        id,
+        name
+      )
+    `;
+
+    let integrationQuery = supabase
+      .from('integration_members')
+      .select(integrationSelect)
+      .eq('church_id', church.id);
+
+    if (congregation_id) {
+      if (congregation_id === 'sede') {
+        integrationQuery = integrationQuery.is('expected_congregation_id', null);
+      } else {
+        integrationQuery = integrationQuery.eq('expected_congregation_id', congregation_id);
+      }
+    }
+
+    const {
+      data: integrationData,
+      error: integrationError
+    } = await integrationQuery;
+
+    if (integrationError) {
+      console.error('Erro ao buscar integrantes de integração:', integrationError);
+      return res.status(500).json({
+        error: 'Erro ao buscar dados de integração',
+        details: integrationError.message
+      });
+    }
+
+    interface IntegrationStatusCounts {
+      inProgress: number;
+      integrated: number;
+      discarded: number;
+    }
+
+    interface IntegrationMemberSummary {
+      id: string;
+      name: string;
+      status: string;
+      created_at: string;
+      expected_congregation?: { id: string; name: string | null } | null;
+      mentor?: { id: string; name: string | null } | null;
+    }
+
+    const createEmptyCounts = (): IntegrationStatusCounts => ({
+      inProgress: 0,
+      integrated: 0,
+      discarded: 0
+    });
+
+    const ensureCounts = (
+      collection: Record<string, IntegrationStatusCounts>,
+      key: string
+    ) => {
+      if (!collection[key]) {
+        collection[key] = createEmptyCounts();
+      }
+      return collection[key];
+    };
+
+    const statusMap = {
+      em_progresso: 'inProgress',
+      integrado: 'integrated',
+      descartado: 'discarded'
+    } as const;
+
+    const integrationTotals: IntegrationStatusCounts = createEmptyCounts();
+    const integrationTotalsByYear: Record<string, IntegrationStatusCounts> = {};
+    const integrationTotalsByMonth: Record<string, IntegrationStatusCounts> = {};
+    const integrationMembersByYear: Record<string, IntegrationMemberSummary[]> = {};
+    const integrationMembersByMonth: Record<string, IntegrationMemberSummary[]> = {};
+
+    const integrationMembers = (integrationData || []) as IntegrationMemberSummary[];
+
+    integrationMembers.forEach(member => {
+      if (!member.created_at) {
+        return;
+      }
+
+      const createdAt = new Date(member.created_at);
+
+      if (Number.isNaN(createdAt.getTime())) {
+        return;
+      }
+
+      const year = createdAt.getFullYear().toString();
+      const month = String(createdAt.getMonth() + 1).padStart(2, '0');
+      const yearMonthKey = `${year}-${month}`;
+
+      const statusKey =
+        statusMap[member.status as keyof typeof statusMap] ?? 'inProgress';
+
+      integrationTotals[statusKey] += 1;
+      ensureCounts(integrationTotalsByYear, year)[statusKey] += 1;
+      ensureCounts(integrationTotalsByMonth, yearMonthKey)[statusKey] += 1;
+
+      const summary: IntegrationMemberSummary = {
+        id: member.id,
+        name: member.name,
+        status: member.status,
+        created_at: member.created_at,
+        expected_congregation: member.expected_congregation || null,
+        mentor: member.mentor || null
+      };
+
+      if (!integrationMembersByYear[year]) {
+        integrationMembersByYear[year] = [];
+      }
+      integrationMembersByYear[year].push(summary);
+
+      if (!integrationMembersByMonth[yearMonthKey]) {
+        integrationMembersByMonth[yearMonthKey] = [];
+      }
+      integrationMembersByMonth[yearMonthKey].push(summary);
+    });
+
+    const sortByCreatedDesc = (list: IntegrationMemberSummary[]) => {
+      return list.sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return dateB - dateA;
+      });
+    };
+
+    Object.keys(integrationMembersByYear).forEach(year => {
+      integrationMembersByYear[year] = sortByCreatedDesc(integrationMembersByYear[year]);
+    });
+
+    Object.keys(integrationMembersByMonth).forEach(yearMonth => {
+      integrationMembersByMonth[yearMonth] = sortByCreatedDesc(integrationMembersByMonth[yearMonth]);
+    });
+
     res.json({
       summary: {
         totalMembers,
@@ -1023,6 +1167,18 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         admissionsByMonth: admissionByMonth,
         membersByYear: membersByYear,
         membersByMonth: membersByMonth
+      },
+      integration: {
+        totals: {
+          ...integrationTotals,
+          total: integrationMembers.length
+        },
+        timeline: {
+          totalsByYear: integrationTotalsByYear,
+          totalsByMonth: integrationTotalsByMonth,
+          membersByYear: integrationMembersByYear,
+          membersByMonth: integrationMembersByMonth
+        }
       },
       topOccupations,
       filters: {

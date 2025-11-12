@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, UserCheck, UserX, UserPlus, Droplets, TrendingUp } from 'lucide-react';
+import { Users, UserCheck, UserX, UserPlus, TrendingUp } from 'lucide-react';
 import { MemberReportsSummary } from '@/types';
 
 interface SummaryCardsProps {
@@ -10,9 +10,10 @@ interface SummaryCardsProps {
     congregation_id: string | null;
   };
   congregationName?: string;
+  integrationInProgress?: number;
 }
 
-export function SummaryCards({ data, loading = false, filterInfo, congregationName }: SummaryCardsProps) {
+export function SummaryCards({ data, loading = false, filterInfo, congregationName, integrationInProgress = 0 }: SummaryCardsProps) {
   const cards = [
     {
       title: 'Membros Ativos',
@@ -57,10 +58,10 @@ export function SummaryCards({ data, loading = false, filterInfo, congregationNa
       iconColor: 'text-[#090725]',
     },
     {
-      title: 'Novos Batismos',
-      subtitle: 'Últimos 30 dias',
-      value: data.recentBaptisms,
-      icon: Droplets,
+      title: 'Em Integração',
+      subtitle: 'Processo ativo',
+      value: integrationInProgress,
+      icon: TrendingUp,
       color: 'text-[#090725]',
       bgColor: 'bg-[#090725]/5',
       borderColor: 'border-[#090725]/10',

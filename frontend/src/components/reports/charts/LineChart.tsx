@@ -3,13 +3,24 @@
 import { useState } from 'react';
 import { LineChartData } from '@/types';
 
+type SeriesKey = 'baptisms' | 'admissions';
+
 interface LineChartProps {
   data: LineChartData[];
   height?: number;
+  labels?: {
+    baptisms: string;
+    admissions: string;
+  };
 }
 
-export function LineChart({ data, height = 300 }: LineChartProps) {
-  const [hoveredPoint, setHoveredPoint] = useState<{ type: 'baptisms' | 'admissions', index: number, x: number, y: number } | null>(null);
+export function LineChart({ data, height = 300, labels }: LineChartProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<{ type: SeriesKey; index: number; x: number; y: number } | null>(null);
+
+  const seriesLabels = labels ?? {
+    baptisms: 'Batismos',
+    admissions: 'Admissões'
+  };
 
   if (!data || data.length === 0) {
     return (
@@ -24,19 +35,22 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
   const chartWidth = width - (padding * 2);
   const chartHeight = height - (padding * 2);
 
-  // Encontrar valores máximos para escalar o gráfico
   const maxBaptisms = Math.max(...data.map(d => d.baptisms));
   const maxAdmissions = Math.max(...data.map(d => d.admissions));
   const maxValue = Math.max(maxBaptisms, maxAdmissions);
+  const safeMaxValue = maxValue === 0 ? 1 : maxValue;
 
+  const indexDivisor = data.length > 1 ? data.length - 1 : 1;
+
+  // Encontrar valores máximos para escalar o gráfico
   // Função para converter valor em coordenada Y
   const getY = (value: number) => {
-    return chartHeight - (value / maxValue) * chartHeight;
+    return chartHeight - (value / safeMaxValue) * chartHeight;
   };
 
   // Função para converter índice em coordenada X
   const getX = (index: number) => {
-    return (index / (data.length - 1)) * chartWidth;
+    return (index / indexDivisor) * chartWidth;
   };
 
   // Gerar pontos para a linha de batismos
@@ -132,7 +146,7 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
             transform: 'translateX(-50%)'
           }}
         >
-          {data[hoveredPoint.index].year}: {data[hoveredPoint.index][hoveredPoint.type]}
+          {seriesLabels[hoveredPoint.type]} em {data[hoveredPoint.index].year}: {data[hoveredPoint.index][hoveredPoint.type]}
         </div>
       )}
 
@@ -140,11 +154,11 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
       <div className="flex justify-center gap-6 mt-4">
         <div className="flex items-center gap-2">
           <div className="w-4 h-0.5 bg-blue-500"></div>
-          <span className="text-sm text-gray-700">Batismos</span>
+          <span className="text-sm text-gray-700">{seriesLabels.baptisms}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-0.5 bg-green-500"></div>
-          <span className="text-sm text-gray-700">Admissões</span>
+          <span className="text-sm text-gray-700">{seriesLabels.admissions}</span>
         </div>
       </div>
     </div>

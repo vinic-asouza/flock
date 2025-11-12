@@ -1,3 +1,5 @@
+import { IntegrationStatus } from './integration';
+
 // Tipos para relatórios e estatísticas de membros
 
 export interface MemberReportsSummary {
@@ -37,6 +39,39 @@ export interface Timeline {
   admissionsByMonth: Record<string, number>;
   membersByYear?: Record<string, Member[]>;
   membersByMonth?: Record<string, Member[]>;
+}
+
+export interface IntegrationStatusCounts {
+  inProgress: number;
+  integrated: number;
+  discarded: number;
+}
+
+export interface IntegrationMemberSummary {
+  id: string;
+  name: string;
+  status: IntegrationStatus;
+  created_at: string;
+  expected_congregation?: {
+    id: string;
+    name: string | null;
+  } | null;
+  mentor?: {
+    id: string;
+    name: string | null;
+  } | null;
+}
+
+export interface IntegrationTimeline {
+  totalsByYear: Record<string, IntegrationStatusCounts>;
+  totalsByMonth: Record<string, IntegrationStatusCounts>;
+  membersByYear: Record<string, IntegrationMemberSummary[]>;
+  membersByMonth: Record<string, IntegrationMemberSummary[]>;
+}
+
+export interface IntegrationReports {
+  totals: IntegrationStatusCounts & { total: number };
+  timeline: IntegrationTimeline;
 }
 
 export interface Member {
@@ -92,6 +127,7 @@ export interface MemberReports {
   demographics: Demographics;
   churchStructure: ChurchStructure;
   timeline: Timeline;
+  integration: IntegrationReports;
   topOccupations: TopOccupation[];
   filters: {
     congregation_id: string | null;

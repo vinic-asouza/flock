@@ -272,16 +272,18 @@ export default function HomePage() {
                   loading={loading}
                   filterInfo={reportsData.filters}
                   congregationName={selectedCongregationName}
+                  integrationInProgress={reportsData.integration?.totals.inProgress ?? 0}
                 />
 
                 {/* Divisória */}
                 <div className="border-t border-gray-200"></div>
 
-                {/* Timeline */}
+                {/* Timeline e Integração */}
                 <TimelineCharts
                   data={reportsData.timeline}
                   loading={loading}
                   showCongregationColumn={viewMode === 'all'}
+                  integrationTimeline={reportsData.integration?.timeline}
                 />
 
                 {/* Divisória */}
