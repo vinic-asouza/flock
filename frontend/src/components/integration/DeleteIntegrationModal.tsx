@@ -11,6 +11,10 @@ interface DeleteIntegrationModalProps {
   memberId?: string;
   memberName?: string;
   onSuccess: () => void;
+  title?: string;
+  message?: string;
+  buttonLabel?: string;
+  errorMessage?: string;
 }
 
 export function DeleteIntegrationModal({
@@ -18,7 +22,11 @@ export function DeleteIntegrationModal({
   onClose,
   memberId,
   memberName,
-  onSuccess
+  onSuccess,
+  title = 'Descartar integrante',
+  message,
+  buttonLabel = 'Descartar integrante',
+  errorMessage = 'Erro ao descartar integrante'
 }: DeleteIntegrationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,11 +42,13 @@ export function DeleteIntegrationModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Erro ao descartar integrante');
+      setError(err.message || errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const defaultMessage = message || `Tem certeza de que deseja descartar o integrante ${memberName ? `"${memberName}"` : ''}? Essa ação não poderá ser desfeita.`;
 
   const handleClose = () => {
     if (!isLoading) {
@@ -51,7 +61,7 @@ export function DeleteIntegrationModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Descartar integrante"
+      title={title}
       size="md"
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
@@ -64,8 +74,7 @@ export function DeleteIntegrationModal({
         )}
 
         <p className="text-sm text-gray-600">
-          Tem certeza de que deseja descartar o integrante{' '}
-          <span className="font-semibold text-gray-900">{memberName}</span>? Essa ação não poderá ser desfeita.
+          {defaultMessage}
         </p>
 
         <div className="flex justify-end gap-3">
@@ -73,7 +82,7 @@ export function DeleteIntegrationModal({
             Cancelar
           </Button>
           <Button type="button" variant="danger" onClick={handleDelete} disabled={isLoading} isLoading={isLoading}>
-            Descartar integrante
+            {buttonLabel}
           </Button>
         </div>
       </div>

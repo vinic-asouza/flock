@@ -239,6 +239,28 @@ function IntegrationPageContent() {
           setSelectedMember(null);
         }}
         integrationMemberId={selectedMember?.id || null}
+        onDelete={() => {
+          if (selectedMember) {
+            removeIntegrationMemberOptimistic(selectedMember.id);
+          }
+          setViewModalOpen(false);
+          setSelectedMember(null);
+        }}
+        onConvert={() => {
+          setViewModalOpen(false);
+          // Não limpar selectedMember aqui, pois o ConvertIntegrationModal precisa dele
+          setConvertModalOpen(true);
+        }}
+        onDiscard={() => {
+          if (selectedMember) {
+            updateIntegrationMemberOptimistic(selectedMember.id, {
+              ...selectedMember,
+              status: 'descartado'
+            });
+          }
+          setViewModalOpen(false);
+          setSelectedMember(null);
+        }}
       />
 
       <ExportIntegrationModal

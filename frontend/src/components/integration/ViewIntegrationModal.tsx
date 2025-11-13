@@ -3,14 +3,18 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, MessageCircle, Phone, Calendar, User, Home, User2, Clipboard, Info, Download, Loader2 } from 'lucide-react';
+import { Loader, MessageCircle, Phone, Calendar, User, Home, User2, Clipboard, Info, Download, Loader2, Trash2, UserPlus, XCircle } from 'lucide-react';
 import apiService from '@/services/api';
 import { IntegrationMember } from '@/types';
+import { DeleteIntegrationModal } from './DeleteIntegrationModal';
 
 interface ViewIntegrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   integrationMemberId: string | null;
+  onDelete?: () => void;
+  onConvert?: () => void;
+  onDiscard?: () => void;
 }
 
 const statusLabels: Record<string, string> = {
@@ -45,11 +49,13 @@ const admissionLabels: Record<string, string> = {
   outro: 'Outro'
 };
 
-export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId }: ViewIntegrationModalProps) {
+export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onDelete, onConvert, onDiscard }: ViewIntegrationModalProps) {
   const [member, setMember] = useState<IntegrationMember | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
 
   useEffect(() => {
     if (isOpen && integrationMemberId) {
@@ -96,6 +102,51 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId }: V
       alert('Erro ao exportar PDF. Tente novamente.');
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteSuccess = () => {
+    if (onDelete) {
+      onDelete();
+    }
+    setDeleteModalOpen(false);
+    handleClose();
+  };
+
+  const handleDiscard = async () => {
+    if (!integrationMemberId) return;
+    
+    const confirmed = window.confirm(
+      `Tem certeza de que deseja descartar ${member?.name || 'este integrante'}? Essa ação não poderá ser desfeita.`
+    );
+    
+    if (!confirmed) return;
+
+    try {
+      setDiscarding(true);
+      setError(null);
+      await apiService.updateIntegrationMember(integrationMemberId, {
+        ...member!,
+        status: 'descartado'
+      });
+      if (onDiscard) {
+        onDiscard();
+      }
+      handleClose();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao descartar integrante');
+    } finally {
+      setDiscarding(false);
+    }
+  };
+
+  const handleConvert = () => {
+    if (onConvert) {
+      onConvert();
     }
   };
 
@@ -147,25 +198,27 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId }: V
                   )}
                 </div>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleExportPDF}
-                disabled={exporting}
-                className="inline-flex items-center gap-2"
-              >
-                {exporting ? (
-                  <>
-                    <Loader2 size={16} className="animate-spin" />
-                    Exportando...
-                  </>
-                ) : (
-                  <>
-                    <Download size={16} />
-                    Exportar PDF
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  disabled={exporting}
+                  className="inline-flex items-center gap-2"
+                >
+                  {exporting ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Exportando...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Exportar PDF
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -215,9 +268,74 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId }: V
                 ]}
               />
             </div>
+
+            {/* Footer com ações para integrantes em progresso */}
+            {member && member.status === 'em_progresso' && (
+              <div className="border-t border-gray-200 pt-4 mt-6">
+                <div className="flex items-center justify-end gap-3">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleDiscard}
+                    disabled={discarding}
+                    className="inline-flex items-center gap-2"
+                  >
+                    {discarding ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Descartando...
+                      </>
+                    ) : (
+                      <>
+                        <XCircle size={16} />
+                        Descartar
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleConvert}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <UserPlus size={16} />
+                    Integrar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Footer com ações para integrantes integrados */}
+            {member && member.status === 'integrado' && (
+              <div className="border-t border-gray-200 pt-4 mt-6">
+                <div className="flex items-center justify-end gap-3">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleDeleteClick}
+                    className="inline-flex items-center gap-2"
+                  >
+                    <Trash2 size={16} />
+                    Remover da lista
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      <DeleteIntegrationModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        memberId={integrationMemberId || undefined}
+        memberName={member?.name}
+        onSuccess={handleDeleteSuccess}
+        title="Remover da lista"
+        message="Esta ação remove o membro já integrado da listagem de integração. O membro continuará existindo no sistema, apenas não aparecerá mais na lista de integrantes."
+        buttonLabel="Remover da lista"
+        errorMessage="Erro ao remover integrante da lista"
+      />
     </Modal>
   );
 }

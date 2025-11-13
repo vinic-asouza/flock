@@ -79,6 +79,16 @@ const statusOptions: { value: '' | IntegrationStatus; label: string }[] = [
   { value: 'descartado', label: 'Descartado' }
 ];
 
+// Função para formatar telefone
+const formatPhone = (value: string): string => {
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length <= 10) {
+    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  } else {
+    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+};
+
 export function IntegrationForm({
   initialData = null,
   mode,
@@ -94,6 +104,8 @@ export function IntegrationForm({
   } = useMemberOptions();
 
   const [selectedMentorLabel, setSelectedMentorLabel] = useState<string>('');
+  const [phoneDisplay, setPhoneDisplay] = useState('');
+  const [whatsappDisplay, setWhatsappDisplay] = useState('');
 
   const {
     register,
@@ -145,6 +157,17 @@ export function IntegrationForm({
       if (initialData.mentor?.name) {
         setSelectedMentorLabel(initialData.mentor.name);
       }
+      // Inicializar displays formatados
+      if (initialData.phone) {
+        setPhoneDisplay(formatPhone(initialData.phone));
+      }
+      if (initialData.whatsapp) {
+        setWhatsappDisplay(formatPhone(initialData.whatsapp));
+      }
+    } else {
+      // Limpar displays quando não há initialData
+      setPhoneDisplay('');
+      setWhatsappDisplay('');
     }
   }, [initialData, setValue]);
 
@@ -189,6 +212,19 @@ export function IntegrationForm({
       setSelectedMentorLabel(match.name);
     } else if (!value) {
       setSelectedMentorLabel('');
+    }
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
+    const value = e.target.value;
+    const formatted = formatPhone(value);
+
+    if (field === 'phone') {
+      setPhoneDisplay(formatted);
+      setValue('phone', value.replace(/\D/g, ''));
+    } else {
+      setWhatsappDisplay(formatted);
+      setValue('whatsapp', value.replace(/\D/g, ''));
     }
   };
 
@@ -253,7 +289,9 @@ export function IntegrationForm({
         <Input
           label="Telefone"
           placeholder="(00) 00000-0000"
-          {...register('phone')}
+          value={phoneDisplay}
+          onChange={(e) => handlePhoneChange(e, 'phone')}
+          maxLength={15}
           error={errors.phone?.message}
           disabled={isLoading}
         />
@@ -261,7 +299,9 @@ export function IntegrationForm({
         <Input
           label="WhatsApp"
           placeholder="(00) 00000-0000"
-          {...register('whatsapp')}
+          value={whatsappDisplay}
+          onChange={(e) => handlePhoneChange(e, 'whatsapp')}
+          maxLength={15}
           error={errors.whatsapp?.message}
           disabled={isLoading}
         />

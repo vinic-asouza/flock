@@ -36,6 +36,16 @@ const admissionLabels: Record<string, string> = {
   outro: 'Outro'
 };
 
+// Função para formatar telefone
+const formatPhone = (value: string): string => {
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length <= 10) {
+    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  } else {
+    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+};
+
 export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }: IntegrationCardProps) {
   const age = calculateAge(member.birth);
   const admissionLabel = member.expected_admission_type
@@ -71,7 +81,6 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
           <div className="flex items-center gap-1">
-            <Calendar size={16} className="text-gray-400" />
             <span>{age !== null ? `${age} anos` : 'Idade não informada'}</span>
           </div>
 
@@ -79,14 +88,7 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
             <span>{member.gender === 'masculino' ? 'Masculino' : member.gender === 'feminino' ? 'Feminino' : member.gender}</span>
           )}
 
-          {member.phone && (
-            <div className="flex items-center gap-1 text-gray-600">
-              <Phone size={16} className="text-gray-400" />
-              <span>{member.phone}</span>
-            </div>
-          )}
-
-          {member.whatsapp && (
+          {member.whatsapp ? (
             <a
               href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
               target="_blank"
@@ -94,16 +96,14 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
               className="flex items-center gap-1 text-gray-600 hover:text-green-600 transition-colors"
             >
               <MessageCircle size={16} />
-              {member.whatsapp}
+              {formatPhone(member.whatsapp)}
             </a>
-          )}
-
-          {member.mentor && (
-            <div className="flex items-center gap-1">
-              <User2 size={16} className="text-gray-400" />
-              <span>{member.mentor.name}</span>
+          ) : member.phone ? (
+            <div className="flex items-center gap-1 text-gray-600">
+              <Phone size={16} className="text-gray-400" />
+              <span>{formatPhone(member.phone)}</span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
                 onClick={onConvert}
                 disabled={!canIntegrate}
                 className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${canIntegrate
-                  ? 'bg-gray-100 text-primary hover:bg-gray-200'
+                  ? 'bg-primary text-white hover:bg-primary/90'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}
               >
