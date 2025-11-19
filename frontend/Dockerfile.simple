@@ -15,6 +15,10 @@ RUN npm ci
 # Copiar código fonte
 COPY . .
 
+# Copiar script de start
+COPY start.sh ./start.sh
+RUN chmod +x start.sh
+
 # Variáveis de ambiente para build
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -41,6 +45,10 @@ COPY --from=builder /app/node_modules ./node_modules
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
+# Copiar script de start customizado
+COPY --from=builder /app/start.sh ./start.sh
+RUN chmod +x start.sh
+
 # Ajustar permissões
 RUN chown -R nextjs:nodejs /app
 
@@ -49,8 +57,7 @@ USER nextjs
 # Expor porta
 EXPOSE 3000
 
-# Comando para iniciar
-# Usa npm start que executa "next start"
-# O Next.js vai usar process.env.PORT automaticamente
-CMD ["npm", "start"]
+# Comando para iniciar usando script customizado
+# O script garante que o Next.js escuta em 0.0.0.0 e usa a porta do Railway
+CMD ["./start.sh"]
 
