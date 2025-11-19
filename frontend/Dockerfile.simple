@@ -1,0 +1,35 @@
+# Dockerfile alternativo para Next.js (sem modo standalone)
+# Use este se o Dockerfile principal não funcionar no Railway
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+
+# Instalar dependências
+RUN npm ci --only=production
+
+# Copiar código fonte
+COPY . .
+
+# Variáveis de ambiente para build
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Build da aplicação
+RUN npm run build
+
+# Variáveis de ambiente para runtime
+ENV NODE_ENV=production
+ENV HOSTNAME="0.0.0.0"
+# PORT será definido pelo Railway automaticamente
+
+# Expor porta
+EXPOSE 3000
+
+# Comando para iniciar
+# Usa npm start que executa "next start"
+CMD ["npm", "start"]
+

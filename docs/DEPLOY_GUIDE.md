@@ -464,14 +464,21 @@ Se você ver o erro `502 Bad Gateway` ao acessar a URL do frontend:
    - Verifique se o build gerou o arquivo `.next/standalone/server.js`
    - Se não, pode haver um problema no build
 
-5. **Solução alternativa - Usar build sem Dockerfile**:
+5. **Solução alternativa - Usar Dockerfile simples**:
+   Se o problema persistir com o modo standalone, tente usar o Dockerfile alternativo:
+   - No Railway, vá em **Settings** > **Build & Deploy**
+   - Em **Dockerfile Path**, mude para: `frontend/Dockerfile.simple`
+   - Faça um novo deploy
+   - ⚠️ Este Dockerfile não usa modo standalone, então a imagem será maior
+
+6. **Solução alternativa - Usar build sem Dockerfile**:
    Se o problema persistir, você pode tentar sem Dockerfile:
    - Delete o serviço do frontend
    - Crie um novo serviço
    - Configure:
      - **Root Directory**: `frontend`
      - **Build Command**: `npm install && npm run build`
-     - **Start Command**: `npm start`
+     - **Start Command**: `npm start -H 0.0.0.0`
      - **Porta**: `3000` (quando configurar domínio)
    - ⚠️ Isso pode não funcionar bem com o modo standalone
 

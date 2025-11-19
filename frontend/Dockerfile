@@ -58,14 +58,18 @@ RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 # Expor porta (Railway pode usar qualquer porta via variável PORT)
+# O Railway define PORT dinamicamente, então não fixamos aqui
 EXPOSE 3000
 
-# Usar a porta fornecida pelo Railway ou padrão 3000
-ENV PORT=${PORT:-3000}
+# Variáveis de ambiente para o Next.js standalone
+# O Railway define PORT dinamicamente em runtime
+# HOSTNAME deve ser 0.0.0.0 para aceitar conexões externas
 ENV HOSTNAME="0.0.0.0"
+# Não definimos PORT aqui - o Railway define automaticamente
+# O Next.js standalone usa process.env.PORT automaticamente
 
 # Comando para iniciar
-# No modo standalone, o server.js está na raiz do diretório standalone
-# O Next.js standalone já respeita a variável PORT automaticamente
+# O Next.js standalone cria server.js que já está configurado corretamente
+# Ele usa process.env.PORT e process.env.HOSTNAME automaticamente
 CMD ["node", "server.js"]
 
