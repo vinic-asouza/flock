@@ -288,11 +288,17 @@ git push
    - Railway começará a fazer o build e deploy automaticamente
    - Aguarde o deploy terminar (pode levar alguns minutos)
 
-6. **Anote a URL do backend**:
-   - Após o deploy, Railway gerará uma URL automaticamente
+6. **Configurar domínio público** (opcional, mas recomendado):
+   - Vá em **Settings** > **Networking** > **Public Domain**
+   - Clique em **Generate Domain** ou **Add Domain**
+   - Quando pedir a **porta**, insira: `4000`
+     - ⚠️ **Importante**: O backend está configurado para rodar na porta 4000
+   - Railway gerará uma URL automaticamente
    - Exemplo: `seu-backend-production.up.railway.app`
-   - Você encontrará essa URL na aba "Settings" > "Networking" > "Public Domain"
-   - **Copie essa URL!** Você precisará dela no próximo passo
+
+7. **Anote a URL do backend**:
+   - Copie a URL gerada (ex: `seu-backend-production.up.railway.app`)
+   - **Você precisará dessa URL no próximo passo para configurar o frontend!**
 
 ### Passo 4: Configurar Frontend
 
@@ -310,24 +316,31 @@ git push
    NEXT_PUBLIC_API_URL=https://SUA-URL-DO-BACKEND/api
    NODE_ENV=production
    ```
-   ⚠️ **Importante**: Substitua `SUA-URL-DO-BACKEND` pela URL real que você anotou no Passo 3.6
+   ⚠️ **Importante**: Substitua `SUA-URL-DO-BACKEND` pela URL real que você anotou no Passo 3.7
    - Exemplo: Se sua URL do backend é `seu-backend-production.up.railway.app`
    - Então use: `NEXT_PUBLIC_API_URL=https://seu-backend-production.up.railway.app/api`
 
 5. **Clique em "Deploy"** ou aguarde o deploy automático
    - Aguarde o deploy terminar
 
-6. **Anote a URL do frontend**:
-   - Railway gerará uma URL para o frontend também
+6. **Configurar domínio público** (opcional, mas recomendado):
+   - Vá em **Settings** > **Networking** > **Public Domain**
+   - Clique em **Generate Domain** ou **Add Domain**
+   - Quando pedir a **porta**, insira: `3000`
+     - ⚠️ **Importante**: O frontend está configurado para rodar na porta 3000
+   - Railway gerará uma URL automaticamente
    - Exemplo: `seu-frontend-production.up.railway.app`
-   - **Copie essa URL!** Você precisará dela no próximo passo
+
+7. **Anote a URL do frontend**:
+   - Copie a URL gerada (ex: `seu-frontend-production.up.railway.app`)
+   - **Você precisará dessa URL no próximo passo para atualizar o backend!**
 
 ### Passo 5: Atualizar URLs
 
 1. **Volte ao serviço do backend** (clique no serviço do backend no Railway)
 2. Vá em **Settings** > **Variables**
 3. **Atualize a variável `FRONTEND_URL`**:
-   - Substitua `http://localhost:3000` pela URL real do frontend que você anotou
+   - Substitua `http://localhost:3000` pela URL real do frontend que você anotou no Passo 4.7
    - Exemplo: `FRONTEND_URL=https://seu-frontend-production.up.railway.app`
    - ⚠️ **Importante**: Não coloque barra `/` no final da URL!
 4. **Salve as alterações**
@@ -427,6 +440,44 @@ Se você ver o erro `sh: next: not found` ao iniciar o frontend:
 3. **Forçar uso do Dockerfile**:
    - Certifique-se de que o Dockerfile está na pasta `frontend/`
    - Se necessário, recrie o serviço no Railway
+
+### Erro: "502 Bad Gateway" no frontend
+
+Se você ver o erro `502 Bad Gateway` ao acessar a URL do frontend:
+
+**Possíveis causas e soluções**:
+
+1. **Verifique os logs do deploy**:
+   - No Railway, vá em **Deployments** > clique no último deploy > veja os logs
+   - Procure por erros durante o build ou início da aplicação
+
+2. **Verifique se o container está rodando**:
+   - No Railway, vá em **Metrics** ou **Logs**
+   - Veja se há mensagens de erro ou se o container está crashando
+
+3. **Problema com porta**:
+   - O Railway pode estar usando uma porta diferente
+   - Verifique se a variável `PORT` está configurada (geralmente o Railway define automaticamente)
+   - O Dockerfile já foi atualizado para usar `${PORT:-3000}`
+
+4. **Problema com modo standalone**:
+   - Verifique se o build gerou o arquivo `.next/standalone/server.js`
+   - Se não, pode haver um problema no build
+
+5. **Solução alternativa - Usar build sem Dockerfile**:
+   Se o problema persistir, você pode tentar sem Dockerfile:
+   - Delete o serviço do frontend
+   - Crie um novo serviço
+   - Configure:
+     - **Root Directory**: `frontend`
+     - **Build Command**: `npm install && npm run build`
+     - **Start Command**: `npm start`
+     - **Porta**: `3000` (quando configurar domínio)
+   - ⚠️ Isso pode não funcionar bem com o modo standalone
+
+6. **Verificar variáveis de ambiente**:
+   - Certifique-se de que `NEXT_PUBLIC_API_URL` está configurado
+   - Verifique se não há erros de sintaxe nas variáveis
 
 ### Aplicação não inicia
 

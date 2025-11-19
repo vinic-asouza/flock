@@ -48,6 +48,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Copiar a estrutura standalone completa
 # O Next.js standalone coloca tudo em .next/standalone, incluindo server.js
+# A estrutura standalone já inclui node_modules e server.js na raiz
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
@@ -56,13 +57,15 @@ RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
-# Expor porta
+# Expor porta (Railway pode usar qualquer porta via variável PORT)
 EXPOSE 3000
 
-ENV PORT=3000
+# Usar a porta fornecida pelo Railway ou padrão 3000
+ENV PORT=${PORT:-3000}
 ENV HOSTNAME="0.0.0.0"
 
 # Comando para iniciar
 # No modo standalone, o server.js está na raiz do diretório standalone
+# O Next.js standalone já respeita a variável PORT automaticamente
 CMD ["node", "server.js"]
 
