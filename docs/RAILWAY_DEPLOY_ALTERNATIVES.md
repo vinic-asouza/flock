@@ -38,11 +38,16 @@ CMD ["./start.sh"]
 
 Esta é a solução mais simples e geralmente funciona melhor no Railway.
 
-### Passo 1: Remover Dockerfile do Railway
+### Passo 1: Desabilitar Dockerfile no Railway
 
 1. No Railway, vá em **Settings** > **Build & Deploy**
-2. **Delete** ou **desabilite** o Dockerfile
-3. Deixe **Dockerfile Path** vazio
+2. Procure por **"Dockerfile"** ou **"Docker"** nas configurações
+3. Você verá algo como **"Dockerfile - Automatically Detected"**
+4. **Clique no ícone de lixeira (🗑️)** ou **botão "Remove"** ao lado do Dockerfile
+5. Ou altere **"Dockerfile Path"** para um caminho inválido (ex: `Dockerfile.disabled`)
+6. **Salve as alterações**
+
+⚠️ **Importante**: Após remover o Dockerfile, as opções **Build Command** e **Start Command** aparecerão automaticamente!
 
 ### Passo 2: Configurar Build Commands
 
