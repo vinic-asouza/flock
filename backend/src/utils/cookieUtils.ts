@@ -13,7 +13,9 @@ export const cookieConfig = {
   security: {
     httpOnly: true, // Não acessível via JavaScript
     secure: process.env.NODE_ENV === 'production', // HTTPS apenas em produção
-    sameSite: 'strict' as const, // Proteção contra CSRF
+    // sameSite: 'none' é necessário para cross-origin (frontend e backend em domínios diferentes)
+    // Quando sameSite é 'none', secure DEVE ser true
+    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax' | 'strict',
     path: '/', // Disponível em toda a aplicação
   },
   
@@ -57,18 +59,28 @@ export const clearAuthCookies = (res: Response): void => {
   
   cookieNames.forEach(cookieName => {
     // Limpar com diferentes configurações para garantir que seja removido
+    // HTTP em desenvolvimento
     res.clearCookie(cookieName, {
       path: '/',
       httpOnly: true,
-      secure: false, // Permitir HTTP em desenvolvimento
+      secure: false,
       sameSite: 'lax'
     });
     
+    // HTTPS em produção com sameSite: 'strict'
     res.clearCookie(cookieName, {
       path: '/',
       httpOnly: true,
-      secure: true, // HTTPS em produção
+      secure: true,
       sameSite: 'strict'
+    });
+    
+    // HTTPS em produção com sameSite: 'none' (cross-origin)
+    res.clearCookie(cookieName, {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none'
     });
     
     // Limpar sem configurações específicas
@@ -92,6 +104,8 @@ export const getProdCookieConfig = () => {
   return {
     ...cookieConfig.security,
     secure: true, // Apenas HTTPS em produção
-    sameSite: 'strict' as const // Máxima segurança em produção
+    // sameSite: 'none' é necessário para cross-origin (frontend e backend em domínios diferentes)
+    // Quando sameSite é 'none', secure DEVE ser true
+    sameSite: 'none' as const
   };
 };
