@@ -300,8 +300,10 @@ git push
 2. Selecione "GitHub Repo" (o mesmo repositório)
 3. Configure:
    - **Root Directory**: `frontend`
-   - **Build Command**: `npm install && npm run build`
-   - **Start Command**: `npm start`
+   - **Build Command**: ⚠️ **DEIXE VAZIO** (o Dockerfile cuida disso)
+   - **Start Command**: ⚠️ **DEIXE VAZIO** (o Dockerfile cuida disso)
+   
+   ⚠️ **IMPORTANTE**: Como você tem um Dockerfile, o Railway usará ele automaticamente. Não configure Build Command nem Start Command manualmente!
 
 4. **Variáveis de Ambiente** (Settings > Variables):
    ```
@@ -403,6 +405,28 @@ Se você ver erros relacionados a `canvas`, `node-gyp` ou "Python is not set":
    - Certifique-se de que todas as dependências estão instaladas
 
 3. **Alternativa**: Se o problema persistir, você pode remover temporariamente `chartjs-node-canvas` se não estiver usando relatórios com gráficos ainda.
+
+### Erro: "next: not found" no frontend
+
+Se você ver o erro `sh: next: not found` ao iniciar o frontend:
+
+**Causa**: O Railway está tentando usar `npm start` (que executa `next start`) ao invés do Dockerfile.
+
+**Solução**:
+
+1. **Remova os comandos manuais no Railway**:
+   - Vá em Settings > Build & Deploy
+   - **Deixe Build Command vazio**
+   - **Deixe Start Command vazio**
+   - O Railway deve usar o Dockerfile automaticamente
+
+2. **Verifique se o Dockerfile está sendo usado**:
+   - Nos logs do deploy, você deve ver "Using Detected Dockerfile"
+   - Se não aparecer, o Railway pode não estar detectando o Dockerfile
+
+3. **Forçar uso do Dockerfile**:
+   - Certifique-se de que o Dockerfile está na pasta `frontend/`
+   - Se necessário, recrie o serviço no Railway
 
 ### Aplicação não inicia
 

@@ -42,10 +42,14 @@ ENV NODE_ENV=production
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nextjs -u 1001
 
-# Copiar arquivos necessários
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copiar arquivos necessários do build standalone
+# O modo standalone do Next.js cria uma estrutura otimizada em .next/standalone
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+# Copiar a estrutura standalone completa
+# O Next.js standalone coloca tudo em .next/standalone, incluindo server.js
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Ajustar permissões
 RUN chown -R nextjs:nodejs /app
@@ -59,5 +63,6 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Comando para iniciar
+# No modo standalone, o server.js está na raiz do diretório standalone
 CMD ["node", "server.js"]
 
