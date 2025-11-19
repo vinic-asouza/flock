@@ -273,39 +273,64 @@ git push
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 
-4. **Variáveis de Ambiente**:
+4. **Variáveis de Ambiente** (vá em Settings > Variables):
    ```
    SUPABASE_URL=sua-url
    SUPABASE_KEY=sua-chave
    SUPABASE_SERVICE_ROLE_KEY=sua-chave-servico
    NODE_ENV=production
    PORT=4000
-   FRONTEND_URL=https://seu-frontend.railway.app
+   FRONTEND_URL=http://localhost:3000
    ```
+   ⚠️ **Importante**: Por enquanto, use `http://localhost:3000` para `FRONTEND_URL`. Vamos atualizar depois com a URL real do frontend.
 
-5. Railway gerará uma URL automaticamente (ex: `seu-backend.railway.app`)
+5. **Clique em "Deploy"** ou aguarde o deploy automático
+   - Railway começará a fazer o build e deploy automaticamente
+   - Aguarde o deploy terminar (pode levar alguns minutos)
+
+6. **Anote a URL do backend**:
+   - Após o deploy, Railway gerará uma URL automaticamente
+   - Exemplo: `seu-backend-production.up.railway.app`
+   - Você encontrará essa URL na aba "Settings" > "Networking" > "Public Domain"
+   - **Copie essa URL!** Você precisará dela no próximo passo
 
 ### Passo 4: Configurar Frontend
 
-1. Crie outro serviço no mesmo projeto
-2. Configure:
+1. No mesmo projeto Railway, clique em "New Service" novamente
+2. Selecione "GitHub Repo" (o mesmo repositório)
+3. Configure:
    - **Root Directory**: `frontend`
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 
-3. **Variáveis de Ambiente**:
+4. **Variáveis de Ambiente** (Settings > Variables):
    ```
-   NEXT_PUBLIC_API_URL=https://seu-backend.railway.app/api
+   NEXT_PUBLIC_API_URL=https://SUA-URL-DO-BACKEND/api
    NODE_ENV=production
    ```
+   ⚠️ **Importante**: Substitua `SUA-URL-DO-BACKEND` pela URL real que você anotou no Passo 3.6
+   - Exemplo: Se sua URL do backend é `seu-backend-production.up.railway.app`
+   - Então use: `NEXT_PUBLIC_API_URL=https://seu-backend-production.up.railway.app/api`
 
-4. Railway gerará outra URL (ex: `seu-frontend.railway.app`)
+5. **Clique em "Deploy"** ou aguarde o deploy automático
+   - Aguarde o deploy terminar
+
+6. **Anote a URL do frontend**:
+   - Railway gerará uma URL para o frontend também
+   - Exemplo: `seu-frontend-production.up.railway.app`
+   - **Copie essa URL!** Você precisará dela no próximo passo
 
 ### Passo 5: Atualizar URLs
 
-1. Volte ao serviço do backend
-2. Atualize `FRONTEND_URL` com a URL do frontend
-3. Faça redeploy do backend
+1. **Volte ao serviço do backend** (clique no serviço do backend no Railway)
+2. Vá em **Settings** > **Variables**
+3. **Atualize a variável `FRONTEND_URL`**:
+   - Substitua `http://localhost:3000` pela URL real do frontend que você anotou
+   - Exemplo: `FRONTEND_URL=https://seu-frontend-production.up.railway.app`
+   - ⚠️ **Importante**: Não coloque barra `/` no final da URL!
+4. **Salve as alterações**
+5. Railway fará um **redeploy automático** do backend com a nova configuração
+   - Aguarde o redeploy terminar
 
 ### Passo 6: Testar
 
@@ -363,6 +388,21 @@ Configure logs e monitoramento:
 - Verifique os logs da plataforma
 - Teste o build localmente primeiro
 - Verifique se todas as dependências estão no `package.json`
+
+### Erro: "canvas" ou "node-gyp" falha no build
+
+Se você ver erros relacionados a `canvas`, `node-gyp` ou "Python is not set":
+
+**Causa**: O pacote `canvas` (usado por `chartjs-node-canvas`) precisa de dependências nativas para compilar.
+
+**Solução**: O Dockerfile já foi corrigido para incluir essas dependências. Se ainda tiver problemas:
+
+1. **Verifique se o Dockerfile está atualizado** - Ele deve incluir as dependências do Alpine Linux
+2. **Se estiver usando Railway sem Dockerfile**: Railway detecta automaticamente, mas você pode precisar configurar:
+   - **Build Command**: `npm install && npm run build`
+   - Certifique-se de que todas as dependências estão instaladas
+
+3. **Alternativa**: Se o problema persistir, você pode remover temporariamente `chartjs-node-canvas` se não estiver usando relatórios com gráficos ainda.
 
 ### Aplicação não inicia
 
