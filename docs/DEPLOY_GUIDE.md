@@ -248,6 +248,34 @@ Veja os arquivos na raiz do projeto para detalhes de implementação.
 
 ## 🚀 Deploy Passo a Passo (Railway - Exemplo)
 
+### 📋 Estrutura do Deploy (Resumo)
+
+Antes de começar, entenda a estrutura:
+
+```
+Railway
+└── 📁 Projeto "Flock App" (Passo 2)
+    ├── ⚠️ Serviço Automático "flock" (pode aparecer - IGNORAR ou DELETAR)
+    │   └── Este é criado automaticamente pelo Railway
+    │   └── Geralmente falha porque não tem Root Directory definido
+    │
+    ├── 🔧 Serviço "Backend" (Passo 3) ← ESTE É O IMPORTANTE
+    │   └── Root Directory: `backend/`
+    │   └── Porta: 4000
+    │   └── URL: seu-backend.up.railway.app
+    │
+    └── 🎨 Serviço "Frontend" (Passo 4) ← ESTE É O IMPORTANTE
+        └── Root Directory: `frontend/`
+        └── Porta: 3000
+        └── URL: seu-frontend.up.railway.app
+```
+
+**Resumo:**
+- **1 Projeto** = Container/workspace que organiza tudo
+- **1 Serviço Automático** (opcional) = Pode aparecer quando você conecta o repositório - pode ser deletado ou ignorado
+- **2 Serviços Principais** = Backend e Frontend (cada um aponta para uma pasta diferente do mesmo repositório)
+- **Mesmo repositório GitHub** = Ambos os serviços principais usam o mesmo repositório, mas com `Root Directory` diferentes
+
 ### Passo 1: Preparar o Repositório
 
 ```bash
@@ -259,17 +287,36 @@ git push
 
 ### Passo 2: Criar Projeto no Railway
 
+**O que é um Projeto?** 
+Um projeto no Railway é como uma "pasta" ou "workspace" que vai conter seus serviços (backend e frontend). É apenas uma organização, não faz deploy ainda.
+
 1. Acesse [railway.app](https://railway.app)
 2. Clique em "New Project"
 3. Selecione "Deploy from GitHub repo"
 4. Escolha seu repositório
 
-### Passo 3: Configurar Backend
+⚠️ **IMPORTANTE - Comportamento do Railway:**
+Quando você conecta o repositório pela primeira vez, o Railway pode **criar automaticamente um serviço** tentando fazer deploy do repositório inteiro (geralmente com o nome do repositório, como "flock"). 
 
-1. No Railway, clique em "New Service"
-2. Selecione "GitHub Repo" novamente
+**O que fazer:**
+- ✅ **Opção 1 (Recomendada)**: Você pode **deletar esse serviço automático** se ele aparecer, pois não é o que você precisa. Clique nos três pontinhos (⋯) do serviço e selecione "Delete".
+- ✅ **Opção 2**: Você pode simplesmente **ignorar esse serviço** e deixá-lo falhar. Ele não vai atrapalhar os outros serviços que você vai criar.
+
+**Por que isso acontece?**
+O Railway tenta ser "inteligente" e fazer um deploy automático, mas como seu projeto é um monorepo (tem backend e frontend separados), esse deploy automático vai falhar porque não sabe qual pasta usar.
+
+**Resultado**: Você terá 1 projeto criado. Se aparecer um serviço automático, pode deletá-lo ou ignorá-lo. Você vai criar os serviços corretos nos próximos passos.
+
+### Passo 3: Configurar Backend (Primeiro Serviço)
+
+**O que é um Serviço?**
+Um serviço é uma aplicação que roda dentro do projeto. Você vai criar 2 serviços: um para backend e outro para frontend.
+
+1. **Dentro do projeto que você acabou de criar**, clique em "New Service"
+2. Selecione "GitHub Repo" (o mesmo repositório que você conectou no Passo 2)
 3. Configure:
    - **Root Directory**: `backend`
+     - ⚠️ **Importante**: Isso diz ao Railway para usar apenas a pasta `backend` do seu repositório para este serviço
    - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 
@@ -300,12 +347,15 @@ git push
    - Copie a URL gerada (ex: `seu-backend-production.up.railway.app`)
    - **Você precisará dessa URL no próximo passo para configurar o frontend!**
 
-### Passo 4: Configurar Frontend
+### Passo 4: Configurar Frontend (Segundo Serviço)
 
-1. No mesmo projeto Railway, clique em "New Service" novamente
-2. Selecione "GitHub Repo" (o mesmo repositório)
+**Agora você vai criar o segundo serviço dentro do mesmo projeto.**
+
+1. **Ainda dentro do mesmo projeto Railway**, clique em "New Service" novamente
+2. Selecione "GitHub Repo" (o mesmo repositório que você já conectou)
 3. Configure:
    - **Root Directory**: `frontend`
+     - ⚠️ **Importante**: Agora você está dizendo ao Railway para usar apenas a pasta `frontend` do mesmo repositório para este segundo serviço
    - **Build Command**: ⚠️ **DEIXE VAZIO** (o Dockerfile cuida disso)
    - **Start Command**: ⚠️ **DEIXE VAZIO** (o Dockerfile cuida disso)
    
