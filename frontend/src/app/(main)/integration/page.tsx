@@ -58,6 +58,7 @@ function IntegrationPageContent() {
       setIsInitializing(false);
     };
     initialize();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -115,7 +116,7 @@ function IntegrationPageContent() {
     setSelectedMember(null);
   };
 
-  const handleConvertSuccess = (result: { member: any; integrationMember: IntegrationMember }) => {
+  const handleConvertSuccess = (result: { member: unknown; integrationMember: IntegrationMember }) => {
     updateIntegrationMemberOptimistic(result.integrationMember.id, result.integrationMember);
     setConvertModalOpen(false);
     setSelectedMember(null);

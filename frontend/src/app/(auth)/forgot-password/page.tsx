@@ -41,7 +41,7 @@ export default function ForgotPasswordPage() {
       
       // Capturar detalhes do erro se disponíveis
       if (err && typeof err === 'object' && 'details' in err) {
-        const details = (err as any).details;
+        const details = (err as { details?: string | string[] }).details;
         if (typeof details === 'string') {
           setErrorDetails(details);
         } else if (Array.isArray(details)) {

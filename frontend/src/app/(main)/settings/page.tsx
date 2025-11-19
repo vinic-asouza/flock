@@ -5,7 +5,6 @@ import { Church, Shield, FileText } from 'lucide-react';
 import { ChurchManagement } from '@/components/settings/ChurchManagement';
 import { AccountManagement } from '@/components/settings/AccountManagement';
 import AuditLogs from '@/components/settings/AuditLogs';
-import { Card } from '@/components/ui/Card';
 
 export default function SettingsPage() {
     const [activeSection, setActiveSection] = useState('church');

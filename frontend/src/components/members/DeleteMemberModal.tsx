@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { AlertTriangle, Loader } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface DeleteMemberModalProps {
@@ -27,8 +27,9 @@ export function DeleteMemberModal({ isOpen, onClose, memberId, memberName, onSuc
       
       onSuccess(memberId);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao excluir membro');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir membro';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

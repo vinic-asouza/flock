@@ -84,6 +84,7 @@ export default function ResetPasswordPage() {
       setErrorDetails(null);
       
       // Remover confirmPassword antes de enviar
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...dataToSend } = data;
       
       await resetPassword({
@@ -105,20 +106,21 @@ export default function ResetPasswordPage() {
         errorMessage = err.message;
         
         // Verificar se tem detalhes customizados
-        const errorObj = err as any;
+        const errorObj = err as Error & { details?: string | string[] };
         if (errorObj.details) {
-          errorDetails = errorObj.details;
+          errorDetails = typeof errorObj.details === 'string' ? errorObj.details : errorObj.details.join(', ');
         }
       } else if (typeof err === 'string') {
         errorMessage = err;
       } else if (err && typeof err === 'object') {
         // Verificar se tem propriedades específicas
-        if ('message' in err && typeof (err as any).message === 'string') {
-          errorMessage = (err as any).message;
+        const errorObj = err as { message?: string; details?: string | string[] };
+        if (errorObj.message && typeof errorObj.message === 'string') {
+          errorMessage = errorObj.message;
         }
         
-        if ('details' in err) {
-          const details = (err as any).details;
+        if (errorObj.details) {
+          const details = errorObj.details;
           if (typeof details === 'string') {
             errorDetails = details;
           } else if (Array.isArray(details)) {

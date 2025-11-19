@@ -56,7 +56,7 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
-  const [formReady, setFormReady] = useState(false);
+  // const [formReady, setFormReady] = useState(false);
 
   const {
     register,
@@ -84,10 +84,9 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
       setValue('leader', congregation.leader || '');
       setValue('phone', congregation.phone || '');
       
-      // Marcar formulário como pronto
-      setFormReady(true);
+      // Formulário pronto
     } else if (mode === 'create') {
-      setFormReady(true);
+      // Formulário pronto
     }
   }, [congregation, mode, setValue]);
 
@@ -132,7 +131,7 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
       // Limpar displays formatados após sucesso
       setPhoneDisplay('');
       reset();
-    } catch (error) {
+    } catch {
       // Erro será tratado pelo componente pai
     }
   };

@@ -23,7 +23,7 @@ interface EditCongregationModalProps {
   isOpen: boolean;
   onClose: () => void;
   congregationId: string;
-  onSuccess: (congregationData: any) => void;
+  onSuccess: (congregationData: { id: string; [key: string]: unknown }) => void;
 }
 
 export function EditCongregationModal({ isOpen, onClose, congregationId, onSuccess }: EditCongregationModalProps) {
@@ -37,6 +37,7 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
     if (isOpen && congregationId) {
       loadCongregation();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, congregationId]);
 
   const loadCongregation = async () => {
@@ -45,19 +46,20 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       setError(null);
       const data = await apiService.getCongregation(congregationId);
       setCongregation(data);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados da congregação');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados da congregação';
+      setError(errorMessage);
     } finally {
       setIsLoadingCongregation(false);
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const response = await apiService.updateCongregation(congregationId, data);
+      await apiService.updateCongregation(congregationId, data);
       
       // Buscar os dados atualizados da congregação para garantir que temos todos os dados
       const updatedCongregation = await apiService.getCongregation(congregationId);
@@ -65,8 +67,9 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       // Passar os dados da congregação atualizada com a estrutura completa
       onSuccess(updatedCongregation);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar congregação');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar congregação';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

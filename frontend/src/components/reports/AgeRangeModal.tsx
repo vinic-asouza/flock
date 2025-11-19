@@ -69,9 +69,9 @@ export function AgeRangeModal({
   itemsPerPage = 6
 }: AgeRangeModalProps) {
   const [activeTab, setActiveTab] = useState<string>('');
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<{ id: string; [key: string]: unknown }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -87,6 +87,7 @@ export function AgeRangeModal({
     if (isOpen && activeTab) {
       fetchMembers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, activeTab, currentPage, viewMode, selectedCongregationId]);
 
   // Resetar página quando mudar de tab
@@ -124,7 +125,7 @@ export function AgeRangeModal({
       console.log('Tab ativa:', activeTab);
       console.log('Faixa etária convertida:', ageRange);
       
-      const params: any = {
+      const params: Record<string, string | number | boolean | null | undefined> = {
         page: currentPage,
         limit: itemsPerPage,
         birth_date_from: ageRange.birth_date_from,
@@ -159,7 +160,7 @@ export function AgeRangeModal({
       const ageRange = parseAgeRange(activeTab);
 
       // Construir filtros baseados no estado atual do modal
-      const filters: any = {
+      const filters: Record<string, string | number | boolean | null | undefined> = {
         birth_date_from: ageRange.birth_date_from,
         birth_date_to: ageRange.birth_date_to,
         status: 'active' // Apenas membros ativos
@@ -280,7 +281,10 @@ export function AgeRangeModal({
                     {members.length > 0 ? (
                       <div className="space-y-3">
                         {members.map((member) => (
-                          <MemberCardCompact key={member.id} member={member} />
+                          <MemberCardCompact 
+                            key={member.id} 
+                            member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
+                          />
                         ))}
                       </div>
                     ) : (

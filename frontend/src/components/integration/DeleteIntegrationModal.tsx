@@ -41,8 +41,9 @@ export function DeleteIntegrationModal({
       await apiService.deleteIntegrationMember(memberId);
       onSuccess();
       onClose();
-    } catch (err: any) {
-      setError(err.message || errorMessage);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : errorMessage;
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }

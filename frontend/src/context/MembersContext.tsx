@@ -142,8 +142,9 @@ export function MembersProvider({ children }: { children: ReactNode }) {
       const response = await apiService.listMembers(params);
       setMembers(response.data);
       setPagination(response.pagination);
-    } catch (err: any) {
-      setError(`Erro ao carregar membros: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+      setError(`Erro ao carregar membros: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -230,7 +231,7 @@ export function useMembers() {
 
 // Função auxiliar para converter filtros em parâmetros da API
 function filtersToApiParams(filters: MemberFilters, sorting?: { sort_by: string; sort_order: 'asc' | 'desc' }) {
-  const params: any = {};
+  const params: Record<string, string | number | boolean | null | undefined> = {};
   
   if (filters.search && filters.search.trim()) params.search = filters.search.trim();
   if (filters.status === 'active') params.active = true;

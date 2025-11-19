@@ -8,7 +8,6 @@ import { apiService } from '@/services/api';
 import { 
   FileText, 
   UserPlus, 
-  UserMinus, 
   Edit, 
   Trash2, 
   Calendar,
@@ -27,9 +26,9 @@ interface AuditLog {
   entity: string;
   entity_id: string;
   action: 'create' | 'update' | 'delete';
-  changes_before: any;
-  changes_after: any;
-  metadata: any;
+  changes_before: Record<string, unknown> | null;
+  changes_after: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   user_id: string;
   church_id: string;
   ip_address: string;
@@ -101,20 +100,30 @@ export default function AuditLogs() {
         ? 'update' 
         : filters.action || undefined;
       
-      const response: AuditLogsResponse = await apiService.getAuditLogs({
+      const response = await apiService.getAuditLogs({
         page,
         limit: pagination.limit,
         entity: 'member', // Apenas membros
         action: apiAction,
       });
+      
+      const typedResponse: AuditLogsResponse = {
+        data: response.data as unknown as AuditLog[],
+        pagination: {
+          page: response.pagination.page,
+          limit: response.pagination.limit,
+          total: response.pagination.total,
+          totalPages: response.pagination.totalPages,
+        },
+      };
 
-      console.log('📊 Resposta da API:', response);
+      console.log('📊 Resposta da API:', typedResponse);
 
-      let filteredLogs = response.data;
+      let filteredLogs = typedResponse.data;
       
       // Filtrar ativação/inativação no frontend
       if (filters.action === 'activate' || filters.action === 'deactivate') {
-        filteredLogs = response.data.filter(log => {
+        filteredLogs = typedResponse.data.filter(log => {
           const realAction = getRealAction(log);
           return realAction === filters.action;
         });
@@ -122,12 +131,13 @@ export default function AuditLogs() {
 
       setLogs(filteredLogs);
       setPagination({
-        ...response.pagination,
+        ...typedResponse.pagination,
         total: filteredLogs.length
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('❌ Erro ao buscar logs:', err);
-      setError(err.message || 'Erro ao carregar logs');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar logs';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -135,6 +145,7 @@ export default function AuditLogs() {
 
   useEffect(() => {
     fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const handleFilterChange = (key: string, value: string) => {
@@ -205,29 +216,29 @@ export default function AuditLogs() {
 
   // Função para obter o tipo de ação real (considerando ativação/inativação)
   const getRealAction = (log: AuditLog) => {
-    if (isActivationChange(log)) {
+    if (isActivationChange(log) && log.changes_after) {
       return log.changes_after.active ? 'activate' : 'deactivate';
     }
     return log.action;
   };
 
-  const getMemberName = (log: AuditLog) => {
+  const getMemberName = (log: AuditLog): string => {
     if (log.action === 'create' && log.changes_after?.name) {
-      return log.changes_after.name;
+      return String(log.changes_after.name);
     }
     if (log.action === 'update' && log.changes_after?.name) {
-      return log.changes_after.name;
+      return String(log.changes_after.name);
     }
     if (log.action === 'delete' && log.changes_before?.name) {
-      return log.changes_before.name;
+      return String(log.changes_before.name);
     }
     return 'Nome não disponível';
   };
 
-  const getChangedFields = (before: any, after: any) => {
+  const getChangedFields = (before: Record<string, unknown> | null, after: Record<string, unknown> | null) => {
     if (!before || !after) return [];
     
-    const changes: Array<{field: string, before: any, after: any}> = [];
+    const changes: Array<{field: string, before: unknown, after: unknown}> = [];
     const fieldsToCheck = ['name', 'email', 'phone', 'birth', 'gender', 'marital_status', 'occupation', 'city', 'state'];
     
     fieldsToCheck.forEach(field => {
@@ -258,12 +269,12 @@ export default function AuditLogs() {
     return fieldNames[field] || field;
   };
 
-  const formatFieldValue = (value: any, field: string) => {
+  const formatFieldValue = (value: unknown, field: string) => {
     if (value === null || value === undefined) return 'Não informado';
-    if (field === 'birth' && value) {
+    if (field === 'birth' && (typeof value === 'string' || typeof value === 'number' || value instanceof Date)) {
       return new Date(value).toLocaleDateString('pt-BR');
     }
-    return value;
+    return String(value);
   };
 
   const renderChanges = (log: AuditLog, isExpanded: boolean) => {

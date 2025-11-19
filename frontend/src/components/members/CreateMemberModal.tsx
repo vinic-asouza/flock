@@ -8,14 +8,14 @@ import apiService from '@/services/api';
 interface CreateMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (memberData: any) => void;
+  onSuccess: (memberData: { id: string; [key: string]: unknown }) => void;
 }
 
 export function CreateMemberModal({ isOpen, onClose, onSuccess }: CreateMemberModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -25,8 +25,9 @@ export function CreateMemberModal({ isOpen, onClose, onSuccess }: CreateMemberMo
       // Passar os dados do membro criado (incluindo o ID retornado pela API)
       onSuccess(response);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao criar membro');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao criar membro';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

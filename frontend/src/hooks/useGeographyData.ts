@@ -20,8 +20,8 @@ export function useGeographyData(
 ): GeographyDataHook {
   const [selectedState, setSelectedState] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // const [loading, setLoading] = useState(false);
+  // const [error, setError] = useState<string | null>(null);
 
   // Hook do IBGE para buscar dados de estados e cidades
   const { states: ibgeStates, cities: ibgeCities, fetchCities, loadingCities } = useIbgeData();
@@ -107,8 +107,8 @@ export function useGeographyData(
   return {
     states,
     cities,
-    loading: loading || loadingCities,
-    error,
+    loading: loadingCities,
+    error: null,
     selectedState,
     selectedCity,
     setSelectedState,

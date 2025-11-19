@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, Calendar, Users, MapPin, Briefcase } from 'lucide-react';
+import { X, Search, Calendar, MapPin, Briefcase } from 'lucide-react';
 import { ReportFilters } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -33,7 +33,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
 
         setRoles([
           { value: '', label: 'Todos os cargos' },
-          ...rolesData.map((role: any) => ({
+          ...rolesData.map((role: { id: string; name: string }) => ({
             value: role.id,
             label: role.name,
           })),
@@ -42,7 +42,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
         setCongregations([
           { value: '', label: 'Todas as congregações' },
           { value: 'sede', label: 'Sede' },
-          ...congregationsData.map((congregation: any) => ({
+          ...congregationsData.map((congregation: { id: string; name: string }) => ({
             value: congregation.id,
             label: congregation.name,
           })),
@@ -57,7 +57,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
     loadData();
   }, []);
 
-  const handleFilterChange = (key: keyof ReportFilters, value: any) => {
+  const handleFilterChange = (key: keyof ReportFilters, value: string | boolean | number | undefined) => {
     setLocalFilters(prev => ({
       ...prev,
       [key]: value === '' ? undefined : value,
@@ -104,7 +104,10 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
           <Select
             label="Status"
             value={localFilters.active?.toString() || ''}
-            onChange={(value) => handleFilterChange('active', value === 'true' ? true : value === 'false' ? false : undefined)}
+            onChange={(value) => {
+              const boolValue = value === 'true' ? true : value === 'false' ? false : undefined;
+              handleFilterChange('active', boolValue);
+            }}
             options={[
               { value: '', label: 'Todos' },
               { value: 'true', label: 'Ativo' },

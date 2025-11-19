@@ -42,7 +42,7 @@ interface DeleteAccountData {
 }
 
 export function AccountManagement() {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,10 +80,14 @@ export function AccountManagement() {
         setError(null);
         
         const data = await apiService.getAccountData();
-        setAccountData(data);
-      } catch (error: any) {
+        setAccountData(data as unknown as AccountData);
+      } catch (error: unknown) {
         console.error('Erro ao carregar dados da conta:', error);
-        setError(error.details ? error.details.join(', ') : error.message || 'Erro ao carregar dados da conta');
+        const errorObj = error as { details?: string | string[]; message?: string };
+        const errorMessage = errorObj.details 
+          ? (Array.isArray(errorObj.details) ? errorObj.details.join(', ') : errorObj.details)
+          : (errorObj.message || 'Erro ao carregar dados da conta');
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -104,9 +108,12 @@ export function AccountManagement() {
       setShowEmailModal(false);
       setEmailData({ newEmail: '', password: '' });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao alterar email:', error);
-      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao alterar email';
+      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
+      const errorMessage = errorObj.response?.data?.details 
+        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
+        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar email');
       setEmailError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -133,9 +140,12 @@ export function AccountManagement() {
       setShowPasswordModal(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao alterar senha:', error);
-      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao alterar senha';
+      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
+      const errorMessage = errorObj.response?.data?.details 
+        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
+        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar senha');
       setPasswordError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -163,15 +173,15 @@ export function AccountManagement() {
     setShowPasswordModal(false);
   };
 
-  const handleClosePhoneModal = () => {
-    setPhoneError(null);
-    setShowPhoneModal(false);
-  };
+  // const handleClosePhoneModal = () => {
+  //   setPhoneError(null);
+  //   setShowPhoneModal(false);
+  // };
 
-  const handleCloseDeleteModal = () => {
-    setDeleteError(null);
-    setShowDeleteModal(false);
-  };
+  // const handleCloseDeleteModal = () => {
+  //   setDeleteError(null);
+  //   setShowDeleteModal(false);
+  // };
 
   const handleChangePhone = async () => {
     try {
@@ -185,9 +195,12 @@ export function AccountManagement() {
       setShowPhoneModal(false);
       setPhoneData({ newPhone: '', password: '' });
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao alterar telefone:', error);
-      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao alterar telefone';
+      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
+      const errorMessage = errorObj.response?.data?.details 
+        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
+        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar telefone');
       setPhoneError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -215,9 +228,12 @@ export function AccountManagement() {
         window.location.href = '/login';
       }, 2000);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao excluir conta:', error);
-      const errorMessage = error.response?.data?.details || error.response?.data?.error || error.message || 'Erro ao excluir conta';
+      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
+      const errorMessage = errorObj.response?.data?.details 
+        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
+        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao excluir conta');
       setDeleteError(errorMessage);
     } finally {
       setIsSaving(false);

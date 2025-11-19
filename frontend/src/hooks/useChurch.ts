@@ -22,9 +22,10 @@ export function useChurch(): UseChurchReturn {
       
       const churchData = await apiService.getChurchData();
       setChurch(churchData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao buscar dados da igreja:', err);
-      setError(err.message || 'Erro ao carregar dados da igreja');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados da igreja';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -39,9 +40,10 @@ export function useChurch(): UseChurchReturn {
       setChurch(updatedChurch);
       
       return updatedChurch;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao atualizar igreja:', err);
-      setError(err.message || 'Erro ao atualizar dados da igreja');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar dados da igreja';
+      setError(errorMessage);
       throw err;
     } finally {
       setIsLoading(false);

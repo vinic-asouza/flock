@@ -1,0 +1,24 @@
+# Dockerignore específico para backend
+# Coloque este conteúdo no backend/.dockerignore
+
+node_modules
+npm-debug.log
+dist
+.env
+.env.local
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+logs
+*.log
+coverage
+.nyc_output
+tests
+docs
+*.md
+

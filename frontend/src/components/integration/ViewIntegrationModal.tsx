@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, MessageCircle, Phone, Calendar, User, Home, User2, Clipboard, Info, Download, Loader2, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { Loader, MessageCircle, User, Clipboard, Info, Download, Loader2, Trash2, UserPlus, XCircle } from 'lucide-react';
 import apiService from '@/services/api';
 import { IntegrationMember } from '@/types';
 import { DeleteIntegrationModal } from './DeleteIntegrationModal';
@@ -61,6 +61,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
     if (isOpen && integrationMemberId) {
       loadMember();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, integrationMemberId]);
 
   const loadMember = async () => {
@@ -69,8 +70,9 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
       setError(null);
       const data = await apiService.getIntegrationMember(integrationMemberId!);
       setMember(data);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados do integrante');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do integrante';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -97,7 +99,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao exportar integrante:', err);
       alert('Erro ao exportar PDF. Tente novamente.');
     } finally {
@@ -137,8 +139,9 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
         onDiscard();
       }
       handleClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao descartar integrante');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao descartar integrante';
+      setError(errorMessage);
     } finally {
       setDiscarding(false);
     }

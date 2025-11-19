@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import type { MouseEvent } from 'react';
 import { Users, Home, Briefcase, Layers, Settings, Loader2, UserPlus } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
   churchName: string;
@@ -20,7 +19,9 @@ const navItems = [
   { label: 'Configurações', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar({ churchName }: SidebarProps) {
+export function Sidebar({ churchName: _churchName }: SidebarProps) {
+  // churchName não é usado atualmente, mas mantido para compatibilidade com a interface
+  void _churchName;
   const pathname = usePathname();
   const router = useRouter();
   const [loadingHref, setLoadingHref] = useState<string | null>(null);

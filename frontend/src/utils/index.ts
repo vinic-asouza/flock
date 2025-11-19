@@ -159,7 +159,7 @@ export function getStateName(stateCode: string): string {
  */
 export function getStateCode(stateName: string): string {
   const entry = Object.entries(STATE_NAMES).find(
-    ([code, name]) => name.toLowerCase() === stateName.toLowerCase()
+    ([, name]) => name.toLowerCase() === stateName.toLowerCase()
   );
   return entry ? entry[0] : stateName;
 }

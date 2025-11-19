@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Users, Eye } from 'lucide-react';
+import { MapPin, Eye } from 'lucide-react';
 import { BarChart } from '@/components/reports/charts/BarChart';
 import { MemberModalWithSelect } from './MemberModalWithSelect';
 import { useGeographyData } from '@/hooks/useGeographyData';
@@ -77,7 +77,7 @@ export function GeographySection({
     .map(([label, value]) => ({
       label,
       value,
-      color: getCityColor(label),
+      color: getCityColor(),
     }))
     .sort((a, b) => b.value - a.value);
 
@@ -86,7 +86,7 @@ export function GeographySection({
     .map(([label, value]) => ({
       label,
       value,
-      color: getStateColor(label),
+      color: getStateColor(),
     }))
     .sort((a, b) => b.value - a.value);
 
@@ -165,12 +165,12 @@ export function GeographySection({
 }
 
 // Funções auxiliares para cores
-function getCityColor(city: string): string {
+function getCityColor(): string {
   // Todas as cidades usam a cor primária
   return '#090725';
 }
 
-function getStateColor(state: string): string {
+function getStateColor(): string {
   // Todos os estados usam a cor primária
   return '#090725';
 }

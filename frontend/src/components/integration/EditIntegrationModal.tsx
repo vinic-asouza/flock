@@ -32,8 +32,9 @@ export function EditIntegrationModal({
       const response = await apiService.updateIntegrationMember(member.id, payload);
       onSuccess(response);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar integrante');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar integrante';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

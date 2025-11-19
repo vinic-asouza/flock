@@ -25,6 +25,7 @@ export function EditRoleModal({ isOpen, onClose, roleId, onSuccess }: EditRoleMo
     if (isOpen && roleId) {
       loadRole();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, roleId]);
 
   const loadRole = async () => {
@@ -33,14 +34,17 @@ export function EditRoleModal({ isOpen, onClose, roleId, onSuccess }: EditRoleMo
       setError(null);
       const roleData = await apiService.getRole(roleId);
       setRole(roleData);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao carregar cargo');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error 
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
+        : 'Erro ao carregar cargo';
+      setError(errorMessage);
     } finally {
       setIsLoadingRole(false);
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -49,8 +53,11 @@ export function EditRoleModal({ isOpen, onClose, roleId, onSuccess }: EditRoleMo
       
       onSuccess(response);
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao atualizar cargo');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error 
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
+        : 'Erro ao atualizar cargo';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

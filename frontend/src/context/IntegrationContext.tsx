@@ -48,7 +48,7 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [currentFilters, setCurrentFilters] = useState<IntegrationFilters>(defaultFilters);
 
   const mapFiltersToParams = (filters: IntegrationFilters) => {
-    const params: any = {
+    const params: Record<string, string | undefined> = {
       search: filters.search?.trim() || undefined,
       status: filters.status !== 'todos' ? filters.status : undefined,
       expected_congregation_id: filters.expectedCongregationId?.trim() || undefined,
@@ -75,9 +75,10 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
 
       setIntegrationMembers(response.data);
       setPagination(response.pagination);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar integrantes:', err);
-      setError(err.message || 'Erro ao carregar integrantes');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar integrantes';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

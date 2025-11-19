@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, Mail, MessageCircle, MapPin, Calendar, User, Briefcase, Home, Trash2, UserMinus, UserPlus, Phone, Church, Download } from 'lucide-react';
+import { Loader, Mail, MessageCircle, User, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface Member {
@@ -82,6 +82,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
     if (isOpen && memberId) {
       loadMember();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, memberId]);
 
   const loadMember = async () => {
@@ -90,8 +91,9 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
       setError(null);
       const data = await apiService.getMember(memberId);
       setMember(data);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados do membro');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do membro';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -121,8 +123,9 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
       // Limpar
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao exportar PDF');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar PDF';
+      setError(errorMessage);
     } finally {
       setExporting(false);
     }

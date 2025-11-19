@@ -140,9 +140,13 @@ export function ChurchManagement() {
       setSuccess('Dados da igreja atualizados com sucesso!');
       setIsEditing(false);
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao salvar dados da igreja:', error);
-      setError(error.details ? error.details.join(', ') : error.message || 'Erro ao salvar dados');
+      const errorObj = error as { details?: string | string[]; message?: string };
+      const errorMessage = errorObj.details 
+        ? (Array.isArray(errorObj.details) ? errorObj.details.join(', ') : errorObj.details)
+        : (errorObj.message || 'Erro ao salvar dados');
+      setError(errorMessage);
     } finally {
       setIsSaving(false);
     }

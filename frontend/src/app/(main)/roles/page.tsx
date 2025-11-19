@@ -41,7 +41,7 @@ export default function RolesPage() {
     setEditModalOpen(false);
   };
 
-  const handleDeleteSuccess = (roleId: string) => {
+  const handleDeleteSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
     setDeleteModalOpen(false);
   };

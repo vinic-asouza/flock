@@ -8,14 +8,14 @@ import { apiService } from '@/services/api';
 interface CreateCongregationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (congregationData: any) => void;
+  onSuccess: (congregationData: { id: string; [key: string]: unknown }) => void;
 }
 
 export function CreateCongregationModal({ isOpen, onClose, onSuccess }: CreateCongregationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { name: string; address: string; city: string; state: string; leader?: string; phone?: string }) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -23,8 +23,11 @@ export function CreateCongregationModal({ isOpen, onClose, onSuccess }: CreateCo
       const response = await apiService.createCongregation(data);
       onSuccess(response);
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao criar congregação');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error 
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
+        : 'Erro ao criar congregação';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -17,16 +17,21 @@ import apiService from '@/services/api';
 // Função utilitária para preservar propriedades customizadas do erro
 const preserveErrorProperties = (error: unknown): Error => {
   if (error instanceof Error) {
-    const enhancedError = new Error(error.message);
+    const enhancedError = new Error(error.message) as Error & {
+      details?: string | string[];
+      status?: number;
+      originalError?: unknown;
+    };
     // Copiar propriedades customizadas
-    if ('details' in error) {
-      (enhancedError as any).details = (error as any).details;
+    const errorWithProps = error as { details?: string | string[]; status?: number; originalError?: unknown };
+    if (errorWithProps.details) {
+      enhancedError.details = errorWithProps.details;
     }
-    if ('status' in error) {
-      (enhancedError as any).status = (error as any).status;
+    if (errorWithProps.status) {
+      enhancedError.status = errorWithProps.status;
     }
-    if ('originalError' in error) {
-      (enhancedError as any).originalError = (error as any).originalError;
+    if (errorWithProps.originalError) {
+      enhancedError.originalError = errorWithProps.originalError;
     }
     return enhancedError;
   }
@@ -277,7 +282,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updateChurch,
     refreshChurch,
-  }), [user, session, isLoading, isOperationLoading, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch]);
+  }), [user, session, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -1,6 +1,6 @@
 import { IntegrationMember } from '@/types';
 import { IntegrationStatusBadge } from './IntegrationStatusBadge';
-import { Edit, UserPlus, Trash2, MessageCircle, Phone, Calendar, User2, Eye } from 'lucide-react';
+import { Edit, UserPlus, Trash2, MessageCircle, Eye, Phone } from 'lucide-react';
 
 interface IntegrationCardProps {
   member: IntegrationMember;

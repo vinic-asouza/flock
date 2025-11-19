@@ -52,7 +52,7 @@ interface EditMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   memberId: string;
-  onSuccess: (memberData: any) => void;
+  onSuccess: (memberData: { id: string; [key: string]: unknown }) => void;
 }
 
 export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMemberModalProps) {
@@ -66,6 +66,7 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
     if (isOpen && memberId) {
       loadMember();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, memberId]);
 
   const loadMember = async () => {
@@ -74,19 +75,20 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       setError(null);
       const data = await apiService.getMember(memberId);
       setMember(data);
-    } catch (err: any) {
-      setError(err.message || 'Erro ao carregar dados do membro');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do membro';
+      setError(errorMessage);
     } finally {
       setIsLoadingMember(false);
     }
   };
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      const response = await apiService.updateMember(memberId, data);
+      await apiService.updateMember(memberId, data);
       
       // Buscar os dados atualizados do membro para garantir que temos todos os dados
       const updatedMember = await apiService.getMember(memberId);
@@ -94,8 +96,9 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       // Passar os dados do membro atualizado com a estrutura completa
       onSuccess(updatedMember);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar membro');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar membro';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

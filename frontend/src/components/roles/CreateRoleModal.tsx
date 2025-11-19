@@ -8,14 +8,14 @@ import { apiService } from '@/services/api';
 interface CreateRoleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (roleData: any) => void;
+  onSuccess: (roleData: { id: string; [key: string]: unknown }) => void;
 }
 
 export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -24,8 +24,11 @@ export function CreateRoleModal({ isOpen, onClose, onSuccess }: CreateRoleModalP
       
       onSuccess(response);
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao criar cargo');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error 
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
+        : 'Erro ao criar cargo';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

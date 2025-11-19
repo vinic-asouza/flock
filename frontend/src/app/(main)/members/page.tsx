@@ -3,7 +3,7 @@
 import { MemberList } from '@/components/members/MemberList';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
 import { ViewModeSelector } from '@/components/members/ViewModeSelector';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MemberFiltersBar } from '@/components/members/MemberFiltersBar';
 import { MemberFiltersAdvanced } from '@/components/members/MemberFiltersAdvanced';
@@ -21,6 +21,7 @@ import { Plus } from 'lucide-react';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useViewMode } from '@/hooks/useViewMode';
 import { apiService } from '@/services/api';
+import { Member } from '@/types';
 
 export type MemberFilters = {
   search: string;
@@ -73,7 +74,7 @@ const initialSorting = {
 
 function MembersPageContent() {
   const searchParams = useSearchParams();
-  const [total, setTotal] = useState<number | null>(null);
+  // const [total, setTotal] = useState<number | null>(null);
   const [filters, setFilters] = useState<MemberFilters>(initialFilters);
   const [sorting, setSorting] = useState<{ sort_by: string; sort_order: 'asc' | 'desc' }>(initialSorting);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -91,7 +92,7 @@ function MembersPageContent() {
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
 
-  const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic, syncWithServer } = useMembers();
+  const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic } = useMembers();
 
   // Aplicar filtros da URL se presentes e carregar membros
   useEffect(() => {
@@ -106,7 +107,7 @@ function MembersPageContent() {
       const congregationIdFromUrl = searchParams.get('congregation_id');
       const statusFromUrl = searchParams.get('status');
       
-      let filtersToUse = { ...initialFilters };
+      const filtersToUse = { ...initialFilters };
       
       if (roleIdFromUrl || congregationIdFromUrl || statusFromUrl) {
         if (roleIdFromUrl) {
@@ -138,6 +139,7 @@ function MembersPageContent() {
     return () => {
       isMounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]); // Executar quando searchParams mudar
 
   const handleFilterChange = useCallback((changes: Partial<MemberFilters>) => {
@@ -178,11 +180,11 @@ function MembersPageContent() {
     setEditModalOpen(true);
   }, []);
 
-  const handleDeleteMember = useCallback((id: string, name: string) => {
-    setSelectedMemberId(id);
-    setSelectedMemberName(name);
-    setDeleteModalOpen(true);
-  }, []);
+  // const handleDeleteMember = useCallback((id: string, name: string) => {
+  //   setSelectedMemberId(id);
+  //   setSelectedMemberName(name);
+  //   setDeleteModalOpen(true);
+  // }, []);
 
   const handleDeactivateMember = useCallback((id: string, name: string) => {
     setSelectedMemberId(id);
@@ -307,15 +309,17 @@ function MembersPageContent() {
   }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
 
   // Handlers para atualização otimista
-  const handleCreateSuccess = useCallback((memberData: any) => {
+  const handleCreateSuccess = useCallback((memberData: { id: string; [key: string]: unknown }) => {
     // Adicionar otimisticamente
-    addMemberOptimistic(memberData);
+    // A API retorna um Member completo, então fazemos cast através de unknown
+    addMemberOptimistic(memberData as unknown as Member);
     setCreateModalOpen(false);
   }, [addMemberOptimistic]);
 
-  const handleEditSuccess = useCallback((memberData: any) => {
+  const handleEditSuccess = useCallback((memberData: { id: string; [key: string]: unknown }) => {
     // Atualizar otimisticamente
-    updateMemberOptimistic(memberData.id, memberData);
+    // A API retorna um Member completo, então fazemos cast através de unknown
+    updateMemberOptimistic(memberData.id, memberData as unknown as Partial<Member>);
     setEditModalOpen(false);
     
     // Disparar evento para recarregar a lista
@@ -338,7 +342,7 @@ function MembersPageContent() {
   const handleExportMembers = useCallback(async (selectedFields: string[]) => {
     try {
       // Construir parâmetros de filtro
-      const params: any = {};
+      const params: Record<string, string | number | boolean | null | undefined> = {};
       
       // Adicionar filtros ativos
       if (filters.search) params.search = filters.search;
@@ -427,7 +431,6 @@ function MembersPageContent() {
         onRemoveSorting={() => setSorting(initialSorting)}
       />
       <MemberList 
-        onTotalChange={setTotal} 
         filters={filters} 
         sorting={sorting}
         onView={handleViewMember}
@@ -510,7 +513,9 @@ function MembersPageContent() {
 export default function MembersPage() {
   return (
     <MembersProvider>
-      <MembersPageContent />
+      <Suspense fallback={<MembersSkeleton />}>
+        <MembersPageContent />
+      </Suspense>
     </MembersProvider>
   );
 } 

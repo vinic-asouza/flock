@@ -41,7 +41,7 @@ export default function CongregationsPage() {
     setEditModalOpen(false);
   };
 
-  const handleDeleteSuccess = (congregationId: string) => {
+  const handleDeleteSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
     setDeleteModalOpen(false);
   };

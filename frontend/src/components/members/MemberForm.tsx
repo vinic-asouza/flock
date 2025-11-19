@@ -40,7 +40,7 @@ const memberSchema = z.object({
         sum += parseInt(cleanCpf[i]) * (10 - i);
       }
       let remainder = sum % 11;
-      let firstDigit = remainder < 2 ? 0 : 11 - remainder;
+      const firstDigit = remainder < 2 ? 0 : 11 - remainder;
       
       if (parseInt(cleanCpf[9]) !== firstDigit) return false;
       
@@ -50,7 +50,7 @@ const memberSchema = z.object({
         sum += parseInt(cleanCpf[i]) * (11 - i);
       }
       remainder = sum % 11;
-      let secondDigit = remainder < 2 ? 0 : 11 - remainder;
+      const secondDigit = remainder < 2 ? 0 : 11 - remainder;
       
       return parseInt(cleanCpf[10]) === secondDigit;
     }, 'CPF inválido'),
@@ -153,11 +153,11 @@ const formatCPF = (value: string): string => {
   }
 };
 
-// Função para formatar data
-const formatDate = (value: string): string => {
-  const numbers = value.replace(/\D/g, '');
-  return numbers.replace(/(\d{2})(\d{2})(\d{4})/, '$1/$2/$3');
-};
+// Função para formatar data (não utilizada atualmente)
+// const formatDate = (value: string): string => {
+//   const numbers = value.replace(/\D/g, '');
+//   return numbers.replace(/(\d{2})(\d{2})(\d{4})/, '$1/$2/$3');
+// };
 
 // Função para converter data ISO para DD/MM/AAAA
 const formatDateFromISO = (isoDate: string | null | undefined): string => {
@@ -183,7 +183,7 @@ const formatDateToISO = (formattedDate: string): string | null => {
 export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode }: MemberFormProps) {
   const { roles, congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
-  const { professions, loading: professionsLoading, searchProfessions } = useProfessions();
+  const { professions, loading: professionsLoading } = useProfessions();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
@@ -431,7 +431,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setNationalityOtherError('');
       setOccupationOtherError('');
       reset();
-    } catch (error) {
+    } catch {
       // Erro será tratado pelo componente pai
     }
   };

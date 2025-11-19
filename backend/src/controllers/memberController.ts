@@ -1080,7 +1080,26 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     const integrationMembersByYear: Record<string, IntegrationMemberSummary[]> = {};
     const integrationMembersByMonth: Record<string, IntegrationMemberSummary[]> = {};
 
-    const integrationMembers = (integrationData || []) as IntegrationMemberSummary[];
+    // Transforma os dados do Supabase (que retorna arrays para relacionamentos) 
+    // para o formato esperado (objetos únicos ou null)
+    const integrationMembers: IntegrationMemberSummary[] = (integrationData || []).map((member: any) => {
+      const expectedCongregation = Array.isArray(member.expected_congregation) 
+        ? (member.expected_congregation[0] || null)
+        : (member.expected_congregation || null);
+      
+      const mentor = Array.isArray(member.mentor)
+        ? (member.mentor[0] || null)
+        : (member.mentor || null);
+
+      return {
+        id: member.id,
+        name: member.name,
+        status: member.status,
+        created_at: member.created_at,
+        expected_congregation: expectedCongregation,
+        mentor: mentor
+      } as IntegrationMemberSummary;
+    });
 
     integrationMembers.forEach(member => {
       if (!member.created_at) {

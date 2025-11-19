@@ -25,7 +25,7 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
         const congregationsData = await apiService.listCongregations();
 
         setCongregations(
-          congregationsData.map((congregation: any) => ({
+          congregationsData.map((congregation: { id: string; name: string }) => ({
             value: congregation.id,
             label: congregation.name,
           }))

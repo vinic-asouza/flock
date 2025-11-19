@@ -19,9 +19,10 @@ export function useReports() {
       const reportsData = await apiService.getMemberReports(customFilters || filters);
       setData(reportsData);
       setLastUpdated(new Date().toLocaleString('pt-BR'));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar relatórios:', err);
-      setError(err.message || 'Erro ao carregar relatórios');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar relatórios';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -44,6 +45,7 @@ export function useReports() {
   // Carregar dados iniciais
   useEffect(() => {
     loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {

@@ -37,7 +37,7 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
       label,
       value: congregationData.count,
       id: congregationData.id,
-      color: getCongregationColor(label),
+      color: getCongregationColor(),
     }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6); // Top 6 congregações
@@ -160,7 +160,7 @@ function getRoleColor(role: string): string {
   return colors[role] || '#090725';
 }
 
-function getCongregationColor(congregation: string): string {
+function getCongregationColor(): string {
   // Todas as congregações usam a cor primária
   return '#090725';
 }

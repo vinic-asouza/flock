@@ -10,7 +10,7 @@ interface ConvertIntegrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   integrationMember?: IntegrationMember | null;
-  onSuccess: (result: { member: any; integrationMember: IntegrationMember }) => void;
+  onSuccess: (result: { member: unknown; integrationMember: IntegrationMember }) => void;
 }
 
 const mapGender = (value?: string | null) => {
@@ -73,15 +73,15 @@ export function ConvertIntegrationModal({
       birth: integrationMember.birth ?? '',
       gender: mapGender(integrationMember.gender),
       marital_status: mapMaritalStatus(integrationMember.marital_status),
-      nationality: '',
+      nationality: '', // Campo obrigatório no tipo local do MemberForm
       document: '',
       spouse: '',
-      occupation: '',
-      address: '',
+      occupation: '', // Campo obrigatório no tipo local do MemberForm
+      address: '', // Campo obrigatório no tipo local do MemberForm
       complement: '',
-      neighborhood: '',
-      city: '',
-      state: '',
+      neighborhood: '', // Campo obrigatório no tipo local do MemberForm
+      city: '', // Campo obrigatório no tipo local do MemberForm
+      state: '', // Campo obrigatório no tipo local do MemberForm
       cep: '',
       baptism_date: '',
       admission: mapAdmission(integrationMember.expected_admission_type),
@@ -101,10 +101,10 @@ export function ConvertIntegrationModal({
           phone: undefined
         }
         : null
-    };
+    } as unknown as Parameters<typeof MemberForm>[0]['member'];
   }, [integrationMember]);
 
-  const handleSubmit = async (formData: any) => {
+  const handleSubmit = async (formData: { name: string; [key: string]: unknown }) => {
     if (!integrationMember) return;
 
     try {
@@ -114,8 +114,9 @@ export function ConvertIntegrationModal({
       const result = await apiService.convertIntegrationMember(integrationMember.id, formData);
       onSuccess(result);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao converter integrante em membro');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao converter integrante em membro';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +156,7 @@ export function ConvertIntegrationModal({
 
           <MemberForm
             mode="create"
-            member={initialMemberData as any}
+            member={initialMemberData}
             onSubmit={handleSubmit}
             onCancel={handleClose}
             isLoading={isLoading}

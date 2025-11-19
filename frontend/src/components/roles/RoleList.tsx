@@ -23,8 +23,11 @@ export function RoleList({ onEdit, onDelete, refreshTrigger }: RoleListProps) {
       setError(null);
       const rolesData = await apiService.listRoles();
       setRoles(rolesData);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao carregar cargos');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error 
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
+        : 'Erro ao carregar cargos';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

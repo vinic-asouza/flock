@@ -125,7 +125,7 @@ export function RoleForm({ role, onSubmit, onCancel, isLoading = false, mode }: 
       reset();
       setSelectedRole('');
       setShowCustomInput(false);
-    } catch (error) {
+    } catch {
       // Erro será tratado pelo componente pai
     }
   };

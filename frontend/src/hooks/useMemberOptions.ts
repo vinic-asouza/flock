@@ -49,7 +49,7 @@ export function useMemberOptions({
         sort_order: 'asc',
       });
 
-      const mappedOptions = response.data.map((member: any) => ({
+      const mappedOptions = response.data.map((member: { id: string; name: string; phone?: string | null; whatsapp?: string | null; active: boolean }) => ({
         id: member.id,
         name: member.name,
         phone: member.phone ?? null,
@@ -58,10 +58,11 @@ export function useMemberOptions({
       }));
 
       setOptions(mappedOptions);
-    } catch (err: any) {
-      if (err?.name === 'AbortError') return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       console.error('Erro ao carregar membros para seleção:', err);
-      setError(err.message || 'Erro ao carregar membros');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar membros';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

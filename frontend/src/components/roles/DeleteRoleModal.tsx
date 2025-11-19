@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { AlertTriangle, Loader, Users } from 'lucide-react';
+import { AlertTriangle, Users } from 'lucide-react';
 import { apiService } from '@/services/api';
 
 interface DeleteRoleModalProps {
@@ -30,8 +30,9 @@ export function DeleteRoleModal({ isOpen, onClose, roleId, roleName, activeMembe
       
       onSuccess(roleId);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao excluir cargo');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir cargo';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

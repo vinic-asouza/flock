@@ -24,8 +24,9 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
       const response = await apiService.createIntegrationMember(payload);
       onSuccess(response);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Erro ao cadastrar integrante');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao cadastrar integrante';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

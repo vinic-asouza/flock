@@ -7,7 +7,6 @@ import { ViewMode } from './ViewModeSelector';
 import { Pagination } from '../commom/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
-import { Button } from '../ui/Button';
 import { Download } from 'lucide-react';
 
 export function MemberList({ 

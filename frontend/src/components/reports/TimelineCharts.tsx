@@ -17,9 +17,11 @@ interface TimelineChartsProps {
 export function TimelineCharts({
   data,
   loading = false,
-  showCongregationColumn = true,
+  showCongregationColumn: _showCongregationColumn = true,
   integrationTimeline,
 }: TimelineChartsProps) {
+  // showCongregationColumn não é usado atualmente, mas mantido para compatibilidade com a interface
+  void _showCongregationColumn;
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
   const [membersPage, setMembersPage] = useState(1);

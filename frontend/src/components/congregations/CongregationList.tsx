@@ -23,8 +23,11 @@ export function CongregationList({ onEdit, onDelete, refreshTrigger }: Congregat
       setError(null);
       const congregationsData = await apiService.listCongregations();
       setCongregations(congregationsData);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao carregar congregações');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error 
+        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
+        : 'Erro ao carregar congregações';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

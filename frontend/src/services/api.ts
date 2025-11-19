@@ -8,7 +8,6 @@ import {
   LoginResponse,
   RegisterResponse,
   ApiResponse,
-  ApiError,
   Church,
   MemberReports,
   ReportFilters,
@@ -81,10 +80,14 @@ class ApiService {
           }
           
           // Criar um erro mais informativo
-          const enhancedError = new Error(errorMessage);
-          (enhancedError as any).details = errorDetails;
-          (enhancedError as any).status = error.response.status;
-          (enhancedError as any).originalError = error.response.data;
+          const enhancedError = new Error(errorMessage) as Error & {
+            details?: string | string[];
+            status?: number;
+            originalError?: unknown;
+          };
+          enhancedError.details = errorDetails;
+          enhancedError.status = error.response.status;
+          enhancedError.originalError = error.response.data;
           
           return Promise.reject(enhancedError);
         }
@@ -140,7 +143,7 @@ class ApiService {
     try {
       const response = await this.api.get('/refresh/check');
       return response.data.authenticated;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -150,7 +153,7 @@ class ApiService {
     try {
       const response = await this.api.get('/refresh/check');
       return response.data.church || null;
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -160,7 +163,7 @@ class ApiService {
     try {
       await this.api.post('/refresh/refresh');
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -292,8 +295,8 @@ class ApiService {
     return response.data;
   }
 
-  async convertIntegrationMember(id: string, data: any): Promise<{
-    member: any;
+  async convertIntegrationMember(id: string, data: { name: string; [key: string]: unknown }): Promise<{
+    member: { id: string; [key: string]: unknown };
     integrationMember: IntegrationMember;
   }> {
     const response = await this.api.post(`/integration/${id}/convert`, data);
@@ -394,13 +397,13 @@ class ApiService {
   }
 
   // Criar membro
-  async createMember(data: any) {
+  async createMember(data: { name: string; [key: string]: unknown }) {
     const response = await this.api.post('/members', data);
     return response.data;
   }
 
   // Atualizar membro
-  async updateMember(id: string, data: any) {
+  async updateMember(id: string, data: { name: string; [key: string]: unknown }) {
     const response = await this.api.put(`/members/${id}`, data);
     return response.data;
   }
@@ -464,37 +467,37 @@ class ApiService {
   }
 
   // Gerenciamento de Conta
-  async getAccountData(): Promise<any> {
+  async getAccountData(): Promise<{ id: string; email: string; phone?: string; [key: string]: unknown }> {
     const response = await this.api.get('/account');
     return response.data.user;
   }
 
-  async changeEmail(data: { newEmail: string; password: string }): Promise<any> {
+  async changeEmail(data: { newEmail: string; password: string }): Promise<{ message: string; [key: string]: unknown }> {
     const response = await this.api.put('/account/email', data);
     return response.data;
   }
 
-  async changeAccountPassword(data: { currentPassword: string; newPassword: string }): Promise<any> {
+  async changeAccountPassword(data: { currentPassword: string; newPassword: string }): Promise<{ message: string; [key: string]: unknown }> {
     const response = await this.api.put('/account/password', data);
     return response.data;
   }
 
-  async changePhone(data: { newPhone: string; password: string }): Promise<any> {
+  async changePhone(data: { newPhone: string; password: string }): Promise<{ message: string; [key: string]: unknown }> {
     const response = await this.api.put('/account/phone', data);
     return response.data;
   }
 
-  async deleteAccount(data: { password: string; confirmation: string }): Promise<any> {
+  async deleteAccount(data: { password: string; confirmation: string }): Promise<{ message: string; [key: string]: unknown }> {
     const response = await this.api.delete('/account', { data });
     return response.data;
   }
 
-  async resendConfirmation(email: string): Promise<any> {
+  async resendConfirmation(email: string): Promise<{ message: string; [key: string]: unknown }> {
     const response = await this.api.post('/account/resend-confirmation', { email });
     return response.data;
   }
 
-  async getAuditLogs(params?: { page?: number; limit?: number; entity?: string; action?: string }): Promise<any> {
+  async getAuditLogs(params?: { page?: number; limit?: number; entity?: string; action?: string }): Promise<{ data: { id: string; [key: string]: unknown }[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } }> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
@@ -525,7 +528,7 @@ class ApiService {
     return response.data;
   }
 
-  async exportMembersList(filters: any, selectedFields: string[]): Promise<Blob> {
+  async exportMembersList(filters: Record<string, string | number | boolean | null | undefined>, selectedFields: string[]): Promise<Blob> {
     const response = await this.api.post('/export/members/list', {
       filters,
       fields: selectedFields

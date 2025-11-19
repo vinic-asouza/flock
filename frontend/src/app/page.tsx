@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { apiService } from '@/services/api';
 import { MemberReports, ReportFilters } from '@/types';
-import { Loader, RefreshCw, Download, Building, BarChart3 } from 'lucide-react';
+import { Loader, RefreshCw, Download, Building } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Sidebar } from '@/components/main/Sidebar';
@@ -50,9 +50,10 @@ export default function HomePage() {
       const data = await apiService.getMemberReports(filters);
       setReportsData(data);
       setLastUpdated(new Date().toLocaleString('pt-BR'));
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar relatórios:', err);
-      setError(err.message || 'Erro ao carregar relatórios');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar relatórios';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -117,9 +118,10 @@ export default function HomePage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao exportar PDF:', err);
-      setError(err.message || 'Erro ao exportar PDF');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar PDF';
+      setError(errorMessage);
     } finally {
       setExporting(false);
     }

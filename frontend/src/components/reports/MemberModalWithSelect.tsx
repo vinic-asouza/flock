@@ -46,9 +46,9 @@ export function MemberModalWithSelect({
   selectedCongregationId,
   itemsPerPage = 6
 }: MemberModalWithSelectProps) {
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<{ id: string; [key: string]: unknown }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState<any>(null);
+  const [pagination, setPagination] = useState<{ page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
 
@@ -57,6 +57,7 @@ export function MemberModalWithSelect({
     if (isOpen) {
       fetchMembers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedValues, currentPage, viewMode, selectedCongregationId]);
 
   // Resetar página quando mudar filtros
@@ -86,7 +87,7 @@ export function MemberModalWithSelect({
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const params: any = {
+      const params: Record<string, string | number | boolean | null | undefined> = {
         page: currentPage,
         limit: itemsPerPage,
         active: true // Filtrar apenas membros ativos
@@ -136,7 +137,7 @@ export function MemberModalWithSelect({
   const handleExport = async (selectedFields: string[]) => {
     try {
       // Construir filtros baseados nos valores selecionados
-      const exportFilters: any = {
+      const exportFilters: Record<string, string | number | boolean | null | undefined> = {
         status: 'active' // Apenas membros ativos
       };
 
@@ -297,7 +298,10 @@ export function MemberModalWithSelect({
                 {members.length > 0 ? (
                   <div className="space-y-3">
                     {members.map((member) => (
-                      <MemberCardCompact key={member.id} member={member} />
+                      <MemberCardCompact 
+                        key={member.id} 
+                        member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
+                      />
                     ))}
                   </div>
                 ) : (
