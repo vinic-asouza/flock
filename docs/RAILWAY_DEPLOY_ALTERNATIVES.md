@@ -50,8 +50,10 @@ No Railway, configure:
 
 - **Root Directory**: `frontend`
 - **Build Command**: `npm install && npm run build`
-- **Start Command**: `npm start -H 0.0.0.0 -p $PORT`
+- **Start Command**: `npm run start:railway` (ou `npm start -H 0.0.0.0 -p $PORT`)
 - **Porta** (ao configurar domínio): `3000`
+
+⚠️ **Nota**: O script `start:railway` já foi adicionado ao `package.json` e força o Next.js a escutar em `0.0.0.0` e usar a porta do Railway.
 
 ### Passo 3: Variáveis de Ambiente
 
