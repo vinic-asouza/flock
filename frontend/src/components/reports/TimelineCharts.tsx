@@ -159,13 +159,22 @@ export function TimelineCharts({
   const members = useMemo(() => {
     if (!selectedYear) return [];
 
+    let membersList: Member[] = [];
+
     if (selectedMonthFilter === 'all') {
       if (!data.membersByYear || !data.membersByYear[selectedYear]) return [];
-      return data.membersByYear[selectedYear];
+      membersList = data.membersByYear[selectedYear];
+    } else {
+      const yearMonthKey = `${selectedYear}-${selectedMonthFilter.padStart(2, '0')}`;
+      membersList = data.membersByMonth?.[yearMonthKey] || [];
     }
 
-    const yearMonthKey = `${selectedYear}-${selectedMonthFilter.padStart(2, '0')}`;
-    return data.membersByMonth?.[yearMonthKey] || [];
+    // Ordenar por data de admissão (mais recente primeiro)
+    return membersList.sort((a, b) => {
+      const dateA = a.admission_date ? new Date(a.admission_date).getTime() : 0;
+      const dateB = b.admission_date ? new Date(b.admission_date).getTime() : 0;
+      return dateB - dateA; // Ordem decrescente (mais recente primeiro)
+    });
   }, [selectedYear, selectedMonthFilter, data]);
 
   const membersPaginated = useMemo(() => {
@@ -234,7 +243,14 @@ export function TimelineCharts({
       membersList = integrationTimeline.membersByMonth[key] ?? [];
     }
 
-    return membersList.filter(member => member.status === 'em_progresso');
+    const filteredMembers = membersList.filter(member => member.status === 'em_progresso');
+
+    // Ordenar por data de criação (mais recente primeiro)
+    return filteredMembers.sort((a, b) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA; // Ordem decrescente (mais recente primeiro)
+    });
   }, [integrationTimeline, integrationSelectedYear, integrationSelectedMonthFilter]);
 
   const integrationMembersPaginated = useMemo(() => {
