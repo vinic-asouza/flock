@@ -79,53 +79,51 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-      {/* Título e botões de visualização */}
-      <div className="flex-1">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">Visualização</h3>
-        <div className="flex flex-wrap gap-2">
-          {viewOptions.map((option) => {
-            const Icon = option.icon;
-            const isSelected = selectedView === option.value;
+    <div className="flex flex-col gap-3">
+      {/* Label acima */}
+      <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
+      
+      {/* Bloco com botões e seletor alinhados horizontalmente */}
+      <div className="flex flex-row flex-wrap items-center gap-3">
+        {/* Botões de visualização */}
+        {viewOptions.map((option) => {
+          const Icon = option.icon;
+          const isSelected = selectedView === option.value;
 
-            return (
-              <button
-                key={option.value}
-                onClick={() => handleViewChange(option.value)}
-                className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  isSelected
-                    ? 'bg-primary text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                title={option.description}
-              >
-                <Icon size={16} />
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={option.value}
+              onClick={() => handleViewChange(option.value)}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isSelected
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+              title={option.description}
+            >
+              <Icon size={16} />
+              {option.label}
+            </button>
+          );
+        })}
+
+        {/* Seletor de Congregação (apenas quando congregação específica está selecionada) */}
+        {selectedView === 'congregation' && (
+          <div className="w-48 sm:w-64 flex-shrink-0">
+            <Select
+              value={selectedCongregationId || ''}
+              onChange={handleCongregationChange}
+              options={[
+                { value: '', label: 'Selecione uma congregação' },
+                ...congregations,
+              ]}
+              placeholder="Escolha uma congregação"
+              disabled={loading}
+              label=""
+            />
+          </div>
+        )}
       </div>
-
-      {/* Seletor de Congregação (apenas quando congregação específica está selecionada) */}
-      {selectedView === 'congregation' && (
-        <div className="sm:w-64">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Congregação
-          </label>
-          <Select
-            value={selectedCongregationId || ''}
-            onChange={handleCongregationChange}
-            options={[
-              { value: '', label: 'Selecione uma congregação' },
-              ...congregations,
-            ]}
-            placeholder="Escolha uma congregação"
-            disabled={loading}
-            label=""
-          />
-        </div>
-      )}
     </div>
   );
 }

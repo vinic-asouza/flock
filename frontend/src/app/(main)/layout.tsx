@@ -13,7 +13,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const { user } = useAuth();
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-app flex flex-col">
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar churchName={user?.name || ''} />

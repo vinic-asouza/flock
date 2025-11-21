@@ -130,7 +130,7 @@ export default function HomePage() {
   if (loading && !reportsData) {
     return (
       <ProtectedRoute>
-        <div className="h-screen bg-gray-50 flex flex-col">
+        <div className="h-screen bg-app flex flex-col">
           <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar churchName={user?.name || ''} />
@@ -172,7 +172,7 @@ export default function HomePage() {
 
   return (
     <ProtectedRoute>
-      <div className="h-screen bg-gray-50 flex flex-col">
+      <div className="h-screen bg-app flex flex-col">
         <Header />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar churchName={user?.name || ''} />
@@ -195,9 +195,9 @@ export default function HomePage() {
           {/* Header com Controles */}
           <div className="px-6 py-4">
             <div className="bg-white rounded-lg border border-[#090725]/10 px-6 py-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+              <div className="flex flex-col lg:flex-row gap-4 items-start">
                 {/* Coluna 1: Seletor de Visualização */}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <ViewSelector
                     selectedView={viewMode}
                     selectedCongregationId={selectedCongregationId}
@@ -206,7 +206,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Coluna 2: Botões de Ação */}
-                <div className="flex items-center justify-end lg:justify-end">
+                <div className="flex items-center justify-end flex-shrink-0">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleRefresh}
