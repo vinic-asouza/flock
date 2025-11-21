@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Church } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
+import { FlockLogo } from '@/components/ui/FlockLogo';
 
 export function Header() {
   const router = useRouter();
@@ -16,12 +17,16 @@ export function Header() {
 
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
-      {/* Nome da Igreja */}
-      <div className="flex items-center">
-        <Church size={16} className="text-gray-900" />
-        <h1 className="pl-2 text-base font-medium text-gray-900" title={user?.name}>
-          {user?.name || 'Igreja'}
-        </h1>
+      {/* Logo e Nome da Igreja */}
+      <div className="flex items-center gap-3">
+        <FlockLogo size={30} className="text-primary" />
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-semibold text-primary">Flock App</span>
+          <span className="text-gray-300">|</span>
+          <h1 className="text-sm font-normal text-gray-600" title={user?.name}>
+            {user?.name || 'Igreja'}
+          </h1>
+        </div>
       </div>
 
       {/* Dados do Usuário e Botão Sair */}

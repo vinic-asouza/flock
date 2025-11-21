@@ -50,9 +50,17 @@ class ApiService {
         const url: string = error.config?.url || '';
         const isCheckAuthEndpoint = url.includes('/refresh/check');
         const isLoginEndpoint = url.includes('/auth/login');
+        const isRegisterEndpoint = url.includes('/auth/register');
         const isAlreadyOnLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
+        const isAlreadyOnRegister = typeof window !== 'undefined' && window.location.pathname === '/register';
         
-        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isAlreadyOnLogin) {
+        // Silenciar erros 401 durante verificação de autenticação (é esperado)
+        if (error.response?.status === 401 && isCheckAuthEndpoint) {
+          // Retornar erro silencioso - não logar
+          return Promise.reject(new Error('Não autenticado'));
+        }
+        
+        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isRegisterEndpoint && !isAlreadyOnLogin && !isAlreadyOnRegister) {
           // Token expirado ou inválido - redirecionar para login
           // Cookies serão limpos automaticamente pelo servidor
           window.location.href = '/login';

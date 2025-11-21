@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { MemberForm } from './MemberForm';
-import { Loader } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface Member {
@@ -124,7 +124,7 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       <div className="flex flex-col min-h-[75vh]">
         {isLoadingMember && (
           <div className="flex items-center justify-center py-12">
-            <Loader className="animate-spin text-primary" size={32} />
+            <LoaderCircle className="animate-spin text-primary" size={32} />
           </div>
         )}
 

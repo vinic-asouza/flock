@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,25 +14,33 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
 
   useEffect(() => {
+    // Redirecionar imediatamente quando não autenticado
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      // Usar replace para não adicionar ao histórico
+      router.replace('/login');
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Mostrar loading apenas brevemente durante verificação inicial
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-lg font-medium text-gray-900 mb-2">Verificando autenticação...</p>
-          <p className="text-sm text-gray-500">Aguarde um momento</p>
+          <Spinner className="mx-auto mb-4" />
         </div>
       </div>
     );
   }
 
+  // Não renderizar nada se não autenticado - redirecionamento em andamento
   if (!isAuthenticated) {
-    return null; // Será redirecionado pelo useEffect
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+        <div className="text-center">
+          <Spinner className="mx-auto mb-4" />
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

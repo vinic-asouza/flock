@@ -1,6 +1,6 @@
 'use client';
 
-import { Mail, MessageCircle } from 'lucide-react';
+import { Mail, MessageCircle, Phone } from 'lucide-react';
 
 interface MemberCardCompactProps {
   member: {
@@ -12,8 +12,10 @@ interface MemberCardCompactProps {
     congregation?: { name: string } | null;
     gender: string;
     marital_status: string;
+    occupation?: string | null;
     whatsapp?: string | null;
     email?: string | null;
+    phone?: string | null;
     address?: string | null;
     neighborhood?: string | null;
     city?: string | null;
@@ -61,29 +63,45 @@ export function MemberCardCompact({ member }: MemberCardCompactProps) {
           <span>{idade !== null ? `${idade} Anos` : '-'}</span>
           <span>{member.gender}</span>
           <span>{member.marital_status}</span>
-          {member.whatsapp && (
-            <a
-              href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
-            >
-              <MessageCircle size={14} className="transition-colors" />
-              {member.whatsapp}
-            </a>
-          )}
-          {member.email && (
-            <a
-              href={`mailto:${member.email}`}
-              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              <Mail size={14} className="transition-colors" />
-              {member.email}
-            </a>
-          )}
+          {member.occupation && <span>{member.occupation}</span>}
         </div>
         
-        {/* Linha 3: Endereço */}
+        {/* Linha 3: Contato */}
+        {(member.whatsapp || member.email || member.phone) && (
+          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 mt-1">
+            {member.phone && (
+              <a
+                href={`tel:${member.phone.replace(/\D/g, '')}`}
+                className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                <Phone size={14} className="transition-colors" />
+                {member.phone}
+              </a>
+            )}
+            {member.whatsapp && (
+              <a
+                href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
+              >
+                <MessageCircle size={14} className="transition-colors" />
+                {member.whatsapp}
+              </a>
+            )}
+            {member.email && (
+              <a
+                href={`mailto:${member.email}`}
+                className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                <Mail size={14} className="transition-colors" />
+                {member.email}
+              </a>
+            )}
+          </div>
+        )}
+        
+        {/* Linha 4: Endereço */}
         {(member.address || member.neighborhood || member.city || member.state) && (
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600 mt-1">
             {member.address && <span>{member.address}</span>}

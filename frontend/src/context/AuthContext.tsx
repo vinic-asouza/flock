@@ -50,30 +50,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        console.log('Inicializando autenticação...');
-        
-        // Aguardar um pouco para garantir que cookies foram processados
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         // Verificar autenticação via API (cookies são enviados automaticamente)
+        // Silenciar erros durante verificação inicial - é esperado que não esteja autenticado
         const response = await apiService.isAuthenticated();
-        console.log('Resposta de autenticação:', response);
         
         if (response) {
           // Obter dados da igreja
           const church = await apiService.getChurch();
-          console.log('Dados da igreja:', church);
           
           if (church) {
-            console.log('Usuário autenticado, definindo estado...');
             setUser(church);
             
-            // Buscar dados da conta para obter o email
+            // Buscar dados da conta para obter o email (silenciar erros)
             let userEmail = '';
             try {
               const accountData = await apiService.getAccountData();
               userEmail = accountData.email || '';
             } catch (error) {
+              // Silenciar erro - não crítico durante inicialização
               console.warn('Erro ao buscar dados da conta:', error);
             }
             
@@ -102,22 +96,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             });
           } else {
-            console.log('Igreja não encontrada, usuário não autenticado');
             setUser(null);
             setSession(null);
           }
         } else {
-          console.log('Usuário não autenticado');
           setUser(null);
           setSession(null);
         }
       } catch (error) {
-        console.error('Erro ao inicializar autenticação:', error);
-        // Limpar estado local
+        // Silenciar erro durante verificação inicial - é esperado que não esteja autenticado
+        // Não logar como erro para não poluir o console
         setUser(null);
         setSession(null);
       } finally {
-        console.log('Finalizando inicialização de autenticação');
         setIsLoading(false);
       }
     };

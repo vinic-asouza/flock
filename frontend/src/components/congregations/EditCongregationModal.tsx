@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { CongregationForm } from './CongregationForm';
-import { Loader } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import apiService from '@/services/api';
 
 interface Congregation {
@@ -94,7 +94,7 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
     >
       {isLoadingCongregation && (
         <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary" size={32} />
+          <LoaderCircle className="animate-spin text-primary" size={32} />
         </div>
       )}
 

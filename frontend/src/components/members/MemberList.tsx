@@ -8,6 +8,7 @@ import { Pagination } from '../commom/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
 import { Download } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
 
 export function MemberList({ 
   onTotalChange, 
@@ -97,7 +98,7 @@ export function MemberList({
   if (loading || !isViewModeLoaded) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <Spinner className="mx-auto mb-4" />
         <p className="text-lg font-medium text-gray-900 mb-2">Carregando membros...</p>
         <p className="text-sm text-gray-500">Buscando informações</p>
       </div>

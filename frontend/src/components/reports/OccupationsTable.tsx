@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Briefcase, Users, Eye } from 'lucide-react';
 import { TopOccupation } from '@/types';
 import { MemberModalWithSelect } from './MemberModalWithSelect';
+import { apiService } from '@/services/api';
 
 interface OccupationsTableProps {
   data: TopOccupation[];
@@ -15,6 +16,85 @@ interface OccupationsTableProps {
 export function OccupationsTable({ data, loading = false, viewMode = 'all', selectedCongregationId }: OccupationsTableProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOccupation, setSelectedOccupation] = useState('');
+  const [allOccupations, setAllOccupations] = useState<TopOccupation[]>([]);
+  const [loadingOccupations, setLoadingOccupations] = useState(false);
+
+  // Buscar todas as ocupações quando o modal for aberto
+  useEffect(() => {
+    if (isModalOpen && allOccupations.length === 0) {
+      fetchAllOccupations();
+    }
+  }, [isModalOpen, viewMode, selectedCongregationId]);
+
+  const fetchAllOccupations = async () => {
+    setLoadingOccupations(true);
+    try {
+      // Preparar filtros baseados no viewMode
+      const filters: any = {
+        active: true,
+        limit: 100, // Limite máximo permitido pela API
+        page: 1
+      };
+
+      if (viewMode === 'sede') {
+        filters.congregation_id = 'sede';
+      } else if (viewMode === 'congregation' && selectedCongregationId) {
+        filters.congregation_id = selectedCongregationId;
+      }
+
+      // Buscar primeira página para obter informações de paginação
+      const firstPageResponse = await apiService.listMembers(filters);
+      
+      if (!firstPageResponse.data || !Array.isArray(firstPageResponse.data)) {
+        // Se não houver dados, usar as top 10 que já temos
+        setAllOccupations(data);
+        return;
+      }
+
+      // Extrair todas as ocupações únicas e contar
+      const occupationMap = new Map<string, number>();
+      
+      // Processar primeira página
+      firstPageResponse.data.forEach((member: any) => {
+        const occupation = member.occupation || 'Não informado';
+        occupationMap.set(occupation, (occupationMap.get(occupation) || 0) + 1);
+      });
+
+      // Se houver mais páginas, buscar todas
+      const totalPages = firstPageResponse.pagination?.totalPages || 1;
+      if (totalPages > 1) {
+        const allPagesPromises = [];
+        for (let page = 2; page <= totalPages; page++) {
+          allPagesPromises.push(
+            apiService.listMembers({ ...filters, page })
+          );
+        }
+        
+        const allPagesResults = await Promise.all(allPagesPromises);
+        allPagesResults.forEach((pageResponse) => {
+          if (pageResponse.data && Array.isArray(pageResponse.data)) {
+            pageResponse.data.forEach((member: any) => {
+              const occupation = member.occupation || 'Não informado';
+              occupationMap.set(occupation, (occupationMap.get(occupation) || 0) + 1);
+            });
+          }
+        });
+      }
+
+      // Converter para array e ordenar por contagem
+      const occupationsArray: TopOccupation[] = Array.from(occupationMap.entries())
+        .map(([occupation, count]) => ({ occupation, count }))
+        .sort((a, b) => b.count - a.count);
+
+      setAllOccupations(occupationsArray);
+    } catch (error) {
+      console.error('Erro ao buscar todas as ocupações:', error);
+      // Em caso de erro, usar as top 10 que já temos
+      setAllOccupations(data);
+    } finally {
+      setLoadingOccupations(false);
+    }
+  };
 
   const selectedValues = {
     occupation: selectedOccupation
@@ -26,17 +106,27 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
     }
   };
 
+  // Usar todas as ocupações no modal, ou as top 10 como fallback
+  const occupationOptions = allOccupations.length > 0 
+    ? allOccupations.map(occupation => ({
+        value: occupation.occupation,
+        label: occupation.occupation,
+        count: occupation.count
+      }))
+    : data.map(occupation => ({
+        value: occupation.occupation,
+        label: occupation.occupation,
+        count: occupation.count
+      }));
+
   const filters = [
     {
       key: 'occupation',
       label: 'Ocupação',
-      placeholder: 'Selecione uma ocupação',
-      options: data.map(occupation => ({
-        value: occupation.occupation,
-        label: occupation.occupation,
-        count: occupation.count
-      })),
-      disabled: false
+      placeholder: 'Digite para buscar uma ocupação...',
+      options: occupationOptions,
+      disabled: loadingOccupations,
+      useSearch: true // Usar campo de busca ao invés de select
     }
   ];
   if (loading) {

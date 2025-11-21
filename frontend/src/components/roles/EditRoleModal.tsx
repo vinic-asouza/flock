@@ -5,7 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { RoleForm } from './RoleForm';
 import { apiService } from '@/services/api';
 import { Role } from '@/types/role';
-import { Loader } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 
 interface EditRoleModalProps {
   isOpen: boolean;
@@ -82,7 +82,7 @@ export function EditRoleModal({ isOpen, onClose, roleId, onSuccess }: EditRoleMo
     >
       {isLoadingRole && (
         <div className="flex items-center justify-center py-12">
-          <Loader className="animate-spin text-primary" size={32} />
+          <LoaderCircle className="animate-spin text-primary" size={32} />
         </div>
       )}
 

@@ -21,7 +21,7 @@ import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
 import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
   const [reportsData, setReportsData] = useState<MemberReports | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +52,15 @@ export default function HomePage() {
       setLastUpdated(new Date().toLocaleString('pt-BR'));
     } catch (err: unknown) {
       console.error('Erro ao carregar relatórios:', err);
+      
+      // Verificar se o erro é relacionado a autenticação
+      const errorWithStatus = err as Error & { status?: number };
+      if (errorWithStatus.status === 401) {
+        // Erro de autenticação - não mostrar erro, deixar ProtectedRoute redirecionar
+        setError(null);
+        return;
+      }
+      
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar relatórios';
       setError(errorMessage);
     } finally {
@@ -59,8 +68,20 @@ export default function HomePage() {
     }
   };
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais - apenas quando autenticação estiver completa e autenticado
   useEffect(() => {
+    // Não carregar dados se ainda estiver verificando autenticação
+    if (isAuthLoading) {
+      return;
+    }
+
+    // Não carregar dados se não estiver autenticado
+    if (!isAuthenticated) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     // Não carregar dados se for congregação específica mas nenhuma congregação estiver selecionada
     if (viewMode === 'congregation' && !selectedCongregationId) {
       setWaitingForCongregation(true);
@@ -70,7 +91,7 @@ export default function HomePage() {
 
     setWaitingForCongregation(false);
     loadReports(viewMode, selectedCongregationId);
-  }, [viewMode, selectedCongregationId]);
+  }, [viewMode, selectedCongregationId, isAuthLoading, isAuthenticated]);
 
 
   // Mudar visualização
@@ -127,9 +148,11 @@ export default function HomePage() {
     }
   };
 
-  if (loading && !reportsData) {
-    return (
-      <ProtectedRoute>
+  // Todas as renderizações devem estar dentro do ProtectedRoute
+  return (
+    <ProtectedRoute>
+      {/* Loading inicial - quando não há dados */}
+      {loading && !reportsData && (
         <div className="h-screen bg-app flex flex-col">
           <Header />
           <div className="flex flex-1 overflow-hidden">
@@ -139,207 +162,213 @@ export default function HomePage() {
             </main>
           </div>
         </div>
-      </ProtectedRoute>
-    );
-  }
+      )}
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-            <h3 className="text-lg font-medium text-red-800 mb-2">Erro ao carregar relatórios</h3>
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={handleRefresh} variant="secondary">
-              <RefreshCw size={16} className="mr-2" />
-              Tentar novamente
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!reportsData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-gray-600">Nenhum dado disponível</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ProtectedRoute>
-      <div className="h-screen bg-app flex flex-col">
-        <Header />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar churchName={user?.name || ''} />
-          <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-          {/* Título da Página */}
-          <div className="px-6">
-            <h1 className="text-xl font-semibold text-gray-900">
-              Relatórios
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Análise detalhada dos membros da igreja
-              {lastUpdated && (
-                <span className="ml-2">
-                  • Atualizado em {lastUpdated}
-                </span>
-              )}
-            </p>
-          </div>
-
-          {/* Header com Controles */}
-          <div className="px-6 py-4">
-            <div className="bg-white rounded-lg border border-[#090725]/10 px-6 py-4">
-              <div className="flex flex-col lg:flex-row gap-4 items-start">
-                {/* Coluna 1: Seletor de Visualização */}
-                <div className="flex-1 min-w-0">
-                  <ViewSelector
-                    selectedView={viewMode}
-                    selectedCongregationId={selectedCongregationId}
-                    onViewChange={handleViewChange}
-                  />
-                </div>
-
-                {/* Coluna 2: Botões de Ação */}
-                <div className="flex items-center justify-end flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleRefresh}
-                      disabled={loading}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${loading
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                    >
-                      <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-                      Atualizar
-                    </button>
-
-                    <button
-                      onClick={handleExportPDF}
-                      disabled={exporting || loading}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                        exporting || loading
-                          ? 'bg-gray-400 text-white cursor-not-allowed'
-                          : 'bg-primary text-white hover:bg-primary/90'
-                      }`}
-                    >
-                      {exporting ? (
-                        <>
-                          <Loader size={12} className="animate-spin" />
-                          Exportando...
-                        </>
-                      ) : (
-                        <>
-                          <Download size={12} />
-                          Exportar PDF
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+      {/* Erro */}
+      {error && isAuthenticated && !loading && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+              <h3 className="text-lg font-medium text-red-800 mb-2">Erro ao carregar relatórios</h3>
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={handleRefresh} variant="secondary">
+                <RefreshCw size={16} className="mr-2" />
+                Tentar novamente
+              </Button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Conteúdo Principal */}
-          <div className="p-6 space-y-6">
-            {/* Aguardando seleção de congregação */}
-            {waitingForCongregation ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Building size={32} className="text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-blue-900 mb-2">
-                      Selecione uma Congregação
-                    </h3>
-                    <p className="text-blue-700">
-                      Escolha uma congregação específica para visualizar os relatórios detalhados.
-                    </p>
+      {/* Sem dados disponíveis */}
+      {!loading && !error && !reportsData && isAuthenticated && (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <p className="text-gray-600">Nenhum dado disponível</p>
+          </div>
+        </div>
+      )}
+
+      {/* Conteúdo principal - mostra sempre que houver dados ou estiver atualizando */}
+      {(reportsData || (loading && reportsData)) && (
+        <div className="h-screen bg-app flex flex-col">
+          <Header />
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar churchName={user?.name || ''} />
+            <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+              {/* Título da Página */}
+              <div className="px-6">
+                <h1 className="text-xl font-semibold text-gray-900">
+                  Relatórios
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  Análise detalhada dos membros da igreja
+                  {lastUpdated && (
+                    <span className="ml-2">
+                      • Atualizado em {lastUpdated}
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* Header com Controles */}
+              <div className="px-6 py-4">
+                <div className="bg-white rounded-lg border border-[#090725]/10 px-6 py-4">
+                  <div className="flex flex-col lg:flex-row gap-4 items-start">
+                    {/* Coluna 1: Seletor de Visualização */}
+                    <div className="flex-1 min-w-0">
+                      <ViewSelector
+                        selectedView={viewMode}
+                        selectedCongregationId={selectedCongregationId}
+                        onViewChange={handleViewChange}
+                      />
+                    </div>
+
+                    {/* Coluna 2: Botões de Ação */}
+                    <div className="flex items-center justify-end flex-shrink-0">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleRefresh}
+                          disabled={loading}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${loading
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                          Atualizar
+                        </button>
+
+                        <button
+                          onClick={handleExportPDF}
+                          disabled={exporting || loading}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                            exporting || loading
+                              ? 'bg-gray-400 text-white cursor-not-allowed'
+                              : 'bg-primary text-white hover:bg-primary/90'
+                          }`}
+                        >
+                          {exporting ? (
+                            <>
+                              <Loader size={12} className="animate-spin" />
+                              Exportando...
+                            </>
+                          ) : (
+                            <>
+                              <Download size={12} />
+                              Exportar PDF
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            ) : (
-              <>
-                {/* Cards de Resumo */}
-                <SummaryCards
-                  data={reportsData.summary}
-                  loading={loading}
-                  filterInfo={reportsData.filters}
-                  congregationName={selectedCongregationName}
-                  integrationInProgress={reportsData.integration?.totals.inProgress ?? 0}
-                />
 
-                {/* Divisória */}
-                <div className="border-t border-gray-200"></div>
+              {/* Conteúdo Principal */}
+              <div className="p-6 space-y-6">
+                {/* Mostrar skeleton durante atualização */}
+                {loading && reportsData ? (
+                  <ReportsSkeleton />
+                ) : (
+                  <>
+                    {/* Aguardando seleção de congregação */}
+                    {waitingForCongregation ? (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+                        <div className="flex flex-col items-center gap-4">
+                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Building size={32} className="text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium text-blue-900 mb-2">
+                              Selecione uma Congregação
+                            </h3>
+                            <p className="text-blue-700">
+                              Escolha uma congregação específica para visualizar os relatórios detalhados.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      reportsData && (
+                        <>
+                          {/* Cards de Resumo */}
+                          <SummaryCards
+                            data={reportsData.summary}
+                            loading={loading}
+                            filterInfo={reportsData.filters}
+                            congregationName={selectedCongregationName}
+                            integrationInProgress={reportsData.integration?.totals.inProgress ?? 0}
+                          />
 
-                {/* Timeline e Integração */}
-                <TimelineCharts
-                  data={reportsData.timeline}
-                  loading={loading}
-                  showCongregationColumn={viewMode === 'all'}
-                  integrationTimeline={reportsData.integration?.timeline}
-                />
+                          {/* Divisória */}
+                          <div className="border-t border-gray-200"></div>
 
-                {/* Divisória */}
-                <div className="border-t border-gray-200"></div>
+                          {/* Timeline e Integração */}
+                          <TimelineCharts
+                            data={reportsData.timeline}
+                            loading={loading}
+                            showCongregationColumn={viewMode === 'all'}
+                            integrationTimeline={reportsData.integration?.timeline}
+                          />
 
-                {/* Gráficos de Demografia */}
-                <DemographicsCharts
-                  data={reportsData.demographics}
-                  loading={loading}
-                  viewMode={viewMode}
-                  selectedCongregationId={selectedCongregationId}
-                />
+                          {/* Divisória */}
+                          <div className="border-t border-gray-200"></div>
 
-                {/* Divisória */}
-                <div className="border-t border-gray-200"></div>
+                          {/* Gráficos de Demografia */}
+                          <DemographicsCharts
+                            data={reportsData.demographics}
+                            loading={loading}
+                            viewMode={viewMode}
+                            selectedCongregationId={selectedCongregationId}
+                          />
 
-                {/* Estrutura da Igreja */}
-                <ChurchStructureCharts
-                  data={reportsData.churchStructure}
-                  loading={loading}
-                  hideCongregations={viewMode === 'sede' || viewMode === 'congregation'}
-                  viewMode={viewMode}
-                  selectedCongregationId={selectedCongregationId}
-                />
+                          {/* Divisória */}
+                          <div className="border-t border-gray-200"></div>
 
-                {/* Divisória */}
-                <div className="border-t border-gray-200"></div>
+                          {/* Estrutura da Igreja */}
+                          <ChurchStructureCharts
+                            data={reportsData.churchStructure}
+                            loading={loading}
+                            hideCongregations={viewMode === 'sede' || viewMode === 'congregation'}
+                            viewMode={viewMode}
+                            selectedCongregationId={selectedCongregationId}
+                          />
 
-                {/* Geografia */}
-                <GeographySection
-                  cities={reportsData.demographics.cities}
-                  states={reportsData.demographics.states}
-                  loading={loading}
-                  viewMode={viewMode}
-                  selectedCongregationId={selectedCongregationId}
-                />
+                          {/* Divisória */}
+                          <div className="border-t border-gray-200"></div>
 
-                {/* Divisória */}
-                <div className="border-t border-gray-200"></div>
+                          {/* Geografia */}
+                          <GeographySection
+                            cities={reportsData.demographics.cities}
+                            states={reportsData.demographics.states}
+                            loading={loading}
+                            viewMode={viewMode}
+                            selectedCongregationId={selectedCongregationId}
+                          />
 
-                {/* Ocupações */}
-                <OccupationsTable
-                  data={reportsData.topOccupations}
-                  loading={loading}
-                  viewMode={viewMode}
-                  selectedCongregationId={selectedCongregationId}
-                />
-              </>
-            )}
+                          {/* Divisória */}
+                          <div className="border-t border-gray-200"></div>
+
+                          {/* Ocupações */}
+                          <OccupationsTable
+                            data={reportsData.topOccupations}
+                            loading={loading}
+                            viewMode={viewMode}
+                            selectedCongregationId={selectedCongregationId}
+                          />
+                        </>
+                      )
+                    )}
+                  </>
+                )}
+              </div>
+
+            </main>
           </div>
-
-          </main>
         </div>
-      </div>
+      )}
     </ProtectedRoute>
   );
 }

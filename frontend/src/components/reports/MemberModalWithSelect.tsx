@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Users, Loader2, ChevronLeft, ChevronRight, Download, XCircle } from 'lucide-react';
+import { X, Users, Loader2, ChevronLeft, ChevronRight, Download, XCircle, Search } from 'lucide-react';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { Select } from '@/components/ui/Select';
+import { Input } from '@/components/ui/Input';
 import { apiService } from '@/services/api';
 
 interface SelectOption {
@@ -19,6 +20,7 @@ interface SelectFilter {
   placeholder: string;
   options: SelectOption[];
   disabled?: boolean;
+  useSearch?: boolean; // Nova prop para usar busca ao invés de select
 }
 
 interface MemberModalWithSelectProps {
@@ -55,7 +57,31 @@ export function MemberModalWithSelect({
   // Buscar membros quando mudar filtros
   useEffect(() => {
     if (isOpen) {
-      fetchMembers();
+      // Verificar se há filtros de busca
+      const searchFilters = filters.filter(f => f.useSearch);
+      const hasSearchValue = searchFilters.some(f => selectedValues[f.key] && selectedValues[f.key].trim() !== '');
+      
+      // Verificar se há filtros normais (não busca) com valores
+      const normalFilters = filters.filter(f => !f.useSearch);
+      const hasNormalFilterValue = normalFilters.some(f => selectedValues[f.key]);
+      
+      if (hasSearchValue) {
+        // Se houver busca com valor, aguardar 500ms antes de buscar (debounce)
+        const timeoutId = setTimeout(() => {
+          fetchMembers();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      } else if (hasNormalFilterValue) {
+        // Se houver filtro normal com valor, buscar imediatamente
+        fetchMembers();
+      } else if (!hasSearchValue && searchFilters.length > 0 && normalFilters.length === 0) {
+        // Se houver apenas filtros de busca mas sem valor, não buscar ainda
+        setMembers([]);
+        setPagination(null);
+      } else {
+        // Caso padrão: buscar imediatamente
+        fetchMembers();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedValues, currentPage, viewMode, selectedCongregationId]);
@@ -97,7 +123,12 @@ export function MemberModalWithSelect({
       filters.forEach(filter => {
         const value = selectedValues[filter.key];
         if (value) {
-          params[filter.key] = value;
+          // Se for um filtro de busca, usar ilike para busca parcial
+          if (filter.useSearch) {
+            params[filter.key] = value;
+          } else {
+            params[filter.key] = value;
+          }
         }
       });
 
@@ -237,20 +268,36 @@ export function MemberModalWithSelect({
         {/* Filtros Horizontais */}
         <div className="p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
           <div className="space-y-4">
-            {/* Seletores */}
+            {/* Seletores e Campos de Busca */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filters.map((filter) => (
-                <Select
-                  key={filter.key}
-                  label={filter.label}
-                  options={filter.options}
-                  value={selectedValues[filter.key] || ''}
-                  onChange={(value) => onFilterChange(filter.key, value)}
-                  placeholder={filter.placeholder}
-                  disabled={filter.disabled}
-                  showCount={true}
-                  searchable={true}
-                />
+                filter.useSearch ? (
+                  // Campo de busca para ocupação
+                  <div key={filter.key} className="space-y-1">
+                    <Input
+                      type="text"
+                      label={filter.label}
+                      value={selectedValues[filter.key] || ''}
+                      onChange={(e) => onFilterChange(filter.key, e.target.value)}
+                      placeholder={filter.placeholder}
+                      disabled={filter.disabled}
+                      icon={<Search size={16} />}
+                    />
+                  </div>
+                ) : (
+                  // Select padrão para outros filtros
+                  <Select
+                    key={filter.key}
+                    label={filter.label}
+                    options={filter.options}
+                    value={selectedValues[filter.key] || ''}
+                    onChange={(value) => onFilterChange(filter.key, value)}
+                    placeholder={filter.placeholder}
+                    disabled={filter.disabled}
+                    showCount={true}
+                    searchable={true}
+                  />
+                )
               ))}
             </div>
 
@@ -263,10 +310,14 @@ export function MemberModalWithSelect({
                     const value = selectedValues[filter.key];
                     if (!value) return null;
                     
-                    const selectedOption = filter.options.find(opt => opt.value === value);
+                    // Se for busca, mostrar o valor digitado, senão buscar na lista de opções
+                    const displayValue = filter.useSearch 
+                      ? value 
+                      : (filter.options.find(opt => opt.value === value)?.label || value);
+                    
                     return (
                       <span key={filter.key as string} className="bg-white px-2 py-1 rounded border border-gray-300 text-xs text-gray-700">
-                        {filter.label}: <span className="font-medium">{selectedOption?.label || value}</span>
+                        {filter.label}: <span className="font-medium">{displayValue}</span>
                       </span>
                     );
                   })}
@@ -308,12 +359,19 @@ export function MemberModalWithSelect({
                   <div className="flex items-center justify-center h-64 text-gray-500">
                     <div className="text-center">
                       <Users size={48} className="mx-auto mb-2 text-gray-300" />
-                      <p>Nenhum membro encontrado</p>
-                      <p className="text-sm text-gray-400">
-                        {hasActiveFilters 
-                          ? 'para os filtros selecionados'
-                          : 'Selecione um filtro para visualizar os membros'
-                        }
+                      <p>
+                        {(() => {
+                          const searchFilters = filters.filter(f => f.useSearch);
+                          const hasOnlySearch = searchFilters.length === filters.length;
+                          const searchHasValue = searchFilters.some(f => selectedValues[f.key] && selectedValues[f.key].trim() !== '');
+                          
+                          if (hasOnlySearch && !searchHasValue) {
+                            return 'Digite uma ocupação para buscar membros';
+                          }
+                          return hasActiveFilters 
+                            ? 'Nenhum membro encontrado para os filtros selecionados'
+                            : 'Nenhum membro encontrado';
+                        })()}
                       </p>
                     </div>
                   </div>
