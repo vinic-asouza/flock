@@ -1,7 +1,62 @@
 import { Response, NextFunction } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest } from '../types';
-import { cookieConfig } from '../utils/cookieUtils';
+import { cookieConfig, setAccessToken, setRefreshToken, setSessionCookie } from '../utils/cookieUtils';
+
+/**
+ * Tenta renovar o access token usando o refresh token
+ * Retorna o novo access token se bem-sucedido, null caso contrário
+ */
+const tryRefreshToken = async (req: AuthRequest, res: Response): Promise<string | null> => {
+  try {
+    // Obter refresh token do cookie
+    const refreshToken = req.cookies[cookieConfig.names.refreshToken];
+    
+    if (!refreshToken) {
+      console.log('Refresh token não encontrado para renovação automática');
+      return null;
+    }
+
+    // Renovar sessão no Supabase
+    const { data: authData, error: authError } = await supabase.auth.refreshSession({
+      refresh_token: refreshToken
+    });
+
+    if (authError || !authData.session) {
+      console.log('Erro ao renovar token:', authError?.message || 'Sessão não retornada');
+      return null;
+    }
+
+    // Atualizar cookies com novos tokens
+    setAccessToken(res, authData.session.access_token);
+    setRefreshToken(res, authData.session.refresh_token);
+    setSessionCookie(res, {
+      user: authData.user,
+      expires_at: authData.session.expires_at
+    });
+
+    console.log('Token renovado automaticamente com sucesso');
+    return authData.session.access_token;
+
+  } catch (error) {
+    console.error('Erro ao tentar renovar token:', error);
+    return null;
+  }
+};
+
+/**
+ * Verifica se um token JWT está expirado
+ */
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const tokenPayload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    const currentTime = Math.floor(Date.now() / 1000);
+    return tokenPayload.exp < currentTime;
+  } catch (error) {
+    // Se não conseguir decodificar, considerar como expirado
+    return true;
+  }
+};
 
 const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -16,11 +71,30 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
       }
     }
 
+    // Se não há token ou está expirado, tentar renovar usando refresh token
+    let tokenRenewed = false;
     if (!token) {
-      return res.status(401).json({
-        error: 'Token não fornecido',
-        details: 'Faça login para acessar este recurso'
-      });
+      // Sem token, tentar renovar
+      const newToken = await tryRefreshToken(req, res);
+      if (newToken) {
+        token = newToken;
+        tokenRenewed = true;
+      } else {
+        return res.status(401).json({
+          error: 'Token não fornecido',
+          details: 'Faça login para acessar este recurso'
+        });
+      }
+    } else if (isTokenExpired(token)) {
+      // Token expirado, tentar renovar
+      console.log('Access token expirado, tentando renovar automaticamente...');
+      const newToken = await tryRefreshToken(req, res);
+      if (newToken) {
+        token = newToken;
+        tokenRenewed = true;
+      }
+      // Se não conseguiu renovar, continua com o token existente para tentar validar
+      // (pode ser um falso positivo na verificação de expiração)
     }
 
     // Verificar se o token está na blacklist (tokens revogados)
@@ -35,8 +109,26 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
+      // Se o token está inválido e não tentamos renovar ainda, tentar renovar agora
+      if (!tokenRenewed) {
+        console.log('Token inválido, tentando renovar automaticamente...');
+        const newToken = await tryRefreshToken(req, res);
+        if (newToken) {
+          // Tentar validar o novo token
+          const { data: newUserData, error: newError } = await supabase.auth.getUser(newToken);
+          if (!newError && newUserData.user) {
+            req.user = {
+              id: newUserData.user.id,
+              email: newUserData.user.email || ''
+            };
+            return next();
+          }
+        }
+      }
+      
       return res.status(401).json({
-        error: 'Token inválido ou expirado'
+        error: 'Token inválido ou expirado',
+        details: 'Faça login novamente para continuar'
       });
     }
 
