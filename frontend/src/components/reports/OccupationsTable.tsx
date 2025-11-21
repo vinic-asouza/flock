@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Briefcase, Users, Eye } from 'lucide-react';
-import { TopOccupation } from '@/types';
+import { TopOccupation, Member } from '@/types';
 import { MemberModalWithSelect } from './MemberModalWithSelect';
 import { apiService } from '@/services/api';
 
@@ -19,18 +19,18 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
   const [allOccupations, setAllOccupations] = useState<TopOccupation[]>([]);
   const [loadingOccupations, setLoadingOccupations] = useState(false);
 
-  // Buscar todas as ocupações quando o modal for aberto
-  useEffect(() => {
-    if (isModalOpen && allOccupations.length === 0) {
-      fetchAllOccupations();
-    }
-  }, [isModalOpen, viewMode, selectedCongregationId]);
-
-  const fetchAllOccupations = async () => {
+  const fetchAllOccupations = useCallback(async () => {
     setLoadingOccupations(true);
     try {
       // Preparar filtros baseados no viewMode
-      const filters: any = {
+      interface MemberListFilters {
+        active: boolean;
+        limit: number;
+        page: number;
+        congregation_id?: string;
+      }
+      
+      const filters: MemberListFilters = {
         active: true,
         limit: 100, // Limite máximo permitido pela API
         page: 1
@@ -55,7 +55,7 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
       const occupationMap = new Map<string, number>();
       
       // Processar primeira página
-      firstPageResponse.data.forEach((member: any) => {
+      firstPageResponse.data.forEach((member: Member) => {
         const occupation = member.occupation || 'Não informado';
         occupationMap.set(occupation, (occupationMap.get(occupation) || 0) + 1);
       });
@@ -73,7 +73,7 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
         const allPagesResults = await Promise.all(allPagesPromises);
         allPagesResults.forEach((pageResponse) => {
           if (pageResponse.data && Array.isArray(pageResponse.data)) {
-            pageResponse.data.forEach((member: any) => {
+            pageResponse.data.forEach((member: Member) => {
               const occupation = member.occupation || 'Não informado';
               occupationMap.set(occupation, (occupationMap.get(occupation) || 0) + 1);
             });
@@ -94,7 +94,14 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
     } finally {
       setLoadingOccupations(false);
     }
-  };
+  }, [viewMode, selectedCongregationId, data]);
+
+  // Buscar todas as ocupações quando o modal for aberto
+  useEffect(() => {
+    if (isModalOpen && allOccupations.length === 0) {
+      fetchAllOccupations();
+    }
+  }, [isModalOpen, allOccupations.length, fetchAllOccupations]);
 
   const selectedValues = {
     occupation: selectedOccupation

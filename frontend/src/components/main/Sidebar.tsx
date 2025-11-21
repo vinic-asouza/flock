@@ -60,7 +60,7 @@ export function Sidebar({ churchName: _churchName }: SidebarProps) {
   return (
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-screen">
       <nav className="flex-1 px-2 py-4 space-y-1">
-        {navItems.map(({ label, href, icon: Icon }, index) => {
+        {navItems.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || (href !== '/' && pathname.startsWith(href));
           const isLoading = loadingHref === href && isPending;
           

@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setSession(null);
         }
-      } catch (error) {
+      } catch {
         // Silenciar erro durante verificação inicial - é esperado que não esteja autenticado
         // Não logar como erro para não poluir o console
         setUser(null);
