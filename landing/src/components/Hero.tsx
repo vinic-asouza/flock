@@ -13,8 +13,7 @@ export function Hero({ onOpenWaitlist }: HeroProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section className="relative bg-[#f5f5f5] py-10 px-4 overflow-hidden">
-      
+    <section className="relative bg-[#f5f5f5fe] py-10 px-4 overflow-hidden">
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Text Content */}

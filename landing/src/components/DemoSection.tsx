@@ -67,7 +67,7 @@ export function DemoSection() {
   const currentItem = demoItems[currentIndex];
 
   return (
-    <section id="demo" className="py-20 px-4 bg-[#f5f5f5]">
+    <section id="demo" className="py-20 px-4 bg-[#f5f5f5fe]">
       <div className="max-w-7xl mx-auto">
         {/* Título e Subtítulo */}
         <div className="text-center mb-16">

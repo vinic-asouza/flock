@@ -21,35 +21,101 @@ export function StatsGraphics() {
               <Users className="w-6 h-6 text-primary" />
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">212</div>
+              <div className="text-2xl font-bold text-gray-900">350</div>
               <div className="text-xs text-gray-500">Membros Ativos</div>
             </div>
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-[#0d0a3a] rounded-full" style={{ width: '96%' }} />
+            <div className="h-full bg-primary rounded-full" style={{ width: '87%' }} />
           </div>
-          <div className="text-xs text-gray-400 mt-2">96% do total</div>
+          <div className="text-xs text-gray-400 mt-2">87% do total</div>
         </div>
 
-        {/* Card 2 - Gráfico de Barras */}
+        {/* Card 2 - Gráfico de Linha */}
         <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-primary" />
             <span className="text-sm font-semibold text-gray-700">Crescimento</span>
           </div>
-          <div className="flex items-end justify-between gap-2 h-24">
-            {[40, 60, 45, 80, 70, 90, 85].map((height, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center">
-                <div
-                  className="w-full bg-gradient-to-t from-primary to-[#0d0a3a] rounded-t transition-all duration-500 hover:opacity-80"
-                  style={{
-                    height: `${height}%`,
-                    animationDelay: `${i * 100}ms`,
-                  }}
-                />
-                <div className="text-xs text-gray-400 mt-1">{['J', 'F', 'M', 'A', 'M', 'J', 'J'][i]}</div>
-              </div>
-            ))}
+          <div className="relative h-32">
+            <svg className="w-full h-full" viewBox="0 0 280 120" preserveAspectRatio="none">
+              {/* Área de preenchimento com gradiente */}
+              <defs>
+                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#090725" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#090725" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              
+              {/* Valores dos pontos (65, 82, 58, 95, 73, 88, 76, 91) */}
+              {(() => {
+                const values = [65, 82, 58, 95, 73, 88, 76, 91];
+                const maxValue = 100;
+                const minValue = 0;
+                const range = maxValue - minValue;
+                const width = 280;
+                const height = 120;
+                const padding = 10;
+                const chartWidth = width - padding * 2;
+                const chartHeight = height - padding * 2;
+                
+                // Converter valores para coordenadas Y (invertido porque SVG Y aumenta para baixo)
+                const points = values.map((value, i) => {
+                  const x = padding + (i / (values.length - 1)) * chartWidth;
+                  const y = padding + chartHeight - ((value - minValue) / range) * chartHeight;
+                  return { x, y, value };
+                });
+                
+                // Criar path para a linha
+                const linePath = points.map((p, i) => 
+                  `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                ).join(' ');
+                
+                // Criar path para área preenchida
+                const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+                
+                return (
+                  <>
+                    {/* Área preenchida */}
+                    <path
+                      d={areaPath}
+                      fill="url(#lineGradient)"
+                      className="transition-all duration-500"
+                    />
+                    {/* Linha */}
+                    <path
+                      d={linePath}
+                      fill="none"
+                      stroke="#090725"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="transition-all duration-500"
+                    />
+                    {/* Pontos */}
+                    {points.map((point, i) => (
+                      <g key={i}>
+                        <circle
+                          cx={point.x}
+                          cy={point.y}
+                          r="4"
+                          fill="#090725"
+                          stroke="white"
+                          strokeWidth="2"
+                          className="transition-all duration-300 hover:r-5"
+                        />
+                      </g>
+                    ))}
+                  </>
+                );
+              })()}
+            </svg>
+            {/* Labels dos meses */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-between px-2">
+              {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A'].map((month, i) => (
+                <span key={i} className="text-xs text-gray-400">{month}</span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -62,7 +128,7 @@ export function StatsGraphics() {
           <div className="flex items-center justify-center">
             <div className="relative w-32 h-32">
               <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
-                {/* Segmento 1 - 48% */}
+                {/* Segmento 1 - 48% Masculino */}
                 <circle
                   cx="50"
                   cy="50"
@@ -73,13 +139,13 @@ export function StatsGraphics() {
                   strokeDasharray={`${48 * 2.513} ${251.3}`}
                   className="transition-all duration-500"
                 />
-                {/* Segmento 2 - 52% */}
+                {/* Segmento 2 - 52% Feminino */}
                 <circle
                   cx="50"
                   cy="50"
                   r="40"
                   fill="none"
-                  stroke="#0d0a3a"
+                  stroke="#6b6b8f"
                   strokeWidth="20"
                   strokeDasharray={`${52 * 2.513} ${251.3}`}
                   strokeDashoffset={-120.6}
@@ -97,11 +163,11 @@ export function StatsGraphics() {
           <div className="flex justify-center gap-4 mt-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-[#090725]" />
-              <span className="text-xs text-gray-600">48%</span>
+              <span className="text-xs text-gray-600">48% <span className="text-gray-500">Masculino</span></span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-[#0d0a3a]" />
-              <span className="text-xs text-gray-600">52%</span>
+              <div className="w-3 h-3 rounded-full bg-[#6b6b8f]" />
+              <span className="text-xs text-gray-600">52% <span className="text-gray-500">Feminino</span></span>
             </div>
           </div>
         </div>
@@ -130,7 +196,7 @@ export function StatsGraphics() {
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-primary" />
-                <span className="text-sm text-gray-700">Novos</span>
+                <span className="text-sm text-gray-700">Integração</span>
               </div>
               <span className="text-sm font-semibold text-gray-900">3</span>
             </div>
