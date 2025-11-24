@@ -17,6 +17,7 @@ import accountRoutes from './routes/account';
 import authCallbackRoutes from './routes/authCallback';
 import exportRoutes from './routes/export';
 import integrationRoutes from './routes/integration';
+import waitlistRoutes from './routes/waitlist';
 
 dotenv.config();
 
@@ -25,9 +26,29 @@ const app = express();
 // Configuração de segurança básica
 app.use(helmet());
 
-// Configuração do CORS
+// Configuração do CORS - permitir múltiplas origens (frontend e landing)
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.LANDING_URL || 'http://localhost:3001',
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
+    
+    // Permitir se estiver na lista de origens permitidas
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Em desenvolvimento, permitir localhost
+    if (process.env.NODE_ENV === 'development' && origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true, // Permitir cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
@@ -70,6 +91,7 @@ app.use('/api/account', accountRoutes);
 app.use('/api/auth', authCallbackRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/integration', integrationRoutes);
+app.use('/api/waitlist', waitlistRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

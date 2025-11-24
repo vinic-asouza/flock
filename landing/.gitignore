@@ -1,0 +1,50 @@
+# Dependências
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
+# Arquivos de build/dist
+dist/
+build/
+out/
+.next/
+
+# Arquivos de cache
+.cache/
+.npm/
+.yarn/
+
+# Arquivos de IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Arquivos de log
+logs/
+*.log
+
+# Arquivos de cobertura de testes
+coverage/
+
+# Arquivos temporários
+tmp/
+temp/
+
+# Arquivos TypeScript
+*.tsbuildinfo
+
+# Outros
+.vercel
+
