@@ -1,28 +1,29 @@
 'use client';
 
-import { ArrowRight } from 'lucide-react';
+import { WaitlistForm } from './WaitlistForm';
 
-interface CTAProps {
-  onOpenWaitlist?: () => void;
-}
-
-export function CTA({ onOpenWaitlist }: CTAProps) {
+export function CTA() {
   return (
-    <section className="py-20 px-4 bg-primary text-white">
-      <div className="max-w-4xl mx-auto text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-6">
-          Pronto para Transformar a Gestão da sua Igreja?
-        </h2>
-        <p className="text-xl mb-8 opacity-90">
-          Junte-se à lista de espera e seja um dos primeiros a usar o Flock
-        </p>
-        <button
-          onClick={onOpenWaitlist}
-          className="bg-white text-primary px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center justify-center gap-2"
-        >
-          Entrar na Lista de Espera
-          <ArrowRight size={20} />
-        </button>
+    <section 
+      id="waitlist" 
+      className="py-20 px-4 text-white"
+      style={{ 
+        backgroundColor: '#090725',
+        backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
+      }}
+    >
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2.5">
+            Pronto para Transformar a Gestão da sua Igreja?
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl opacity-90">
+            Junte-se à lista de espera e seja um dos primeiros a usar o Flock
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 md:p-8 lg:p-10">
+          <WaitlistForm />
+        </div>
       </div>
     </section>
   );

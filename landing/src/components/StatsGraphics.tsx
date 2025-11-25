@@ -12,16 +12,16 @@ export function StatsGraphics() {
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[500px] lg:min-h-[600px] flex items-center justify-center">
-      <div className={`grid grid-cols-2 gap-4 lg:gap-6 w-full max-w-2xl transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+    <div className="relative w-full h-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] flex items-center justify-center">
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 w-full max-w-2xl transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         {/* Card 1 - Estatísticas de Membros */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-primary" />
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900">350</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">350</div>
               <div className="text-xs text-gray-500">Membros Ativos</div>
             </div>
           </div>
@@ -32,12 +32,12 @@ export function StatsGraphics() {
         </div>
 
         {/* Card 2 - Gráfico de Linha */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <span className="text-sm font-semibold text-gray-700">Crescimento</span>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <span className="text-xs sm:text-sm font-semibold text-gray-700">Crescimento</span>
           </div>
-          <div className="relative h-32">
+          <div className="relative h-24 sm:h-32">
             <svg className="w-full h-full" viewBox="0 0 280 120" preserveAspectRatio="none">
               {/* Área de preenchimento com gradiente */}
               <defs>
@@ -120,13 +120,13 @@ export function StatsGraphics() {
         </div>
 
         {/* Card 3 - Gráfico de Pizza */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="flex items-center gap-2 mb-4">
-            <PieChart className="w-5 h-5 text-primary" />
-            <span className="text-sm font-semibold text-gray-700">Distribuição</span>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <PieChart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <span className="text-xs sm:text-sm font-semibold text-gray-700">Distribuição</span>
           </div>
           <div className="flex items-center justify-center">
-            <div className="relative w-32 h-32">
+            <div className="relative w-24 h-24 sm:w-32 sm:h-32">
               <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
                 {/* Segmento 1 - 48% Masculino */}
                 <circle
@@ -173,12 +173,12 @@ export function StatsGraphics() {
         </div>
 
         {/* Card 4 - Relatórios e Atividades */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="w-5 h-5 text-primary" />
-            <span className="text-sm font-semibold text-gray-700">Relatórios</span>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+            <span className="text-xs sm:text-sm font-semibold text-gray-700">Relatórios</span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2">
                 <Activity className="w-4 h-4 text-primary" />

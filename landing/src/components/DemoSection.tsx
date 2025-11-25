@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Video, BookOpen } from 'lucide-react';
 
 interface DemoItem {
   id: string;
@@ -71,10 +71,10 @@ export function DemoSection() {
       <div className="max-w-7xl mx-auto">
         {/* Título e Subtítulo */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-primary mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Veja o Flock em Ação
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Explore as principais funcionalidades do sistema e descubra como ele pode transformar a gestão da sua igreja
           </p>
         </div>
@@ -84,7 +84,7 @@ export function DemoSection() {
           <div className="grid lg:grid-cols-10 gap-0">
             {/* Card de Informações (30%) */}
             <div 
-              className="lg:col-span-3 p-8 bg-gradient-to-br from-primary to-[#0d0a3a] text-white flex flex-col justify-start"
+              className="lg:col-span-3 p-6 md:p-8 bg-gradient-to-br from-primary to-[#0d0a3a] text-white flex flex-col justify-start"
               style={{
                 backgroundColor: '#090725',
                 backgroundImage: 'linear-gradient(to bottom right, #090725, #0d0a3a)',
@@ -105,10 +105,10 @@ export function DemoSection() {
                     />
                   ))}
                 </div>
-                <h3 className="text-2xl font-bold mb-4">
+                <h3 className="text-xl md:text-2xl font-bold mb-4">
                   {currentItem.title}
                 </h3>
-                <p className="text-white/90 leading-relaxed">
+                <p className="text-sm md:text-base text-white/90 leading-relaxed">
                   {currentItem.description}
                 </p>
               </div>
@@ -133,24 +133,24 @@ export function DemoSection() {
             </div>
 
             {/* Imagem do Sistema (70%) */}
-            <div className="lg:col-span-7 p-8 lg:p-12 bg-white flex items-center justify-center">
+            <div className="lg:col-span-7 p-4 sm:p-6 md:p-8 lg:p-12 bg-white flex items-center justify-center">
               <div className="relative w-full max-w-5xl">
                 {/* Botão Anterior - Lateral Esquerda da Imagem */}
                 <button
                   onClick={prevSlide}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 z-10 p-2 sm:p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
                   aria-label="Slide anterior"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
                 {/* Botão Próximo - Lateral Direita da Imagem */}
                 <button
                   onClick={nextSlide}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 z-10 p-2 sm:p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
                   aria-label="Próximo slide"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
                 {/* Imagem do sistema ou placeholder */}
@@ -183,6 +183,30 @@ export function DemoSection() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Botões de Ação */}
+        <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a
+            href="https://wa.me/5511999999999"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
+            style={{
+              backgroundColor: '#090725',
+              backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
+            }}
+          >
+            <Video size={18} className="sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Agende uma Demonstração Online</span>
+          </a>
+          <a
+            href="#"
+            className="inline-flex items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-50 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl w-full sm:w-auto"
+          >
+            <BookOpen size={18} className="sm:w-5 sm:h-5" />
+            <span className="text-sm sm:text-base">Confira nossos tutoriais</span>
+          </a>
         </div>
       </div>
     </section>

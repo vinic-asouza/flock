@@ -44,20 +44,23 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               Recursos
             </Link>
             <Link
-              href="#about"
+              href="#demo"
               className="text-white/90 hover:text-white transition-colors font-medium"
             >
-              Sobre
+              Demonstração
             </Link>
-            <button
-              onClick={() => {
-                onOpenWaitlist?.();
-                setMobileMenuOpen(false);
-              }}
-              className="bg-white text-primary px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
+            <Link
+              href="#pricing"
+              className="text-white/90 hover:text-white transition-colors font-medium"
             >
-              Lista de Espera
-            </button>
+              Planos
+            </Link>
+            <Link
+              href="#pricing"
+              className="bg-white text-primary px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg inline-block"
+            >
+              Assine agora
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -82,21 +85,26 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               Recursos
             </Link>
             <Link
-              href="#about"
+              href="#demo"
               className="block text-white/90 hover:text-white transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Sobre
+              Demonstração
             </Link>
-            <button
-              onClick={() => {
-                onOpenWaitlist?.();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+            <Link
+              href="#pricing"
+              className="block text-white/90 hover:text-white transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              Lista de Espera
-            </button>
+              Planos
+            </Link>
+            <Link
+              href="#pricing"
+              className="w-full bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-block text-center"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Assine agora
+            </Link>
           </div>
         )}
       </nav>
