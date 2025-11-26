@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { MapPin, Eye } from 'lucide-react';
 import { BarChart } from '@/components/reports/charts/BarChart';
 import { MemberModalWithSelect } from './MemberModalWithSelect';
@@ -73,22 +73,48 @@ export function GeographySection({
     }
   ];
   // Converter dados de cidades para formato do gráfico
-  const citiesData = Object.entries(cities)
-    .map(([label, value]) => ({
-      label,
-      value,
+  const citiesData = useMemo(() => {
+    const regularCities = Object.entries(cities)
+      .map(([label, value]) => ({
+        label,
+        value,
+        color: getCityColor(),
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    // Calcular total
+    const totalValue = Object.values(cities).reduce((sum, value) => sum + value, 0);
+    const totalItem = {
+      label: 'Total',
+      value: totalValue,
       color: getCityColor(),
-    }))
-    .sort((a, b) => b.value - a.value);
+    };
+
+    // Combinar: cidades primeiro, Total por último
+    return [...regularCities, totalItem];
+  }, [cities]);
 
   // Converter dados de estados para formato do gráfico
-  const statesData = Object.entries(states)
-    .map(([label, value]) => ({
-      label,
-      value,
+  const statesData = useMemo(() => {
+    const regularStates = Object.entries(states)
+      .map(([label, value]) => ({
+        label,
+        value,
+        color: getStateColor(),
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    // Calcular total
+    const totalValue = Object.values(states).reduce((sum, value) => sum + value, 0);
+    const totalItem = {
+      label: 'Total',
+      value: totalValue,
       color: getStateColor(),
-    }))
-    .sort((a, b) => b.value - a.value);
+    };
+
+    // Combinar: Total primeiro, depois estados
+    return [totalItem, ...regularStates];
+  }, [states]);
 
   if (loading) {
     return (

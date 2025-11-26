@@ -6,12 +6,14 @@ interface BarChartProps {
   data: BarChartData[];
   orientation?: 'horizontal' | 'vertical';
   maxBars?: number;
+  showPercentage?: boolean;
 }
 
 export function BarChart({ 
   data, 
   orientation = 'vertical', 
-  maxBars = 10 
+  maxBars = 10,
+  showPercentage = false
 }: BarChartProps) {
   if (!data || data.length === 0) {
     return (
@@ -27,6 +29,13 @@ export function BarChart({
     .slice(0, maxBars);
 
   const maxValue = Math.max(...sortedData.map(item => item.value));
+  
+  // Calcular total real (excluindo itens com label "Total" para cálculo de porcentagem)
+  const totalForPercentage = showPercentage 
+    ? sortedData
+        .filter(item => item.label !== 'Total')
+        .reduce((sum, item) => sum + item.value, 0)
+    : 0;
 
   if (orientation === 'horizontal') {
     return (
@@ -38,7 +47,14 @@ export function BarChart({
             <div key={index} className="space-y-1">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-700 truncate">{item.label}</span>
-                <span className="text-gray-600 font-medium">{item.value}</span>
+                <span className="text-gray-600 font-medium">
+                  {item.value}
+                  {showPercentage && item.label !== 'Total' && totalForPercentage > 0 && (
+                    <span className="text-gray-500 ml-1">
+                      ({(item.value / totalForPercentage * 100).toFixed(1)}%)
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div

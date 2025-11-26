@@ -221,24 +221,12 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-base font-semibold text-[#090725]">
-                        {occupation.count}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {occupation.count === 1 ? 'membro' : 'membros'}
-                      </div>
+                  <div className="text-right">
+                    <div className="text-base font-semibold text-[#090725]">
+                      {occupation.count}
                     </div>
-                    
-                    {/* Barra de progresso visual */}
-                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className="bg-[#090725] h-1.5 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${(occupation.count / data[0].count) * 100}%`,
-                        }}
-                      />
+                    <div className="text-xs text-gray-500">
+                      {occupation.count === 1 ? 'membro' : 'membros'}
                     </div>
                   </div>
                 </div>
@@ -265,24 +253,12 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <div className="text-base font-semibold text-[#090725]">
-                        {occupation.count}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {occupation.count === 1 ? 'membro' : 'membros'}
-                      </div>
+                  <div className="text-right">
+                    <div className="text-base font-semibold text-[#090725]">
+                      {occupation.count}
                     </div>
-                    
-                    {/* Barra de progresso visual */}
-                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                      <div
-                        className="bg-[#090725] h-1.5 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${(occupation.count / data[0].count) * 100}%`,
-                        }}
-                      />
+                    <div className="text-xs text-gray-500">
+                      {occupation.count === 1 ? 'membro' : 'membros'}
                     </div>
                   </div>
                 </div>

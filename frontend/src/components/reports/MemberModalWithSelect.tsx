@@ -235,7 +235,7 @@ export function MemberModalWithSelect({
       
       {/* Modal */}
       <div 
-        className="relative bg-white rounded-lg shadow-xl w-full h-[90vh] flex flex-col mx-4 max-w-6xl"
+        className="relative bg-white rounded-lg shadow-xl w-full max-h-[90vh] h-[90vh] flex flex-col mx-4 max-w-6xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -335,16 +335,16 @@ export function MemberModalWithSelect({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-hidden p-6 min-h-0">
+        <div className="flex-1 overflow-hidden p-6 min-h-0 flex flex-col">
           {loading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center flex-1">
               <div className="flex items-center gap-2 text-gray-500">
                 <Loader2 size={20} className="animate-spin" />
                 Carregando membros...
               </div>
             </div>
           ) : (
-            <div className="h-full flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <div className="flex-1 overflow-y-auto min-h-0">
                 {members.length > 0 ? (
                   <div className="space-y-3">
@@ -356,7 +356,7 @@ export function MemberModalWithSelect({
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center h-64 text-gray-500">
+                  <div className="flex items-center justify-center flex-1 text-gray-500">
                     <div className="text-center">
                       <Users size={48} className="mx-auto mb-2 text-gray-300" />
                       <p>

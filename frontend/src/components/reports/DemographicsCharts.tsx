@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Demographics } from '@/types';
 import { PieChart } from '@/components/reports/charts/PieChart';
 import { BarChart } from '@/components/reports/charts/BarChart';
@@ -35,13 +35,28 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
   }));
 
   // Converter dados de faixa etária para formato do gráfico
-  const ageRangeData = Object.entries(data.ageRanges).map(([range, value]) => ({
-    label: getAgeRangeLabel(range),
-    value: value as number, // Para o gráfico, value é o número
-    count: value as number,
-    color: getAgeRangeColor(range),
-    rangeKey: range, // Adicionar o range original para uso no modal
-  }));
+  const ageRangeData = useMemo(() => {
+    const regularAgeRanges = Object.entries(data.ageRanges).map(([range, value]) => ({
+      label: getAgeRangeLabel(range),
+      value: value as number, // Para o gráfico, value é o número
+      count: value as number,
+      color: getAgeRangeColor(range),
+      rangeKey: range, // Adicionar o range original para uso no modal
+    }));
+
+    // Calcular total
+    const totalValue = Object.values(data.ageRanges).reduce((sum, value) => sum + (value as number), 0);
+    const totalItem = {
+      label: 'Total',
+      value: totalValue,
+      count: totalValue,
+      color: getAgeRangeColor('Total'),
+      rangeKey: null, // Total não aparece no modal
+    };
+
+    // Combinar: faixas etárias primeiro, Total por último
+    return [...regularAgeRanges, totalItem];
+  }, [data.ageRanges]);
 
   if (loading) {
     return (
@@ -120,7 +135,7 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
               Visualizar
             </button>
           </div>
-          <BarChart data={ageRangeData} orientation="horizontal" />
+          <BarChart data={ageRangeData} orientation="horizontal" showPercentage={true} />
         </div>
       </div>
 
@@ -156,7 +171,9 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         onClose={() => setIsAgeRangeModalOpen(false)}
         title="Membros por Faixa Etária"
         icon={<Calendar size={20} className="text-[#090725]" />}
-        tabs={ageRangeData.map(a => ({ ...a, value: a.rangeKey }))}
+        tabs={ageRangeData
+          .filter(a => a.rangeKey !== null) // Excluir Total (apenas para visualização no gráfico)
+          .map(a => ({ ...a, value: a.rangeKey! }))}
         viewMode={viewMode}
         selectedCongregationId={selectedCongregationId}
       />
@@ -202,6 +219,7 @@ function getAgeRangeColor(range: string): string {
     '36-50': '#A78BFA',     // Adultos - Roxo pastel mais intenso
     '51-65': '#22D3EE',     // Meia-idade - Ciano pastel mais intenso
     '65+': '#F87171',       // Idosos - Vermelho pastel mais intenso
+    'Total': '#939393',     // Total - Cor primária
   };
   return colors[range] || '#9CA3AF';
 }

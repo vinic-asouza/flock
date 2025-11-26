@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { ChurchStructure } from '@/types';
 import { BarChart } from '@/components/reports/charts/BarChart';
 import { MembersModal } from './MembersModal';
@@ -14,33 +14,89 @@ interface ChurchStructureChartsProps {
   selectedCongregationId?: string;
 }
 
+interface ChartDataItem {
+  label: string;
+  value: number;
+  id: string | null;
+  color: string;
+  idForModal?: string | null;
+}
+
 export function ChurchStructureCharts({ data, loading = false, hideCongregations = false, viewMode = 'all', selectedCongregationId }: ChurchStructureChartsProps) {
   const [isRolesModalOpen, setIsRolesModalOpen] = useState(false);
   const [isCongregationsModalOpen, setIsCongregationsModalOpen] = useState(false);
   // Converter dados de cargos para formato do gráfico
-  const rolesData = Object.entries(data.roles)
-    .filter(([label, roleData]) => label !== 'Sem cargo' && roleData.id) // Excluir "Sem cargo" e cargos sem ID
-    .map(([label, roleData]) => ({
-      label,
-      value: roleData.count,
-      id: roleData.id,
-      color: getRoleColor(label),
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 8); // Top 8 cargos
+  const rolesData = useMemo(() => {
+    const regularRoles = Object.entries(data.roles)
+      .filter(([label, roleData]) => label !== 'Sem cargo' && roleData.id) // Excluir "Sem cargo" e cargos sem ID
+      .map(([label, roleData]) => ({
+        label,
+        value: roleData.count,
+        id: roleData.id,
+        color: getRoleColor(label),
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8); // Top 8 cargos
+
+    // Calcular total
+    const totalValue = Object.values(data.roles).reduce((sum, item) => sum + item.count, 0);
+    const totalItem = {
+      label: 'Total',
+      value: totalValue,
+      id: null,
+      idForModal: null, // Total não aparece no modal
+      color: getRoleColor('Total'),
+    };
+
+    // Combinar: cargos primeiro, Total por último
+    return [...regularRoles, totalItem];
+  }, [data.roles]);
 
 
   // Converter dados de congregações para formato do gráfico
-  const congregationsData = Object.entries(data.congregations)
-    .filter(([label, congregationData]) => label !== 'Sem congregação' && congregationData.id) // Excluir "Sem congregação" e congregações sem ID
-    .map(([label, congregationData]) => ({
-      label,
-      value: congregationData.count,
-      id: congregationData.id,
+  const congregationsData = useMemo((): ChartDataItem[] => {
+    // Separar congregações normais e "Sem congregação" (Sede)
+    const regularCongregations: ChartDataItem[] = Object.entries(data.congregations)
+      .filter(([label, congregationData]) => label !== 'Sem congregação' && congregationData.id)
+      .map(([label, congregationData]) => ({
+        label,
+        value: congregationData.count,
+        id: congregationData.id,
+        color: getCongregationColor(),
+        idForModal: undefined,
+      }))
+      .sort((a, b) => b.value - a.value);
+
+    // Incluir "Sede" (membros sem congregação)
+    const sedeData = data.congregations['Sem congregação'];
+    const sedeItem: ChartDataItem | null = sedeData ? {
+      label: 'Sede',
+      value: sedeData.count,
+      id: null,
+      idForModal: 'sede', // Valor especial para usar no modal
       color: getCongregationColor(),
-    }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 6); // Top 6 congregações
+    } : null;
+
+    // Calcular total
+    const totalValue = Object.values(data.congregations).reduce((sum, item) => sum + item.count, 0);
+    const totalItem: ChartDataItem = {
+      label: 'Total',
+      value: totalValue,
+      id: null,
+      idForModal: null, // Total não aparece no modal
+      color: getCongregationColor(),
+    };
+
+    // Combinar: Sede primeiro (se existir), depois congregações, e Total por último
+    const result: ChartDataItem[] = [];
+    if (sedeItem) {
+      result.push(sedeItem);
+    }
+    result.push(...regularCongregations);
+    result.push(totalItem);
+
+    return result;
+  }, [data.congregations]);
 
 
   if (loading) {
@@ -87,7 +143,7 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
               Visualizar
             </button>
           </div>
-          <BarChart data={rolesData} orientation="horizontal" maxBars={8} />
+          <BarChart data={rolesData} orientation="horizontal" maxBars={10} />
         </div>
 
         {/* Gráfico de Congregações - apenas se não estiver oculto */}
@@ -106,7 +162,7 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
                 Visualizar
               </button>
             </div>
-            <BarChart data={congregationsData} orientation="horizontal" maxBars={6} />
+            <BarChart data={congregationsData} orientation="horizontal" maxBars={10} />
           </div>
         )}
       </div>
@@ -117,7 +173,9 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
         onClose={() => setIsRolesModalOpen(false)}
         title="Membros por Cargos"
         icon={<Building size={20} className="text-[#090725]" />}
-        tabs={rolesData.map(r => ({ ...r, value: r.id!, count: r.value }))}
+        tabs={rolesData
+          .filter(r => r.id !== null) // Excluir Total (apenas para visualização no gráfico)
+          .map(r => ({ ...r, value: r.id!, count: r.value }))}
         filterKey="role_id"
         viewMode={viewMode}
         selectedCongregationId={selectedCongregationId}
@@ -131,7 +189,13 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
           onClose={() => setIsCongregationsModalOpen(false)}
           title="Membros por Congregações"
           icon={<Building size={20} className="text-[#090725]" />}
-          tabs={congregationsData.map(c => ({ ...c, value: c.id!, count: c.value }))}
+          tabs={congregationsData
+            .filter((c): c is ChartDataItem => c.id !== null || c.idForModal === 'sede') // Incluir Sede, excluir Total
+            .map(c => ({ 
+              ...c, 
+              value: c.id || c.idForModal || '', 
+              count: c.value 
+            }))}
           filterKey="congregation_id"
           viewMode={viewMode}
           selectedCongregationId={selectedCongregationId}

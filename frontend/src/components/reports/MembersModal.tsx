@@ -157,13 +157,13 @@ export function MembersModal({
       
       {/* Modal */}
       <div 
-        className={`relative bg-white rounded-lg shadow-xl w-full max-h-[90vh] flex flex-col mx-4 ${
+        className={`relative bg-white rounded-lg shadow-xl w-full max-h-[90vh] h-[90vh] flex flex-col mx-4 ${
           sideLayout ? 'max-w-6xl' : 'max-w-4xl'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-[#090725]/10">
               {icon}
@@ -190,10 +190,10 @@ export function MembersModal({
         </div>
 
         {sideLayout ? (
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 flex overflow-hidden min-h-0">
             {/* Sidebar com Tabs */}
-            <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50">
-              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50 flex-shrink-0">
+              <div className="flex-1 overflow-y-auto p-4 bg-gray-50 min-h-0">
                 <div className="space-y-2">
                   {tabs.map((tab) => (
                     <button
@@ -220,18 +220,18 @@ export function MembersModal({
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex-1 overflow-hidden p-6">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-hidden p-6 min-h-0 flex flex-col">
                 {loading ? (
-                  <div className="flex items-center justify-center h-64">
+                  <div className="flex items-center justify-center flex-1">
                     <div className="flex items-center gap-2 text-gray-500">
                       <Loader2 size={20} className="animate-spin" />
                       Carregando membros...
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full flex flex-col">
-                    <div className="flex-1 overflow-y-auto">
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto min-h-0">
                       {members.length > 0 ? (
                         <div className="space-y-3">
                           {members.map((member) => (
@@ -242,7 +242,7 @@ export function MembersModal({
                           ))}
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center h-64 text-gray-500">
+                        <div className="flex items-center justify-center flex-1 text-gray-500">
                           <div className="text-center">
                             <Users size={48} className="mx-auto mb-2 text-gray-300" />
                             <p>Nenhum membro encontrado</p>
@@ -256,7 +256,7 @@ export function MembersModal({
 
                     {/* Paginação */}
                     {pagination && pagination.totalPages > 1 && (
-                      <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-gray-600">
                             Página {pagination.page} de {pagination.totalPages} 
@@ -292,7 +292,7 @@ export function MembersModal({
         ) : (
           <>
             {/* Tabs */}
-            <div className="px-6 pt-4">
+            <div className="px-6 pt-4 flex-shrink-0">
               <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
                 {tabs.map((tab) => (
                   <button
@@ -320,17 +320,17 @@ export function MembersModal({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-hidden p-6">
+            <div className="flex-1 overflow-hidden p-6 min-h-0 flex flex-col">
               {loading ? (
-                <div className="flex items-center justify-center h-64">
+                <div className="flex items-center justify-center flex-1">
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 size={20} className="animate-spin" />
                     Carregando membros...
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                  <div className="flex-1 overflow-y-auto min-h-0">
                     {members.length > 0 ? (
                       <div className="space-y-3">
                         {members.map((member) => (
@@ -341,7 +341,7 @@ export function MembersModal({
                         ))}
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="flex items-center justify-center flex-1 text-gray-500">
                         <div className="text-center">
                           <Users size={48} className="mx-auto mb-2 text-gray-300" />
                           <p>Nenhum membro encontrado</p>
@@ -355,7 +355,7 @@ export function MembersModal({
 
                   {/* Paginação */}
                   {pagination && pagination.totalPages > 1 && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-600">
                           Página {pagination.page} de {pagination.totalPages} 
