@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 
@@ -26,9 +27,11 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-white hover:text-gray-100 transition-colors">
-              <img
+              <Image
                 src="/flock-logo.svg"
                 alt="Flock Logo"
+                width={32}
+                height={32}
                 className="w-8 h-8"
               />
               <span>Flock</span>

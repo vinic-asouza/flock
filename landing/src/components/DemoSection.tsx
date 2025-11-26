@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Video, BookOpen } from 'lucide-react';
 
 interface DemoItem {
@@ -154,12 +155,14 @@ export function DemoSection() {
                 </button>
 
                 {/* Imagem do sistema ou placeholder */}
-                <div className="w-full bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video">
+                <div className="w-full bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video relative">
                   {currentItem.image ? (
-                    <img
+                    <Image
                       src={currentItem.image}
                       alt={currentItem.title}
-                      className="w-full h-full object-cover object-top"
+                      fill
+                      className="object-cover object-top"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 70vw"
                     />
                   ) : (
                     /* Placeholder animado */
