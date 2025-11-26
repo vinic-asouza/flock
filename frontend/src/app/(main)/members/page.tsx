@@ -15,9 +15,10 @@ import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
 import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
 import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
 import { ExportMembersModal } from '@/components/members/ExportMembersModal';
+import { MemberImportModal } from '@/components/members/MemberImportModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useViewMode } from '@/hooks/useViewMode';
 import { apiService } from '@/services/api';
@@ -89,6 +90,7 @@ function MembersPageContent() {
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
 
@@ -403,13 +405,23 @@ function MembersPageContent() {
           <h1 className="text-2xl font-bold text-gray-900">Membros</h1>
           <p className="text-sm text-gray-600">Visualize, cadastre e gerencie os membros da igreja.</p>
         </div>
-        <Button
-          onClick={() => setCreateModalOpen(true)}
-          className="inline-flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Adicionar Membro
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setImportModalOpen(true)}
+            className="inline-flex items-center gap-2"
+          >
+            <Upload size={18} />
+            Importar CSV
+          </Button>
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            className="inline-flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Adicionar Membro
+          </Button>
+        </div>
       </div>
       <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={false} />
       <MemberFiltersBar
@@ -505,6 +517,15 @@ function MembersPageContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={handleExportMembers}
+      />
+
+      <MemberImportModal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={() => {
+          // Recarregar lista de membros após importação
+          loadMembers(filters, sorting, 1);
+        }}
       />
     </div>
   );

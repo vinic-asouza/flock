@@ -13,7 +13,9 @@ import {
   ReportFilters,
   IntegrationMember,
   IntegrationMemberPayload,
-  IntegrationFilters
+  IntegrationFilters,
+  ValidationResult,
+  ImportResult
 } from '@/types';
 
 class ApiService {
@@ -542,6 +544,42 @@ class ApiService {
       fields: selectedFields
     }, {
       responseType: 'blob', // Importante para receber o arquivo como blob
+    });
+    return response.data;
+  }
+
+  // Importação de membros via CSV
+  async validateMemberImport(file: File, congregationId: string | null = null): Promise<ValidationResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (congregationId) {
+      formData.append('congregation_id', congregationId);
+    } else {
+      formData.append('congregation_id', 'null');
+    }
+
+    const response = await this.api.post('/members/import/validate', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  async importMembers(file: File, congregationId: string | null = null, skipDuplicates: boolean = true): Promise<ImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (congregationId) {
+      formData.append('congregation_id', congregationId);
+    } else {
+      formData.append('congregation_id', 'null');
+    }
+    formData.append('skipDuplicates', skipDuplicates.toString());
+
+    const response = await this.api.post('/members/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return response.data;
   }

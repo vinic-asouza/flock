@@ -3,8 +3,8 @@ import { Request } from 'express';
 
 interface AuditLogData {
   entity: 'member' | 'role' | 'congregation' | 'integration_member';
-  entityId: string;
-  action: 'create' | 'update' | 'delete' | 'convert';
+  entityId: string | null;
+  action: 'create' | 'update' | 'delete' | 'convert' | 'import';
   changesBefore?: any;
   changesAfter?: any;
   ip?: string;

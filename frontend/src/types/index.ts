@@ -153,3 +153,44 @@ export interface ApiError {
 // Re-export dos tipos de relatórios
 export * from './reports';
 export * from './integration';
+
+// Tipos para importação de membros
+export interface ValidationError {
+  row: number;
+  field: string;
+  message: string;
+  value?: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  errors: Array<{
+    row: number;
+    errors: ValidationError[];
+  }>;
+  preview: Array<{
+    name: string;
+    birth?: string;
+    gender?: string;
+    [key: string]: unknown;
+  }>;
+}
+
+export interface ImportResult {
+  success: boolean;
+  totalRows: number;
+  importedRows: number;
+  errorRows: number;
+  skippedRows: number;
+  errors: Array<{
+    row: number;
+    errors: string[];
+  }>;
+  skipped: Array<{
+    row: number;
+    reason: string;
+  }>;
+}
