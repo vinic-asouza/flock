@@ -13,7 +13,7 @@ export const subscribe = async (req: Request, res: Response) => {
       });
     }
 
-    const { name, email, phone, churchName, city, state } = req.body;
+    const { name, email, phone, churchName, city, state, plan } = req.body;
 
     // Verificar se já existe um cadastro com este email
     const { data: existingEntry, error: checkError } = await supabase
@@ -48,6 +48,7 @@ export const subscribe = async (req: Request, res: Response) => {
           church_name: churchName,
           city,
           state: state.toUpperCase(),
+          plan,
         },
       ])
       .select()

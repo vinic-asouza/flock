@@ -50,19 +50,19 @@ export function Footer({ onOpenWaitlist }: FooterProps) {
             <ul className="space-y-3 text-sm">
               <li className="flex items-center gap-2">
                 <Mail size={18} className="text-primary" />
-                <a href="mailto:contato@flock.com" className="text-gray-600 hover:text-primary transition-colors">
-                  contato@flock.com
+                <a href="mailto:contato@flockapp.com.br" className="text-gray-600 hover:text-primary transition-colors">
+                  contato@flockapp.com.br
                 </a>
               </li>
               <li className="flex items-center gap-2">
                 <MessageCircle size={18} className="text-primary" />
                 <a 
-                  href="https://wa.me/5511999999999" 
+                  href="https://wa.me/5514998196347?text=Olá,%20Gostaria%20de%20saber%20mais%20sobre%20o%20sistema%20Flock." 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-600 hover:text-primary transition-colors"
                 >
-                  (11) 99999-9999
+                  (14) 99819-6347
                 </a>
               </li>
             </ul>

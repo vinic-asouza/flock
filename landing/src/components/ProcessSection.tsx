@@ -70,11 +70,11 @@ export function ProcessSection() {
           {/* Lado Esquerdo - Imagem */}
           <div className="relative flex justify-center order-2 lg:order-1">
             <Image
-              src="/flock-secretaria.png"
+              src="/11409.jpg"
               alt="Flock - Gestão de Igrejas"
               width={500}
               height={500}
-              className="rounded-xl w-full max-w-sm md:max-w-md lg:max-w-full"
+              className="rounded-xl w-full max-w-xs md:max-w-sm lg:max-w-md"
               priority
             />
           </div>

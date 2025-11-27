@@ -127,7 +127,7 @@ export function Pricing() {
 
                 {/* Botão de Ação */}
                 <a
-                  href="#waitlist"
+                  href={`#waitlist?plan=${plan.maxMembers}`}
                   className="w-full text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 mt-auto text-center inline-block"
                   style={{
                     backgroundColor: '#090725',
@@ -135,10 +135,16 @@ export function Pricing() {
                   }}
                   onClick={(e) => {
                     e.preventDefault();
-                    const waitlistSection = document.getElementById('waitlist');
-                    if (waitlistSection) {
-                      waitlistSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    // Atualizar a URL com o hash e parâmetro
+                    const newHash = `#waitlist?plan=${plan.maxMembers}`;
+                    window.location.hash = newHash;
+                    // Fazer scroll
+                    setTimeout(() => {
+                      const waitlistSection = document.getElementById('waitlist');
+                      if (waitlistSection) {
+                        waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }, 100);
                   }}
                 >
                   Entrar na Lista de Espera
@@ -153,10 +159,20 @@ export function Pricing() {
           <p className="text-sm text-gray-700">
             Precisa de gestão para mais de 800 membros?{' '}
             <a
-              href="https://wa.me/5511999999999"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#waitlist?plan=personalizado"
               className="text-primary font-semibold hover:text-[#0d0a3a] transition-colors underline"
+              onClick={(e) => {
+                e.preventDefault();
+                // Atualizar a URL com o hash e parâmetro
+                window.location.hash = '#waitlist?plan=personalizado';
+                // Fazer scroll
+                setTimeout(() => {
+                  const waitlistSection = document.getElementById('waitlist');
+                  if (waitlistSection) {
+                    waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
             >
               Entre em contato com nosso suporte
             </a>

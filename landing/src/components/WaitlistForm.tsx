@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader, ArrowRight } from 'lucide-react';
+import { Loader, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { waitlistService } from '@/services/waitlist';
 import toast from 'react-hot-toast';
 import { useIbgeData } from '@/hooks/useIbgeData';
@@ -19,6 +19,9 @@ const waitlistSchema = z.object({
   churchName: z.string().min(2, 'Nome da igreja deve ter pelo menos 2 caracteres'),
   city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().length(2, 'Estado deve ter 2 caracteres'),
+  plan: z.enum(['200', '500', '800', 'personalizado'], {
+    errorMap: () => ({ message: 'Selecione um plano válido' }),
+  }),
 });
 
 type WaitlistFormData = z.infer<typeof waitlistSchema>;
@@ -40,6 +43,7 @@ interface WaitlistFormProps {
 
 export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [phoneValue, setPhoneValue] = useState('');
   const [isHovered, setIsHovered] = useState(false);
   const { states, cities, loadingStates, loadingCities, fetchCities } = useIbgeData();
@@ -57,6 +61,50 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
   });
 
   const watchedState = watch('state');
+
+  // Verificar se há um plano na URL e definir automaticamente
+  useEffect(() => {
+    const checkAndSetPlanFromURL = () => {
+      if (typeof window !== 'undefined') {
+        const hash = window.location.hash;
+        const urlParams = new URLSearchParams(hash.split('?')[1]);
+        const planParam = urlParams.get('plan');
+        
+        if (planParam) {
+          // Mapear o número de membros ou 'personalizado' para o valor do plano
+          const planMap: Record<string, '200' | '500' | '800' | 'personalizado'> = {
+            '200': '200',
+            '500': '500',
+            '800': '800',
+            'personalizado': 'personalizado',
+          };
+          
+          const planValue = planMap[planParam] || null;
+          if (planValue) {
+            setValue('plan', planValue, { shouldValidate: true });
+          }
+          
+          // Limpar o parâmetro da URL após definir o plano
+          const newHash = hash.split('?')[0];
+          window.history.replaceState(null, '', newHash || window.location.pathname);
+        }
+      }
+    };
+
+    // Verificar ao carregar
+    checkAndSetPlanFromURL();
+
+    // Ouvir mudanças no hash da URL
+    const handleHashChange = () => {
+      checkAndSetPlanFromURL();
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [setValue]);
 
   // Buscar cidades quando o estado mudar
   useEffect(() => {
@@ -89,9 +137,10 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
       
       if (onSubmit) {
         await onSubmit(data);
+        setIsSubmitted(true);
       } else {
         await waitlistService.subscribe(data);
-        toast.success('Cadastro realizado com sucesso!');
+        setIsSubmitted(true);
         reset();
         setPhoneValue('');
         setSelectedStateId('');
@@ -109,7 +158,44 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
     }
   };
 
+  const handleBackToForm = () => {
+    setIsSubmitted(false);
+    reset();
+    setPhoneValue('');
+    setSelectedStateId('');
+    setValue('city', '');
+  };
+
   const isLoading = externalLoading || isSubmitting;
+
+  // Mensagem de sucesso
+  if (isSubmitted) {
+    return (
+      <div className="text-center py-8 px-4">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+            <CheckCircle2 className="w-10 h-10 text-green-600" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold text-gray-900">
+              Solicitação Enviada com Sucesso!
+            </h3>
+            <p className="text-gray-600 max-w-md mx-auto leading-relaxed">
+              Obrigado por se cadastrar na lista de espera do Flock. Nossa equipe entrará em contato em breve para apresentar o sistema e tirar suas dúvidas.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleBackToForm}
+            className="mt-6 inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary transition-colors duration-200 underline underline-offset-2"
+          >
+            <ArrowLeft size={16} />
+            Voltar para o formulário
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit(internalOnSubmit)} className="space-y-4">
@@ -234,6 +320,64 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
             <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Plano de Interesse *
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { value: '200', label: 'Plano 200', description: 'Até 200 membros' },
+            { value: '500', label: 'Plano 500', description: 'Até 500 membros' },
+            { value: '800', label: 'Plano 800', description: 'Até 800 membros' },
+            { value: 'personalizado', label: 'Personalizado', description: 'Mais de 800 membros' },
+          ].map((plan) => {
+            const isSelected = watch('plan') === plan.value;
+            return (
+              <button
+                key={plan.value}
+                type="button"
+                onClick={() => setValue('plan', plan.value as '200' | '500' | '800' | 'personalizado', { shouldValidate: true })}
+                className={`
+                  relative p-3 sm:p-2 rounded-lg border-1 transition-all duration-200 text-left
+                  ${isSelected
+                    ? 'border-primary bg-primary/5 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md'
+                  }
+                  ${errors.plan ? 'border-red-300' : ''}
+                `}
+              >
+                <div className="flex items-start gap-2">
+                  <div className={`
+                    mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0
+                    ${isSelected
+                      ? 'border-primary bg-primary'
+                      : 'border-gray-300 bg-white'
+                    }
+                  `}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-semibold text-sm ${isSelected ? 'text-primary' : 'text-gray-900'}`}>
+                      {plan.label}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {plan.description}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {errors.plan && (
+          <p className="mt-2 text-xs text-red-600">{errors.plan.message}</p>
+        )}
       </div>
 
       <div className="pt-3">

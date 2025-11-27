@@ -191,7 +191,7 @@ export function DemoSection() {
         {/* Botões de Ação */}
         <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
-            href="https://wa.me/5511999999999"
+            href="https://wa.me/5514998196347?text=Olá!%20Gostaria%20de%20agendar%20uma%20demonstração%20online%20do%20sistema%20Flock."
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
@@ -203,13 +203,13 @@ export function DemoSection() {
             <Video size={18} className="sm:w-5 sm:h-5" />
             <span className="text-sm sm:text-base">Agende uma Demonstração Online</span>
           </a>
-          <a
+          {/* <a
             href="#"
             className="inline-flex items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-50 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl w-full sm:w-auto"
           >
             <BookOpen size={18} className="sm:w-5 sm:h-5" />
             <span className="text-sm sm:text-base">Confira nossos tutoriais</span>
-          </a>
+          </a> */}
         </div>
       </div>
     </section>
