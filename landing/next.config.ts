@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
   },
+  // Otimizações para SEO
+  compress: true,
+  poweredByHeader: false, // Remove o header X-Powered-By para segurança
+  reactStrictMode: true,
 };
 
 export default nextConfig;
