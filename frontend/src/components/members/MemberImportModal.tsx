@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, X, Loader2, List, XCircle, Users, CheckCircle2, AlertTriangle, SkipForward } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, X, Loader2, List, XCircle, Users, CheckCircle2, SkipForward } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
