@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -136,6 +136,8 @@ export default function RegisterPage() {
   const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
   const { register: registerChurch, isOperationLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedPlan = searchParams.get('plan');
   
   // Ref para manter os estados durante re-renderizações
   const errorRef = useRef<string | null>(globalRegisterError);
@@ -305,6 +307,13 @@ export default function RegisterPage() {
       
       // Guardar email para instrução de confirmação
       setRegisteredEmail(cleanData.email);
+
+      // Se houver plano selecionado, redirecionar para checkout após registro
+      if (selectedPlan && ['200', '500', '800', 'custom'].includes(selectedPlan)) {
+        // Redirecionar para página de checkout
+        router.push(`/checkout?plan=${selectedPlan}`);
+        return;
+      }
 
       setSuccess(true);
       

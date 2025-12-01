@@ -148,4 +148,50 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
   }
 };
 
+/**
+ * Middleware de autenticação opcional
+ * Tenta autenticar, mas não retorna erro se não houver token
+ */
+export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Primeiro, tentar obter token do cookie
+    let token = req.cookies[cookieConfig.names.accessToken];
+    
+    // Se não houver token no cookie, tentar do header Authorization
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+
+    // Se não há token, apenas continuar sem autenticação
+    if (!token) {
+      return next();
+    }
+
+    // Verificar se o token está na blacklist
+    if (global.tokenBlacklist && global.tokenBlacklist.has(token)) {
+      return next(); // Continuar sem autenticação se token foi revogado
+    }
+
+    // Verificar o token com o Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+
+    if (!error && user) {
+      // Adicionar o usuário ao objeto da requisição
+      req.user = {
+        id: user.id,
+        email: user.email || ''
+      };
+    }
+
+    next();
+  } catch (error) {
+    // Em caso de erro, apenas continuar sem autenticação
+    console.error('Erro na autenticação opcional:', error);
+    next();
+  }
+};
+
 export default authMiddleware; 

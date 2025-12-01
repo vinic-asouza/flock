@@ -89,9 +89,46 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       });
     }
 
+    // Verificar se há assinatura pendente vinculada ao email
+    const { data: pendingSubscription, error: pendingError } = await supabase
+      .from('pending_subscriptions')
+      .select('*')
+      .eq('email', email)
+      .gt('expires_at', new Date().toISOString()) // Apenas assinaturas não expiradas
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!pendingError && pendingSubscription) {
+      // Vincular assinatura pendente à igreja criada
+      const { error: linkError } = await supabase
+        .from('churches')
+        .update({
+          stripe_customer_id: pendingSubscription.stripe_customer_id,
+          stripe_subscription_id: pendingSubscription.stripe_subscription_id,
+          subscription_status: pendingSubscription.subscription_status,
+          plan_type: pendingSubscription.plan_type,
+          subscription_start_date: pendingSubscription.subscription_start_date,
+        })
+        .eq('id', churchRecord.id);
+
+      if (!linkError) {
+        // Remover da tabela de pendentes após vincular com sucesso
+        await supabase
+          .from('pending_subscriptions')
+          .delete()
+          .eq('id', pendingSubscription.id);
+        
+        console.log(`✅ Assinatura pendente vinculada à igreja ${churchRecord.id}`);
+      } else {
+        console.error('Erro ao vincular assinatura pendente:', linkError);
+      }
+    }
+
     res.status(201).json({
       message: 'Igreja registrada com sucesso',
-      church: churchRecord
+      church: churchRecord,
+      subscriptionLinked: !!pendingSubscription
     });
 
   } catch (error) {

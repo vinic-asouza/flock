@@ -1,6 +1,7 @@
 'use client';
 
 import { Users, Building2, BarChart3, Check } from 'lucide-react';
+import { CheckoutButton } from './CheckoutButton';
 
 interface Plan {
   id: string;
@@ -126,29 +127,31 @@ export function Pricing() {
                 </div>
 
                 {/* Botão de Ação */}
-                <a
-                  href={`#waitlist?plan=${plan.maxMembers}`}
-                  className="w-full text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 mt-auto text-center inline-block"
-                  style={{
-                    backgroundColor: '#090725',
-                    backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Atualizar a URL com o hash e parâmetro
-                    const newHash = `#waitlist?plan=${plan.maxMembers}`;
-                    window.location.hash = newHash;
-                    // Fazer scroll
-                    setTimeout(() => {
-                      const waitlistSection = document.getElementById('waitlist');
-                      if (waitlistSection) {
-                        waitlistSection.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }, 100);
-                  }}
-                >
-                  Entrar na Lista de Espera
-                </a>
+                <div className="mt-auto space-y-2">
+                  <CheckoutButton
+                    plan={plan.maxMembers.toString() as '200' | '500' | '800'}
+                    className="w-full"
+                  >
+                    Assinar Agora
+                  </CheckoutButton>
+                  <a
+                    href={`#waitlist?plan=${plan.maxMembers}`}
+                    className="w-full text-center text-sm text-gray-600 hover:text-primary transition-colors block"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const newHash = `#waitlist?plan=${plan.maxMembers}`;
+                      window.location.hash = newHash;
+                      setTimeout(() => {
+                        const waitlistSection = document.getElementById('waitlist');
+                        if (waitlistSection) {
+                          waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }, 100);
+                    }}
+                  >
+                    Ou entrar na lista de espera
+                  </a>
+                </div>
               </div>
             );
           })}

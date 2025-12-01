@@ -18,6 +18,7 @@ import authCallbackRoutes from './routes/authCallback';
 import exportRoutes from './routes/export';
 import integrationRoutes from './routes/integration';
 import waitlistRoutes from './routes/waitlist';
+import stripeRoutes from './routes/stripe';
 
 dotenv.config();
 
@@ -92,6 +93,7 @@ app.use('/api/auth', authCallbackRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/integration', integrationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
+app.use('/api/stripe', stripeRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {
