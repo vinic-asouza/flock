@@ -3,24 +3,13 @@
 import { useState } from 'react';
 import { LineChartData } from '@/types';
 
-type SeriesKey = 'baptisms' | 'admissions';
-
 interface LineChartProps {
   data: LineChartData[];
   height?: number;
-  labels?: {
-    baptisms: string;
-    admissions: string;
-  };
 }
 
-export function LineChart({ data, height = 300, labels }: LineChartProps) {
-  const [hoveredPoint, setHoveredPoint] = useState<{ type: SeriesKey; index: number; x: number; y: number } | null>(null);
-
-  const seriesLabels = labels ?? {
-    baptisms: 'Batismos',
-    admissions: 'Admissões'
-  };
+export function LineChart({ data, height = 300 }: LineChartProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<{ index: number; x: number; y: number } | null>(null);
 
   if (!data || data.length === 0) {
     return (
@@ -35,14 +24,11 @@ export function LineChart({ data, height = 300, labels }: LineChartProps) {
   const chartWidth = width - (padding * 2);
   const chartHeight = height - (padding * 2);
 
-  const maxBaptisms = Math.max(...data.map(d => d.baptisms));
-  const maxAdmissions = Math.max(...data.map(d => d.admissions));
-  const maxValue = Math.max(maxBaptisms, maxAdmissions);
+  const maxValue = Math.max(...data.map(d => d.total));
   const safeMaxValue = maxValue === 0 ? 1 : maxValue;
 
   const indexDivisor = data.length > 1 ? data.length - 1 : 1;
 
-  // Encontrar valores máximos para escalar o gráfico
   // Função para converter valor em coordenada Y
   const getY = (value: number) => {
     return chartHeight - (value / safeMaxValue) * chartHeight;
@@ -53,70 +39,37 @@ export function LineChart({ data, height = 300, labels }: LineChartProps) {
     return (index / indexDivisor) * chartWidth;
   };
 
-  // Gerar pontos para a linha de batismos
-  const baptismsPoints = data
-    .map((d, index) => `${getX(index) + padding},${getY(d.baptisms) + padding}`)
-    .join(' ');
-
-  // Gerar pontos para a linha de admissões
-  const admissionsPoints = data
-    .map((d, index) => `${getX(index) + padding},${getY(d.admissions) + padding}`)
+  // Gerar pontos para a linha de total
+  const totalPoints = data
+    .map((d, index) => `${getX(index) + padding},${getY(d.total) + padding}`)
     .join(' ');
 
   return (
     <div className="w-full overflow-x-auto relative">
       <svg width={width} height={height} className="mx-auto">
-        {/* Linha de batismos */}
+        {/* Linha de total */}
         <polyline
-          points={baptismsPoints}
+          points={totalPoints}
           fill="none"
-          stroke="#3B82F6"
+          stroke="#090725"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
-        {/* Linha de admissões */}
-        <polyline
-          points={admissionsPoints}
-          fill="none"
-          stroke="#10B981"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Pontos de batismos */}
+        {/* Pontos */}
         {data.map((d, index) => {
           const x = getX(index) + padding;
-          const y = getY(d.baptisms) + padding;
+          const y = getY(d.total) + padding;
           return (
             <circle
-              key={`baptisms-${index}`}
+              key={`total-${index}`}
               cx={x}
               cy={y}
               r="5"
-              fill="#3B82F6"
+              fill="#090725"
               className="hover:r-7 transition-all cursor-pointer"
-              onMouseEnter={() => setHoveredPoint({ type: 'baptisms', index, x, y })}
-              onMouseLeave={() => setHoveredPoint(null)}
-            />
-          );
-        })}
-
-        {/* Pontos de admissões */}
-        {data.map((d, index) => {
-          const x = getX(index) + padding;
-          const y = getY(d.admissions) + padding;
-          return (
-            <circle
-              key={`admissions-${index}`}
-              cx={x}
-              cy={y}
-              r="5"
-              fill="#10B981"
-              className="hover:r-7 transition-all cursor-pointer"
-              onMouseEnter={() => setHoveredPoint({ type: 'admissions', index, x, y })}
+              onMouseEnter={() => setHoveredPoint({ index, x, y })}
               onMouseLeave={() => setHoveredPoint(null)}
             />
           );
@@ -131,7 +84,7 @@ export function LineChart({ data, height = 300, labels }: LineChartProps) {
             textAnchor="middle"
             className="text-xs fill-gray-600"
           >
-            {d.year}
+            {d.label}
           </text>
         ))}
       </svg>
@@ -146,19 +99,15 @@ export function LineChart({ data, height = 300, labels }: LineChartProps) {
             transform: 'translateX(-50%)'
           }}
         >
-          {seriesLabels[hoveredPoint.type]} em {data[hoveredPoint.index].year}: {data[hoveredPoint.index][hoveredPoint.type]}
+          {data[hoveredPoint.index].label}: {data[hoveredPoint.index].total} membro(s)
         </div>
       )}
 
       {/* Legenda */}
       <div className="flex justify-center gap-6 mt-4">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-blue-500"></div>
-          <span className="text-sm text-gray-700">{seriesLabels.baptisms}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-0.5 bg-green-500"></div>
-          <span className="text-sm text-gray-700">{seriesLabels.admissions}</span>
+          <div className="w-4 h-0.5 bg-[#090725]"></div>
+          <span className="text-sm text-gray-700">Total de Membros (Acumulado)</span>
         </div>
       </div>
     </div>

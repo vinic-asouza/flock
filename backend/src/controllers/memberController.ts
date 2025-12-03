@@ -862,28 +862,28 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    // Análise de batismos por período
+    // Análise de batismos por período (membros com admission = "Batismo")
     const baptismByYear = allMembers.reduce((acc, member) => {
-      if (member.baptism_date) {
-        const year = new Date(member.baptism_date).getFullYear();
-        acc[year] = (acc[year] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
-
-    // Análise de admissões por período
-    const admissionByYear = allMembers.reduce((acc, member) => {
-      if (member.admission_date) {
+      if (member.admission === 'Batismo' && member.admission_date) {
         const year = new Date(member.admission_date).getFullYear();
         acc[year] = (acc[year] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
 
-    // Análise de batismos por mês (para o ano selecionado se fornecido)
+    // Análise de admissões por período (membros com admission diferente de "Batismo")
+    const admissionByYear = allMembers.reduce((acc, member) => {
+      if (member.admission && member.admission !== 'Batismo' && member.admission_date) {
+        const year = new Date(member.admission_date).getFullYear();
+        acc[year] = (acc[year] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Análise de batismos por mês (membros com admission = "Batismo")
     const baptismByMonth = allMembers.reduce((acc, member) => {
-      if (member.baptism_date) {
-        const date = new Date(member.baptism_date);
+      if (member.admission === 'Batismo' && member.admission_date) {
+        const date = new Date(member.admission_date);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const key = `${year}-${month}`;
@@ -892,9 +892,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       return acc;
     }, {} as Record<string, number>);
 
-    // Análise de admissões por mês (para o ano selecionado se fornecido)
+    // Análise de admissões por mês (membros com admission diferente de "Batismo")
     const admissionByMonth = allMembers.reduce((acc, member) => {
-      if (member.admission_date) {
+      if (member.admission && member.admission !== 'Batismo' && member.admission_date) {
         const date = new Date(member.admission_date);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -915,56 +915,29 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
 
     // Membros por ano (batizados ou admitidos)
     const membersByYear = formattedMembers.reduce((acc, member) => {
-      // Verifica se o membro foi batizado ou admitido no ano
-      const baptismYear = member.baptism_date ? new Date(member.baptism_date).getFullYear() : null;
-      const admissionYear = member.admission_date ? new Date(member.admission_date).getFullYear() : null;
+      if (!member.admission_date) return acc;
       
-      // Se foi batizado, adiciona ao ano do batismo
-      if (baptismYear) {
-        if (!acc[baptismYear]) acc[baptismYear] = [];
-        acc[baptismYear].push(member);
-      }
+      const admissionYear = new Date(member.admission_date).getFullYear();
       
-      // Se foi admitido (e não batizado no mesmo ano), adiciona ao ano da admissão
-      if (admissionYear && admissionYear !== baptismYear) {
-        if (!acc[admissionYear]) acc[admissionYear] = [];
-        acc[admissionYear].push(member);
-      }
+      // Adiciona o membro ao ano da admissão (seja batismo ou outro tipo)
+      if (!acc[admissionYear]) acc[admissionYear] = [];
+      acc[admissionYear].push(member);
       
       return acc;
     }, {} as Record<string, any[]>);
 
     // Membros por mês (batizados ou admitidos)
     const membersByMonth = formattedMembers.reduce((acc, member) => {
-      // Verifica se o membro foi batizado ou admitido no mês
-      const baptismDate = member.baptism_date ? new Date(member.baptism_date) : null;
-      const admissionDate = member.admission_date ? new Date(member.admission_date) : null;
+      if (!member.admission_date) return acc;
       
-      // Se foi batizado, adiciona ao mês do batismo
-      if (baptismDate) {
-        const year = baptismDate.getFullYear();
-        const month = String(baptismDate.getMonth() + 1).padStart(2, '0');
-        const key = `${year}-${month}`;
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(member);
-      }
+      // Adiciona o membro ao mês da admissão (seja batismo ou outro tipo)
+      const admissionDate = new Date(member.admission_date);
+      const year = admissionDate.getFullYear();
+      const month = String(admissionDate.getMonth() + 1).padStart(2, '0');
+      const key = `${year}-${month}`;
       
-      // Se foi admitido (e não batizado no mesmo mês), adiciona ao mês da admissão
-      if (admissionDate) {
-        const year = admissionDate.getFullYear();
-        const month = String(admissionDate.getMonth() + 1).padStart(2, '0');
-        const key = `${year}-${month}`;
-        
-        // Só adiciona se não foi batizado no mesmo mês
-        const baptismKey = member.baptism_date ? 
-          `${new Date(member.baptism_date).getFullYear()}-${String(new Date(member.baptism_date).getMonth() + 1).padStart(2, '0')}` : 
-          null;
-        
-        if (key !== baptismKey) {
-          if (!acc[key]) acc[key] = [];
-          acc[key].push(member);
-        }
-      }
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(member);
       
       return acc;
     }, {} as Record<string, any[]>);
@@ -981,19 +954,24 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .slice(0, 10)
       .map(([occupation, count]) => ({ occupation, count }));
 
-    // Membros recentes (últimos 30 dias)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Membros admitidos no ano atual
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(currentYear, 0, 1); // 1º de janeiro do ano atual
+    const yearEnd = new Date(currentYear, 11, 31, 23, 59, 59, 999); // 31 de dezembro do ano atual
     
     const recentMembers = allMembers.filter(member => {
-      if (!member.created_at) return false;
-      return new Date(member.created_at) >= thirtyDaysAgo;
+      if (!member.admission_date) return false;
+      const admissionDate = new Date(member.admission_date);
+      return admissionDate >= yearStart && admissionDate <= yearEnd;
     }).length;
 
     // Membros batizados recentemente (últimos 30 dias)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
     const recentBaptisms = allMembers.filter(member => {
-      if (!member.baptism_date) return false;
-      return new Date(member.baptism_date) >= thirtyDaysAgo;
+      if (member.admission !== 'Batismo' || !member.admission_date) return false;
+      return new Date(member.admission_date) >= thirtyDaysAgo;
     }).length;
 
     const integrationSelect = `

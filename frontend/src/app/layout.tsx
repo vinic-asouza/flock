@@ -13,6 +13,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Flock - Sistema de Gerenciamento de Membros de Igrejas",
   description: "Sistema completo para gerenciamento de membros, cargos e congregações de igrejas",
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

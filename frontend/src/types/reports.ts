@@ -180,9 +180,8 @@ export interface BarChartData extends ChartData {
 }
 
 export interface LineChartData {
-  year: string;
-  baptisms: number;
-  admissions: number;
+  label: string;
+  total: number;
 }
 
 // Tipos para exportação

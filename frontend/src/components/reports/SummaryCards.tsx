@@ -14,6 +14,8 @@ interface SummaryCardsProps {
 }
 
 export function SummaryCards({ data, loading = false, filterInfo, congregationName, integrationInProgress = 0 }: SummaryCardsProps) {
+  const currentYear = new Date().getFullYear();
+  
   const cards = [
     {
       title: 'Membros Ativos',
@@ -48,7 +50,7 @@ export function SummaryCards({ data, loading = false, filterInfo, congregationNa
     },
     {
       title: 'Novos Membros',
-      subtitle: 'Últimos 30 dias',
+      subtitle: `No ano atual: ${currentYear}`,
       value: data.recentMembers,
       icon: UserPlus,
       color: 'text-[#090725]',
