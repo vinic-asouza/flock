@@ -99,6 +99,8 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar membro';
       setError(errorMessage);
+      // Re-lançar o erro para que o MemberForm não limpe o formulário
+      throw err;
     } finally {
       setIsLoading(false);
     }

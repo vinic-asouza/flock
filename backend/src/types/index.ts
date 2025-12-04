@@ -37,6 +37,11 @@ export interface Role {
   updated_at: Date;
 }
 
+export interface Child {
+  name: string;
+  birth?: string;
+}
+
 export interface Member {
   id: string;
   church_id: string;
@@ -62,6 +67,9 @@ export interface Member {
   admission?: string;
   admission_date?: Date;
   congregation_id?: string;
+  father_name?: string;
+  mother_name?: string;
+  children?: Child[];
   active: boolean;
   created_at: Date;
   updated_at: Date;

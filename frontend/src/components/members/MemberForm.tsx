@@ -15,7 +15,7 @@ import { useProfessions } from '@/hooks/useProfessions';
 const memberSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
+  phone: z.string().optional().or(z.literal('')),
   whatsapp: z.string().min(10, 'WhatsApp deve ter pelo menos 10 dígitos').optional().or(z.literal('')),
   birth: z.string().min(1, 'Data de nascimento é obrigatória'),
   gender: z.enum(['Masculino', 'Feminino']),
@@ -23,8 +23,10 @@ const memberSchema = z.object({
   nationality: z.string().min(1, 'Nacionalidade é obrigatória'),
   nationality_other: z.string().optional().or(z.literal('')),
   document: z.string()
-    .min(1, 'CPF é obrigatório')
+    .optional()
+    .or(z.literal(''))
     .refine((cpf) => {
+      if (!cpf || cpf.trim() === '') return true; // CPF é opcional agora
       // Remove caracteres não numéricos
       const cleanCpf = cpf.replace(/\D/g, '');
       
@@ -59,19 +61,31 @@ const memberSchema = z.object({
   occupation_other: z.string().optional().or(z.literal('')),
   address: z.string().min(1, 'Endereço é obrigatório'),
   complement: z.string().optional().or(z.literal('')),
-  neighborhood: z.string().min(1, 'Bairro é obrigatório'),
+  neighborhood: z.string().optional().or(z.literal('')),
   city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().min(1, 'Estado é obrigatório'),
-  cep: z.string().length(8, 'CEP deve ter 8 dígitos'),
+  cep: z.string().optional().or(z.literal('')),
   baptism_date: z.string().optional().or(z.literal('')),
   admission: z.string().min(1, 'Tipo de admissão é obrigatório'),
   admission_date: z.string().min(1, 'Data de admissão é obrigatória'),
   role_id: z.string().optional().or(z.literal('')).nullable(),
   congregation_id: z.string().optional().or(z.literal('')).nullable(),
+  father_name: z.string().optional().or(z.literal('')),
+  mother_name: z.string().optional().or(z.literal('')),
+  children: z.array(z.object({
+    name: z.string().min(1, 'Nome do filho é obrigatório'),
+    birth: z.string().optional().or(z.literal('')),
+  })).optional(),
   active: z.boolean(),
 });
 
 type MemberFormData = z.infer<typeof memberSchema>;
+
+interface Child {
+  id?: string;
+  name: string;
+  birth?: string;
+}
 
 interface Member {
   id: string;
@@ -88,7 +102,7 @@ interface Member {
   occupation: string;
   address: string;
   complement?: string;
-  neighborhood: string;
+  neighborhood?: string;
   city: string;
   state: string;
   cep?: string;
@@ -97,6 +111,9 @@ interface Member {
   admission_date?: string;
   role_id?: string;
   congregation_id?: string;
+  father_name?: string;
+  mother_name?: string;
+  children?: Child[];
   active: boolean;
   // Campos retornados pela API com detalhes completos
   role?: {
@@ -180,6 +197,20 @@ const formatDateToISO = (formattedDate: string): string | null => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
+// Função para calcular idade
+const calcularIdade = (birth: string): number | null => {
+  if (!birth) return null;
+  const birthDate = new Date(birth);
+  if (isNaN(birthDate.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+};
+
 export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode }: MemberFormProps) {
   const { roles, congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
@@ -194,6 +225,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [cpfDisplay, setCpfDisplay] = useState('');
   const [nationalityOtherError, setNationalityOtherError] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
+  const [children, setChildren] = useState<Child[]>([]);
+  const [childrenBirthDisplays, setChildrenBirthDisplays] = useState<Record<number, string>>({});
   const prevMemberRef = useRef<Member | null>(null);
 
   const {
@@ -273,7 +306,30 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     setValue('baptism_date', formatDateFromISO(member.baptism_date));
     setValue('admission', member.admission || '');
     setValue('admission_date', formatDateFromISO(member.admission_date));
+    setValue('father_name', member.father_name || '');
+    setValue('mother_name', member.mother_name || '');
     setValue('active', member.active);
+    
+    // Carregar filhos se existirem
+    if (member.children && member.children.length > 0) {
+      // Converter datas dos filhos de ISO para formato DD/MM/AAAA se necessário
+      const childrenWithFormattedDates = member.children.map(child => ({
+        ...child,
+        birth: child.birth ? (child.birth.includes('/') ? child.birth : formatDateFromISO(child.birth)) : undefined
+      }));
+      setChildren(childrenWithFormattedDates);
+      // Inicializar displays de data de nascimento dos filhos
+      const displays: Record<number, string> = {};
+      childrenWithFormattedDates.forEach((child, index) => {
+        if (child.birth) {
+          displays[index] = child.birth.includes('/') ? child.birth : formatDateFromISO(child.birth);
+        }
+      });
+      setChildrenBirthDisplays(displays);
+    } else {
+      setChildren([]);
+      setChildrenBirthDisplays({});
+    }
 
     const roleId = member.role?.id || member.role_id || '';
     const congregationId = member.congregation?.id || member.congregation_id || '';
@@ -401,6 +457,12 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       }
 
       // Converter datas para formato ISO antes de enviar
+      // Converter datas dos filhos também
+      const childrenWithISO = children.map(child => ({
+        name: child.name,
+        birth: child.birth ? formatDateToISO(child.birth) || undefined : undefined,
+      }));
+
       const memberData = {
         ...data,
         birth: formatDateToISO(data.birth) || '',
@@ -416,23 +478,33 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         // Tratar campos UUID opcionais - enviar null quando vazio
         role_id: data.role_id || null,
         congregation_id: data.congregation_id || null,
+        // Incluir filhos
+        children: childrenWithISO,
       };
 
       await onSubmit(memberData);
 
       // Limpar displays formatados e resetar formulário apenas após sucesso
-      setPhoneDisplay('');
-      setWhatsappDisplay('');
-      setCepDisplay('');
-      setCpfDisplay('');
-      setBirthDisplay('');
-      setBaptismDateDisplay('');
-      setAdmissionDateDisplay('');
-      setNationalityOtherError('');
-      setOccupationOtherError('');
-      reset();
-    } catch {
-      // Erro será tratado pelo componente pai
+      // Só limpar se estiver no modo de criação
+      if (mode === 'create') {
+        setPhoneDisplay('');
+        setWhatsappDisplay('');
+        setCepDisplay('');
+        setCpfDisplay('');
+        setBirthDisplay('');
+        setBaptismDateDisplay('');
+        setAdmissionDateDisplay('');
+        setNationalityOtherError('');
+        setOccupationOtherError('');
+        setChildren([]);
+        setChildrenBirthDisplays({});
+        reset();
+      }
+    } catch (error) {
+      // Em caso de erro, não limpar o formulário
+      // O erro será tratado pelo componente pai
+      // Re-lançar o erro para que o componente pai possa tratá-lo
+      throw error;
     }
   };
 
@@ -463,7 +535,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Telefone *"
+            label="Telefone"
             placeholder="(11) 99999-9999"
             value={phoneDisplay}
             onChange={(e) => handlePhoneChange(e, 'phone')}
@@ -570,7 +642,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           )}
 
           <Input
-            label="CPF *"
+            label="CPF"
             placeholder="000.000.000-00"
             value={cpfDisplay}
             onChange={handleCPFChange}
@@ -588,7 +660,141 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               {...register('spouse')}
             />
           )}
+
+          <Input
+            label="Nome do Pai"
+            placeholder="Nome completo do pai"
+            error={errors.father_name?.message}
+            isLoading={isLoading}
+            {...register('father_name')}
+          />
+
+          <Input
+            label="Nome da Mãe"
+            placeholder="Nome completo da mãe"
+            error={errors.mother_name?.message}
+            isLoading={isLoading}
+            {...register('mother_name')}
+          />
         </div>
+      </div>
+
+      {/* Filhos */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+          <h3 className="text-lg font-medium text-gray-900">
+            Filhos
+          </h3>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              const newChild: Child = { name: '', birth: '' };
+              setChildren([...children, newChild]);
+              // Não precisa inicializar o display da data, será vazio por padrão
+            }}
+            disabled={isLoading}
+          >
+            Adicionar Filho
+          </Button>
+        </div>
+
+        {children.length === 0 ? (
+          <p className="text-sm text-gray-500">Nenhum filho adicionado</p>
+        ) : (
+          <div className="space-y-4">
+            {children.map((child, index) => {
+              return (
+                <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-gray-700">Filho {index + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const newChildren = children.filter((_, i) => i !== index);
+                        setChildren(newChildren);
+                        setValue('children', newChildren);
+                        // Remover o display da data do filho removido
+                        const newDisplays = { ...childrenBirthDisplays };
+                        delete newDisplays[index];
+                        // Reindexar os displays restantes
+                        const reindexedDisplays: Record<number, string> = {};
+                        Object.keys(newDisplays).forEach((key) => {
+                          const oldIndex = parseInt(key);
+                          if (oldIndex > index) {
+                            reindexedDisplays[oldIndex - 1] = newDisplays[oldIndex];
+                          } else {
+                            reindexedDisplays[oldIndex] = newDisplays[oldIndex];
+                          }
+                        });
+                        setChildrenBirthDisplays(reindexedDisplays);
+                      }}
+                      disabled={isLoading}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Nome do Filho *"
+                      placeholder="Nome completo"
+                      value={child.name}
+                      onChange={(e) => {
+                        const newChildren = [...children];
+                        newChildren[index] = { ...child, name: e.target.value };
+                        setChildren(newChildren);
+                        setValue('children', newChildren);
+                      }}
+                      isLoading={isLoading}
+                    />
+                    <div>
+                      <Input
+                        label="Data de Nascimento"
+                        placeholder="DD/MM/AAAA"
+                        value={childrenBirthDisplays[index] || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const numbers = value.replace(/\D/g, '');
+
+                          // Aplicar máscara DD/MM/AAAA
+                          let formatted = '';
+                          if (numbers.length <= 2) {
+                            formatted = numbers;
+                          } else if (numbers.length <= 4) {
+                            formatted = `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+                          } else {
+                            formatted = `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+                          }
+
+                          // Atualizar display e valor do formulário
+                          setChildrenBirthDisplays(prev => ({ ...prev, [index]: formatted }));
+                          const newChildren = [...children];
+                          newChildren[index] = { ...child, birth: formatted };
+                          setChildren(newChildren);
+                          setValue('children', newChildren);
+                        }}
+                        maxLength={10}
+                        isLoading={isLoading}
+                      />
+                      {child.birth && (() => {
+                        const childBirthISO = formatDateToISO(child.birth);
+                        const childAge = childBirthISO ? calcularIdade(childBirthISO) : null;
+                        return childAge !== null ? (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {childAge} {childAge === 1 ? 'ano' : 'anos'}
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Endereço */}
@@ -615,7 +821,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Bairro *"
+            label="Bairro"
             placeholder="Centro"
             error={errors.neighborhood?.message}
             isLoading={isLoading}
@@ -662,7 +868,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="CEP *"
+            label="CEP"
             placeholder="12345-678"
             value={cepDisplay}
             onChange={handleCEPChange}
@@ -706,6 +912,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             options={[
               { value: '', label: 'Selecione o tipo de admissão' },
               { value: 'Batismo', label: 'Batismo' },
+              { value: 'Batismo não professo (Criança)', label: 'Batismo não professo (Criança)' },
+              { value: 'Apresentação (Criança)', label: 'Apresentação (Criança)' },
               { value: 'Transferencia', label: 'Transferência' },
               { value: 'Profissão de fé', label: 'Profissão de fé' },
               { value: 'Outro', label: 'Outro' }

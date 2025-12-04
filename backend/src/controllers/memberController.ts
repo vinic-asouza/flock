@@ -121,6 +121,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     const offset = (page - 1) * limit;
 
     // Constrói a query base
+    // children já está na tabela members como JSONB
     let query = supabase
       .from('members')
       .select(`
@@ -376,10 +377,12 @@ export const getMember = async (req: AuthRequest, res: Response) => {
     }
 
     // Formatar a resposta para manter compatibilidade
+    // children já vem no memberWithDetails como JSONB
     const formattedMember = {
       ...memberWithDetails,
       role: memberWithDetails.roles,
       congregation: memberWithDetails.congregations,
+      children: memberWithDetails.children || [],
       roles: undefined, // Remove o campo roles da resposta
       congregations: undefined // Remove o campo congregations da resposta
     };
@@ -424,7 +427,11 @@ export const createMember = async (req: AuthRequest, res: Response) => {
     const memberData: Partial<Member> = {
       ...req.body,
       church_id: church.id,
-      active: true
+      active: true,
+      // Garantir que children seja um array JSON válido
+      children: req.body.children && Array.isArray(req.body.children) 
+        ? req.body.children 
+        : []
     };
 
     // Cria o novo membro
@@ -511,10 +518,18 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Atualiza o membro
+    // Atualiza o membro (children já vem no body como JSONB)
+    const updateData = {
+      ...req.body,
+      // Garantir que children seja um array JSON válido
+      children: req.body.children !== undefined 
+        ? (Array.isArray(req.body.children) ? req.body.children : [])
+        : undefined
+    };
+
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .update(req.body)
+      .update(updateData)
       .eq('id', id)
       .eq('church_id', church.id)
       .select()

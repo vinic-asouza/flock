@@ -40,11 +40,8 @@ const memberSchema = Joi.object<Partial<Member>>({
     }),
 
   document: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Documento é obrigatório',
-      'any.required': 'Documento é obrigatório'
-    }),
+    .optional()
+    .allow(null, ''),
 
   spouse: Joi.string()
     .optional()
@@ -64,20 +61,16 @@ const memberSchema = Joi.object<Partial<Member>>({
   cep: Joi.string()
     .length(8)
     .pattern(/^[0-9]+$/)
-    .required()
+    .optional()
+    .allow(null, '')
     .messages({
-      'string.empty': 'CEP é obrigatório',
-      'any.required': 'CEP é obrigatório',
       'string.length': 'CEP deve ter 8 dígitos',
       'string.pattern.base': 'CEP deve conter apenas números'
     }),
 
   neighborhood: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Bairro é obrigatório',
-      'any.required': 'Bairro é obrigatório'
-    }),
+    .optional()
+    .allow(null, ''),
 
   city: Joi.string()
     .required()
@@ -96,11 +89,8 @@ const memberSchema = Joi.object<Partial<Member>>({
     }),
 
   phone: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Telefone é obrigatório',
-      'any.required': 'Telefone é obrigatório'
-    }),
+    .optional()
+    .allow(null, ''),
 
   whatsapp: Joi.string()
     .optional()
@@ -136,6 +126,14 @@ const memberSchema = Joi.object<Partial<Member>>({
       'string.empty': 'Tipo de admissão é obrigatório',
       'any.required': 'Tipo de admissão é obrigatório'
     }),
+
+  father_name: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  mother_name: Joi.string()
+    .optional()
+    .allow(null, ''),
 
   admission_date: Joi.date()
     .required()

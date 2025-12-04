@@ -21,13 +21,19 @@ interface Member {
   occupation: string;
   address: string;
   complement?: string;
-  neighborhood: string;
+  neighborhood?: string;
   city: string;
   state: string;
   cep?: string;
   baptism_date?: string;
   admission?: string;
   admission_date?: string;
+  father_name?: string;
+  mother_name?: string;
+  children?: Array<{
+    name: string;
+    birth?: string;
+  }>;
   role?: { name: string } | null;
   congregation?: { name: string } | null;
   active: boolean;
@@ -58,7 +64,29 @@ function calcularIdade(birth: string): number | null {
 
 function formatarData(data: string): string {
   if (!data) return '-';
+  // Se a data já está em formato DD/MM/AAAA, retornar como está
+  if (data.includes('/')) {
+    return data;
+  }
+  // Se está em formato ISO, converter para DD/MM/AAAA
   return new Date(data).toLocaleDateString('pt-BR');
+}
+
+function converterDataParaISO(data: string): string | null {
+  if (!data) return null;
+  // Se já está em formato ISO (YYYY-MM-DD), retornar como está
+  if (data.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return data;
+  }
+  // Se está em formato DD/MM/AAAA, converter para ISO
+  if (data.includes('/')) {
+    const parts = data.split('/');
+    if (parts.length === 3) {
+      const [day, month, year] = parts;
+      return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+  }
+  return null;
 }
 
 function formatarTelefone(telefone: string): string {
@@ -232,10 +260,39 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                         <p className="text-gray-900">{member.spouse}</p>
                       </div>
                     )}
+                    {member.father_name && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Nome do Pai</span>
+                        <p className="text-gray-900">{member.father_name}</p>
+                      </div>
+                    )}
+                    {member.mother_name && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Nome da Mãe</span>
+                        <p className="text-gray-900">{member.mother_name}</p>
+                      </div>
+                    )}
                     <div>
                       <span className="text-sm font-medium text-gray-500">Profissão</span>
                       <p className="text-gray-900">{member.occupation}</p>
                     </div>
+                    {member.children && member.children.length > 0 && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Filhos</span>
+                        <div className="mt-1">
+                          {member.children.map((child, index) => {
+                            const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
+                            const childAge = birthISO ? calcularIdade(birthISO) : null;
+                            return (
+                              <p key={index} className="text-gray-900">
+                                {child.name}
+                                {childAge !== null && ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -319,7 +376,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                     <p className="text-gray-900">{member.complement}</p>
                   )}
                   <p className="text-gray-900">
-                    {member.neighborhood} - {member.city}/{member.state}
+                    {member.neighborhood && `${member.neighborhood} - `}{member.city}/{member.state}
                   </p>
                   {member.cep && (
                     <p className="text-gray-900">CEP: {member.cep}</p>
