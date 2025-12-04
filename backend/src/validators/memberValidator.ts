@@ -9,7 +9,13 @@ const memberSchema = Joi.object<Partial<Member>>({
       'any.required': 'Nome é obrigatório'
     }),
 
-  birth: Joi.date()
+  birth: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).messages({
+        'string.pattern.base': 'Data de nascimento deve estar no formato YYYY-MM-DD'
+      }),
+      Joi.date()
+    )
     .required()
     .messages({
       'date.base': 'Data de nascimento inválida',
@@ -104,7 +110,13 @@ const memberSchema = Joi.object<Partial<Member>>({
       'string.email': 'Email inválido'
     }),
 
-  baptism_date: Joi.date()
+  baptism_date: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).allow('', null).messages({
+        'string.pattern.base': 'Data de batismo deve estar no formato YYYY-MM-DD'
+      }),
+      Joi.date().allow(null)
+    )
     .optional()
     .allow(null),
 
@@ -135,7 +147,13 @@ const memberSchema = Joi.object<Partial<Member>>({
     .optional()
     .allow(null, ''),
 
-  admission_date: Joi.date()
+  admission_date: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).messages({
+        'string.pattern.base': 'Data de admissão deve estar no formato YYYY-MM-DD'
+      }),
+      Joi.date()
+    )
     .required()
     .messages({
       'date.base': 'Data de admissão inválida',

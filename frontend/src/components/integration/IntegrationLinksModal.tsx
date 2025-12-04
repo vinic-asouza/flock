@@ -12,10 +12,7 @@ import {
   Edit, 
   Link as LinkIcon, 
   Calendar,
-  Users,
-  CheckCircle,
-  XCircle,
-  AlertCircle
+  Users
 } from 'lucide-react';
 import apiService from '@/services/api';
 

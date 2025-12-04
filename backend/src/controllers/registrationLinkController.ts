@@ -157,7 +157,7 @@ export const getRegistrationLink = async (req: AuthRequest, res: Response) => {
  * Cria um novo link de registro público
  */
 export const createRegistrationLink = async (
-  req: AuthRequest<{}, {}, CreateRegistrationLinkData>,
+  req: AuthRequest,
   res: Response
 ) => {
   try {
@@ -343,9 +343,21 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
 
     // Validar dados se fornecidos
     if (req.body.expires_at || req.body.max_uses !== undefined) {
-      const updateData: Partial<CreateRegistrationLinkData> = {
-        expires_at: req.body.expires_at || existingLink.expires_at,
-        max_uses: req.body.max_uses !== undefined ? req.body.max_uses : existingLink.max_uses
+      // Converter expires_at para string ISO se necessário
+      const expiresAtString = req.body.expires_at 
+        ? req.body.expires_at 
+        : (existingLink.expires_at instanceof Date 
+          ? existingLink.expires_at.toISOString() 
+          : typeof existingLink.expires_at === 'string'
+          ? existingLink.expires_at
+          : new Date(existingLink.expires_at).toISOString());
+
+      const updateData: CreateRegistrationLinkData = {
+        expires_at: expiresAtString,
+        max_uses: req.body.max_uses !== undefined ? req.body.max_uses : existingLink.max_uses,
+        default_congregation_id: req.body.default_congregation_id ?? existingLink.default_congregation_id ?? null,
+        default_role_id: req.body.default_role_id ?? existingLink.default_role_id ?? null,
+        notes: req.body.notes ?? existingLink.notes ?? null
       };
 
       const { error: validationError } = validateRegistrationLink(updateData);

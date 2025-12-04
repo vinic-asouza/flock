@@ -3,6 +3,7 @@ import supabase from '../services/supabase';
 import { AuthRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { logAudit } from '../utils/auditLogger';
+import { normalizeMemberDates } from '../utils/dateNormalizer';
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -424,13 +425,16 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Normalizar datas antes de criar o membro (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(req.body);
+
     const memberData: Partial<Member> = {
-      ...req.body,
+      ...normalizedData,
       church_id: church.id,
       active: true,
       // Garantir que children seja um array JSON válido
-      children: req.body.children && Array.isArray(req.body.children) 
-        ? req.body.children 
+      children: normalizedData.children && Array.isArray(normalizedData.children) 
+        ? normalizedData.children 
         : []
     };
 
@@ -518,12 +522,15 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Normalizar datas antes de atualizar o membro (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(req.body);
+
     // Atualiza o membro (children já vem no body como JSONB)
     const updateData = {
-      ...req.body,
+      ...normalizedData,
       // Garantir que children seja um array JSON válido
-      children: req.body.children !== undefined 
-        ? (Array.isArray(req.body.children) ? req.body.children : [])
+      children: normalizedData.children !== undefined 
+        ? (Array.isArray(normalizedData.children) ? normalizedData.children : [])
         : undefined
     };
 
@@ -675,12 +682,15 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Processa cada membro para adicionar o church_id e garantir que active seja true
-    const membersWithChurchId = members.map(member => ({
-      ...member,
-      church_id: church.id,
-      active: true
-    }));
+    // Processa cada membro para adicionar o church_id, normalizar datas e garantir que active seja true
+    const membersWithChurchId = members.map(member => {
+      const normalized = normalizeMemberDates(member);
+      return {
+        ...normalized,
+        church_id: church.id,
+        active: true
+      };
+    });
 
     // Insere os membros em lote
     const { data, error: insertError } = await supabase
@@ -877,27 +887,27 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    // Análise de batismos por período (membros com admission = "Batismo")
+    // Análise de batismos por período (membros com admission = "Batismo" ou "Batismo Infantil")
     const baptismByYear = allMembers.reduce((acc, member) => {
-      if (member.admission === 'Batismo' && member.admission_date) {
+      if ((member.admission === 'Batismo' || member.admission === 'Batismo Infantil') && member.admission_date) {
         const year = new Date(member.admission_date).getFullYear();
         acc[year] = (acc[year] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
 
-    // Análise de admissões por período (membros com admission diferente de "Batismo")
+    // Análise de admissões por período (membros com admission diferente de "Batismo" e "Batismo Infantil")
     const admissionByYear = allMembers.reduce((acc, member) => {
-      if (member.admission && member.admission !== 'Batismo' && member.admission_date) {
+      if (member.admission && member.admission !== 'Batismo' && member.admission !== 'Batismo Infantil' && member.admission_date) {
         const year = new Date(member.admission_date).getFullYear();
         acc[year] = (acc[year] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
 
-    // Análise de batismos por mês (membros com admission = "Batismo")
+    // Análise de batismos por mês (membros com admission = "Batismo" ou "Batismo Infantil")
     const baptismByMonth = allMembers.reduce((acc, member) => {
-      if (member.admission === 'Batismo' && member.admission_date) {
+      if ((member.admission === 'Batismo' || member.admission === 'Batismo Infantil') && member.admission_date) {
         const date = new Date(member.admission_date);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -907,9 +917,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       return acc;
     }, {} as Record<string, number>);
 
-    // Análise de admissões por mês (membros com admission diferente de "Batismo")
+    // Análise de admissões por mês (membros com admission diferente de "Batismo" e "Batismo Infantil")
     const admissionByMonth = allMembers.reduce((acc, member) => {
-      if (member.admission && member.admission !== 'Batismo' && member.admission_date) {
+      if (member.admission && member.admission !== 'Batismo' && member.admission !== 'Batismo Infantil' && member.admission_date) {
         const date = new Date(member.admission_date);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -985,7 +995,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const recentBaptisms = allMembers.filter(member => {
-      if (member.admission !== 'Batismo' || !member.admission_date) return false;
+      if ((member.admission !== 'Batismo' && member.admission !== 'Batismo Infantil') || !member.admission_date) return false;
       return new Date(member.admission_date) >= thirtyDaysAgo;
     }).length;
 

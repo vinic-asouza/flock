@@ -37,8 +37,8 @@ export function TimelineCharts({
 
   // Função para determinar tipo de entrada do membro
   const getMemberEntryType = (member: Member) => {
-    // Se o tipo de admissão é "Batismo", considera batismo
-    if (member.admission === 'Batismo') {
+    // Se o tipo de admissão é "Batismo" ou "Batismo Infantil", considera batismo
+    if (member.admission === 'Batismo' || member.admission === 'Batismo Infantil') {
       return 'baptism';
     }
     

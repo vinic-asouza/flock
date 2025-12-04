@@ -65,8 +65,7 @@ const formatPhone = (value: string): string => {
 export function PublicIntegrationForm({ 
   onSubmit, 
   onCancel, 
-  isLoading = false,
-  churchName
+  isLoading = false
 }: PublicIntegrationFormProps) {
   const { congregations, loading: loadingFilters } = useFiltersData();
 

@@ -150,7 +150,7 @@ export const getIntegrationLink = async (req: AuthRequest, res: Response) => {
  * Cria um novo link de integração pública
  */
 export const createIntegrationLink = async (
-  req: AuthRequest<{}, {}, CreateIntegrationLinkData>,
+  req: AuthRequest,
   res: Response
 ) => {
   try {

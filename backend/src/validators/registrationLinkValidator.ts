@@ -72,7 +72,7 @@ const registrationLinkSchema = Joi.object<CreateRegistrationLinkData>({
     })
 });
 
-export const validateRegistrationLink = (data: CreateRegistrationLinkData) => {
+export const validateRegistrationLink = (data: Partial<CreateRegistrationLinkData> | CreateRegistrationLinkData) => {
   return registrationLinkSchema.validate(data, { abortEarly: false });
 };
 

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import supabase from '../services/supabase';
 import { PublicRegistrationRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
+import { normalizeMemberDates } from '../utils/dateNormalizer';
 
 /**
  * Valida um link de registro público (sem criar membro)
@@ -71,18 +72,25 @@ export const createMemberViaPublicLink = async (
       });
     }
 
+    // Normalizar datas antes de criar o membro (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(req.body);
+
     // Preparar dados do membro
+    // Converter null para undefined para compatibilidade com o tipo Member
+    const congregationId = (normalizedData.congregation_id as string | null | undefined) || registrationLink.default_congregation_id;
+    const roleId = (normalizedData.role_id as string | null | undefined) || registrationLink.default_role_id;
+
     const memberData: Partial<Member> = {
-      ...req.body,
+      ...normalizedData,
       church_id: churchId,
       active: true,
       // Usar congregação padrão do link se não foi especificada
-      congregation_id: req.body.congregation_id || registrationLink.default_congregation_id || null,
+      congregation_id: congregationId ?? undefined,
       // Usar função padrão do link se não foi especificada
-      role_id: req.body.role_id || registrationLink.default_role_id || null,
+      role_id: roleId ?? undefined,
       // Garantir que children seja um array JSON válido
-      children: req.body.children && Array.isArray(req.body.children) 
-        ? req.body.children 
+      children: normalizedData.children && Array.isArray(normalizedData.children) 
+        ? normalizedData.children 
         : []
     };
 

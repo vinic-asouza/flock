@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { PublicMemberForm } from '@/components/public/PublicMemberForm';
 import { Loader, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -10,7 +10,6 @@ import apiService from '@/services/api';
 
 export default function PublicRegisterPage() {
   const params = useParams();
-  const router = useRouter();
   const token = params.token as string;
 
   const [isValidating, setIsValidating] = useState(true);
@@ -59,7 +58,7 @@ export default function PublicRegisterPage() {
       setError(null);
       setErrorType(null);
       
-      const response = await apiService.createMemberViaPublicLink(token, data);
+      await apiService.createMemberViaPublicLink(token, data);
       
       setSuccess(true);
       
