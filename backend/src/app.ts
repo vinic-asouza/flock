@@ -18,6 +18,8 @@ import authCallbackRoutes from './routes/authCallback';
 import exportRoutes from './routes/export';
 import integrationRoutes from './routes/integration';
 import waitlistRoutes from './routes/waitlist';
+import publicRoutes from './routes/public';
+import registrationLinksRoutes from './routes/registrationLinks';
 
 dotenv.config();
 
@@ -92,6 +94,8 @@ app.use('/api/auth', authCallbackRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/integration', integrationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/registration-links', registrationLinksRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

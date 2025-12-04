@@ -112,4 +112,33 @@ export interface ChurchRegistrationData {
   cnpj: string;
   email_church?: string;
   phone_church?: string;
+}
+
+export interface PublicRegistrationLink {
+  id: string;
+  church_id: string;
+  token: string;
+  expires_at: Date;
+  max_uses?: number | null;
+  current_uses: number;
+  is_active: boolean;
+  created_by?: string;
+  created_at: Date;
+  updated_at: Date;
+  default_congregation_id?: string | null;
+  default_role_id?: string | null;
+  notes?: string | null;
+}
+
+export interface CreateRegistrationLinkData {
+  expires_at: string; // ISO date string
+  max_uses?: number | null;
+  default_congregation_id?: string | null;
+  default_role_id?: string | null;
+  notes?: string | null;
+}
+
+export interface PublicRegistrationRequest extends Request {
+  registrationLink?: PublicRegistrationLink;
+  churchId?: string;
 } 

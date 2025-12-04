@@ -18,7 +18,8 @@ import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { MemberImportModal } from '@/components/members/MemberImportModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Upload, Link as LinkIcon } from 'lucide-react';
+import { RegistrationLinksModal } from '@/components/members/RegistrationLinksModal';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useViewMode } from '@/hooks/useViewMode';
 import { apiService } from '@/services/api';
@@ -91,6 +92,7 @@ function MembersPageContent() {
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [registrationLinksModalOpen, setRegistrationLinksModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
 
@@ -408,6 +410,14 @@ function MembersPageContent() {
         <div className="flex items-center gap-3">
           <Button
             variant="secondary"
+            onClick={() => setRegistrationLinksModalOpen(true)}
+            className="inline-flex items-center gap-2"
+          >
+            <LinkIcon size={18} />
+            Links de Autocadastro
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => setImportModalOpen(true)}
             className="inline-flex items-center gap-2"
           >
@@ -526,6 +536,11 @@ function MembersPageContent() {
           // Recarregar lista de membros após importação
           loadMembers(filters, sorting, 1);
         }}
+      />
+
+      <RegistrationLinksModal
+        isOpen={registrationLinksModalOpen}
+        onClose={() => setRegistrationLinksModalOpen(false)}
       />
     </div>
   );

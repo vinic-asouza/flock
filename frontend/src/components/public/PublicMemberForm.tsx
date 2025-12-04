@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { X } from 'lucide-react';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
-import { useAuth } from '@/context/AuthContext';
 
-// Schema de validação
+// Schema de validação (idêntico ao MemberForm)
 const memberSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
@@ -27,34 +27,23 @@ const memberSchema = z.object({
     .optional()
     .or(z.literal(''))
     .refine((cpf) => {
-      if (!cpf || cpf.trim() === '') return true; // CPF é opcional agora
-      // Remove caracteres não numéricos
+      if (!cpf || cpf.trim() === '') return true;
       const cleanCpf = cpf.replace(/\D/g, '');
-      
-      // Verifica se tem 11 dígitos
       if (cleanCpf.length !== 11) return false;
-      
-      // Verifica se todos os dígitos são iguais (CPF inválido)
       if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-      
-      // Validação do primeiro dígito verificador
       let sum = 0;
       for (let i = 0; i < 9; i++) {
         sum += parseInt(cleanCpf[i]) * (10 - i);
       }
       let remainder = sum % 11;
       const firstDigit = remainder < 2 ? 0 : 11 - remainder;
-      
       if (parseInt(cleanCpf[9]) !== firstDigit) return false;
-      
-      // Validação do segundo dígito verificador
       sum = 0;
       for (let i = 0; i < 10; i++) {
         sum += parseInt(cleanCpf[i]) * (11 - i);
       }
       remainder = sum % 11;
       const secondDigit = remainder < 2 ? 0 : 11 - remainder;
-      
       return parseInt(cleanCpf[10]) === secondDigit;
     }, 'CPF inválido'),
   spouse: z.string().optional().or(z.literal('')),
@@ -83,65 +72,18 @@ const memberSchema = z.object({
 type MemberFormData = z.infer<typeof memberSchema>;
 
 interface Child {
-  id?: string;
   name: string;
   birth?: string;
 }
 
-interface Member {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  whatsapp?: string;
-  birth: string;
-  gender: string;
-  marital_status: string;
-  nationality: string;
-  document?: string;
-  spouse?: string;
-  occupation: string;
-  address: string;
-  complement?: string;
-  neighborhood?: string;
-  city: string;
-  state: string;
-  cep?: string;
-  baptism_date?: string;
-  admission?: string;
-  admission_date?: string;
-  role_id?: string;
-  congregation_id?: string;
-  father_name?: string;
-  mother_name?: string;
-  children?: Child[];
-  active: boolean;
-  // Campos retornados pela API com detalhes completos
-  role?: {
-    id: string;
-    name: string;
-    description?: string;
-  } | null;
-  congregation?: {
-    id: string;
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-    leader?: string;
-    phone?: string;
-  } | null;
-}
-
-interface MemberFormProps {
-  member?: Member | null;
+interface PublicMemberFormProps {
   onSubmit: (data: MemberFormData) => Promise<void>;
-  onCancel: () => void;
+  onCancel?: () => void;
   isLoading?: boolean;
-  mode: 'create' | 'edit';
+  churchName?: string;
 }
 
-// Função para formatar telefone
+// Funções auxiliares (idênticas ao MemberForm)
 const formatPhone = (value: string): string => {
   const numbers = value.replace(/\D/g, '');
   if (numbers.length <= 10) {
@@ -151,13 +93,11 @@ const formatPhone = (value: string): string => {
   }
 };
 
-// Função para formatar CEP
 const formatCEP = (value: string): string => {
   const numbers = value.replace(/\D/g, '');
   return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
 };
 
-// Função para formatar CPF
 const formatCPF = (value: string): string => {
   const numbers = value.replace(/\D/g, '');
   if (numbers.length <= 3) {
@@ -171,25 +111,6 @@ const formatCPF = (value: string): string => {
   }
 };
 
-// Função para formatar data (não utilizada atualmente)
-// const formatDate = (value: string): string => {
-//   const numbers = value.replace(/\D/g, '');
-//   return numbers.replace(/(\d{2})(\d{2})(\d{4})/, '$1/$2/$3');
-// };
-
-// Função para converter data ISO para DD/MM/AAAA
-const formatDateFromISO = (isoDate: string | null | undefined): string => {
-  if (!isoDate) return '';
-  try {
-    const date = new Date(isoDate);
-    if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('pt-BR');
-  } catch {
-    return '';
-  }
-};
-
-// Função para converter DD/MM/AAAA para ISO
 const formatDateToISO = (formattedDate: string): string | null => {
   if (!formattedDate) return null;
   const parts = formattedDate.split('/');
@@ -198,7 +119,6 @@ const formatDateToISO = (formattedDate: string): string | null => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 };
 
-// Função para calcular idade
 const calcularIdade = (birth: string): number | null => {
   if (!birth) return null;
   const birthDate = new Date(birth);
@@ -212,8 +132,12 @@ const calcularIdade = (birth: string): number | null => {
   return age;
 };
 
-export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode }: MemberFormProps) {
-  const { user } = useAuth();
+export function PublicMemberForm({ 
+  onSubmit, 
+  onCancel, 
+  isLoading = false,
+  churchName
+}: PublicMemberFormProps) {
   const { roles, congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
   const { professions, loading: professionsLoading } = useProfessions();
@@ -230,7 +154,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [children, setChildren] = useState<Child[]>([]);
   const [childrenBirthDisplays, setChildrenBirthDisplays] = useState<Record<number, string>>({});
   const [isInfantMember, setIsInfantMember] = useState(false);
-  const prevMemberRef = useRef<Member | null>(null);
 
   const {
     register,
@@ -241,12 +164,10 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     reset,
   } = useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
-    defaultValues: mode === 'create' ? {
+    defaultValues: {
       active: true,
       gender: 'Masculino',
       marital_status: 'Solteiro',
-    } : {
-      // Para modo edit, deixar vazio e usar reset
     },
   });
 
@@ -257,96 +178,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const occupationOtherValue = watch('occupation_other');
   const selectedMaritalStatus = watch('marital_status');
 
-  // Preencher formulário quando member mudar
-  useEffect(() => {
-    if (!member) {
-      prevMemberRef.current = null;
-      return;
-    }
-
-    if (prevMemberRef.current && prevMemberRef.current.id === member.id) {
-      return;
-    }
-
-    prevMemberRef.current = member;
-
-    setValue('name', member.name);
-    setValue('email', member.email || '');
-    setValue('phone', member.phone || '');
-    setValue('whatsapp', member.whatsapp || '');
-    setValue('birth', formatDateFromISO(member.birth));
-    setValue('gender', member.gender as 'Masculino' | 'Feminino');
-    setValue('marital_status', member.marital_status as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro');
-
-    const nationality = member.nationality || '';
-    if (nationality === 'Brasileiro(a)' || nationality === '') {
-      setValue('nationality', nationality);
-      setValue('nationality_other', '');
-    } else {
-      setValue('nationality', 'Outra');
-      setValue('nationality_other', nationality);
-    }
-
-    setValue('document', member.document || '');
-    setValue('spouse', member.spouse || '');
-
-    const occupation = member.occupation || '';
-    const isStandardOccupation = professions.some(p => p.name === occupation);
-    if (isStandardOccupation || occupation === '') {
-      setValue('occupation', occupation);
-      setValue('occupation_other', '');
-    } else {
-      setValue('occupation', 'Outra');
-      setValue('occupation_other', occupation);
-    }
-
-    setValue('address', member.address || '');
-    setValue('complement', member.complement || '');
-    setValue('neighborhood', member.neighborhood || '');
-    setValue('city', member.city || '');
-    setValue('state', member.state || '');
-    setValue('cep', member.cep ? member.cep.replace(/\D/g, '') : '');
-    setValue('baptism_date', formatDateFromISO(member.baptism_date));
-    setValue('admission', member.admission || '');
-    setValue('admission_date', formatDateFromISO(member.admission_date));
-    
-    // Determinar se é membro infantil baseado no tipo de recebimento
-    const admissionType = member.admission || '';
-    const isInfant = admissionType === 'Batismo Infantil' || admissionType === 'Apresentação (sem batismo)' || 
-                     admissionType === 'Batismo não professo (Criança)' || admissionType === 'Apresentação (Criança)';
-    setIsInfantMember(isInfant);
-    
-    setValue('father_name', member.father_name || '');
-    setValue('mother_name', member.mother_name || '');
-    setValue('active', member.active);
-    
-    // Carregar filhos se existirem
-    if (member.children && member.children.length > 0) {
-      // Converter datas dos filhos de ISO para formato DD/MM/AAAA se necessário
-      const childrenWithFormattedDates = member.children.map(child => ({
-        ...child,
-        birth: child.birth ? (child.birth.includes('/') ? child.birth : formatDateFromISO(child.birth)) : undefined
-      }));
-      setChildren(childrenWithFormattedDates);
-      // Inicializar displays de data de nascimento dos filhos
-      const displays: Record<number, string> = {};
-      childrenWithFormattedDates.forEach((child, index) => {
-        if (child.birth) {
-          displays[index] = child.birth.includes('/') ? child.birth : formatDateFromISO(child.birth);
-        }
-      });
-      setChildrenBirthDisplays(displays);
-    } else {
-      setChildren([]);
-      setChildrenBirthDisplays({});
-    }
-
-    const roleId = member.role?.id || member.role_id || '';
-    const congregationId = member.congregation?.id || member.congregation_id || '';
-    setValue('role_id', roleId);
-    setValue('congregation_id', congregationId);
-  }, [member, professions, setValue]);
-
   // Carregar cidades quando estado mudar
   useEffect(() => {
     if (selectedState) {
@@ -356,16 +187,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       }
     }
   }, [selectedState, states, fetchCities]);
-
-  // Carregar cidades quando member for carregado (modo edit ou prefill em create)
-  useEffect(() => {
-    if (member && member.state && states.length > 0) {
-      const state = states.find(s => s.sigla === member.state);
-      if (state) {
-        fetchCities(state.id.toString());
-      }
-    }
-  }, [member, states, fetchCities]);
 
   // Limpar erro de nacionalidade quando usuário digitar
   useEffect(() => {
@@ -380,19 +201,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setOccupationOtherError('');
     }
   }, [occupationOtherValue, occupationOtherError]);
-
-  // Inicializar displays formatados
-  useEffect(() => {
-    if (member) {
-      if (member.phone) setPhoneDisplay(formatPhone(member.phone));
-      if (member.whatsapp) setWhatsappDisplay(formatPhone(member.whatsapp));
-      if (member.cep) setCepDisplay(formatCEP(member.cep));
-      if (member.document) setCpfDisplay(formatCPF(member.document));
-      if (member.birth) setBirthDisplay(formatDateFromISO(member.birth));
-      if (member.baptism_date) setBaptismDateDisplay(formatDateFromISO(member.baptism_date));
-      if (member.admission_date) setAdmissionDateDisplay(formatDateFromISO(member.admission_date));
-    }
-  }, [member]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
     const value = e.target.value;
@@ -425,7 +233,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     const value = e.target.value;
     const numbers = value.replace(/\D/g, '');
 
-    // Aplicar máscara DD/MM/AAAA
     let formatted = '';
     if (numbers.length <= 2) {
       formatted = numbers;
@@ -435,7 +242,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       formatted = `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
     }
 
-    // Atualizar display e valor do formulário
     if (field === 'birth') {
       setBirthDisplay(formatted);
       setValue('birth', formatted);
@@ -450,7 +256,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
   const handleFormSubmit = async (data: MemberFormData) => {
     try {
-      // Validar nacionalidade: se "Outra" for selecionada, nationality_other deve estar preenchido
       if (data.nationality === 'Outra' && (!data.nationality_other || data.nationality_other.trim() === '')) {
         setNationalityOtherError('Por favor, especifique a nacionalidade');
         return;
@@ -458,7 +263,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         setNationalityOtherError('');
       }
 
-      // Validar profissão: se "Outra" for selecionada, occupation_other deve estar preenchido
       if (data.occupation === 'Outra' && (!data.occupation_other || data.occupation_other.trim() === '')) {
         setOccupationOtherError('Por favor, especifique a profissão');
         return;
@@ -466,8 +270,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         setOccupationOtherError('');
       }
 
-      // Converter datas para formato ISO antes de enviar
-      // Converter datas dos filhos também
       const childrenWithISO = children.map(child => ({
         name: child.name,
         birth: child.birth ? formatDateToISO(child.birth) || undefined : undefined,
@@ -478,42 +280,31 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         birth: formatDateToISO(data.birth) || '',
         baptism_date: data.baptism_date ? formatDateToISO(data.baptism_date) || undefined : undefined,
         admission_date: formatDateToISO(data.admission_date) || '',
-        // Tratar nacionalidade: se for "Outra", usar o valor do campo nationality_other; senão usar o valor selecionado
         nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
-        // Tratar profissão: se for "Outra", usar o valor do campo occupation_other; senão usar o valor selecionado
         occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
-        // Remover campos auxiliares do payload
         nationality_other: undefined,
         occupation_other: undefined,
-        // Tratar campos UUID opcionais - enviar null quando vazio
         role_id: data.role_id || null,
         congregation_id: data.congregation_id || null,
-        // Incluir filhos
         children: childrenWithISO,
       };
 
       await onSubmit(memberData);
 
-      // Limpar displays formatados e resetar formulário apenas após sucesso
-      // Só limpar se estiver no modo de criação
-      if (mode === 'create') {
-        setPhoneDisplay('');
-        setWhatsappDisplay('');
-        setCepDisplay('');
-        setCpfDisplay('');
-        setBirthDisplay('');
-        setBaptismDateDisplay('');
-        setAdmissionDateDisplay('');
-        setNationalityOtherError('');
-        setOccupationOtherError('');
-        setChildren([]);
-        setChildrenBirthDisplays({});
-        reset();
-      }
+      // Limpar formulário após sucesso
+      setPhoneDisplay('');
+      setWhatsappDisplay('');
+      setCepDisplay('');
+      setCpfDisplay('');
+      setBirthDisplay('');
+      setBaptismDateDisplay('');
+      setAdmissionDateDisplay('');
+      setNationalityOtherError('');
+      setOccupationOtherError('');
+      setChildren([]);
+      setChildrenBirthDisplays({});
+      reset();
     } catch (error) {
-      // Em caso de erro, não limpar o formulário
-      // O erro será tratado pelo componente pai
-      // Re-lançar o erro para que o componente pai possa tratá-lo
       throw error;
     }
   };
@@ -528,7 +319,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Nome Completo *"
+            label="Nome Completo"
             placeholder="Digite o nome completo"
             error={errors.name?.message}
             isLoading={isLoading}
@@ -536,7 +327,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Email"
+            label="Email (opcional)"
             type="email"
             placeholder="email@exemplo.com"
             error={errors.email?.message}
@@ -545,7 +336,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Telefone"
+            label="Telefone (opcional)"
             placeholder="(11) 99999-9999"
             value={phoneDisplay}
             onChange={(e) => handlePhoneChange(e, 'phone')}
@@ -555,7 +346,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="WhatsApp"
+            label="WhatsApp (opcional)"
             placeholder="(11) 99999-9999"
             value={whatsappDisplay}
             onChange={(e) => handlePhoneChange(e, 'whatsapp')}
@@ -564,7 +355,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Data de Nascimento *"
+            label="Data de Nascimento"
             placeholder="DD/MM/AAAA"
             value={birthDisplay}
             onChange={(e) => handleDateChange(e, 'birth')}
@@ -574,7 +365,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Gênero *"
+            label="Gênero"
             value={watch('gender') || ''}
             onChange={(value) => setValue('gender', value as 'Masculino' | 'Feminino')}
             options={[
@@ -586,7 +377,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Estado Civil *"
+            label="Estado Civil"
             value={watch('marital_status') || ''}
             onChange={(value) => setValue('marital_status', value as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro')}
             options={[
@@ -601,7 +392,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Nacionalidade *"
+            label="Nacionalidade"
             value={watch('nationality') || ''}
             onChange={(value) => setValue('nationality', value)}
             options={[
@@ -616,7 +407,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           {selectedNationality === 'Outra' && (
             <Input
-              label="Especifique a nacionalidade *"
+              label="Especifique a nacionalidade"
               placeholder="Digite a nacionalidade"
               error={nationalityOtherError}
               isLoading={isLoading}
@@ -625,7 +416,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           )}
 
           <Select
-            label="Profissão"
+            label="Profissão (opcional)"
             value={selectedOccupation || ''}
             onChange={(value) => setValue('occupation', value)}
             options={[
@@ -643,7 +434,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           {selectedOccupation === 'Outra' && (
             <Input
-              label="Especifique a profissão *"
+              label="Especifique a profissão"
               placeholder="Digite a profissão"
               error={occupationOtherError}
               isLoading={isLoading}
@@ -652,7 +443,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           )}
 
           <Input
-            label="CPF"
+            label="CPF (opcional)"
             placeholder="000.000.000-00"
             value={cpfDisplay}
             onChange={handleCPFChange}
@@ -663,7 +454,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           {selectedMaritalStatus === 'Casado' && (
             <Input
-              label="Cônjuge"
+              label="Cônjuge (opcional)"
               placeholder="Nome do cônjuge"
               error={errors.spouse?.message}
               isLoading={isLoading}
@@ -672,7 +463,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           )}
 
           <Input
-            label="Nome do Pai"
+            label="Nome do Pai (opcional)"
             placeholder="Nome completo do pai"
             error={errors.father_name?.message}
             isLoading={isLoading}
@@ -680,7 +471,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Nome da Mãe"
+            label="Nome da Mãe (opcional)"
             placeholder="Nome completo da mãe"
             error={errors.mother_name?.message}
             isLoading={isLoading}
@@ -697,12 +488,11 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           </h3>
           <Button
             type="button"
-            variant="secondary"
+            variant="primary"
             size="sm"
             onClick={() => {
               const newChild: Child = { name: '', birth: '' };
               setChildren([...children, newChild]);
-              // Não precisa inicializar o display da data, será vazio por padrão
             }}
             disabled={isLoading}
           >
@@ -727,10 +517,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                         const newChildren = children.filter((_, i) => i !== index);
                         setChildren(newChildren);
                         setValue('children', newChildren);
-                        // Remover o display da data do filho removido
                         const newDisplays = { ...childrenBirthDisplays };
                         delete newDisplays[index];
-                        // Reindexar os displays restantes
                         const reindexedDisplays: Record<number, string> = {};
                         Object.keys(newDisplays).forEach((key) => {
                           const oldIndex = parseInt(key);
@@ -743,7 +531,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                         setChildrenBirthDisplays(reindexedDisplays);
                       }}
                       disabled={isLoading}
+                      className="flex items-center gap-1"
                     >
+                      <X size={16} />
                       Remover
                     </Button>
                   </div>
@@ -768,8 +558,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                         onChange={(e) => {
                           const value = e.target.value;
                           const numbers = value.replace(/\D/g, '');
-
-                          // Aplicar máscara DD/MM/AAAA
                           let formatted = '';
                           if (numbers.length <= 2) {
                             formatted = numbers;
@@ -778,8 +566,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                           } else {
                             formatted = `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
                           }
-
-                          // Atualizar display e valor do formulário
                           setChildrenBirthDisplays(prev => ({ ...prev, [index]: formatted }));
                           const newChildren = [...children];
                           newChildren[index] = { ...child, birth: formatted };
@@ -815,7 +601,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Endereço *"
+            label="Endereço"
             placeholder="Rua das Flores, 123"
             error={errors.address?.message}
             isLoading={isLoading}
@@ -823,7 +609,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Complemento"
+            label="Complemento (opcional)"
             placeholder="Apartamento, bloco, etc."
             error={errors.complement?.message}
             isLoading={isLoading}
@@ -831,7 +617,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="Bairro"
+            label="Bairro (opcional)"
             placeholder="Centro"
             error={errors.neighborhood?.message}
             isLoading={isLoading}
@@ -839,7 +625,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Estado *"
+            label="Estado"
             value={watch('state') || ''}
             onChange={(value) => setValue('state', value)}
             options={[
@@ -855,7 +641,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Cidade *"
+            label="Cidade"
             value={watch('city') || ''}
             onChange={(value) => setValue('city', value)}
             options={[
@@ -878,7 +664,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Input
-            label="CEP"
+            label="CEP (opcional)"
             placeholder="12345-678"
             value={cepDisplay}
             onChange={handleCEPChange}
@@ -902,13 +688,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           </p>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
             <li>
-              Para membros que se batizaram em nossa igreja, a <strong>Data de Batismo</strong> e <strong>Data de Recebimento</strong> devem ser iguais.
+              Se você se batizou na <strong>{churchName || 'igreja'}</strong>, a <strong>Data de Batismo</strong> e <strong>Data de Recebimento</strong> devem ser iguais.
             </li>
             <li>
-              Para membros que se batizaram em outra igreja, insira a data em que ele(a) se batizou em <strong>Data de Batismo</strong>, e insira a data que ele(a) foi recebido em nossa igreja em <strong>Data de Recebimento</strong>.
+              Se você se batizou em outra igreja, insira a data em que você se batizou em <strong>Data de Batismo</strong>, e insira a data que você foi recebido na {churchName || 'igreja'} em <strong>Data de Recebimento</strong>.
             </li>
             <li>
-              Se não souber a data de batismo exata pode ser uma data aproximada, ou deixe em branco.
+              Se não souber as datas exatas pode ser a data aproximada!
             </li>
             <li>
               Para crianças, selecione a opção abaixo e informe se já foi batizado(a) ou apenas apresentado(a) na igreja.
@@ -932,13 +718,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               }}
             />
             <label htmlFor="isInfantMember" className="text-sm font-medium text-gray-700">
-              Membro Infantil (Criança / Sem Profissão de Fé)
+                Membro Infantil (Criança / Sem Profissão de Fé)
             </label>
           </div>
 
           {/* Segunda linha: Tipo de Recebimento */}
           <Select
-            label="Tipo de Recebimento *"
+            label="Tipo de Recebimento"
             value={watch('admission') || ''}
             onChange={(value) => setValue('admission', value)}
             options={isInfantMember ? [
@@ -960,7 +746,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           {/* Terceira linha: Data de Batismo e Data de Recebimento */}
           {watch('admission') !== 'Apresentação (sem batismo)' && (
             <Input
-              label="Data de Batismo"
+              label="Data de Batismo (opcional)"
               placeholder="DD/MM/AAAA"
               value={baptismDateDisplay}
               onChange={(e) => handleDateChange(e, 'baptism_date')}
@@ -970,7 +756,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           )}
 
           <Input
-            label="Data de Recebimento *"
+            label="Data de Recebimento"
             placeholder="DD/MM/AAAA"
             value={admissionDateDisplay}
             onChange={(e) => handleDateChange(e, 'admission_date')}
@@ -982,12 +768,12 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           {/* Quarta linha: Informação e campos de Função e Congregação */}
           <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800">
-              Abaixo informe se você faz parte da igreja sede <strong>{user?.name || 'igreja'}</strong>, ou de alguma congregação/filial, informe também se você possui algum cargo ou faz parte de um ministério específico.
+              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma congregação/filial, informe também se você possui algum cargo ou faz parte de um ministério específico.
             </p>
           </div>
 
           <Select
-            label="Cargo ou Ministério"
+            label="Cargo ou Ministério (opcional)"
             value={watch('role_id') || ''}
             onChange={(value) => setValue('role_id', value)}
             options={[
@@ -1001,11 +787,11 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Congregação"
+            label="Congregação (opcional)"
             value={watch('congregation_id') || ''}
             onChange={(value) => setValue('congregation_id', value)}
             options={[
-              { value: '', label: 'Nenhuma' },
+              { value: '', label: 'Sede' },
               ...congregations.map((congregation) => ({
                 value: congregation.id,
                 label: congregation.name
@@ -1019,21 +805,24 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
       {/* Botões */}
       <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
-          Cancelar
-        </Button>
+        {onCancel && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancelar
+          </Button>
+        )}
         <Button
           type="submit"
           isLoading={isLoading}
         >
-          {mode === 'create' ? 'Criar Membro' : 'Salvar Alterações'}
+          Enviar Cadastro
         </Button>
       </div>
     </form>
   );
-} 
+}
+

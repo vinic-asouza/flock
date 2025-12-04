@@ -583,6 +583,65 @@ class ApiService {
     });
     return response.data;
   }
+
+  // ========== Links de Registro Público ==========
+
+  // Validar link de registro público
+  async validateRegistrationLink(token: string) {
+    const response = await this.api.get(`/public/registration/${token}`);
+    return response.data;
+  }
+
+  // Criar membro via link público
+  async createMemberViaPublicLink(token: string, data: { name: string; [key: string]: unknown }) {
+    const response = await this.api.post(`/public/registration/${token}`, data);
+    return response.data;
+  }
+
+  // ========== Gerenciamento de Links de Registro (Admin) ==========
+
+  // Listar links de registro
+  async listRegistrationLinks() {
+    const response = await this.api.get('/registration-links');
+    return response.data;
+  }
+
+  // Buscar link específico
+  async getRegistrationLink(id: string) {
+    const response = await this.api.get(`/registration-links/${id}`);
+    return response.data;
+  }
+
+  // Criar novo link de registro
+  async createRegistrationLink(data: {
+    expires_at: string;
+    max_uses?: number | null;
+    default_congregation_id?: string | null;
+    default_role_id?: string | null;
+    notes?: string | null;
+  }) {
+    const response = await this.api.post('/registration-links', data);
+    return response.data;
+  }
+
+  // Atualizar link de registro
+  async updateRegistrationLink(id: string, data: {
+    expires_at?: string;
+    max_uses?: number | null;
+    is_active?: boolean;
+    default_congregation_id?: string | null;
+    default_role_id?: string | null;
+    notes?: string | null;
+  }) {
+    const response = await this.api.put(`/registration-links/${id}`, data);
+    return response.data;
+  }
+
+  // Desativar link de registro
+  async deleteRegistrationLink(id: string) {
+    const response = await this.api.delete(`/registration-links/${id}`);
+    return response.data;
+  }
 }
 
 // Instância singleton

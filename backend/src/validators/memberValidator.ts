@@ -150,6 +150,16 @@ const memberSchema = Joi.object<Partial<Member>>({
       'string.guid': 'ID da congregação inválido'
     }),
 
+  children: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        birth: Joi.string().optional().allow(null, '')
+      })
+    )
+    .optional()
+    .allow(null),
+
   active: Joi.boolean()
     .default(true)
 });
