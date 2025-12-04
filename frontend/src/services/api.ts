@@ -642,6 +642,61 @@ class ApiService {
     const response = await this.api.delete(`/registration-links/${id}`);
     return response.data;
   }
+
+  // ========== Links de Integração Pública ==========
+
+  // Validar link de integração pública
+  async validateIntegrationLink(token: string) {
+    const response = await this.api.get(`/public/integration/${token}`);
+    return response.data;
+  }
+
+  // Criar integrante via link público
+  async createIntegrationMemberViaPublicLink(token: string, data: { name: string; [key: string]: unknown }) {
+    const response = await this.api.post(`/public/integration/${token}`, data);
+    return response.data;
+  }
+
+  // ========== Gerenciamento de Links de Integração (Admin) ==========
+
+  // Listar links de integração
+  async listIntegrationLinks() {
+    const response = await this.api.get('/integration-links');
+    return response.data;
+  }
+
+  // Buscar link específico
+  async getIntegrationLink(id: string) {
+    const response = await this.api.get(`/integration-links/${id}`);
+    return response.data;
+  }
+
+  // Criar novo link de integração
+  async createIntegrationLink(data: {
+    expires_at: string;
+    max_uses?: number | null;
+    notes?: string | null;
+  }) {
+    const response = await this.api.post('/integration-links', data);
+    return response.data;
+  }
+
+  // Atualizar link de integração
+  async updateIntegrationLink(id: string, data: {
+    expires_at?: string;
+    max_uses?: number | null;
+    is_active?: boolean;
+    notes?: string | null;
+  }) {
+    const response = await this.api.put(`/integration-links/${id}`, data);
+    return response.data;
+  }
+
+  // Desativar link de integração
+  async deleteIntegrationLink(id: string) {
+    const response = await this.api.delete(`/integration-links/${id}`);
+    return response.data;
+  }
 }
 
 // Instância singleton

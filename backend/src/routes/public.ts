@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { validateRegistrationLink, createMemberViaPublicLink } from '../controllers/publicRegistrationController';
+import { validateIntegrationLink, createIntegrationMemberViaPublicLink } from '../controllers/publicIntegrationController';
 import publicRegistrationAuth from '../middlewares/publicRegistrationAuth';
+import publicIntegrationAuth from '../middlewares/publicIntegrationAuth';
 
 const router = Router();
 
@@ -12,6 +14,15 @@ router.get('/registration/:token', publicRegistrationAuth, validateRegistrationL
 
 // Criar membro via link público
 router.post('/registration/:token', publicRegistrationAuth, createMemberViaPublicLink);
+
+// Rotas públicas de integração (sem autenticação)
+// Validação do link é feita pelo middleware publicIntegrationAuth
+
+// Validar link de integração (GET para verificar se é válido)
+router.get('/integration/:token', publicIntegrationAuth, validateIntegrationLink);
+
+// Criar integrante via link público
+router.post('/integration/:token', publicIntegrationAuth, createIntegrationMemberViaPublicLink);
 
 export default router;
 

@@ -20,6 +20,7 @@ import integrationRoutes from './routes/integration';
 import waitlistRoutes from './routes/waitlist';
 import publicRoutes from './routes/public';
 import registrationLinksRoutes from './routes/registrationLinks';
+import integrationLinksRoutes from './routes/integrationLinks';
 
 dotenv.config();
 
@@ -96,6 +97,7 @@ app.use('/api/integration', integrationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/registration-links', registrationLinksRoutes);
+app.use('/api/integration-links', integrationLinksRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

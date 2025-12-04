@@ -141,4 +141,29 @@ export interface CreateRegistrationLinkData {
 export interface PublicRegistrationRequest extends Request {
   registrationLink?: PublicRegistrationLink;
   churchId?: string;
+}
+
+export interface PublicIntegrationLink {
+  id: string;
+  church_id: string;
+  token: string;
+  expires_at: Date;
+  max_uses?: number | null;
+  current_uses: number;
+  is_active: boolean;
+  created_by?: string;
+  created_at: Date;
+  updated_at: Date;
+  notes?: string | null;
+}
+
+export interface CreateIntegrationLinkData {
+  expires_at: string; // ISO date string
+  max_uses?: number | null;
+  notes?: string | null;
+}
+
+export interface PublicIntegrationRequest extends Request {
+  integrationLink?: PublicIntegrationLink;
+  churchId?: string;
 } 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { LinkIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { IntegrationList } from '@/components/integration/IntegrationList';
 import { CreateIntegrationModal } from '@/components/integration/CreateIntegrationModal';
@@ -17,6 +17,7 @@ import { IntegrationActiveFiltersChips } from '@/components/integration/Integrat
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { ViewIntegrationModal } from '@/components/integration/ViewIntegrationModal';
 import { ExportIntegrationModal } from '@/components/integration/ExportIntegrationModal';
+import { IntegrationLinksModal } from '@/components/integration/IntegrationLinksModal';
 import apiService from '@/services/api';
 
 const initialFilters: IntegrationFilters = {
@@ -51,6 +52,7 @@ function IntegrationPageContent() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportingList, setExportingList] = useState(false);
+  const [integrationLinksModalOpen, setIntegrationLinksModalOpen] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -153,10 +155,20 @@ function IntegrationPageContent() {
           <h1 className="text-2xl font-bold text-gray-900">Integração</h1>
           <p className="text-sm text-gray-600">Gerencie integrantes em processo de integração e converta-os em membros.</p>
         </div>
-        <Button onClick={() => setCreateModalOpen(true)} className="inline-flex items-center gap-2">
-          <Plus size={18} />
-          Novo integrante
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setIntegrationLinksModalOpen(true)} 
+            variant="secondary"
+            className="inline-flex items-center gap-2"
+          >
+            <LinkIcon size={18} />
+            Links de Autocadastro
+          </Button>
+          <Button onClick={() => setCreateModalOpen(true)} className="inline-flex items-center gap-2">
+            <Plus size={18} />
+            Novo integrante
+          </Button>
+        </div>
       </div>
 
       <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={loading} />
@@ -268,6 +280,11 @@ function IntegrationPageContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={handleExportIntegrationList}
+      />
+
+      <IntegrationLinksModal
+        isOpen={integrationLinksModalOpen}
+        onClose={() => setIntegrationLinksModalOpen(false)}
       />
     </div>
   );

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import apiService from '@/services/api';
 
-interface RegistrationLink {
+interface IntegrationLink {
   id: string;
   token: string;
   url: string;
@@ -27,8 +27,6 @@ interface RegistrationLink {
   max_uses?: number | null;
   current_uses: number;
   is_active: boolean;
-  default_congregation_id?: string | null;
-  default_role_id?: string | null;
   notes?: string | null;
   created_at: string;
   is_expired: boolean;
@@ -36,17 +34,17 @@ interface RegistrationLink {
   is_limit_reached: boolean;
 }
 
-interface RegistrationLinksModalProps {
+interface IntegrationLinksModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksModalProps) {
-  const [links, setLinks] = useState<RegistrationLink[]>([]);
+export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModalProps) {
+  const [links, setLinks] = useState<IntegrationLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingLink, setEditingLink] = useState<RegistrationLink | null>(null);
+  const [editingLink, setEditingLink] = useState<IntegrationLink | null>(null);
   
   // Form state
   const [expiresAt, setExpiresAt] = useState('');
@@ -64,7 +62,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.listRegistrationLinks();
+      const response = await apiService.listIntegrationLinks();
       setLinks(response.data || []);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar links';
@@ -80,7 +78,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
     resetForm();
   };
 
-  const handleEdit = (link: RegistrationLink) => {
+  const handleEdit = (link: IntegrationLink) => {
     setEditingLink(link);
     setShowCreateForm(true);
     setExpiresAt(new Date(link.expires_at).toISOString().slice(0, 16));
@@ -93,7 +91,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
     defaultDate.setDate(defaultDate.getDate() + 30); // 30 dias por padrão
     setExpiresAt(defaultDate.toISOString().slice(0, 16));
     setMaxUses('');
-    setNotes('Link para cadastro de novos membros.');
+    setNotes('Link para cadastro de novos integrantes.');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,9 +108,9 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
       };
 
       if (editingLink) {
-        await apiService.updateRegistrationLink(editingLink.id, data);
+        await apiService.updateIntegrationLink(editingLink.id, data);
       } else {
-        await apiService.createRegistrationLink(data);
+        await apiService.createIntegrationLink(data);
       }
 
       await loadLinks();
@@ -133,7 +131,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
     }
 
     try {
-      await apiService.deleteRegistrationLink(id);
+      await apiService.deleteIntegrationLink(id);
       await loadLinks();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao desativar link';
@@ -143,7 +141,6 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
 
   const handleCopyLink = (url: string) => {
     navigator.clipboard.writeText(url);
-    // Você pode adicionar um toast aqui
     alert('Link copiado para a área de transferência!');
   };
 
@@ -169,7 +166,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="Gerenciar Links de Registro Público"
+      title="Gerenciar Links de Integração Pública"
       size="xl"
       closeOnOverlayClick={!isSubmitting}
       closeOnEscape={!isSubmitting}
@@ -185,7 +182,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
           <>
             <div className="flex justify-between items-center mb-6">
               <p className="text-sm text-gray-600">
-                Crie links e compartilhe com a igreja para que membros possam se cadastrar utilizando o autocadastro.
+                Crie links e compartilhe com a igreja para que pessoas possam se cadastrar no processo de integração utilizando o autocadastro.
               </p>
               <Button onClick={handleCreate} className="inline-flex items-center gap-2">
                 <Plus size={18} />
@@ -200,7 +197,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
             ) : links.length === 0 ? (
               <div className="text-center py-12">
                 <LinkIcon className="mx-auto text-gray-400 mb-4" size={48} />
-                <p className="text-gray-600 mb-4">Nenhum link de registro criado ainda.</p>
+                <p className="text-gray-600 mb-4">Nenhum link de integração criado ainda.</p>
                 <Button onClick={handleCreate}>Criar Primeiro Link</Button>
               </div>
             ) : (
