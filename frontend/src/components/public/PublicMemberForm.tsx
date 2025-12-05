@@ -98,18 +98,19 @@ const formatCEP = (value: string): string => {
   return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
 };
 
-const formatCPF = (value: string): string => {
-  const numbers = value.replace(/\D/g, '');
-  if (numbers.length <= 3) {
-    return numbers;
-  } else if (numbers.length <= 6) {
-    return numbers.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-  } else if (numbers.length <= 9) {
-    return numbers.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-  } else {
-    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-  }
-};
+// Função de formatação de CPF - temporariamente desabilitada
+// const formatCPF = (value: string): string => {
+//   const numbers = value.replace(/\D/g, '');
+//   if (numbers.length <= 3) {
+//     return numbers;
+//   } else if (numbers.length <= 6) {
+//     return numbers.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+//   } else if (numbers.length <= 9) {
+//     return numbers.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+//   } else {
+//     return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+//   }
+// };
 
 const formatDateToISO = (formattedDate: string): string | null => {
   if (!formattedDate) return null;
@@ -148,7 +149,7 @@ export function PublicMemberForm({
   const [birthDisplay, setBirthDisplay] = useState('');
   const [baptismDateDisplay, setBaptismDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
-  const [cpfDisplay, setCpfDisplay] = useState('');
+  // const [cpfDisplay, setCpfDisplay] = useState(''); // Temporariamente desabilitado
   const [nationalityOtherError, setNationalityOtherError] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
   const [children, setChildren] = useState<Child[]>([]);
@@ -222,12 +223,13 @@ export function PublicMemberForm({
     setValue('cep', value.replace(/\D/g, ''));
   };
 
-  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatCPF(value);
-    setCpfDisplay(formatted);
-    setValue('document', value.replace(/\D/g, ''));
-  };
+  // Função de formatação de CPF - temporariamente desabilitada
+  // const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const value = e.target.value;
+  //   const formatted = formatCPF(value);
+  //   setCpfDisplay(formatted);
+  //   setValue('document', value.replace(/\D/g, ''));
+  // };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'baptism_date' | 'admission_date') => {
     const value = e.target.value;
@@ -295,7 +297,7 @@ export function PublicMemberForm({
       setPhoneDisplay('');
       setWhatsappDisplay('');
       setCepDisplay('');
-      setCpfDisplay('');
+      // setCpfDisplay(''); // Temporariamente desabilitado
       setBirthDisplay('');
       setBaptismDateDisplay('');
       setAdmissionDateDisplay('');
