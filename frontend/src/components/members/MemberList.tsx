@@ -7,7 +7,7 @@ import { ViewMode } from './ViewModeSelector';
 import { Pagination } from '../commom/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
-import { Download } from 'lucide-react';
+import { Download, RefreshCcw } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 
 export function MemberList({ 
@@ -95,6 +95,12 @@ export function MemberList({
     setPage(newPage);
   };
 
+  const handleRefresh = () => {
+    if (sorting) {
+      loadMembers(filters, sorting, currentPage);
+    }
+  };
+
   if (loading || !isViewModeLoaded) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
@@ -149,6 +155,13 @@ export function MemberList({
           <div className="text-gray-500 text-sm">{pagination.total} membros encontrados</div>
         )}
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm hover:bg-gray-50"
+          >
+            <RefreshCcw size={12} />
+            Atualizar
+          </button>
           <button
             onClick={onExport}
             className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"

@@ -12,7 +12,11 @@ import {
   Edit, 
   Link as LinkIcon, 
   Calendar,
-  Users
+  Users,
+  CheckCircle,
+  PowerOff,
+  Power,
+  AlertTriangle
 } from 'lucide-react';
 import apiService from '@/services/api';
 
@@ -44,6 +48,9 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingLink, setEditingLink] = useState<RegistrationLink | null>(null);
+  const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
+  const [linkToDelete, setLinkToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Form state
   const [expiresAt, setExpiresAt] = useState('');
@@ -124,24 +131,62 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja desativar este link?')) {
-      return;
-    }
-
+  const handleDeactivate = async (id: string) => {
     try {
-      await apiService.deleteRegistrationLink(id);
+      await apiService.deactivateRegistrationLink(id);
       await loadLinks();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao desativar link';
-      alert(errorMessage);
+      setError(errorMessage);
     }
   };
 
-  const handleCopyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
-    // Você pode adicionar um toast aqui
-    alert('Link copiado para a área de transferência!');
+  const handleDeleteClick = (id: string) => {
+    setLinkToDelete(id);
+  };
+
+  const handleDeleteCancel = () => {
+    setLinkToDelete(null);
+    setError(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!linkToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      setError(null);
+      await apiService.deleteRegistrationLink(linkToDelete);
+      await loadLinks();
+      setLinkToDelete(null);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir link';
+      setError(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleReactivate = async (id: string) => {
+    try {
+      await apiService.updateRegistrationLink(id, { is_active: true });
+      await loadLinks();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao reativar link';
+      setError(errorMessage);
+    }
+  };
+
+  const handleCopyLink = async (url: string, linkId: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedLinkId(linkId);
+      setTimeout(() => {
+        setCopiedLinkId(null);
+      }, 2000);
+    } catch (err) {
+      console.error('Erro ao copiar link:', err);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -180,15 +225,17 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
 
         {!showCreateForm ? (
           <>
-            <div className="flex justify-between items-center mb-6">
-              <p className="text-sm text-gray-600">
-                Crie links e compartilhe com a igreja para que membros possam se cadastrar utilizando o autocadastro.
-              </p>
-              <Button onClick={handleCreate} className="inline-flex items-center gap-2">
-                <Plus size={18} />
-                Novo Link
-              </Button>
-            </div>
+            {links.length > 0 && (
+              <div className="flex justify-between items-center mb-6 gap-4">
+                <p className="text-sm text-gray-600 flex-1">
+                  Crie links e compartilhe com a igreja para que membros possam se cadastrar utilizando o autocadastro.
+                </p>
+                <Button onClick={handleCreate} className="inline-flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
+                  <Plus size={18} />
+                  Novo Link
+                </Button>
+              </div>
+            )}
 
             {loading ? (
               <div className="flex items-center justify-center py-12">
@@ -253,35 +300,77 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
                             readOnly
                             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50"
                           />
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleCopyLink(link.url)}
-                            className="inline-flex items-center gap-1"
-                          >
-                            <Copy size={14} />
-                            Copiar
-                          </Button>
+                          {link.is_active && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => handleCopyLink(link.url, link.id)}
+                              className="inline-flex items-center gap-1"
+                            >
+                              {copiedLinkId === link.id ? (
+                                <>
+                                  <CheckCircle size={14} />
+                                  Link Copiado!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={14} />
+                                  Copiar
+                                </>
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
                           onClick={() => handleEdit(link)}
                           disabled={loading}
+                          className="inline-flex items-center gap-1"
                         >
                           <Edit size={16} />
+                          Editar
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(link.id)}
-                          disabled={loading}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                        {link.is_active ? (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleDeactivate(link.id)}
+                            disabled={loading}
+                            className="inline-flex items-center gap-1"
+                            title="Desativar link"
+                          >
+                            <PowerOff size={16} />
+                            Desativar
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleReactivate(link.id)}
+                              disabled={loading}
+                              className="inline-flex items-center gap-1"
+                              title="Reativar link"
+                            >
+                              <Power size={16} />
+                              Reativar
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleDeleteClick(link.id)}
+                              disabled={loading}
+                              className="inline-flex items-center gap-1"
+                              title="Excluir permanentemente"
+                            >
+                              <Trash2 size={16} />
+                              Excluir
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -344,6 +433,60 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
           </form>
         )}
       </div>
+
+      {/* Modal de confirmação de exclusão */}
+      <Modal
+        isOpen={linkToDelete !== null}
+        onClose={handleDeleteCancel}
+        title="Confirmar Exclusão"
+        size="sm"
+        closeOnOverlayClick={!isDeleting}
+        closeOnEscape={!isDeleting}
+      >
+        <div className="flex flex-col">
+          <div className="p-6">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
+                <p className="text-sm font-medium text-red-600">{error}</p>
+              </div>
+            )}
+
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Excluir Link Permanentemente
+              </h3>
+              
+              <p className="text-sm text-gray-500 mb-6">
+                Tem certeza que deseja excluir permanentemente este link? 
+                Esta ação não pode ser desfeita.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50 p-6">
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="secondary"
+                onClick={handleDeleteCancel}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteConfirm}
+                isLoading={isDeleting}
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </Modal>
   );
 }

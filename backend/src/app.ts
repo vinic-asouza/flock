@@ -53,7 +53,7 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true, // Permitir cookies
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   optionsSuccessStatus: 200 // Para suporte a navegadores legados
 }));

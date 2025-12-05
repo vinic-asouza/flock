@@ -638,6 +638,12 @@ class ApiService {
   }
 
   // Desativar link de registro
+  async deactivateRegistrationLink(id: string) {
+    const response = await this.api.patch(`/registration-links/${id}/deactivate`);
+    return response.data;
+  }
+
+  // Excluir permanentemente link de registro
   async deleteRegistrationLink(id: string) {
     const response = await this.api.delete(`/registration-links/${id}`);
     return response.data;
@@ -693,6 +699,12 @@ class ApiService {
   }
 
   // Desativar link de integração
+  async deactivateIntegrationLink(id: string) {
+    const response = await this.api.patch(`/integration-links/${id}/deactivate`);
+    return response.data;
+  }
+
+  // Excluir permanentemente link de integração
   async deleteIntegrationLink(id: string) {
     const response = await this.api.delete(`/integration-links/${id}`);
     return response.data;

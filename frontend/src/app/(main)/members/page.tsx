@@ -70,7 +70,7 @@ const initialFilters: MemberFilters = {
 };
 
 const initialSorting = {
-  sort_by: 'admission_date',
+  sort_by: 'created_at',
   sort_order: 'desc' as 'asc' | 'desc'
 };
 

@@ -4,6 +4,7 @@ import {
   getIntegrationLink,
   createIntegrationLink,
   updateIntegrationLink,
+  deactivateIntegrationLink,
   deleteIntegrationLink
 } from '../controllers/integrationLinkController';
 import authMiddleware from '../middlewares/auth';
@@ -16,16 +17,19 @@ router.use(authMiddleware);
 // Listar todos os links de integração da igreja
 router.get('/', listIntegrationLinks);
 
-// Buscar um link específico
-router.get('/:id', getIntegrationLink);
-
 // Criar um novo link de integração
 router.post('/', createIntegrationLink);
+
+// Desativar um link (soft delete) - DEVE VIR ANTES DE /:id
+router.patch('/:id/deactivate', deactivateIntegrationLink);
+
+// Buscar um link específico
+router.get('/:id', getIntegrationLink);
 
 // Atualizar um link existente
 router.put('/:id', updateIntegrationLink);
 
-// Desativar um link (soft delete)
+// Remover permanentemente um link
 router.delete('/:id', deleteIntegrationLink);
 
 export default router;

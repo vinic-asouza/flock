@@ -397,7 +397,7 @@ export const updateIntegrationLink = async (req: AuthRequest, res: Response) => 
 /**
  * Desativa um link de integração (soft delete)
  */
-export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => {
+export const deactivateIntegrationLink = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -457,7 +457,7 @@ export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => 
     await logAudit(req, {
       entity: 'public_integration_link',
       entityId: existingLink.id,
-      action: 'delete',
+      action: 'deactivate',
       changesBefore: existingLink,
       changesAfter: updatedLink
     });
@@ -468,6 +468,85 @@ export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => 
 
   } catch (error) {
     console.error('Erro ao desativar link de integração:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+/**
+ * Remove permanentemente um link de integração
+ */
+export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    const { id } = req.params;
+
+    // Buscar a igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    // Buscar o link existente
+    const { data: existingLink, error: fetchError } = await supabase
+      .from('public_integration_links')
+      .select('*')
+      .eq('id', id)
+      .eq('church_id', church.id)
+      .single();
+
+    if (fetchError || !existingLink) {
+      return res.status(404).json({
+        error: 'Link não encontrado',
+        details: 'O link de integração solicitado não foi encontrado'
+      });
+    }
+
+    // Remover permanentemente o link
+    const { error: deleteError } = await supabase
+      .from('public_integration_links')
+      .delete()
+      .eq('id', id)
+      .eq('church_id', church.id);
+
+    if (deleteError) {
+      console.error('Erro ao excluir link:', deleteError);
+      return res.status(400).json({
+        error: 'Erro ao excluir link de integração',
+        details: deleteError.message
+      });
+    }
+
+    await logAudit(req, {
+      entity: 'public_integration_link',
+      entityId: existingLink.id,
+      action: 'delete',
+      changesBefore: existingLink,
+      changesAfter: null
+    });
+
+    res.json({
+      message: 'Link de integração excluído permanentemente com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao excluir link de integração:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

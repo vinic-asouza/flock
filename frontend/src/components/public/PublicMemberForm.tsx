@@ -132,9 +132,9 @@ const calcularIdade = (birth: string): number | null => {
   return age;
 };
 
-export function PublicMemberForm({ 
-  onSubmit, 
-  onCancel, 
+export function PublicMemberForm({
+  onSubmit,
+  onCancel,
   isLoading = false,
   churchName
 }: PublicMemberFormProps) {
@@ -442,7 +442,7 @@ export function PublicMemberForm({
             />
           )}
 
-          <Input
+          {/* <Input
             label="CPF (opcional)"
             placeholder="000.000.000-00"
             value={cpfDisplay}
@@ -450,7 +450,7 @@ export function PublicMemberForm({
             maxLength={14}
             error={errors.document?.message}
             isLoading={isLoading}
-          />
+          /> */}
 
           {selectedMaritalStatus === 'Casado' && (
             <Input
@@ -645,8 +645,8 @@ export function PublicMemberForm({
             value={watch('city') || ''}
             onChange={(value) => setValue('city', value)}
             options={[
-              { 
-                value: '', 
+              {
+                value: '',
                 label: !selectedState
                   ? 'Selecione o estado primeiro'
                   : loadingCities
@@ -702,13 +702,13 @@ export function PublicMemberForm({
           </ul>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           {/* Primeira linha: Checkbox Membro Infantil */}
-          <div className="col-span-2 flex items-center space-x-2">
+          <div className="flex items-start space-x-2">
             <input
               type="checkbox"
               id="isInfantMember"
-              className="rounded border-gray-300 text-primary focus:ring-primary/20"
+              className="mt-1 rounded border-gray-300 text-primary focus:ring-primary/20 flex-shrink-0"
               disabled={isLoading}
               checked={isInfantMember}
               onChange={(e) => {
@@ -717,8 +717,8 @@ export function PublicMemberForm({
                 setValue('admission', '');
               }}
             />
-            <label htmlFor="isInfantMember" className="text-sm font-medium text-gray-700">
-                Membro Infantil (Criança / Sem Profissão de Fé)
+            <label htmlFor="isInfantMember" className="text-sm font-medium text-gray-700 leading-relaxed">
+              Membro Infantil (Criança / Sem Profissão de Fé)
             </label>
           </div>
 
@@ -744,62 +744,65 @@ export function PublicMemberForm({
           />
 
           {/* Terceira linha: Data de Batismo e Data de Recebimento */}
-          {watch('admission') !== 'Apresentação (sem batismo)' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {watch('admission') !== 'Apresentação (sem batismo)' && (
+              <Input
+                label="Data de Batismo (opcional)"
+                placeholder="DD/MM/AAAA"
+                value={baptismDateDisplay}
+                onChange={(e) => handleDateChange(e, 'baptism_date')}
+                maxLength={10}
+                isLoading={isLoading}
+              />
+            )}
+
             <Input
-              label="Data de Batismo (opcional)"
+              label="Data de Recebimento"
               placeholder="DD/MM/AAAA"
-              value={baptismDateDisplay}
-              onChange={(e) => handleDateChange(e, 'baptism_date')}
+              value={admissionDateDisplay}
+              onChange={(e) => handleDateChange(e, 'admission_date')}
               maxLength={10}
+              error={errors.admission_date?.message}
               isLoading={isLoading}
             />
-          )}
-
-          <Input
-            label="Data de Recebimento"
-            placeholder="DD/MM/AAAA"
-            value={admissionDateDisplay}
-            onChange={(e) => handleDateChange(e, 'admission_date')}
-            maxLength={10}
-            error={errors.admission_date?.message}
-            isLoading={isLoading}
-          />
+          </div>
 
           {/* Quarta linha: Informação e campos de Função e Congregação */}
-          <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-800">
-              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma congregação/filial, informe também se você possui algum cargo ou faz parte de um ministério específico.
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-800 leading-relaxed">
+              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma <strong>congregação/filial</strong>, informe também se você possui algum <strong>cargo</strong> ou faz parte de um <strong>ministério</strong> específico.
             </p>
           </div>
 
-          <Select
-            label="Cargo ou Ministério (opcional)"
-            value={watch('role_id') || ''}
-            onChange={(value) => setValue('role_id', value)}
-            options={[
-              { value: '', label: 'Nenhuma' },
-              ...roles.map((role) => ({
-                value: role.id,
-                label: role.name
-              }))
-            ]}
-            disabled={filtersLoading || isLoading}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              label="Congregação"
+              value={watch('congregation_id') || ''}
+              onChange={(value) => setValue('congregation_id', value)}
+              options={[
+                { value: '', label: 'Sede' },
+                ...congregations.map((congregation) => ({
+                  value: congregation.id,
+                  label: congregation.name
+                }))
+              ]}
+              disabled={filtersLoading || isLoading}
+            />
 
-          <Select
-            label="Congregação (opcional)"
-            value={watch('congregation_id') || ''}
-            onChange={(value) => setValue('congregation_id', value)}
-            options={[
-              { value: '', label: 'Sede' },
-              ...congregations.map((congregation) => ({
-                value: congregation.id,
-                label: congregation.name
-              }))
-            ]}
-            disabled={filtersLoading || isLoading}
-          />
-
+            <Select
+              label="Cargo ou Ministério (opcional)"
+              value={watch('role_id') || ''}
+              onChange={(value) => setValue('role_id', value)}
+              options={[
+                { value: '', label: 'Nenhuma' },
+                ...roles.map((role) => ({
+                  value: role.id,
+                  label: role.name
+                }))
+              ]}
+              disabled={filtersLoading || isLoading}
+            />
+          </div>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import {
   getRegistrationLink,
   createRegistrationLink,
   updateRegistrationLink,
+  deactivateRegistrationLink,
   deleteRegistrationLink
 } from '../controllers/registrationLinkController';
 import authMiddleware from '../middlewares/auth';
@@ -16,16 +17,19 @@ router.use(authMiddleware);
 // Listar todos os links de registro da igreja
 router.get('/', listRegistrationLinks);
 
-// Buscar um link específico
-router.get('/:id', getRegistrationLink);
-
 // Criar um novo link de registro
 router.post('/', createRegistrationLink);
+
+// Desativar um link (soft delete) - DEVE VIR ANTES DE /:id
+router.patch('/:id/deactivate', deactivateRegistrationLink);
+
+// Buscar um link específico
+router.get('/:id', getRegistrationLink);
 
 // Atualizar um link existente
 router.put('/:id', updateRegistrationLink);
 
-// Desativar um link (soft delete)
+// Remover permanentemente um link
 router.delete('/:id', deleteRegistrationLink);
 
 export default router;

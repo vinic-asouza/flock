@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import supabase from '../services/supabase';
 import { AuthRequest, CreateRegistrationLinkData, PublicRegistrationLink } from '../types';
 import { validateRegistrationLink } from '../validators/registrationLinkValidator';
+import { logAudit } from '../utils/auditLogger';
 
 /**
  * Gera um token único e seguro para o link de registro
@@ -456,7 +457,88 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
 };
 
 /**
- * Remove (desativa) um link de registro
+ * Desativa um link de registro (soft delete)
+ */
+export const deactivateRegistrationLink = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    const { id } = req.params;
+
+    // Buscar a igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    // Verificar se o link existe e pertence à igreja
+    const { data: existingLink, error: checkError } = await supabase
+      .from('public_registration_links')
+      .select('*')
+      .eq('id', id)
+      .eq('church_id', church.id)
+      .single();
+
+    if (checkError || !existingLink) {
+      return res.status(404).json({
+        error: 'Link não encontrado',
+        details: 'O link de registro solicitado não foi encontrado'
+      });
+    }
+
+    // Desativar o link (soft delete)
+    const { data: updatedLink, error: updateError } = await supabase
+      .from('public_registration_links')
+      .update({ is_active: false })
+      .eq('id', id)
+      .eq('church_id', church.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Erro ao desativar link:', updateError);
+      return res.status(400).json({
+        error: 'Erro ao desativar link de registro',
+        details: updateError.message
+      });
+    }
+
+    await logAudit(req, {
+      entity: 'public_registration_link',
+      entityId: existingLink.id,
+      action: 'deactivate',
+      changesBefore: existingLink,
+      changesAfter: updatedLink
+    });
+
+    res.json({
+      message: 'Link de registro desativado com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao desativar link de registro:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+/**
+ * Remove permanentemente um link de registro
  */
 export const deleteRegistrationLink = async (req: AuthRequest, res: Response) => {
   try {
@@ -486,7 +568,7 @@ export const deleteRegistrationLink = async (req: AuthRequest, res: Response) =>
     // Verificar se o link existe e pertence à igreja
     const { data: existingLink, error: checkError } = await supabase
       .from('public_registration_links')
-      .select('id')
+      .select('*')
       .eq('id', id)
       .eq('church_id', church.id)
       .single();
@@ -498,27 +580,35 @@ export const deleteRegistrationLink = async (req: AuthRequest, res: Response) =>
       });
     }
 
-    // Desativar o link (soft delete)
+    // Remover permanentemente o link
     const { error: deleteError } = await supabase
       .from('public_registration_links')
-      .update({ is_active: false })
+      .delete()
       .eq('id', id)
       .eq('church_id', church.id);
 
     if (deleteError) {
-      console.error('Erro ao desativar link:', deleteError);
+      console.error('Erro ao excluir link:', deleteError);
       return res.status(400).json({
-        error: 'Erro ao desativar link de registro',
+        error: 'Erro ao excluir link de registro',
         details: deleteError.message
       });
     }
 
+    await logAudit(req, {
+      entity: 'public_registration_link',
+      entityId: existingLink.id,
+      action: 'delete',
+      changesBefore: existingLink,
+      changesAfter: null
+    });
+
     res.json({
-      message: 'Link de registro desativado com sucesso'
+      message: 'Link de registro excluído permanentemente com sucesso'
     });
 
   } catch (error) {
-    console.error('Erro ao desativar link de registro:', error);
+    console.error('Erro ao excluir link de registro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

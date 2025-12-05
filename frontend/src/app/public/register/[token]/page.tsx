@@ -32,9 +32,9 @@ export default function PublicRegisterPage() {
         setIsValidating(true);
         setError(null);
         setErrorType(null);
-        
+
         const response = await apiService.validateRegistrationLink(token);
-        
+
         setIsValid(true);
         setLinkInfo(response);
       } catch (err: unknown) {
@@ -52,16 +52,16 @@ export default function PublicRegisterPage() {
     }
   }, [token]);
 
-  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
+  const handleSubmit = async (data: { name: string;[key: string]: unknown }) => {
     try {
       setIsSubmitting(true);
       setError(null);
       setErrorType(null);
-      
+
       await apiService.createMemberViaPublicLink(token, data);
-      
+
       setSuccess(true);
-      
+
       // Limpar formulário após sucesso
       setTimeout(() => {
         // Opcional: redirecionar ou mostrar mensagem de sucesso
@@ -79,20 +79,17 @@ export default function PublicRegisterPage() {
   if (isValidating) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-white/20 px-6 flex items-center justify-center z-50">
-          <div className="flex items-center gap-3">
-            <FlockLogo size={30} className="text-white" />
-            <div className="flex items-center gap-2">
+        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-3">
+              <FlockLogo size={30} className="text-white" />
               <span className="text-lg font-semibold text-white">Flock App</span>
-              {linkInfo?.church_name && (
-                <>
-                  <span className="text-white/50">|</span>
-                  <h1 className="text-sm font-normal text-white/90">
-                    {linkInfo.church_name}
-                  </h1>
-                </>
-              )}
             </div>
+            {linkInfo?.church_name && (
+              <h1 className="text-sm font-normal text-white/90">
+                {linkInfo.church_name}
+              </h1>
+            )}
           </div>
         </header>
         <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
@@ -110,12 +107,17 @@ export default function PublicRegisterPage() {
   if (!isValid && errorType === 'link') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-white/20 px-6 flex items-center justify-center z-50">
-          <div className="flex items-center gap-3">
-            <FlockLogo size={30} className="text-white" />
-            <div className="flex items-center gap-2">
+        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-3">
+              <FlockLogo size={30} className="text-white" />
               <span className="text-lg font-semibold text-white">Flock App</span>
             </div>
+            {linkInfo?.church_name && (
+              <h1 className="text-sm font-normal text-white/90">
+                {linkInfo.church_name}
+              </h1>
+            )}
           </div>
         </header>
         <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
@@ -145,20 +147,17 @@ export default function PublicRegisterPage() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 h-14 bg-white border-b border-white/20 px-6 flex items-center justify-center z-50">
-          <div className="flex items-center gap-3">
-            <FlockLogo size={30} className="text-white" />
-            <div className="flex items-center gap-2">
+        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-3">
+              <FlockLogo size={30} className="text-white" />
               <span className="text-lg font-semibold text-white">Flock App</span>
-              {linkInfo?.church_name && (
-                <>
-                  <span className="text-white/50">|</span>
-                  <h1 className="text-sm font-normal text-white/90">
-                    {linkInfo.church_name}
-                  </h1>
-                </>
-              )}
             </div>
+            {linkInfo?.church_name && (
+              <h1 className="text-sm font-normal text-white/90">
+                {linkInfo.church_name}
+              </h1>
+            )}
           </div>
         </header>
         <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
@@ -168,15 +167,15 @@ export default function PublicRegisterPage() {
             <p className="text-gray-600 mb-4">
               Obrigado! Seu cadastro foi enviado com sucesso para a <strong>{linkInfo?.church_name}</strong>
             </p>
-            
+
             <div className="mt-6 space-y-4">
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-sm text-amber-800">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
                   <AlertCircle className="inline mr-2" size={16} />
-                  Lembre-se de realizar um cadastro individual para cada membro da família, como cônjuges e filhos.
+                  Lembre-se de realizar um cadastro individual para cada membro da família, como cônjuge e filhos (se houver).
                 </p>
               </div>
-              
+
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => {
@@ -189,7 +188,7 @@ export default function PublicRegisterPage() {
                 >
                   Realizar Novo Cadastro
                 </Button>
-                
+
                 <p className="text-xs text-gray-500">
                   Ou você já pode fechar esta página.
                 </p>
@@ -203,23 +202,20 @@ export default function PublicRegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-      <header className="fixed top-0 left-0 right-0 h-14 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50">
-        <div className="flex items-center gap-3">
-          <FlockLogo size={30} className="text-white" />
-          <div className="flex items-center gap-2">
+      <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-3">
+            <FlockLogo size={30} className="text-white" />
             <span className="text-lg font-semibold text-white">Flock App</span>
-            {linkInfo?.church_name && (
-              <>
-                <span className="text-white/50">|</span>
-                <h1 className="text-sm font-normal text-white/90">
-                  {linkInfo.church_name}
-                </h1>
-              </>
-            )}
           </div>
+          {linkInfo?.church_name && (
+            <h1 className="text-sm font-normal text-white/90">
+              {linkInfo.church_name}
+            </h1>
+          )}
         </div>
       </header>
-      
+
       <div className="py-8 px-4 pt-[calc(3.5rem+2rem)]">
         <div className="max-w-4xl mx-auto">
           {/* Header do conteúdo */}
@@ -236,7 +232,7 @@ export default function PublicRegisterPage() {
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
                   <AlertCircle className="inline mr-2" size={16} />
-                  {linkInfo.remaining_uses > 0 
+                  {linkInfo.remaining_uses > 0
                     ? `${linkInfo.remaining_uses} ${linkInfo.remaining_uses === 1 ? 'cadastro restante' : 'cadastros restantes'}`
                     : 'Limite de cadastros atingido'
                   }
@@ -245,28 +241,28 @@ export default function PublicRegisterPage() {
             )}
           </div>
 
-        {/* Formulário */}
-        <div className="bg-white rounded-lg shadow-md">
-          <PublicMemberForm
-            onSubmit={handleSubmit}
-            isLoading={isSubmitting}
-            churchName={linkInfo?.church_name}
-          />
-          
-          {error && errorType === 'submission' && (
-            <div className="px-6 pb-6">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-red-600">{error}</p>
-                  <p className="text-xs text-red-600">
-                    <AlertCircle className="inline mr-1" size={14} />
-                    Se o problema persistir, entre em contato com a secretaria da igreja para obter assistência.
-                  </p>
+          {/* Formulário */}
+          <div className="bg-white rounded-lg shadow-md">
+            <PublicMemberForm
+              onSubmit={handleSubmit}
+              isLoading={isSubmitting}
+              churchName={linkInfo?.church_name}
+            />
+
+            {error && errorType === 'submission' && (
+              <div className="px-6 pb-6">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-red-600">{error}</p>
+                    <p className="text-xs text-red-600">
+                      <AlertCircle className="inline mr-1" size={14} />
+                      Se o problema persistir, entre em contato com a secretaria da igreja para obter assistência.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
           {/* Footer com informações */}
           <div className="mt-6 text-center text-sm text-gray-500">
