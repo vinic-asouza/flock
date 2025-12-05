@@ -53,8 +53,13 @@ class ApiService {
         const isCheckAuthEndpoint = url.includes('/refresh/check');
         const isLoginEndpoint = url.includes('/auth/login');
         const isRegisterEndpoint = url.includes('/auth/register');
+        const isPublicEndpoint = url.includes('/public/'); // Rotas públicas não requerem autenticação
         const isAlreadyOnLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
         const isAlreadyOnRegister = typeof window !== 'undefined' && window.location.pathname === '/register';
+        const isOnPublicPage = typeof window !== 'undefined' && (
+          window.location.pathname.startsWith('/public/register/') ||
+          window.location.pathname.startsWith('/public/integration/')
+        );
         
         // Silenciar erros 401 durante verificação de autenticação (é esperado)
         if (error.response?.status === 401 && isCheckAuthEndpoint) {
@@ -62,7 +67,8 @@ class ApiService {
           return Promise.reject(new Error('Não autenticado'));
         }
         
-        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isRegisterEndpoint && !isAlreadyOnLogin && !isAlreadyOnRegister) {
+        // Não redirecionar para login se for rota pública ou já estiver em página pública
+        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isRegisterEndpoint && !isPublicEndpoint && !isAlreadyOnLogin && !isAlreadyOnRegister && !isOnPublicPage) {
           // Token expirado ou inválido - redirecionar para login
           // Cookies serão limpos automaticamente pelo servidor
           window.location.href = '/login';
