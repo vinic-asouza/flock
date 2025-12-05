@@ -6,23 +6,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Instalar dependências necessárias para compilar pacotes nativos (canvas)
-# canvas precisa de Python, build tools e bibliotecas gráficas
+# Instalar dependências básicas para compilação (caso alguma dependência futura precise)
 RUN apk add --no-cache \
     python3 \
     make \
-    g++ \
-    cairo-dev \
-    jpeg-dev \
-    pango-dev \
-    giflib-dev \
-    pixman-dev
+    g++
 
 # Copiar arquivos de dependências
 COPY package*.json ./
 
-# Instalar TODAS as dependências (incluindo devDependencies) para compilar canvas
-# O canvas precisa ser compilado durante o build
+# Instalar TODAS as dependências (incluindo devDependencies) para compilar TypeScript
 RUN npm ci
 
 # Copiar código fonte
@@ -36,13 +29,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar apenas as bibliotecas runtime necessárias para canvas (sem build tools)
-RUN apk add --no-cache \
-    cairo \
-    jpeg \
-    pango \
-    giflib \
-    pixman
+# Não há dependências runtime nativas necessárias (canvas foi removido)
 
 # Copiar apenas arquivos necessários do estágio de build
 COPY --from=builder /app/package*.json ./
