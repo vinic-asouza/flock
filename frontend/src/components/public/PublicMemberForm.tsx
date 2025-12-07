@@ -147,7 +147,6 @@ export function PublicMemberForm({
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
   const [cepDisplay, setCepDisplay] = useState('');
   const [birthDisplay, setBirthDisplay] = useState('');
-  const [baptismDateDisplay, setBaptismDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   // const [cpfDisplay, setCpfDisplay] = useState(''); // Temporariamente desabilitado
   const [nationalityOtherError, setNationalityOtherError] = useState('');
@@ -169,6 +168,7 @@ export function PublicMemberForm({
       active: true,
       gender: 'Masculino',
       marital_status: 'Solteiro',
+      nationality: 'Brasileiro(a)',
     },
   });
 
@@ -231,7 +231,7 @@ export function PublicMemberForm({
   //   setValue('document', value.replace(/\D/g, ''));
   // };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'baptism_date' | 'admission_date') => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'admission_date') => {
     const value = e.target.value;
     const numbers = value.replace(/\D/g, '');
 
@@ -247,9 +247,6 @@ export function PublicMemberForm({
     if (field === 'birth') {
       setBirthDisplay(formatted);
       setValue('birth', formatted);
-    } else if (field === 'baptism_date') {
-      setBaptismDateDisplay(formatted);
-      setValue('baptism_date', formatted);
     } else if (field === 'admission_date') {
       setAdmissionDateDisplay(formatted);
       setValue('admission_date', formatted);
@@ -277,11 +274,21 @@ export function PublicMemberForm({
         birth: child.birth ? formatDateToISO(child.birth) || undefined : undefined,
       }));
 
+      // Lógica para Data de Batismo:
+      // Se for "Batismo" ou "Batismo Infantil", copia a Data de Recebimento
+      // Caso contrário, envia vazio
+      const admissionDateISO = formatDateToISO(data.admission_date) || '';
+      let baptismDateISO: string | undefined = undefined;
+
+      if (data.admission === 'Batismo' || data.admission === 'Batismo Infantil') {
+        baptismDateISO = admissionDateISO;
+      }
+
       const memberData = {
         ...data,
         birth: formatDateToISO(data.birth) || '',
-        baptism_date: data.baptism_date ? formatDateToISO(data.baptism_date) || undefined : undefined,
-        admission_date: formatDateToISO(data.admission_date) || '',
+        baptism_date: baptismDateISO,
+        admission_date: admissionDateISO,
         nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
         occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
         nationality_other: undefined,
@@ -299,7 +306,6 @@ export function PublicMemberForm({
       setCepDisplay('');
       // setCpfDisplay(''); // Temporariamente desabilitado
       setBirthDisplay('');
-      setBaptismDateDisplay('');
       setAdmissionDateDisplay('');
       setNationalityOtherError('');
       setOccupationOtherError('');
@@ -321,7 +327,7 @@ export function PublicMemberForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Nome Completo"
+            label="Nome Completo (obrigatório)"
             placeholder="Digite o nome completo"
             error={errors.name?.message}
             isLoading={isLoading}
@@ -329,7 +335,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="Email (opcional)"
+            label="Email"
             type="email"
             placeholder="email@exemplo.com"
             error={errors.email?.message}
@@ -338,7 +344,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="Telefone (opcional)"
+            label="Telefone"
             placeholder="(11) 99999-9999"
             value={phoneDisplay}
             onChange={(e) => handlePhoneChange(e, 'phone')}
@@ -348,7 +354,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="WhatsApp (opcional)"
+            label="WhatsApp"
             placeholder="(11) 99999-9999"
             value={whatsappDisplay}
             onChange={(e) => handlePhoneChange(e, 'whatsapp')}
@@ -357,7 +363,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="Data de Nascimento"
+            label="Data de Nascimento (obrigatório)"
             placeholder="DD/MM/AAAA"
             value={birthDisplay}
             onChange={(e) => handleDateChange(e, 'birth')}
@@ -367,7 +373,7 @@ export function PublicMemberForm({
           />
 
           <Select
-            label="Gênero"
+            label="Gênero (obrigatório)"
             value={watch('gender') || ''}
             onChange={(value) => setValue('gender', value as 'Masculino' | 'Feminino')}
             options={[
@@ -379,7 +385,7 @@ export function PublicMemberForm({
           />
 
           <Select
-            label="Estado Civil"
+            label="Estado Civil (obrigatório)"
             value={watch('marital_status') || ''}
             onChange={(value) => setValue('marital_status', value as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro')}
             options={[
@@ -394,7 +400,7 @@ export function PublicMemberForm({
           />
 
           <Select
-            label="Nacionalidade"
+            label="Nacionalidade (obrigatório)"
             value={watch('nationality') || ''}
             onChange={(value) => setValue('nationality', value)}
             options={[
@@ -418,7 +424,7 @@ export function PublicMemberForm({
           )}
 
           <Select
-            label="Profissão (opcional)"
+            label="Profissão"
             value={selectedOccupation || ''}
             onChange={(value) => setValue('occupation', value)}
             options={[
@@ -456,7 +462,7 @@ export function PublicMemberForm({
 
           {selectedMaritalStatus === 'Casado' && (
             <Input
-              label="Cônjuge (opcional)"
+              label="Cônjuge"
               placeholder="Nome do cônjuge"
               error={errors.spouse?.message}
               isLoading={isLoading}
@@ -465,7 +471,7 @@ export function PublicMemberForm({
           )}
 
           <Input
-            label="Nome do Pai (opcional)"
+            label="Nome do Pai"
             placeholder="Nome completo do pai"
             error={errors.father_name?.message}
             isLoading={isLoading}
@@ -473,7 +479,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="Nome da Mãe (opcional)"
+            label="Nome da Mãe"
             placeholder="Nome completo da mãe"
             error={errors.mother_name?.message}
             isLoading={isLoading}
@@ -541,7 +547,7 @@ export function PublicMemberForm({
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      label="Nome do Filho *"
+                      label="Nome do Filho (obrigatório)"
                       placeholder="Nome completo"
                       value={child.name}
                       onChange={(e) => {
@@ -603,7 +609,7 @@ export function PublicMemberForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Endereço"
+            label="Endereço (obrigatório)"
             placeholder="Rua das Flores, 123"
             error={errors.address?.message}
             isLoading={isLoading}
@@ -611,7 +617,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="Complemento (opcional)"
+            label="Complemento"
             placeholder="Apartamento, bloco, etc."
             error={errors.complement?.message}
             isLoading={isLoading}
@@ -619,7 +625,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="Bairro (opcional)"
+            label="Bairro"
             placeholder="Centro"
             error={errors.neighborhood?.message}
             isLoading={isLoading}
@@ -627,7 +633,7 @@ export function PublicMemberForm({
           />
 
           <Select
-            label="Estado"
+            label="Estado (obrigatório)"
             value={watch('state') || ''}
             onChange={(value) => setValue('state', value)}
             options={[
@@ -643,7 +649,7 @@ export function PublicMemberForm({
           />
 
           <Select
-            label="Cidade"
+            label="Cidade (obrigatório)"
             value={watch('city') || ''}
             onChange={(value) => setValue('city', value)}
             options={[
@@ -666,7 +672,7 @@ export function PublicMemberForm({
           />
 
           <Input
-            label="CEP (opcional)"
+            label="CEP"
             placeholder="12345-678"
             value={cepDisplay}
             onChange={handleCEPChange}
@@ -685,21 +691,12 @@ export function PublicMemberForm({
 
         {/* Bloco informativo */}
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-          <p className="text-sm text-blue-800">
-            <strong>Orientações importantes:</strong>
-          </p>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
             <li>
-              Se você se batizou na <strong>{churchName || 'igreja'}</strong>, a <strong>Data de Batismo</strong> e <strong>Data de Recebimento</strong> devem ser iguais.
+              Abaixo informe a forma e a data em que você foi recebido na <strong>{churchName || 'igreja'}</strong>.
             </li>
             <li>
-              Se você se batizou em outra igreja, insira a data em que você se batizou em <strong>Data de Batismo</strong>, e insira a data que você foi recebido na {churchName || 'igreja'} em <strong>Data de Recebimento</strong>.
-            </li>
-            <li>
-              Se não souber as datas exatas pode ser a data aproximada!
-            </li>
-            <li>
-              Para crianças, selecione a opção abaixo e informe se já foi batizado(a) ou apenas apresentado(a) na igreja.
+              Para <strong>crianças</strong> que ainda não possuem profissão de fé, selecione a opção abaixo e informe se já foi batizado(a) ou apenas apresentado(a) na igreja.
             </li>
           </ul>
         </div>
@@ -726,7 +723,7 @@ export function PublicMemberForm({
 
           {/* Segunda linha: Tipo de Recebimento */}
           <Select
-            label="Tipo de Recebimento"
+            label="Tipo de Recebimento (obrigatório)"
             value={watch('admission') || ''}
             onChange={(value) => setValue('admission', value)}
             options={isInfantMember ? [
@@ -735,8 +732,8 @@ export function PublicMemberForm({
               { value: 'Apresentação (sem batismo)', label: 'Apresentação (sem batismo)' }
             ] : [
               { value: '', label: 'Selecione o tipo de recebimento' },
-              { value: 'Batismo', label: 'Batismo' },
-              { value: 'Transferencia', label: 'Transferência' },
+              { value: 'Batismo', label: 'Batismo (se batizou nessa igreja)' },
+              { value: 'Transferencia', label: 'Transferência (se batizou em outra igreja)' },
               { value: 'Reconciliação', label: 'Reconciliação' },
               { value: 'Profissão de fé', label: 'Profissão de fé' },
               { value: 'Outro', label: 'Outro' }
@@ -745,21 +742,10 @@ export function PublicMemberForm({
             error={errors.admission?.message}
           />
 
-          {/* Terceira linha: Data de Batismo e Data de Recebimento */}
+          {/* Terceira linha: Data de Recebimento */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {watch('admission') !== 'Apresentação (sem batismo)' && (
-              <Input
-                label="Data de Batismo (opcional)"
-                placeholder="DD/MM/AAAA"
-                value={baptismDateDisplay}
-                onChange={(e) => handleDateChange(e, 'baptism_date')}
-                maxLength={10}
-                isLoading={isLoading}
-              />
-            )}
-
             <Input
-              label="Data de Recebimento"
+              label="Data de Recebimento (obrigatório)"
               placeholder="DD/MM/AAAA"
               value={admissionDateDisplay}
               onChange={(e) => handleDateChange(e, 'admission_date')}
@@ -769,10 +755,19 @@ export function PublicMemberForm({
             />
           </div>
 
+          {/* Bloco informativo */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-2">
+            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+              <li>
+                Se não souber a data exata, pode ser uma data aproximada!
+              </li>
+            </ul>
+          </div>
+
           {/* Quarta linha: Informação e campos de Função e Congregação */}
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800 leading-relaxed">
-              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma <strong>congregação/filial</strong>, informe também se você possui algum <strong>cargo</strong> ou faz parte de um <strong>ministério</strong> específico.
+              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma <strong>congregação/filial</strong>, informe também se você possui algum <strong>cargo</strong> ou serve em um <strong>ministério</strong> específico.
             </p>
           </div>
 
@@ -792,7 +787,7 @@ export function PublicMemberForm({
             />
 
             <Select
-              label="Cargo ou Ministério (opcional)"
+              label="Cargo ou Ministério"
               value={watch('role_id') || ''}
               onChange={(value) => setValue('role_id', value)}
               options={[
