@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import supabase from '../services/supabase';
 import { validateChurchUpdate } from '../validators/churchValidator';
 import { AuthRequest } from '../types';
+import { checkMemberLimit } from '../utils/planLimits';
 
 /**
  * Buscar dados da igreja do usuário autenticado
@@ -124,6 +125,55 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('Erro ao atualizar igreja:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+/**
+ * Obter informações do limite de membros
+ */
+export const getMemberLimit = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    // Buscar igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    // Verificar limite de membros
+    const limitCheck = await checkMemberLimit(church.id, 0);
+
+    res.json({
+      currentCount: limitCheck.currentCount,
+      limit: limitCheck.limit,
+      remaining: limitCheck.remaining,
+      planType: limitCheck.planType,
+      subscriptionStatus: limitCheck.subscriptionStatus,
+      hasActiveSubscription: limitCheck.hasActiveSubscription,
+      canAdd: limitCheck.canAdd,
+      percentage: limitCheck.limit === Infinity ? 0 : (limitCheck.currentCount / limitCheck.limit) * 100,
+    });
+
+  } catch (error) {
+    console.error('Erro ao obter limite de membros:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

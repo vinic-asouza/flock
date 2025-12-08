@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, memo } from 'react';
+import { useState, useRef, memo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -25,11 +26,41 @@ type LoginFormData = z.infer<typeof loginSchema>;
 function LoginPageComponent() {
   const [error, setError] = useState<string | null>(globalLoginError);
   const [errorDetails, setErrorDetails] = useState<string | null>(globalLoginErrorDetails);
-  const { login, isOperationLoading } = useAuth();
+  const { login, isOperationLoading, user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect');
+  const message = searchParams.get('message');
   
   // Ref para manter os estados durante re-renderizações
   const errorRef = useRef<string | null>(globalLoginError);
   const errorDetailsRef = useRef<string | null>(globalLoginErrorDetails);
+
+  // Mostrar mensagem especial se houver
+  useEffect(() => {
+    if (message === 'email_confirm_required') {
+      setError('Confirme seu email para continuar');
+      setErrorDetails('Enviamos um link de confirmação para seu email. Por favor, confirme seu email antes de fazer login.');
+    }
+  }, [message]);
+
+  // Estado para controlar se estamos no meio de um login
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Se já estiver autenticado ao carregar a página (não após submit), redirecionar
+  useEffect(() => {
+    // Só redirecionar automaticamente se:
+    // 1. Usuário está autenticado
+    // 2. NÃO estamos no meio de um processo de login (para evitar conflito)
+    // 3. Não há redirectUrl OU há redirectUrl (vamos respeitar o redirectUrl sempre)
+    if (user && !isLoggingIn) {
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push('/');
+      }
+    }
+  }, [user, redirectUrl, router, isLoggingIn]);
 
 
 
@@ -43,6 +74,7 @@ function LoginPageComponent() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      setIsLoggingIn(true);
       setError(null);
       setErrorDetails(null);
       // Limpar estado global
@@ -50,7 +82,20 @@ function LoginPageComponent() {
       globalLoginErrorDetails = null;
       
       await login(data);
-      // Redirecionamento será feito pelo AuthContext
+      
+      // Aguardar um momento para garantir que o estado do usuário foi atualizado no contexto
+      // Isso garante que o useEffect não interfira
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // Redirecionar para URL de redirect se houver, senão para home
+      // Usar window.location para garantir que o redirecionamento aconteça
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      } else {
+        router.push('/');
+      }
+      
+      // Não resetar isLoggingIn aqui pois vamos sair da página
     } catch (err: unknown) {
       let errorMessage = 'Erro ao fazer login';
       let errorDetails: string | null = null;
@@ -97,6 +142,7 @@ function LoginPageComponent() {
       setErrorDetails(errorDetails);
       errorRef.current = errorMessage;
       errorDetailsRef.current = errorDetails;
+      setIsLoggingIn(false);
     }
   };
 

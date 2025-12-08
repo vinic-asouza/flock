@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { getChurch, updateChurch } from '../controllers/churchController';
+import { getChurch, getMemberLimit, updateChurch } from '../controllers/churchController';
 import authMiddleware from '../middlewares/auth';
 
 const router = Router();
@@ -23,6 +23,9 @@ router.use(authMiddleware);
 
 // Rota para buscar dados da igreja
 router.get('/', getChurch);
+
+// Rota para obter informações do limite de membros
+router.get('/member-limit', getMemberLimit);
 
 // Rota para atualizar dados da igreja
 router.put('/', updateChurch);

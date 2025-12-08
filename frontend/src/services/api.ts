@@ -482,6 +482,20 @@ class ApiService {
     return response.data.church;
   }
 
+  async getMemberLimit(): Promise<{
+    currentCount: number;
+    limit: number;
+    remaining: number;
+    planType?: string | null;
+    subscriptionStatus?: string | null;
+    hasActiveSubscription: boolean;
+    canAdd: boolean;
+    percentage: number;
+  }> {
+    const response = await this.api.get('/church/member-limit');
+    return response.data;
+  }
+
   // Gerenciamento de Conta
   async getAccountData(): Promise<{ id: string; email: string; phone?: string; [key: string]: unknown }> {
     const response = await this.api.get('/account');

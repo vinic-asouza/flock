@@ -1,13 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { Church, Shield, FileText } from 'lucide-react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Church, Shield, FileText, CreditCard } from 'lucide-react';
 import { ChurchManagement } from '@/components/settings/ChurchManagement';
 import { AccountManagement } from '@/components/settings/AccountManagement';
 import AuditLogs from '@/components/settings/AuditLogs';
+import { PaymentManagement } from '@/components/settings/PaymentManagement';
 
-export default function SettingsPage() {
+function SettingsPageContent() {
+    const searchParams = useSearchParams();
+    const tabFromUrl = searchParams.get('tab');
     const [activeSection, setActiveSection] = useState('church');
+
+    // Definir aba inicial baseado no query parameter
+    useEffect(() => {
+        if (tabFromUrl && ['church', 'payment', 'account', 'logs'].includes(tabFromUrl)) {
+            setActiveSection(tabFromUrl);
+        }
+    }, [tabFromUrl]);
 
     const settingsSections = [
         {
@@ -15,6 +26,12 @@ export default function SettingsPage() {
             title: 'Gerenciamento da Igreja',
             description: 'Gerencie os dados básicos da sua igreja',
             icon: Church
+        },
+        {
+            id: 'payment',
+            title: 'Pagamento',
+            description: 'Gerencie sua assinatura e pagamentos',
+            icon: CreditCard
         },
         {
             id: 'account',
@@ -64,10 +81,29 @@ export default function SettingsPage() {
              <div>
                  {activeSection === 'church' && <ChurchManagement />}
 
+                 {activeSection === 'payment' && <PaymentManagement />}
+
                  {activeSection === 'account' && <AccountManagement />}
 
                  {activeSection === 'logs' && <AuditLogs />}
              </div>
         </div>
+    );
+}
+
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
+                    <p className="mt-2 text-sm text-gray-500">
+                        Carregando...
+                    </p>
+                </div>
+            </div>
+        }>
+            <SettingsPageContent />
+        </Suspense>
     );
 }

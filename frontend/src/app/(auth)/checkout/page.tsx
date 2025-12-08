@@ -55,10 +55,23 @@ export default function CheckoutPage() {
       window.location.href = url;
     } catch (err: any) {
       console.error('Erro ao criar checkout:', err);
+      
+      // Extrair mensagem de erro mais detalhada
+      let errorMessage = 'Erro ao iniciar processo de pagamento. Tente novamente.';
+      let errorDetails = '';
+      
+      if (err.response?.data) {
+        errorMessage = err.response.data.error || errorMessage;
+        errorDetails = err.response.data.details || '';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Mostrar mensagem de erro com detalhes se houver
       setError(
-        err.response?.data?.error ||
-        err.message ||
-        'Erro ao iniciar processo de pagamento. Tente novamente.'
+        errorDetails 
+          ? `${errorMessage}: ${errorDetails}`
+          : errorMessage
       );
       setIsLoading(false);
     }

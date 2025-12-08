@@ -95,8 +95,46 @@ function MembersPageContent() {
   const [registrationLinksModalOpen, setRegistrationLinksModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
+  const [memberLimit, setMemberLimit] = useState<{
+    currentCount: number;
+    limit: number;
+    canAdd: boolean;
+  } | null>(null);
 
   const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic } = useMembers();
+
+  // Função para atualizar o limite de membros
+  const updateMemberLimit = useCallback(async () => {
+    try {
+      const limitData = await apiService.getMemberLimit();
+      setMemberLimit({
+        currentCount: limitData.currentCount,
+        limit: limitData.limit,
+        canAdd: limitData.canAdd,
+      });
+    } catch (error) {
+      console.error('Erro ao carregar limite de membros:', error);
+      // Em caso de erro, não definir memberLimit para evitar mostrar botões incorretamente
+      // O estado permanece como estava (null ou último valor válido)
+    }
+  }, []);
+
+  // Carregar informações do limite de membros
+  useEffect(() => {
+    updateMemberLimit();
+  }, [updateMemberLimit]);
+
+  // Atualizar limite quando membros forem atualizados
+  useEffect(() => {
+    const handleMemberUpdate = () => {
+      updateMemberLimit();
+    };
+
+    window.addEventListener('memberUpdated', handleMemberUpdate);
+    return () => {
+      window.removeEventListener('memberUpdated', handleMemberUpdate);
+    };
+  }, [updateMemberLimit]);
 
   // Aplicar filtros da URL se presentes e carregar membros
   useEffect(() => {
@@ -318,6 +356,11 @@ function MembersPageContent() {
     // A API retorna um Member completo, então fazemos cast através de unknown
     addMemberOptimistic(memberData as unknown as Member);
     setCreateModalOpen(false);
+    
+    // Disparar evento para recarregar a lista e atualizar o limite de membros no Header
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('memberUpdated'));
+    }, 100);
   }, [addMemberOptimistic]);
 
   const handleEditSuccess = useCallback((memberData: { id: string; [key: string]: unknown }) => {
@@ -408,29 +451,42 @@ function MembersPageContent() {
           <p className="text-sm text-gray-600">Visualize, cadastre e gerencie os membros da igreja.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => setRegistrationLinksModalOpen(true)}
-            className="inline-flex items-center gap-2"
-          >
-            <LinkIcon size={18} />
-            Links de Autocadastro
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setImportModalOpen(true)}
-            className="inline-flex items-center gap-2"
-          >
-            <Upload size={18} />
-            Importar CSV
-          </Button>
-          <Button
-            onClick={() => setCreateModalOpen(true)}
-            className="inline-flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Adicionar Membro
-          </Button>
+          {/* Mostrar botões apenas se:
+              - Não houver limite definido (memberLimit === null) OU
+              - Puder adicionar (canAdd === true) OU  
+              - O limite for infinito (sem plano ou plano custom)
+          */}
+          {memberLimit === null || memberLimit.canAdd === true || memberLimit.limit === Infinity ? (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => setRegistrationLinksModalOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <LinkIcon size={18} />
+                Links de Autocadastro
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setImportModalOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Upload size={18} />
+                Importar CSV
+              </Button>
+              <Button
+                onClick={() => setCreateModalOpen(true)}
+                className="inline-flex items-center gap-2"
+              >
+                <Plus size={18} />
+                Adicionar Membro
+              </Button>
+            </>
+          ) : (
+            <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+              Limite de membros atingido ({memberLimit.currentCount} de {memberLimit.limit})
+            </div>
+          )}
         </div>
       </div>
       <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={false} />
@@ -535,6 +591,10 @@ function MembersPageContent() {
         onSuccess={() => {
           // Recarregar lista de membros após importação
           loadMembers(filters, sorting, 1);
+          // Disparar evento para atualizar o limite de membros no Header
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('memberUpdated'));
+          }, 100);
         }}
       />
 

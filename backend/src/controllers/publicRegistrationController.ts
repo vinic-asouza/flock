@@ -3,6 +3,7 @@ import supabase from '../services/supabase';
 import { PublicRegistrationRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
+import { checkMemberLimit } from '../utils/planLimits';
 
 /**
  * Valida um link de registro público (sem criar membro)
@@ -28,6 +29,23 @@ export const validateRegistrationLink = async (
       return res.status(404).json({
         error: 'Igreja não encontrada',
         details: 'A igreja associada a este link não foi encontrada'
+      });
+    }
+
+    // Verificar limite de membros
+    const limitCheck = await checkMemberLimit(churchId, 1);
+    if (!limitCheck.canAdd) {
+      // Desativar o link se o limite foi atingido
+      await supabase
+        .from('public_registration_links')
+        .update({ is_active: false })
+        .eq('id', registrationLink.id);
+
+      return res.status(403).json({
+        valid: false,
+        error: 'Limite de membros atingido',
+        details: 'O limite de membros da igreja foi atingido. Entre em contato com a administração.',
+        church_name: church.name,
       });
     }
 
@@ -62,6 +80,21 @@ export const createMemberViaPublicLink = async (
     // O middleware já validou o link e adicionou ao request
     const registrationLink = req.registrationLink!;
     const churchId = req.churchId!;
+
+    // Verificar limite de membros ANTES de validar os dados
+    const limitCheck = await checkMemberLimit(churchId, 1);
+    if (!limitCheck.canAdd) {
+      // Desativar o link se o limite foi atingido
+      await supabase
+        .from('public_registration_links')
+        .update({ is_active: false })
+        .eq('id', registrationLink.id);
+
+      return res.status(403).json({
+        error: 'Limite de membros atingido',
+        details: 'O limite de membros da igreja foi atingido. Entre em contato com a administração para mais informações.',
+      });
+    }
 
     // Validar dados do membro
     const { error: validationError } = validateMember(req.body);

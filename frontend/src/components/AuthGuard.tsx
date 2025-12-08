@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, memo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -12,13 +12,25 @@ interface AuthGuardProps {
 function AuthGuardComponent({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading, isOperationLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
+    // Não redirecionar se:
+    // 1. Estiver em uma operação de loading
+    // 2. Estiver na página de checkout (precisa estar autenticado)
+    // 3. Houver um parâmetro redirect na URL (o componente de login/register vai lidar com isso)
+    const redirectUrl = searchParams.get('redirect');
+    const isOnCheckoutPage = pathname === '/checkout';
+    const hasRedirectParam = !!redirectUrl;
+    
     // Só redirecionar se não estiver em uma operação de loading
-    if (!isLoading && !isOperationLoading && isAuthenticated) {
+    // E não estiver em checkout
+    // E não houver parâmetro redirect (que indica que o usuário precisa ir para outra página)
+    if (!isLoading && !isOperationLoading && isAuthenticated && !isOnCheckoutPage && !hasRedirectParam) {
       router.push('/');
     }
-  }, [isAuthenticated, isLoading, isOperationLoading, router]);
+  }, [isAuthenticated, isLoading, isOperationLoading, router, pathname, searchParams]);
 
   if (isLoading) {
     return (
@@ -33,7 +45,12 @@ function AuthGuardComponent({ children }: AuthGuardProps) {
   }
 
   // Só mostrar loading de redirecionamento se não estiver em uma operação
-  if (isAuthenticated && !isOperationLoading) {
+  // E não estiver em checkout ou com redirect
+  const redirectUrl = searchParams.get('redirect');
+  const isOnCheckoutPage = pathname === '/checkout';
+  const hasRedirectParam = !!redirectUrl;
+  
+  if (isAuthenticated && !isOperationLoading && !isOnCheckoutPage && !hasRedirectParam) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="text-center">

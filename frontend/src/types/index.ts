@@ -12,6 +12,14 @@ export interface Church {
   email_church?: string;
   phone_church?: string;
   created_at: string;
+  // Campos de assinatura Stripe
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  subscription_status?: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete' | 'incomplete_expired' | 'unpaid' | null;
+  plan_type?: '200' | '500' | '800' | 'custom' | null;
+  subscription_start_date?: string | null;
+  subscription_end_date?: string | null;
+  subscription_updated_at?: string | null;
 }
 
 export interface Session {

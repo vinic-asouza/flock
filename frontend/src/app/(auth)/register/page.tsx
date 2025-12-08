@@ -134,7 +134,7 @@ export default function RegisterPage() {
   const [cnpjDisplay, setCnpjDisplay] = useState('');
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
-  const { register: registerChurch, isOperationLoading } = useAuth();
+  const { register: registerChurch, login, isOperationLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan');
@@ -308,11 +308,39 @@ export default function RegisterPage() {
       // Guardar email para instrução de confirmação
       setRegisteredEmail(cleanData.email);
 
-      // Se houver plano selecionado, redirecionar para checkout após registro
+      // Se houver plano selecionado, fazer login automático e redirecionar para checkout
       if (selectedPlan && ['200', '500', '800', 'custom'].includes(selectedPlan)) {
-        // Redirecionar para página de checkout
-        router.push(`/checkout?plan=${selectedPlan}`);
-        return;
+        try {
+          // Fazer login automático com as credenciais do registro
+          await login({
+            email: cleanData.email,
+            password: cleanData.password,
+          });
+          
+          // Login bem-sucedido, aguardar um momento e redirecionar para checkout
+          // Usar window.location.href para garantir que o redirecionamento aconteça
+          await new Promise(resolve => setTimeout(resolve, 150));
+          window.location.href = `/checkout?plan=${selectedPlan}`;
+          return;
+        } catch (loginError: any) {
+          // Se o login falhar (ex: email precisa ser confirmado)
+          // Verificar se é erro de email não confirmado
+          const errorMessage = loginError?.message || '';
+          const isEmailNotConfirmed = errorMessage.toLowerCase().includes('confirm') || 
+                                     errorMessage.toLowerCase().includes('email não confirmado');
+          
+          if (isEmailNotConfirmed) {
+            // Email não confirmado - redirecionar para login com mensagem
+            // O usuário precisará confirmar o email primeiro
+            router.push(`/login?redirect=/checkout?plan=${selectedPlan}&message=email_confirm_required`);
+            return;
+          }
+          
+          // Outro erro - redirecionar para login normalmente
+          console.warn('Login automático falhou:', loginError);
+          router.push(`/login?redirect=/checkout?plan=${selectedPlan}`);
+          return;
+        }
       }
 
       setSuccess(true);

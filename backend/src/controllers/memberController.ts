@@ -4,6 +4,7 @@ import { AuthRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { logAudit } from '../utils/auditLogger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
+import { checkMemberLimit } from '../utils/planLimits';
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -425,6 +426,19 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Verificar limite de membros do plano
+    const limitCheck = await checkMemberLimit(church.id, 1);
+    if (!limitCheck.canAdd) {
+      return res.status(403).json({
+        error: 'Limite de membros atingido',
+        details: limitCheck.message || 'Não é possível adicionar mais membros',
+        currentCount: limitCheck.currentCount,
+        limit: limitCheck.limit,
+        remaining: limitCheck.remaining,
+        planType: limitCheck.planType,
+      });
+    }
+
     // Normalizar datas antes de criar o membro (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(req.body);
 
@@ -679,6 +693,20 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         error: 'Dados inválidos',
         details: 'O corpo da requisição deve ser um array de membros'
+      });
+    }
+
+    // Verificar limite de membros do plano (criação em massa - tudo ou nada)
+    const limitCheck = await checkMemberLimit(church.id, members.length);
+    if (!limitCheck.canAdd) {
+      return res.status(403).json({
+        error: 'Limite de membros atingido',
+        details: limitCheck.message || 'Não é possível adicionar esta quantidade de membros',
+        currentCount: limitCheck.currentCount,
+        limit: limitCheck.limit,
+        remaining: limitCheck.remaining,
+        requested: members.length,
+        planType: limitCheck.planType,
       });
     }
 

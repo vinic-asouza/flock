@@ -95,9 +95,9 @@ STRIPE_WEBHOOK_SECRET=whsec_... # Secret do webhook (será configurado depois)
 STRIPE_PUBLISHABLE_KEY=pk_test_... # Chave pública (para referência)
 
 # IDs dos Planos Stripe (obtidos no Dashboard)
-STRIPE_PRICE_ID_200=price_... # ID do plano 200 membros
-STRIPE_PRICE_ID_500=price_... # ID do plano 500 membros
-STRIPE_PRICE_ID_800=price_... # ID do plano 800 membros
+STRIPE_PRICE_ID_M200=price_... # ID do plano 200 membros
+STRIPE_PRICE_ID_M500=price_... # ID do plano 500 membros
+STRIPE_PRICE_ID_M800=price_... # ID do plano 800 membros
 STRIPE_PRICE_ID_CUSTOM=price_... # ID do plano personalizado
 
 # URL do Frontend (para redirecionamento após checkout)
@@ -171,7 +171,10 @@ Adicione no `.env.local` da landing page:
 ```env
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
 ```
+
+⚠️ **Importante**: A variável `NEXT_PUBLIC_FRONTEND_URL` é necessária para redirecionar para a página de registro quando o cliente não está autenticado.
 
 ### 3. Componentes Criados
 
@@ -223,15 +226,49 @@ O Stripe CLI fornecerá um `webhook signing secret` temporário. Use-o no `.env`
 
 ## Testando a Integração
 
-### 1. Testar Checkout
+### 1. Verificar Serviços em Execução
 
-1. Acesse a landing page
-2. Clique em um plano
-3. Preencha o formulário de checkout
-4. Use cartão de teste: `4242 4242 4242 4242`
-5. Data: qualquer data futura
-6. CVC: qualquer 3 dígitos
-7. Complete o pagamento
+Antes de testar, certifique-se de que os seguintes serviços estão rodando:
+
+```bash
+# Terminal 1: Backend
+cd backend
+npm run dev
+# Deve estar em http://localhost:4000
+
+# Terminal 2: Frontend
+cd frontend
+npm run dev
+# Deve estar em http://localhost:3000
+
+# Terminal 3: Landing
+cd landing
+npm run dev
+# Deve estar em http://localhost:3001 (ou próxima porta disponível)
+```
+
+### 2. Verificar Variáveis de Ambiente
+
+Certifique-se de que o arquivo `landing/.env.local` existe e contém:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+### 3. Testar Checkout
+
+1. Acesse a landing page (geralmente `http://localhost:3001`)
+2. Clique em "Assinar Agora" em um plano
+3. **Se não estiver autenticado**: Será redirecionado para `/register?plan=200` no frontend
+4. Preencha o formulário de registro
+5. Após criar conta, será redirecionado para `/checkout?plan=200`
+6. Clique em "Continuar para Pagamento"
+7. Use cartão de teste: `4242 4242 4242 4242`
+8. Data: qualquer data futura
+9. CVC: qualquer 3 dígitos
+10. Complete o pagamento
 
 ### 2. Verificar no Stripe Dashboard
 

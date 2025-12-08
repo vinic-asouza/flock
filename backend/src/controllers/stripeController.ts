@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
-import { stripe, STRIPE_PRICE_IDS, getOrCreateCustomer, createCheckoutSession, createCustomerPortalSession } from '../services/stripe';
+import { stripe, STRIPE_PRICE_IDS, getOrCreateCustomer, createCheckoutSession, createCustomerPortalSession, updateSubscription } from '../services/stripe';
 import supabase from '../services/supabase';
 import { AuthRequest } from '../types';
 
@@ -11,6 +11,11 @@ import { AuthRequest } from '../types';
 export const createCheckout = async (req: AuthRequest, res: Response) => {
   try {
     const { plan } = req.body;
+
+    console.log('📦 Criando checkout session:', {
+      plan,
+      user: req.user ? { id: req.user.id, email: req.user.email } : 'não autenticado',
+    });
 
     // Validar plano
     if (!plan || !['200', '500', '800', 'custom'].includes(plan)) {
@@ -23,10 +28,60 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     // Obter price_id do plano
     const priceId = STRIPE_PRICE_IDS[plan as keyof typeof STRIPE_PRICE_IDS];
     if (!priceId) {
+      console.error(`❌ Price ID não configurado para o plano: ${plan}`);
       return res.status(500).json({
         error: 'Plano não configurado',
-        details: `Price ID para o plano ${plan} não está configurado`,
+        details: `Price ID para o plano ${plan} não está configurado. Verifique as variáveis de ambiente STRIPE_PRICE_ID_${plan}`,
       });
+    }
+
+    console.log(`✅ Price ID encontrado para plano ${plan}: ${priceId}`);
+
+    // Debug: verificar autenticação
+    console.log('🔐 Status de autenticação:', {
+      hasUser: !!req.user,
+      userId: req.user?.id,
+      userEmail: req.user?.email,
+      hasCookies: !!req.cookies,
+      cookieNames: req.cookies ? Object.keys(req.cookies) : [],
+    });
+
+    // Tentar autenticar novamente se não estiver autenticado mas houver cookies
+    if (!req.user && req.cookies) {
+      const { cookieConfig } = require('../utils/cookieUtils');
+      const accessToken = req.cookies[cookieConfig.names.accessToken];
+      
+      if (accessToken) {
+        console.log('🔄 Tentando autenticar com token do cookie...');
+        try {
+          const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+          if (!error && user) {
+            req.user = {
+              id: user.id,
+              email: user.email || ''
+            };
+            console.log('✅ Autenticação bem-sucedida via token do cookie');
+          } else if (error) {
+            console.log('⚠️ Erro ao validar token:', error.message);
+            // Tentar renovar token
+            const refreshToken = req.cookies[cookieConfig.names.refreshToken];
+            if (refreshToken) {
+              const { data: authData } = await supabase.auth.refreshSession({
+                refresh_token: refreshToken
+              });
+              if (authData?.user) {
+                req.user = {
+                  id: authData.user.id,
+                  email: authData.user.email || ''
+                };
+                console.log('✅ Token renovado e usuário autenticado');
+              }
+            }
+          }
+        } catch (authError) {
+          console.error('❌ Erro ao tentar autenticar:', authError);
+        }
+      }
     }
 
     // Se usuário autenticado, buscar dados da igreja
@@ -36,6 +91,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     let customerName: string;
 
     if (req.user) {
+      console.log('✅ Usuário autenticado, buscando dados da igreja...');
       // Buscar igreja do usuário
       const { data: church, error: churchError } = await supabase
         .from('churches')
@@ -77,11 +133,14 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       }
     } else {
       // Usuário não autenticado (checkout da landing page)
+      console.log('⚠️ Usuário não autenticado, esperando email e nome no body');
       const { email, name, church_id } = req.body;
 
       if (!email || !name) {
+        console.error('❌ Email e nome não fornecidos no body:', { email, name, body: req.body });
         return res.status(400).json({
           error: 'Email e nome são obrigatórios',
+          details: 'Para checkout não autenticado, é necessário fornecer email e nome no body da requisição',
         });
       }
 
@@ -124,9 +183,22 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error('Erro ao criar checkout:', error);
+    
+    // Log detalhado do erro
+    if (error.type === 'StripeInvalidRequestError') {
+      console.error('Erro do Stripe:', {
+        type: error.type,
+        message: error.message,
+        code: error.code,
+        param: error.param,
+      });
+    }
+    
     res.status(500).json({
       error: 'Erro ao criar sessão de checkout',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      details: process.env.NODE_ENV === 'development' 
+        ? error.message || error.toString()
+        : 'Verifique se as configurações do Stripe estão corretas',
     });
   }
 };
@@ -436,4 +508,239 @@ async function handlePaymentFailed(invoice: any) {
       .eq('stripe_customer_id', customerId);
   }
 }
+
+/**
+ * Sincronizar assinatura do Stripe com o banco de dados
+ * POST /api/stripe/sync-subscription
+ */
+export const syncSubscription = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autenticado',
+        details: 'É necessário estar autenticado para sincronizar assinatura',
+      });
+    }
+
+    // Buscar igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, stripe_customer_id, stripe_subscription_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não possui igreja cadastrada',
+      });
+    }
+
+    if (!church.stripe_customer_id) {
+      return res.status(400).json({
+        error: 'Cliente não possui customer_id',
+        details: 'Não foi possível encontrar o customer_id do Stripe para esta conta',
+      });
+    }
+
+    // Buscar assinaturas ativas do cliente no Stripe
+    const subscriptions = await stripe.subscriptions.list({
+      customer: church.stripe_customer_id,
+      status: 'all',
+      limit: 10,
+    });
+
+    if (subscriptions.data.length === 0) {
+      // Nenhuma assinatura encontrada, limpar dados do banco
+      await supabase
+        .from('churches')
+        .update({
+          stripe_subscription_id: null,
+          subscription_status: null,
+          plan_type: null,
+          subscription_start_date: null,
+          subscription_end_date: null,
+        })
+        .eq('id', church.id);
+
+      return res.json({
+        message: 'Nenhuma assinatura encontrada no Stripe',
+        synced: false,
+      });
+    }
+
+    // Pegar a assinatura mais recente (geralmente a primeira)
+    const subscription = subscriptions.data[0];
+    const subscriptionId = subscription.id;
+    const priceId = subscription.items.data[0].price.id;
+
+    // Determinar tipo de plano baseado no price_id
+    const planType = Object.entries(STRIPE_PRICE_IDS).find(
+      ([_, id]) => id === priceId
+    )?.[0] || 'custom';
+
+    // Acessar propriedades com type assertion
+    const sub = subscription as any;
+    const currentPeriodStart = sub.current_period_start as number | null;
+    const cancelAt = sub.cancel_at as number | null;
+    const canceledAt = sub.canceled_at as number | null;
+
+    // Atualizar dados da igreja
+    const { error: updateError } = await supabase
+      .from('churches')
+      .update({
+        stripe_subscription_id: subscriptionId,
+        subscription_status: subscription.status,
+        plan_type: planType,
+        subscription_start_date: currentPeriodStart
+          ? new Date(currentPeriodStart * 1000).toISOString()
+          : null,
+        subscription_end_date: cancelAt
+          ? new Date(cancelAt * 1000).toISOString()
+          : canceledAt
+          ? new Date(canceledAt * 1000).toISOString()
+          : null,
+        subscription_updated_at: new Date().toISOString(),
+      })
+      .eq('id', church.id);
+
+    if (updateError) {
+      console.error('Erro ao atualizar assinatura:', updateError);
+      return res.status(500).json({
+        error: 'Erro ao atualizar assinatura',
+        details: updateError.message,
+      });
+    }
+
+    res.json({
+      message: 'Assinatura sincronizada com sucesso',
+      synced: true,
+      subscription: {
+        id: subscriptionId,
+        status: subscription.status,
+        plan_type: planType,
+        start_date: currentPeriodStart ? new Date(currentPeriodStart * 1000).toISOString() : null,
+        end_date: cancelAt ? new Date(cancelAt * 1000).toISOString() : canceledAt ? new Date(canceledAt * 1000).toISOString() : null,
+      },
+    });
+  } catch (error: any) {
+    console.error('Erro ao sincronizar assinatura:', error);
+    res.status(500).json({
+      error: 'Erro ao sincronizar assinatura',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Trocar plano da assinatura
+ * POST /api/stripe/change-plan
+ */
+export const changePlan = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autenticado',
+        details: 'É necessário estar autenticado para trocar de plano',
+      });
+    }
+
+    const { plan } = req.body;
+
+    // Validar plano
+    if (!plan || !['200', '500', '800'].includes(plan)) {
+      return res.status(400).json({
+        error: 'Plano inválido',
+        details: 'Plano deve ser: 200, 500 ou 800',
+      });
+    }
+
+    // Obter price_id do novo plano
+    const newPriceId = STRIPE_PRICE_IDS[plan as keyof typeof STRIPE_PRICE_IDS];
+    if (!newPriceId) {
+      return res.status(500).json({
+        error: 'Plano não configurado',
+        details: `Price ID para o plano ${plan} não está configurado`,
+      });
+    }
+
+    // Buscar igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, stripe_customer_id, stripe_subscription_id, plan_type')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não possui igreja cadastrada',
+      });
+    }
+
+    if (!church.stripe_subscription_id) {
+      return res.status(400).json({
+        error: 'Nenhuma assinatura encontrada',
+        details: 'Você precisa ter uma assinatura ativa para trocar de plano',
+      });
+    }
+
+    // Verificar se já está no mesmo plano
+    if (church.plan_type === plan) {
+      return res.status(400).json({
+        error: 'Plano já ativo',
+        details: `Você já está no plano ${plan}`,
+      });
+    }
+
+    // Atualizar assinatura no Stripe
+    const updatedSubscription = await updateSubscription(
+      church.stripe_subscription_id,
+      newPriceId
+    );
+
+    // Determinar tipo de plano
+    const planType = Object.entries(STRIPE_PRICE_IDS).find(
+      ([_, id]) => id === newPriceId
+    )?.[0] || 'custom';
+
+    // Atualizar banco de dados (o webhook também atualizará, mas fazemos aqui para resposta imediata)
+    const sub = updatedSubscription as any;
+    const currentPeriodStart = sub.current_period_start as number | null;
+    const cancelAt = sub.cancel_at as number | null;
+    const canceledAt = sub.canceled_at as number | null;
+
+    await supabase
+      .from('churches')
+      .update({
+        plan_type: planType,
+        subscription_status: updatedSubscription.status,
+        subscription_start_date: currentPeriodStart
+          ? new Date(currentPeriodStart * 1000).toISOString()
+          : null,
+        subscription_end_date: cancelAt
+          ? new Date(cancelAt * 1000).toISOString()
+          : canceledAt
+          ? new Date(canceledAt * 1000).toISOString()
+          : null,
+        subscription_updated_at: new Date().toISOString(),
+      })
+      .eq('id', church.id);
+
+    res.json({
+      message: 'Plano alterado com sucesso',
+      subscription: {
+        id: updatedSubscription.id,
+        status: updatedSubscription.status,
+        plan_type: planType,
+      },
+    });
+  } catch (error: any) {
+    console.error('Erro ao trocar plano:', error);
+    res.status(500).json({
+      error: 'Erro ao trocar plano',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
 

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCheckout, createPortalSession, handleWebhook } from '../controllers/stripeController';
+import { createCheckout, createPortalSession, handleWebhook, syncSubscription, changePlan } from '../controllers/stripeController';
 import { optionalAuth } from '../middlewares/auth';
 import authMiddleware from '../middlewares/auth';
 
@@ -18,6 +18,12 @@ router.post('/create-checkout-session', optionalAuth, createCheckout);
 
 // Criar sessão do portal do cliente (requer autenticação)
 router.post('/create-portal-session', authMiddleware, createPortalSession);
+
+// Sincronizar assinatura do Stripe (requer autenticação)
+router.post('/sync-subscription', authMiddleware, syncSubscription);
+
+// Trocar plano da assinatura (requer autenticação)
+router.post('/change-plan', authMiddleware, changePlan);
 
 export default router;
 

@@ -3,6 +3,7 @@ import { AuthRequest } from '../types';
 import supabase from '../services/supabase';
 import { validateCSV, importMembers } from '../services/memberImportService';
 import { logAudit } from '../utils/auditLogger';
+import { checkMemberLimit } from '../utils/planLimits';
 
 /**
  * Valida um arquivo CSV antes da importação
@@ -137,6 +138,31 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
 
     // Opções de importação
     const skipDuplicates = req.body.skipDuplicates !== 'false';
+
+    // Validar CSV primeiro para contar quantos membros válidos serão importados
+    const validationResult = await validateCSV(
+      req.file.buffer,
+      church.id,
+      congregationId
+    );
+
+    // Contar quantos membros válidos serão importados (considerando duplicatas)
+    const validMembersCount = validationResult.validRows;
+    
+    // Verificar limite de membros ANTES de importar (tudo ou nada)
+    const limitCheck = await checkMemberLimit(church.id, validMembersCount);
+    if (!limitCheck.canAdd) {
+      return res.status(403).json({
+        error: 'Limite de membros atingido',
+        details: limitCheck.message || `Não é possível importar ${validMembersCount} membros. O limite do plano foi atingido.`,
+        currentCount: limitCheck.currentCount,
+        limit: limitCheck.limit,
+        remaining: limitCheck.remaining,
+        requested: validMembersCount,
+        planType: limitCheck.planType,
+        validationResult, // Incluir resultado da validação para o frontend
+      });
+    }
 
     // Importa os membros
     const importResult = await importMembers(

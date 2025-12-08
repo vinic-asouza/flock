@@ -167,29 +167,46 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
 
     // Se não há token, apenas continuar sem autenticação
     if (!token) {
+      console.log('🔓 optionalAuth: Nenhum token encontrado, continuando sem autenticação');
       return next();
     }
 
     // Verificar se o token está na blacklist
     if (global.tokenBlacklist && global.tokenBlacklist.has(token)) {
+      console.log('🔓 optionalAuth: Token na blacklist, continuando sem autenticação');
       return next(); // Continuar sem autenticação se token foi revogado
     }
 
     // Verificar o token com o Supabase
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    if (!error && user) {
+    if (error) {
+      console.log('⚠️ optionalAuth: Erro ao validar token:', error.message);
+      // Tentar renovar token se expirado
+      const newToken = await tryRefreshToken(req, res);
+      if (newToken) {
+        const { data: newUserData, error: newError } = await supabase.auth.getUser(newToken);
+        if (!newError && newUserData.user) {
+          req.user = {
+            id: newUserData.user.id,
+            email: newUserData.user.email || ''
+          };
+          console.log('✅ optionalAuth: Token renovado e usuário autenticado');
+        }
+      }
+    } else if (user) {
       // Adicionar o usuário ao objeto da requisição
       req.user = {
         id: user.id,
         email: user.email || ''
       };
+      console.log('✅ optionalAuth: Usuário autenticado:', user.id);
     }
 
     next();
   } catch (error) {
     // Em caso de erro, apenas continuar sem autenticação
-    console.error('Erro na autenticação opcional:', error);
+    console.error('❌ Erro na autenticação opcional:', error);
     next();
   }
 };

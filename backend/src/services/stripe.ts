@@ -15,10 +15,10 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 // Mapeamento de planos para price_ids
 export const STRIPE_PRICE_IDS = {
-  '200': process.env.STRIPE_PRICE_ID_200 || '',
-  '500': process.env.STRIPE_PRICE_ID_500 || '',
-  '800': process.env.STRIPE_PRICE_ID_800 || '',
-  'custom': process.env.STRIPE_PRICE_ID_CUSTOM || '',
+  '200': process.env.STRIPE_PRICE_ID_M200 || '',
+  '500': process.env.STRIPE_PRICE_ID_M500 || '',
+  '800': process.env.STRIPE_PRICE_ID_M800 || '',
+  // 'custom': process.env.STRIPE_PRICE_ID_CUSTOM || '',
 };
 
 // Verificar se todos os price_ids estão configurados

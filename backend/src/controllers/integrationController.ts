@@ -4,6 +4,7 @@ import { AuthRequest, IntegrationMember, Member } from '../types';
 import { validateIntegrationMember } from '../validators/integrationMemberValidator';
 import { validateMember } from '../validators/memberValidator';
 import { logAudit } from '../utils/auditLogger';
+import { checkMemberLimit } from '../utils/planLimits';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -504,6 +505,19 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       return res.status(400).json({
         error: 'Integrante descartado',
         details: 'Não é possível integrar um registro descartado'
+      });
+    }
+
+    // Verificar limite de membros do plano
+    const limitCheck = await checkMemberLimit(church.id, 1);
+    if (!limitCheck.canAdd) {
+      return res.status(403).json({
+        error: 'Limite de membros atingido',
+        details: limitCheck.message || 'Não é possível adicionar mais membros',
+        currentCount: limitCheck.currentCount,
+        limit: limitCheck.limit,
+        remaining: limitCheck.remaining,
+        planType: limitCheck.planType,
       });
     }
 
