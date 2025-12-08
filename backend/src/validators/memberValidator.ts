@@ -9,7 +9,13 @@ const memberSchema = Joi.object<Partial<Member>>({
       'any.required': 'Nome é obrigatório'
     }),
 
-  birth: Joi.date()
+  birth: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).messages({
+        'string.pattern.base': 'Data de nascimento deve estar no formato YYYY-MM-DD'
+      }),
+      Joi.date()
+    )
     .required()
     .messages({
       'date.base': 'Data de nascimento inválida',
@@ -40,11 +46,8 @@ const memberSchema = Joi.object<Partial<Member>>({
     }),
 
   document: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Documento é obrigatório',
-      'any.required': 'Documento é obrigatório'
-    }),
+    .optional()
+    .allow(null, ''),
 
   spouse: Joi.string()
     .optional()
@@ -64,20 +67,16 @@ const memberSchema = Joi.object<Partial<Member>>({
   cep: Joi.string()
     .length(8)
     .pattern(/^[0-9]+$/)
-    .required()
+    .optional()
+    .allow(null, '')
     .messages({
-      'string.empty': 'CEP é obrigatório',
-      'any.required': 'CEP é obrigatório',
       'string.length': 'CEP deve ter 8 dígitos',
       'string.pattern.base': 'CEP deve conter apenas números'
     }),
 
   neighborhood: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Bairro é obrigatório',
-      'any.required': 'Bairro é obrigatório'
-    }),
+    .optional()
+    .allow(null, ''),
 
   city: Joi.string()
     .required()
@@ -96,11 +95,8 @@ const memberSchema = Joi.object<Partial<Member>>({
     }),
 
   phone: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Telefone é obrigatório',
-      'any.required': 'Telefone é obrigatório'
-    }),
+    .optional()
+    .allow(null, ''),
 
   whatsapp: Joi.string()
     .optional()
@@ -114,7 +110,13 @@ const memberSchema = Joi.object<Partial<Member>>({
       'string.email': 'Email inválido'
     }),
 
-  baptism_date: Joi.date()
+  baptism_date: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).allow('', null).messages({
+        'string.pattern.base': 'Data de batismo deve estar no formato YYYY-MM-DD'
+      }),
+      Joi.date().allow(null)
+    )
     .optional()
     .allow(null),
 
@@ -137,7 +139,21 @@ const memberSchema = Joi.object<Partial<Member>>({
       'any.required': 'Tipo de admissão é obrigatório'
     }),
 
-  admission_date: Joi.date()
+  father_name: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  mother_name: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  admission_date: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).messages({
+        'string.pattern.base': 'Data de admissão deve estar no formato YYYY-MM-DD'
+      }),
+      Joi.date()
+    )
     .required()
     .messages({
       'date.base': 'Data de admissão inválida',
@@ -151,6 +167,16 @@ const memberSchema = Joi.object<Partial<Member>>({
     .messages({
       'string.guid': 'ID da congregação inválido'
     }),
+
+  children: Joi.array()
+    .items(
+      Joi.object({
+        name: Joi.string().required(),
+        birth: Joi.string().optional().allow(null, '')
+      })
+    )
+    .optional()
+    .allow(null),
 
   active: Joi.boolean()
     .default(true)

@@ -88,7 +88,7 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
-              Distribuição por Gênero
+              Gênero
             </h3>
             {/* Botão para visualizar membros */}
             <button

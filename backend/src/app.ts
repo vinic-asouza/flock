@@ -19,6 +19,9 @@ import exportRoutes from './routes/export';
 import integrationRoutes from './routes/integration';
 import waitlistRoutes from './routes/waitlist';
 import stripeRoutes from './routes/stripe';
+import publicRoutes from './routes/public';
+import registrationLinksRoutes from './routes/registrationLinks';
+import integrationLinksRoutes from './routes/integrationLinks';
 
 dotenv.config();
 
@@ -51,7 +54,7 @@ app.use(cors({
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true, // Permitir cookies
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   optionsSuccessStatus: 200 // Para suporte a navegadores legados
 }));
@@ -94,6 +97,9 @@ app.use('/api/export', exportRoutes);
 app.use('/api/integration', integrationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/public', publicRoutes);
+app.use('/api/registration-links', registrationLinksRoutes);
+app.use('/api/integration-links', integrationLinksRoutes);
 
 // Rota de healthcheck
 app.get('/health', (_req, res) => {

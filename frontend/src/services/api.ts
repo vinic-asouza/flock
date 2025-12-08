@@ -53,8 +53,13 @@ class ApiService {
         const isCheckAuthEndpoint = url.includes('/refresh/check');
         const isLoginEndpoint = url.includes('/auth/login');
         const isRegisterEndpoint = url.includes('/auth/register');
+        const isPublicEndpoint = url.includes('/public/'); // Rotas públicas não requerem autenticação
         const isAlreadyOnLogin = typeof window !== 'undefined' && window.location.pathname === '/login';
         const isAlreadyOnRegister = typeof window !== 'undefined' && window.location.pathname === '/register';
+        const isOnPublicPage = typeof window !== 'undefined' && (
+          window.location.pathname.startsWith('/public/register/') ||
+          window.location.pathname.startsWith('/public/integration/')
+        );
         
         // Silenciar erros 401 durante verificação de autenticação (é esperado)
         if (error.response?.status === 401 && isCheckAuthEndpoint) {
@@ -62,7 +67,8 @@ class ApiService {
           return Promise.reject(new Error('Não autenticado'));
         }
         
-        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isRegisterEndpoint && !isAlreadyOnLogin && !isAlreadyOnRegister) {
+        // Não redirecionar para login se for rota pública ou já estiver em página pública
+        if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isRegisterEndpoint && !isPublicEndpoint && !isAlreadyOnLogin && !isAlreadyOnRegister && !isOnPublicPage) {
           // Token expirado ou inválido - redirecionar para login
           // Cookies serão limpos automaticamente pelo servidor
           window.location.href = '/login';
@@ -581,6 +587,132 @@ class ApiService {
         'Content-Type': 'multipart/form-data',
       },
     });
+    return response.data;
+  }
+
+  // ========== Links de Registro Público ==========
+
+  // Validar link de registro público
+  async validateRegistrationLink(token: string) {
+    const response = await this.api.get(`/public/registration/${token}`);
+    return response.data;
+  }
+
+  // Criar membro via link público
+  async createMemberViaPublicLink(token: string, data: { name: string; [key: string]: unknown }) {
+    const response = await this.api.post(`/public/registration/${token}`, data);
+    return response.data;
+  }
+
+  // ========== Gerenciamento de Links de Registro (Admin) ==========
+
+  // Listar links de registro
+  async listRegistrationLinks() {
+    const response = await this.api.get('/registration-links');
+    return response.data;
+  }
+
+  // Buscar link específico
+  async getRegistrationLink(id: string) {
+    const response = await this.api.get(`/registration-links/${id}`);
+    return response.data;
+  }
+
+  // Criar novo link de registro
+  async createRegistrationLink(data: {
+    expires_at: string;
+    max_uses?: number | null;
+    default_congregation_id?: string | null;
+    default_role_id?: string | null;
+    notes?: string | null;
+  }) {
+    const response = await this.api.post('/registration-links', data);
+    return response.data;
+  }
+
+  // Atualizar link de registro
+  async updateRegistrationLink(id: string, data: {
+    expires_at?: string;
+    max_uses?: number | null;
+    is_active?: boolean;
+    default_congregation_id?: string | null;
+    default_role_id?: string | null;
+    notes?: string | null;
+  }) {
+    const response = await this.api.put(`/registration-links/${id}`, data);
+    return response.data;
+  }
+
+  // Desativar link de registro
+  async deactivateRegistrationLink(id: string) {
+    const response = await this.api.patch(`/registration-links/${id}/deactivate`);
+    return response.data;
+  }
+
+  // Excluir permanentemente link de registro
+  async deleteRegistrationLink(id: string) {
+    const response = await this.api.delete(`/registration-links/${id}`);
+    return response.data;
+  }
+
+  // ========== Links de Integração Pública ==========
+
+  // Validar link de integração pública
+  async validateIntegrationLink(token: string) {
+    const response = await this.api.get(`/public/integration/${token}`);
+    return response.data;
+  }
+
+  // Criar integrante via link público
+  async createIntegrationMemberViaPublicLink(token: string, data: { name: string; [key: string]: unknown }) {
+    const response = await this.api.post(`/public/integration/${token}`, data);
+    return response.data;
+  }
+
+  // ========== Gerenciamento de Links de Integração (Admin) ==========
+
+  // Listar links de integração
+  async listIntegrationLinks() {
+    const response = await this.api.get('/integration-links');
+    return response.data;
+  }
+
+  // Buscar link específico
+  async getIntegrationLink(id: string) {
+    const response = await this.api.get(`/integration-links/${id}`);
+    return response.data;
+  }
+
+  // Criar novo link de integração
+  async createIntegrationLink(data: {
+    expires_at: string;
+    max_uses?: number | null;
+    notes?: string | null;
+  }) {
+    const response = await this.api.post('/integration-links', data);
+    return response.data;
+  }
+
+  // Atualizar link de integração
+  async updateIntegrationLink(id: string, data: {
+    expires_at?: string;
+    max_uses?: number | null;
+    is_active?: boolean;
+    notes?: string | null;
+  }) {
+    const response = await this.api.put(`/integration-links/${id}`, data);
+    return response.data;
+  }
+
+  // Desativar link de integração
+  async deactivateIntegrationLink(id: string) {
+    const response = await this.api.patch(`/integration-links/${id}/deactivate`);
+    return response.data;
+  }
+
+  // Excluir permanentemente link de integração
+  async deleteIntegrationLink(id: string) {
+    const response = await this.api.delete(`/integration-links/${id}`);
     return response.data;
   }
 }

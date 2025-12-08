@@ -42,6 +42,13 @@ interface Member {
   occupation?: string;
   admission?: string;
   admission_date?: string;
+  father_name?: string;
+  mother_name?: string;
+  children?: Array<{
+    id?: string;
+    name: string;
+    birth?: string;
+  }>;
   created_at: string;
   updated_at: string;
 }

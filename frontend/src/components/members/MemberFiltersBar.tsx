@@ -72,7 +72,8 @@ export function MemberFiltersBar({
       name: 'Nome',
       birth: 'Idade',
       baptism_date: 'Data de Batismo',
-      admission_date: 'Data de Admissão'
+      admission_date: 'Data de Admissão',
+      created_at: 'Data de Criação'
     };
     return labels[sorting.sort_by as keyof typeof labels] || 'Ordenar';
   };
@@ -288,7 +289,7 @@ export function MemberFiltersBar({
                 {/* Nome */}
                 <button
                   type="button"
-                  onClick={() => handleSortingChange('name', sorting.sort_by === 'name' && sorting.sort_order === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => handleSortingChange('name', sorting.sort_by === 'name' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'name' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   <span>Nome</span>
@@ -302,7 +303,7 @@ export function MemberFiltersBar({
                 {/* Idade */}
                 <button
                   type="button"
-                  onClick={() => handleSortingChange('birth', sorting.sort_by === 'birth' && sorting.sort_order === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => handleSortingChange('birth', sorting.sort_by === 'birth' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'birth' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   <span>Idade</span>
@@ -316,7 +317,7 @@ export function MemberFiltersBar({
                 {/* Data de Batismo */}
                 <button
                   type="button"
-                  onClick={() => handleSortingChange('baptism_date', sorting.sort_by === 'baptism_date' && sorting.sort_order === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => handleSortingChange('baptism_date', sorting.sort_by === 'baptism_date' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'baptism_date' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   <span>Data de Batismo</span>
@@ -330,11 +331,25 @@ export function MemberFiltersBar({
                 {/* Data de Admissão */}
                 <button
                   type="button"
-                  onClick={() => handleSortingChange('admission_date', sorting.sort_by === 'admission_date' && sorting.sort_order === 'asc' ? 'desc' : 'asc')}
+                  onClick={() => handleSortingChange('admission_date', sorting.sort_by === 'admission_date' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'admission_date' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   <span>Data de Admissão</span>
                   {sorting.sort_by === 'admission_date' && (
+                    <span className="text-xs text-gray-500">
+                      {sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}
+                    </span>
+                  )}
+                </button>
+                
+                {/* Data de Criação */}
+                <button
+                  type="button"
+                  onClick={() => handleSortingChange('created_at', sorting.sort_by === 'created_at' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'created_at' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                >
+                  <span>Data de Criação</span>
+                  {sorting.sort_by === 'created_at' && (
                     <span className="text-xs text-gray-500">
                       {sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}
                     </span>

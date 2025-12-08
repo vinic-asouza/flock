@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Timeline, Member, IntegrationTimeline, IntegrationMemberSummary } from '@/types';
 import { LineChart } from '@/components/reports/charts/LineChart';
 import { Select } from '@/components/ui/Select';
-import { Droplets, UserPlus, TrendingUp, ChevronLeft, ChevronRight, ExternalLink, Clock } from 'lucide-react';
+import { Droplets, UserPlus, TrendingUp, ChevronLeft, ChevronRight, ExternalLink, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
 
 interface TimelineChartsProps {
@@ -28,6 +28,7 @@ export function TimelineCharts({
   const [integrationSelectedYear, setIntegrationSelectedYear] = useState<string>('');
   const [integrationSelectedMonthFilter, setIntegrationSelectedMonthFilter] = useState<string>('all');
   const [integrationMembersPage, setIntegrationMembersPage] = useState(1);
+  const [chartViewMode, setChartViewMode] = useState<'monthly' | 'yearly'>('monthly');
 
   // Função para obter cor da congregação (agora sempre cinza)
   const getCongregationColor = () => {
@@ -36,30 +37,12 @@ export function TimelineCharts({
 
   // Função para determinar tipo de entrada do membro
   const getMemberEntryType = (member: Member) => {
-    const baptismDate = member.baptism_date ? new Date(member.baptism_date) : null;
-    const admissionDate = member.admission_date ? new Date(member.admission_date) : null;
-
-    // Se não tem nenhuma data, considera admissão
-    if (!baptismDate && !admissionDate) return 'admission';
-
-    // Se só tem batismo, considera batismo
-    if (baptismDate && !admissionDate) return 'baptism';
-
-    // Se só tem admissão, considera admissão
-    if (!baptismDate && admissionDate) return 'admission';
-
-    // Se tem ambas as datas
-    if (baptismDate && admissionDate) {
-      // Se as datas são iguais, considera batismo
-      if (baptismDate.getTime() === admissionDate.getTime()) return 'baptism';
-
-      // Se batismo é anterior à admissão, considera admissão
-      if (baptismDate < admissionDate) return 'admission';
-
-      // Caso contrário, considera batismo
+    // Se o tipo de admissão é "Batismo" ou "Batismo Infantil", considera batismo
+    if (member.admission === 'Batismo' || member.admission === 'Batismo Infantil') {
       return 'baptism';
     }
-
+    
+    // Caso contrário, considera admissão
     return 'admission';
   };
 
@@ -104,7 +87,7 @@ export function TimelineCharts({
     }
   }, [availableYears, selectedYear]);
 
-  // Gerar dados mensais para o ano selecionado
+  // Gerar dados mensais para o ano selecionado (usado para cálculos)
   const monthlyData = useMemo(() => {
     if (!selectedYear) return [];
 
@@ -124,6 +107,80 @@ export function TimelineCharts({
       };
     });
   }, [selectedYear, data]);
+
+  // Gerar dados mensais para o gráfico (ano atual) - crescimento acumulado geral
+  const monthlyChartData = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const currentYearStr = currentYear.toString();
+    const months = [
+      'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+    ];
+
+    // Calcular o total acumulado até o final do ano anterior
+    // Obter todos os anos únicos
+    const allYears = new Set<string>();
+    Object.keys(data.baptismsByYear).forEach(year => allYears.add(year));
+    Object.keys(data.admissionsByYear).forEach(year => allYears.add(year));
+    
+    let totalBeforeCurrentYear = 0;
+    allYears.forEach(year => {
+      const yearNum = parseInt(year);
+      if (yearNum < currentYear) {
+        const baptisms = data.baptismsByYear[year] || 0;
+        const admissions = data.admissionsByYear[year] || 0;
+        totalBeforeCurrentYear += baptisms + admissions;
+      }
+    });
+
+    // Começar o acumulado com o total até o final do ano anterior
+    let accumulatedTotal = totalBeforeCurrentYear;
+
+    return months.map((month, index) => {
+      const monthKey = String(index + 1).padStart(2, '0');
+      const yearMonthKey = `${currentYearStr}-${monthKey}`;
+
+      const baptisms = data.baptismsByMonth[yearMonthKey] || 0;
+      const admissions = data.admissionsByMonth[yearMonthKey] || 0;
+      const monthTotal = baptisms + admissions;
+      
+      // Acumular o total progressivamente
+      accumulatedTotal += monthTotal;
+
+      return {
+        label: month,
+        total: accumulatedTotal,
+      };
+    });
+  }, [data]);
+
+  // Gerar dados anuais (todos os anos com entrada de membros) - crescimento acumulado
+  const yearlyChartData = useMemo(() => {
+    // Obter todos os anos que têm batismos ou admissões
+    const allYears = new Set<string>();
+    
+    Object.keys(data.baptismsByYear).forEach(year => allYears.add(year));
+    Object.keys(data.admissionsByYear).forEach(year => allYears.add(year));
+    
+    // Converter para array e ordenar cronologicamente
+    const sortedYears = Array.from(allYears).sort((a, b) => parseInt(a) - parseInt(b));
+
+    let accumulatedTotal = 0;
+
+    return sortedYears.map(year => {
+      const baptisms = data.baptismsByYear[year] || 0;
+      const admissions = data.admissionsByYear[year] || 0;
+      const yearTotal = baptisms + admissions;
+      
+      // Acumular o total progressivamente
+      accumulatedTotal += yearTotal;
+
+      return {
+        label: year,
+        total: accumulatedTotal,
+      };
+    });
+  }, [data]);
 
   // Calcular totais anuais (soma de todos os meses)
   const yearlyTotals = useMemo(() => {
@@ -397,14 +454,14 @@ export function TimelineCharts({
             )}
 
             <div className="border-t border-gray-100 pt-3 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-blue-50">
                     <Droplets size={18} className="text-blue-600" />
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">
-                      Batismos {selectedMonthFilter === 'all' ? 'no ano' : 'no mês'}
+                      Batismos
                     </div>
                     <div className="text-lg font-semibold text-[#090725]">
                       {selectedTotals.baptisms}
@@ -418,10 +475,24 @@ export function TimelineCharts({
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">
-                      Admissões {selectedMonthFilter === 'all' ? 'no ano' : 'no mês'}
+                      Admissões
                     </div>
                     <div className="text-lg font-semibold text-[#090725]">
                       {selectedTotals.admissions}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-gray-100">
+                    <Users size={18} className="text-[#090725]" />
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">
+                      Total
+                    </div>
+                    <div className="text-lg font-semibold text-[#090725]">
+                      {selectedTotals.baptisms + selectedTotals.admissions}
                     </div>
                   </div>
                 </div>
@@ -578,10 +649,23 @@ export function TimelineCharts({
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-base font-medium text-gray-900 mb-4 flex items-center gap-2">
-          Gráfico de Evolução Mensal
-        </h3>
-        <LineChart data={monthlyData} />
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-medium text-gray-900 flex items-center gap-2">
+            Gráfico de Crescimento
+          </h3>
+          <div className="w-40 space-y-1">
+            <Select
+              value={chartViewMode}
+              onChange={(value) => setChartViewMode(value as 'monthly' | 'yearly')}
+              options={[
+                { value: 'monthly', label: 'Mensal' },
+                { value: 'yearly', label: 'Anual' },
+              ]}
+              placeholder="Visualização"
+            />
+          </div>
+        </div>
+        <LineChart data={chartViewMode === 'monthly' ? monthlyChartData : yearlyChartData} />
       </div>
     </div>
   );
