@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Building2, BarChart3, Check } from 'lucide-react';
+import { Users, Building2, BarChart3, Check, ArrowRight, Sparkles } from 'lucide-react';
 import { CheckoutButton } from './CheckoutButton';
 
 interface Plan {
@@ -19,8 +19,8 @@ const plans: Plan[] = [
     name: 'Plano 200',
     maxMembers: 200,
     icon: Users,
-    price: 'R$ 39,99',
-    annualPrice: 'ou 399,99 /ano',
+    price: 'R$ 29,00',
+    annualPrice: 'ou 290,00 /ano',
     features: [
       'Gestão completa de membros',
       'Múltiplas congregações',
@@ -36,8 +36,8 @@ const plans: Plan[] = [
     name: 'Plano 500',
     maxMembers: 500,
     icon: Building2,
-    price: 'R$ 69,99',
-    annualPrice: 'ou 699,99 /ano',
+    price: 'R$ 59,00',
+    annualPrice: 'ou 590,00 /ano',
     features: [
       'Gestão completa de membros',
       'Múltiplas congregações',
@@ -53,8 +53,8 @@ const plans: Plan[] = [
     name: 'Plano 800',
     maxMembers: 800,
     icon: BarChart3,
-    price: 'R$ 99,99',
-    annualPrice: 'ou 999,99 /ano',
+    price: 'R$ 89,00',
+    annualPrice: 'ou 890,00 /ano',
     features: [
       'Gestão completa de membros',
       'Múltiplas congregações',
@@ -88,10 +88,23 @@ export function Pricing() {
             return (
               <div
                 key={plan.id}
-                className="bg-white rounded-xl border-2 border-gray-200 hover:border-primary/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col"
+                className="bg-white rounded-xl border-2 border-gray-200 hover:border-primary/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col relative"
               >
+                {/* Flag de Lançamento */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <div className="bg-gradient-to-r from-primary via-[#0d0a3a] to-primary text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg whitespace-nowrap flex items-center gap-1.5"
+                  style={{
+                    backgroundColor: '#090725',
+                    backgroundImage: 'linear-gradient(to right, #090725,rgb(22, 18, 85), #090725)',
+                  }}
+                  >
+                    <Sparkles size={14} className="text-yellow-300" />
+                    Valor Especial de Lançamento
+                  </div>
+                </div>
+
                 {/* Ícone e Nome do Plano */}
-                <div className="text-center mb-6">
+                <div className="text-center mb-6 pt-2">
                   <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto">
                     <IconComponent className="w-8 h-8 text-primary" />
                   </div>
@@ -102,13 +115,11 @@ export function Pricing() {
                     Até {plan.maxMembers} membros
                   </p>
                   <div className="text-2xl md:text-3xl font-extrabold text-primary">
-                    {/* {plan.price} */}
-                    R$ XX
+                    {plan.price}
                     <span className="text-sm md:text-base font-normal text-gray-500 ml-1">/mês</span>
                   </div>
-                  <p className="text-xs md:text-sm text-gray-600 mt-1">
-                    {/* {plan.annualPrice} */}
-                    R$ XX /ano
+                  <p className="text-xs md:text-sm text-gray-600 mt-1 font-semibold">
+                    {plan.annualPrice}
                   </p>
                 </div>
 
@@ -134,9 +145,7 @@ export function Pricing() {
                   >
                     Assinar Agora
                   </CheckoutButton>
-                  <a
-                    href={`#waitlist?plan=${plan.maxMembers}`}
-                    className="w-full text-center text-sm text-gray-600 hover:text-primary transition-colors block"
+                  {/* <button
                     onClick={(e) => {
                       e.preventDefault();
                       const newHash = `#waitlist?plan=${plan.maxMembers}`;
@@ -148,9 +157,15 @@ export function Pricing() {
                         }
                       }, 100);
                     }}
+                    className="w-full text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
+                    style={{
+                      backgroundColor: '#090725',
+                      backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
+                    }}
                   >
-                    Ou entrar na lista de espera
-                  </a>
+                    Tenho interesse
+                    <ArrowRight className="w-5 h-5" />
+                  </button> */}
                 </div>
               </div>
             );
@@ -160,7 +175,7 @@ export function Pricing() {
         {/* Observação sobre planos personalizados */}
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center">
           <p className="text-sm text-gray-700">
-            Precisa de gestão para mais de 800 membros?{' '}
+            Precisa de gestão para mais de <strong>800 membros</strong>?{' '}
             <a
               href="#waitlist?plan=personalizado"
               className="text-primary font-semibold hover:text-[#0d0a3a] transition-colors underline"

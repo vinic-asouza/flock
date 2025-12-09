@@ -18,7 +18,7 @@ export function CTA() {
             Pronto para Transformar a Gestão da sua Igreja?
           </h2>
           <p className="text-base sm:text-lg md:text-xl opacity-90">
-            Junte-se à lista de espera e seja um dos primeiros a usar o Flock
+            Faça sua solicitação e seja um dos primeiros a usar o Flock
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 md:p-8 lg:p-10">

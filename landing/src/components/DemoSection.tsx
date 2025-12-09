@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Video, BookOpen } from 'lucide-react';
 
@@ -52,6 +52,31 @@ const demoItems: DemoItem[] = [
 
 export function DemoSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Pré-carregar imagens
+  useEffect(() => {
+    demoItems.forEach((item) => {
+      if (item.image) {
+        const img = new window.Image();
+        img.src = item.image;
+      }
+    });
+  }, []);
+
+  // Resetar estado de imagem quando o índice mudar
+  useEffect(() => {
+    setIsTransitioning(true);
+    setImageLoaded(false);
+    
+    // Pequeno delay para sincronizar com a transição do texto
+    const timer = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [currentIndex]);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % demoItems.length);
@@ -157,13 +182,26 @@ export function DemoSection() {
                 {/* Imagem do sistema ou placeholder */}
                 <div className="w-full bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video relative">
                   {currentItem.image ? (
-                    <Image
-                      src={currentItem.image}
-                      alt={currentItem.title}
-                      fill
-                      className="object-cover object-top"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 70vw"
-                    />
+                    <>
+                      <Image
+                        key={`${currentIndex}-${currentItem.id}`}
+                        src={currentItem.image}
+                        alt={currentItem.title}
+                        fill
+                        className={`object-cover object-top transition-opacity duration-300 ${
+                          isTransitioning || !imageLoaded ? 'opacity-0' : 'opacity-100'
+                        }`}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 70vw"
+                        priority={currentIndex < 2}
+                        onLoad={() => {
+                          setImageLoaded(true);
+                        }}
+                      />
+                      {/* Placeholder durante transição */}
+                      {isTransitioning && (
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 animate-pulse" />
+                      )}
+                    </>
                   ) : (
                     /* Placeholder animado */
                     <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8">
@@ -191,9 +229,17 @@ export function DemoSection() {
         {/* Botões de Ação */}
         <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
-            href="https://wa.me/5514998196347?text=Olá!%20Gostaria%20de%20agendar%20uma%20demonstração%20online%20do%20sistema%20Flock."
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#waitlist"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = '#waitlist';
+              setTimeout(() => {
+                const waitlistSection = document.getElementById('waitlist');
+                if (waitlistSection) {
+                  waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }, 100);
+            }}
             className="inline-flex items-center justify-center gap-2 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
             style={{
               backgroundColor: '#090725',

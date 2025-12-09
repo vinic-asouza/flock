@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, MessageCircle } from 'lucide-react';
 
 interface FooterProps {
   onOpenWaitlist?: () => void;
@@ -47,25 +46,22 @@ export function Footer({ onOpenWaitlist }: FooterProps) {
           </div>
           <div>
             <h4 className="text-primary font-semibold mb-4">Contato</h4>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-2">
-                <Mail size={18} className="text-primary" />
-                <a href="mailto:contato@flockapp.com.br" className="text-gray-600 hover:text-primary transition-colors">
-                  contato@flockapp.com.br
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <MessageCircle size={18} className="text-primary" />
-                <a 
-                  href="https://wa.me/5514998196347?text=Olá,%20Gostaria%20de%20saber%20mais%20sobre%20o%20sistema%20Flock." 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 hover:text-primary transition-colors"
-                >
-                  (14) 99819-6347
-                </a>
-              </li>
-            </ul>
+            <Link
+              href="#waitlist"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.hash = '#waitlist';
+                setTimeout(() => {
+                  const waitlistSection = document.getElementById('waitlist');
+                  if (waitlistSection) {
+                    waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
+              className="text-gray-600 hover:text-primary transition-colors text-sm inline-block"
+            >
+              Solicite contato
+            </Link>
           </div>
         </div>
         <div className="border-t border-gray-300 pt-8 text-center text-sm text-gray-600">

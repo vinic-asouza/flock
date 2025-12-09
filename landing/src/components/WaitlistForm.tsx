@@ -181,7 +181,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
               Solicitação Enviada com Sucesso!
             </h3>
             <p className="text-gray-600 max-w-md mx-auto leading-relaxed">
-              Obrigado por se cadastrar na lista de espera do Flock. Nossa equipe entrará em contato em breve para apresentar o sistema e tirar suas dúvidas.
+              Obrigado por enviar sua solicitação. Nossa equipe entrará em contato em breve para apresentar o sistema e tirar suas dúvidas.
             </p>
           </div>
           <button
@@ -391,11 +391,11 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
           {isLoading ? (
             <>
               <Loader className="animate-spin" size={20} />
-              Cadastrando...
+              Enviando...
             </>
           ) : (
             <>
-              <span className="relative z-10">Entrar na Lista de Espera</span>
+              <span className="relative z-10">Enviar Solicitação</span>
               <ArrowRight 
                 size={20} 
                 className={`relative z-10 transition-all duration-300 ${isHovered ? 'translate-x-2 scale-110' : ''}`}
