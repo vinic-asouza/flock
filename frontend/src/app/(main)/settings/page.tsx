@@ -23,14 +23,14 @@ function SettingsPageContent() {
     const settingsSections = [
         {
             id: 'church',
-            title: 'Gerenciamento da Igreja',
+            title: 'Igreja',
             description: 'Gerencie os dados básicos da sua igreja',
             icon: Church
         },
         {
             id: 'payment',
-            title: 'Pagamento',
-            description: 'Gerencie sua assinatura e pagamentos',
+            title: 'Plano',
+            description: 'Gerencie seu plano e assinatura',
             icon: CreditCard
         },
         {

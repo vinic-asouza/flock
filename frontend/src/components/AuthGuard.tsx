@@ -20,14 +20,22 @@ function AuthGuardComponent({ children }: AuthGuardProps) {
     // 1. Estiver em uma operação de loading
     // 2. Estiver na página de checkout (precisa estar autenticado)
     // 3. Houver um parâmetro redirect na URL (o componente de login/register vai lidar com isso)
+    // 4. Estivermos fazendo um redirect programático para checkout
     const redirectUrl = searchParams.get('redirect');
     const isOnCheckoutPage = pathname === '/checkout';
     const hasRedirectParam = !!redirectUrl;
+    const isRedirectingToCheckout = typeof window !== 'undefined' && sessionStorage.getItem('redirectingToCheckout') === 'true';
+    
+    // Limpar flag de redirect se chegamos na página de checkout
+    if (isOnCheckoutPage && isRedirectingToCheckout) {
+      sessionStorage.removeItem('redirectingToCheckout');
+    }
     
     // Só redirecionar se não estiver em uma operação de loading
-    // E não estiver em checkout
+    // E não estiver em checkout (checkout permite usuários autenticados)
     // E não houver parâmetro redirect (que indica que o usuário precisa ir para outra página)
-    if (!isLoading && !isOperationLoading && isAuthenticated && !isOnCheckoutPage && !hasRedirectParam) {
+    // E não estivermos fazendo um redirect programático para checkout
+    if (!isLoading && !isOperationLoading && isAuthenticated && !isOnCheckoutPage && !hasRedirectParam && !isRedirectingToCheckout) {
       router.push('/');
     }
   }, [isAuthenticated, isLoading, isOperationLoading, router, pathname, searchParams]);
@@ -46,11 +54,15 @@ function AuthGuardComponent({ children }: AuthGuardProps) {
 
   // Só mostrar loading de redirecionamento se não estiver em uma operação
   // E não estiver em checkout ou com redirect
+  // E não estivermos fazendo um redirect programático para checkout
   const redirectUrl = searchParams.get('redirect');
   const isOnCheckoutPage = pathname === '/checkout';
   const hasRedirectParam = !!redirectUrl;
+  const isRedirectingToCheckout = typeof window !== 'undefined' && sessionStorage.getItem('redirectingToCheckout') === 'true';
   
-  if (isAuthenticated && !isOperationLoading && !isOnCheckoutPage && !hasRedirectParam) {
+  // Não mostrar loading e não redirecionar se estiver na página de checkout
+  // A página de checkout permite usuários autenticados
+  if (isAuthenticated && !isOperationLoading && !isOnCheckoutPage && !hasRedirectParam && !isRedirectingToCheckout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="text-center">

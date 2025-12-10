@@ -20,8 +20,24 @@ export function useMemberImport() {
       const result = await apiService.validateMemberImport(file, congregationId);
       setValidationResult(result);
       return result;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao validar arquivo CSV';
+    } catch (err: any) {
+      let errorMessage = 'Erro ao validar arquivo CSV';
+      
+      if (err?.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err?.response?.data?.details) {
+        errorMessage = Array.isArray(err.response.data.details) 
+          ? err.response.data.details.join(', ')
+          : err.response.data.details;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      // Se for erro de limite, mostrar mensagem específica
+      if (errorMessage.toLowerCase().includes('limite') || err?.response?.status === 403) {
+        errorMessage = 'Limite de membros atingido. A quantidade de membros no arquivo CSV ultrapassa o limite do seu plano atual.';
+      }
+      
       setError(errorMessage);
       throw err;
     } finally {
@@ -42,8 +58,24 @@ export function useMemberImport() {
       const result = await apiService.importMembers(file, congregationId, skipDuplicates);
       setImportResult(result);
       return result;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao importar membros';
+    } catch (err: any) {
+      let errorMessage = 'Erro ao importar membros';
+      
+      if (err?.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err?.response?.data?.details) {
+        errorMessage = Array.isArray(err.response.data.details) 
+          ? err.response.data.details.join(', ')
+          : err.response.data.details;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      
+      // Se for erro de limite, mostrar mensagem específica
+      if (errorMessage.toLowerCase().includes('limite') || err?.response?.status === 403) {
+        errorMessage = 'Limite de membros atingido. A quantidade de membros no arquivo CSV ultrapassa o limite do seu plano atual.';
+      }
+      
       setError(errorMessage);
       throw err;
     } finally {
@@ -63,6 +95,7 @@ export function useMemberImport() {
     validationResult,
     importResult,
     error,
+    setError,
     validateImport,
     importMembers,
     reset,

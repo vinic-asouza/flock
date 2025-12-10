@@ -102,13 +102,6 @@ export default function SubscriptionSuccessPage() {
             Ir para o Sistema
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => router.push('/settings')}
-            className="w-full"
-          >
-            Ver Detalhes da Assinatura
-          </Button>
         </div>
 
         <div className="mt-6 text-center">

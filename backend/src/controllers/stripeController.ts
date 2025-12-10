@@ -17,7 +17,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       user: req.user ? { id: req.user.id, email: req.user.email } : 'não autenticado',
     });
 
-    // Validar plano
+    // Validar plano (100 não precisa de checkout, é gratuito)
     if (!plan || !['200', '500', '800', 'custom'].includes(plan)) {
       return res.status(400).json({
         error: 'Plano inválido',
@@ -435,8 +435,25 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   // Acessar propriedades com type assertion para evitar erros de tipo
   const currentPeriodStart = (subscription as any).current_period_start as number;
+  const currentPeriodEnd = (subscription as any).current_period_end as number;
   const cancelAt = (subscription as any).cancel_at as number | null;
   const canceledAt = (subscription as any).canceled_at as number | null;
+
+  // Determinar data de término
+  const endDate = cancelAt
+    ? new Date(cancelAt * 1000)
+    : canceledAt
+    ? new Date(canceledAt * 1000)
+    : currentPeriodEnd
+    ? new Date(currentPeriodEnd * 1000)
+    : null;
+
+  // Verificar se a assinatura está cancelada e expirada
+  const isCanceled = subscription.status === 'canceled';
+  const isExpired = endDate && endDate < new Date();
+
+  // Se cancelada e expirada, alterar para plano gratuito
+  const finalPlanType = (isCanceled && isExpired) ? '100' : planType;
 
   // Atualizar igreja
   await supabase
@@ -444,15 +461,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     .update({
       stripe_subscription_id: subscriptionId,
       subscription_status: subscription.status,
-      plan_type: planType,
+      plan_type: finalPlanType,
       subscription_start_date: currentPeriodStart
         ? new Date(currentPeriodStart * 1000).toISOString()
         : null,
-      subscription_end_date: cancelAt
-        ? new Date(cancelAt * 1000).toISOString()
-        : canceledAt
-        ? new Date(canceledAt * 1000).toISOString()
-        : null,
+      subscription_end_date: endDate ? endDate.toISOString() : null,
     })
     .eq('stripe_customer_id', customerId);
 }
@@ -463,12 +476,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 async function handleSubscriptionDeleted(subscription: any) {
   const customerId = subscription.customer;
 
-  // Atualizar status da assinatura
+  // Quando a assinatura é deletada, alterar para plano gratuito
   await supabase
     .from('churches')
     .update({
       subscription_status: 'canceled',
       subscription_end_date: new Date().toISOString(),
+      plan_type: '100', // Plano gratuito quando cancelada
     })
     .eq('stripe_customer_id', customerId);
 }
@@ -551,13 +565,13 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     });
 
     if (subscriptions.data.length === 0) {
-      // Nenhuma assinatura encontrada, limpar dados do banco
+      // Nenhuma assinatura encontrada, alterar para plano gratuito
       await supabase
         .from('churches')
         .update({
           stripe_subscription_id: null,
           subscription_status: null,
-          plan_type: null,
+          plan_type: '100', // Plano gratuito quando não há assinatura
           subscription_start_date: null,
           subscription_end_date: null,
         })
@@ -582,8 +596,25 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     // Acessar propriedades com type assertion
     const sub = subscription as any;
     const currentPeriodStart = sub.current_period_start as number | null;
+    const currentPeriodEnd = sub.current_period_end as number | null;
     const cancelAt = sub.cancel_at as number | null;
     const canceledAt = sub.canceled_at as number | null;
+
+    // Determinar data de término
+    const endDate = cancelAt
+      ? new Date(cancelAt * 1000)
+      : canceledAt
+      ? new Date(canceledAt * 1000)
+      : currentPeriodEnd
+      ? new Date(currentPeriodEnd * 1000)
+      : null;
+
+    // Verificar se a assinatura está cancelada e expirada
+    const isCanceled = subscription.status === 'canceled';
+    const isExpired = endDate && endDate < new Date();
+
+    // Se cancelada e expirada, alterar para plano gratuito
+    const finalPlanType = (isCanceled && isExpired) ? '100' : planType;
 
     // Atualizar dados da igreja
     const { error: updateError } = await supabase
@@ -591,15 +622,11 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       .update({
         stripe_subscription_id: subscriptionId,
         subscription_status: subscription.status,
-        plan_type: planType,
+        plan_type: finalPlanType,
         subscription_start_date: currentPeriodStart
           ? new Date(currentPeriodStart * 1000).toISOString()
           : null,
-        subscription_end_date: cancelAt
-          ? new Date(cancelAt * 1000).toISOString()
-          : canceledAt
-          ? new Date(canceledAt * 1000).toISOString()
-          : null,
+        subscription_end_date: endDate ? endDate.toISOString() : null,
         subscription_updated_at: new Date().toISOString(),
       })
       .eq('id', church.id);
@@ -739,6 +766,76 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
     console.error('Erro ao trocar plano:', error);
     res.status(500).json({
       error: 'Erro ao trocar plano',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Ativar plano gratuito (100 membros)
+ * POST /api/stripe/activate-free-plan
+ */
+export const activateFreePlan = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autenticado',
+        details: 'É necessário estar autenticado para ativar o plano gratuito',
+      });
+    }
+
+    // Buscar igreja do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, plan_type')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não possui igreja cadastrada',
+      });
+    }
+
+    // Verificar se já está no plano gratuito
+    if (church.plan_type === '100') {
+      return res.status(400).json({
+        error: 'Plano já ativo',
+        details: 'Você já está no plano gratuito',
+      });
+    }
+
+    // Atualizar igreja com plano gratuito
+    const { error: updateError } = await supabase
+      .from('churches')
+      .update({
+        plan_type: '100',
+        subscription_status: 'active',
+        subscription_start_date: new Date().toISOString(),
+        subscription_updated_at: new Date().toISOString(),
+      })
+      .eq('id', church.id);
+
+    if (updateError) {
+      console.error('Erro ao atualizar plano gratuito:', updateError);
+      console.error('Detalhes do erro:', JSON.stringify(updateError, null, 2));
+      return res.status(500).json({
+        error: 'Erro ao ativar plano gratuito',
+        details: process.env.NODE_ENV === 'development' 
+          ? `Erro do banco de dados: ${updateError.message || JSON.stringify(updateError)}`
+          : 'Não foi possível atualizar o plano. Verifique se o plano gratuito está habilitado no banco de dados.',
+      });
+    }
+
+    res.json({
+      message: 'Plano gratuito ativado com sucesso',
+      plan_type: '100',
+    });
+  } catch (error: any) {
+    console.error('Erro ao ativar plano gratuito:', error);
+    res.status(500).json({
+      error: 'Erro ao ativar plano gratuito',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -8,6 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/context/AuthContext';
 import { Church } from '@/types';
 import { DENOMINATIONS, formatPhone } from '@/utils';
+import { Building2, MapPin, Mail, Phone, FileText, CreditCard } from 'lucide-react';
 
 interface ChurchFormData {
   name: string;
@@ -55,8 +57,25 @@ const denominations = DENOMINATIONS.map(denomination => ({
   label: denomination
 }));
 
+const planNames: Record<string, string> = {
+  '100': 'Plano 100 Membros',
+  '200': 'Plano 200 Membros',
+  '500': 'Plano 500 Membros',
+  '800': 'Plano 800 Membros',
+  'custom': 'Plano Personalizado',
+};
+
+const planPrices: Record<string, string> = {
+  '100': 'Gratuito',
+  '200': 'R$ 29,99',
+  '500': 'R$ 59,99',
+  '800': 'R$ 89,99',
+  'custom': 'Sob consulta',
+};
+
 export function ChurchManagement() {
   const { user, updateChurch } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -172,8 +191,16 @@ export function ChurchManagement() {
   };
 
   const formatCNPJ = (cnpj: string) => {
+    if (!cnpj) return '';
     const cleaned = cnpj.replace(/\D/g, '');
-    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    if (cleaned.length === 14) {
+      return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+    return cnpj;
+  };
+
+  const handleManagePlan = () => {
+    router.push('/settings?tab=payment');
   };
 
   const handleCNPJChange = (value: string) => {
@@ -198,189 +225,272 @@ export function ChurchManagement() {
 
   if (isLoading) {
     return (
-      <Card>
-        <div className="p-6">
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <div className="space-y-4">
+        <Card>
+          <div className="p-6">
+            <div className="animate-pulse space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
     );
   }
 
+  const planType = user?.plan_type;
+  const planName = planType ? planNames[planType] || 'Plano não definido' : 'Nenhum plano ativo';
+  const planPrice = planType ? planPrices[planType] || '' : '';
+
   return (
-    <Card>
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              Dados da Igreja
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Gerencie as informações básicas da sua igreja
-            </p>
+    <div className="space-y-4">
+      {/* Card com informações da igreja */}
+      <Card>
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                Dados da Igreja
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Informações básicas da sua igreja
+              </p>
+            </div>
+            
+            {!isEditing && (
+              <Button
+                onClick={() => setIsEditing(true)}
+                variant="primary"
+              >
+                Editar Dados
+              </Button>
+            )}
           </div>
+
+          {/* Mensagens de feedback */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800">{error}</p>
+            </div>
+          )}
           
-          {!isEditing && (
-            <Button
-              onClick={() => setIsEditing(true)}
-              variant="primary"
-            >
-              Editar Dados
-            </Button>
+          {success && (
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800">{success}</p>
+            </div>
+          )}
+
+          {/* Modo visualização (card com informações) */}
+          {!isEditing ? (
+            <div className="space-y-6">
+              {/* Nome e Denominação */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-500">Nome da Igreja</span>
+                  </div>
+                  <p className="text-base text-gray-900">{formData.name || 'Não informado'}</p>
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-500">Denominação</span>
+                  </div>
+                  <p className="text-base text-gray-900">{formData.denomination || 'Não informado'}</p>
+                </div>
+              </div>
+
+              {/* Endereço */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-500">Endereço</span>
+                </div>
+                <p className="text-base text-gray-900">
+                  {formData.address || 'Não informado'}
+                  {formData.city && formData.state && (
+                    <span className="text-gray-600">
+                      {formData.address ? ', ' : ''}
+                      {formData.city} - {formData.state}
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* CNPJ */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-5 h-5 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-500">CNPJ</span>
+                </div>
+                <p className="text-base text-gray-900">{formatCNPJ(formData.cnpj) || 'Não informado'}</p>
+              </div>
+
+              {/* Contato */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Mail className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-500">Email da Igreja</span>
+                  </div>
+                  <p className="text-base text-gray-900">{formData.email_church || 'Não informado'}</p>
+                </div>
+                
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Phone className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm font-medium text-gray-500">Telefone da Igreja</span>
+                  </div>
+                  <p className="text-base text-gray-900">
+                    {formData.phone_church ? formatPhone(formData.phone_church) : 'Não informado'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Plano */}
+              <div className="pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CreditCard className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-500">Plano Atual</span>
+                    </div>
+                    <p className="text-base text-gray-900">{planName}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Modo edição (formulário) */
+            <div className="space-y-4">
+              {/* Informações básicas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome da Igreja *
+                  </label>
+                  <Input
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    placeholder="Nome da igreja"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Denominação *
+                  </label>
+                  <Select
+                    value={formData.denomination}
+                    onChange={(value) => handleInputChange('denomination', value)}
+                    options={denominations}
+                    placeholder="Selecione a denominação"
+                  />
+                </div>
+              </div>
+
+              {/* Endereço */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Endereço *
+                </label>
+                <Input
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="Endereço completo"
+                />
+              </div>
+
+              {/* Cidade e Estado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Cidade *
+                  </label>
+                  <Input
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="Cidade"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estado *
+                  </label>
+                  <Select
+                    value={formData.state}
+                    onChange={(value) => handleInputChange('state', value)}
+                    options={states}
+                    placeholder="Selecione o estado"
+                  />
+                </div>
+              </div>
+
+              {/* CNPJ */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  CNPJ *
+                </label>
+                <Input
+                  value={formatCNPJ(formData.cnpj)}
+                  onChange={(e) => handleCNPJChange(e.target.value)}
+                  placeholder="00.000.000/0000-00"
+                  maxLength={18}
+                />
+              </div>
+
+              {/* Contato */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email da Igreja
+                  </label>
+                  <Input
+                    type="email"
+                    value={formData.email_church}
+                    onChange={(e) => handleInputChange('email_church', e.target.value)}
+                    placeholder="contato@igreja.com"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Telefone da Igreja
+                  </label>
+                  <Input
+                    value={formatPhone(formData.phone_church)}
+                    onChange={(e) => handlePhoneChange('phone_church', e.target.value)}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+              </div>
+
+              {/* Botões de ação */}
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                <Button
+                  onClick={handleCancel}
+                  variant="secondary"
+                  disabled={isSaving}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleSave}
+                  variant="primary"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                </Button>
+              </div>
+            </div>
           )}
         </div>
-
-        {/* Mensagens de feedback */}
-        {error && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
-          </div>
-        )}
-        
-        {success && (
-          <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-800">{success}</p>
-          </div>
-        )}
-
-        {/* Formulário */}
-        <div className="space-y-4">
-          {/* Informações básicas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nome da Igreja *
-              </label>
-              <Input
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Nome da igreja"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Denominação *
-              </label>
-              <Select
-                value={formData.denomination}
-                onChange={(value) => handleInputChange('denomination', value)}
-                disabled={!isEditing}
-                options={denominations}
-                placeholder="Selecione a denominação"
-              />
-            </div>
-          </div>
-
-          {/* Endereço */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Endereço *
-            </label>
-            <Input
-              value={formData.address}
-              onChange={(e) => handleInputChange('address', e.target.value)}
-              disabled={!isEditing}
-              placeholder="Endereço completo"
-            />
-          </div>
-
-          {/* Cidade e Estado */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cidade *
-              </label>
-              <Input
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                disabled={!isEditing}
-                placeholder="Cidade"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado *
-              </label>
-              <Select
-                value={formData.state}
-                onChange={(value) => handleInputChange('state', value)}
-                disabled={!isEditing}
-                options={states}
-                placeholder="Selecione o estado"
-              />
-            </div>
-          </div>
-
-          {/* CNPJ */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              CNPJ *
-            </label>
-            <Input
-              value={formatCNPJ(formData.cnpj)}
-              onChange={(e) => handleCNPJChange(e.target.value)}
-              disabled={!isEditing}
-              placeholder="00.000.000/0000-00"
-              maxLength={18}
-            />
-          </div>
-
-          {/* Contato */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email da Igreja
-              </label>
-              <Input
-                type="email"
-                value={formData.email_church}
-                onChange={(e) => handleInputChange('email_church', e.target.value)}
-                disabled={!isEditing}
-                placeholder="contato@igreja.com"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Telefone da Igreja
-              </label>
-              <Input
-                value={formatPhone(formData.phone_church)}
-                onChange={(e) => handlePhoneChange('phone_church', e.target.value)}
-                disabled={!isEditing}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Botões de ação */}
-        {isEditing && (
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-            <Button
-              onClick={handleCancel}
-              variant="secondary"
-              disabled={isSaving}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleSave}
-              variant="primary"
-              disabled={isSaving}
-            >
-              {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-            </Button>
-          </div>
-        )}
-      </div>
-    </Card>
+      </Card>
+    </div>
   );
 }

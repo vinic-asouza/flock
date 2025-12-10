@@ -4,6 +4,7 @@ import supabase from '../services/supabase';
  * Limites de membros por tipo de plano
  */
 const PLAN_LIMITS: Record<string, number> = {
+  '100': 100, // Plano gratuito
   '200': 200,
   '500': 500,
   '800': 800,

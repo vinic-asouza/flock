@@ -15,7 +15,7 @@ export interface Church {
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
   subscription_status?: string;
-  plan_type?: '200' | '500' | '800' | 'custom';
+  plan_type?: '100' | '200' | '500' | '800' | 'custom';
   subscription_start_date?: Date;
   subscription_end_date?: Date;
   subscription_updated_at?: Date;

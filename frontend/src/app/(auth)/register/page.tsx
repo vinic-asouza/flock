@@ -309,20 +309,25 @@ export default function RegisterPage() {
       setRegisteredEmail(cleanData.email);
 
       // Se houver plano selecionado, fazer login automático e redirecionar para checkout
-      if (selectedPlan && ['200', '500', '800', 'custom'].includes(selectedPlan)) {
+      if (selectedPlan && ['100', '200', '500', '800', 'custom'].includes(selectedPlan)) {
         try {
+          // Marcar que estamos fazendo um redirect programático para checkout
+          sessionStorage.setItem('redirectingToCheckout', 'true');
+          
           // Fazer login automático com as credenciais do registro
           await login({
             email: cleanData.email,
             password: cleanData.password,
           });
           
-          // Login bem-sucedido, aguardar um momento e redirecionar para checkout
-          // Usar window.location.href para garantir que o redirecionamento aconteça
-          await new Promise(resolve => setTimeout(resolve, 150));
-          window.location.href = `/checkout?plan=${selectedPlan}`;
+          // Redirecionar imediatamente para checkout sem esperar
+          // Usar window.location.replace para evitar que o usuário veja a página intermediária
+          window.location.replace(`/checkout?plan=${selectedPlan}`);
           return;
         } catch (loginError: any) {
+          // Limpar flag de redirect em caso de erro
+          sessionStorage.removeItem('redirectingToCheckout');
+          
           // Se o login falhar (ex: email precisa ser confirmado)
           // Verificar se é erro de email não confirmado
           const errorMessage = loginError?.message || '';

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCheckout, createPortalSession, handleWebhook, syncSubscription, changePlan } from '../controllers/stripeController';
+import { createCheckout, createPortalSession, handleWebhook, syncSubscription, changePlan, activateFreePlan } from '../controllers/stripeController';
 import { optionalAuth } from '../middlewares/auth';
 import authMiddleware from '../middlewares/auth';
 
@@ -24,6 +24,9 @@ router.post('/sync-subscription', authMiddleware, syncSubscription);
 
 // Trocar plano da assinatura (requer autenticação)
 router.post('/change-plan', authMiddleware, changePlan);
+
+// Ativar plano gratuito (requer autenticação)
+router.post('/activate-free-plan', authMiddleware, activateFreePlan);
 
 export default router;
 

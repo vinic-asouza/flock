@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -13,8 +13,10 @@ import {
   ExternalLink,
   Calendar,
   Package,
-  ArrowUpDown
+  ArrowUpDown,
+  RefreshCw
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
@@ -22,6 +24,7 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 const planNames: Record<string, string> = {
+  '100': 'Plano 100 Membros',
   '200': 'Plano 200 Membros',
   '500': 'Plano 500 Membros',
   '800': 'Plano 800 Membros',
@@ -29,6 +32,7 @@ const planNames: Record<string, string> = {
 };
 
 const planPrices: Record<string, string> = {
+  '100': 'Gratuito',
   '200': 'R$ 29,99',
   '500': 'R$ 59,99',
   '800': 'R$ 89,99',
@@ -47,6 +51,7 @@ const statusLabels: Record<string, { label: string; color: string; bgColor: stri
 
 export function PaymentManagement() {
   const { user, refreshChurch } = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -56,6 +61,9 @@ export function PaymentManagement() {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  
+  // Flag para garantir que a sincronização aconteça apenas uma vez
+  const hasSyncedRef = useRef(false);
 
   const subscriptionStatus = user?.subscription_status;
   const planType = user?.plan_type;
@@ -63,10 +71,84 @@ export function PaymentManagement() {
   const subscriptionEndDate = user?.subscription_end_date;
   const hasSubscription = !!user?.stripe_subscription_id;
 
+  // Verificar se a assinatura está realmente expirada
+  const isSubscriptionExpired = () => {
+    if (!subscriptionStatus || subscriptionStatus !== 'canceled') {
+      return false;
+    }
+    
+    // Se não há subscription_end_date, a assinatura está expirada
+    if (!subscriptionEndDate) {
+      return true;
+    }
+    
+    // Se a data de término está no passado, a assinatura está expirada
+    const endDate = new Date(subscriptionEndDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    
+    return endDate <= today;
+  };
+
+  const handleReactivateSubscription = () => {
+    // Redirecionar para checkout com o último plano que o usuário tinha (ou plano padrão)
+    const planToReactivate = planType && planType !== '100' && planType !== 'custom' 
+      ? planType 
+      : '200'; // Plano padrão se não houver plano anterior válido
+    
+    router.push(`/checkout?plan=${planToReactivate}`);
+  };
+
   useEffect(() => {
     // Simular carregamento inicial
     setIsLoading(false);
   }, []);
+
+  // Sincronizar assinatura automaticamente ao entrar na aba de pagamento (apenas uma vez)
+  useEffect(() => {
+    // Verificar se já sincronizou ou se não há usuário para evitar múltiplas requisições
+    if (hasSyncedRef.current || !user) {
+      return;
+    }
+    
+    const syncOnMount = async () => {
+      // Marcar como sincronizado ANTES de fazer a requisição para evitar múltiplas execuções
+      // mesmo que refreshChurch atualize o user e dispare o useEffect novamente
+      hasSyncedRef.current = true;
+      
+      try {
+        setIsSyncing(true);
+        setError(null);
+        setSyncMessage(null);
+
+        const response = await axios.post(
+          `${API_URL}/stripe/sync-subscription`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+
+        if (response.data.synced) {
+          // Atualizar dados do usuário silenciosamente (sem mostrar mensagem)
+          // Como hasSyncedRef.current já é true, mesmo que refreshChurch atualize user,
+          // o useEffect não será executado novamente
+          if (refreshChurch) {
+            await refreshChurch();
+          }
+        }
+      } catch (err: any) {
+        // Não mostrar erro na sincronização automática, apenas logar
+        console.log('Sincronização automática:', err.response?.data?.error || err.message);
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    syncOnMount();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Executar quando user estiver disponível, mas apenas uma vez devido ao ref
 
   const handleManageSubscription = async () => {
     try {
@@ -139,7 +221,7 @@ export function PaymentManagement() {
     }
   };
 
-  const handlePlanSelection = () => {
+  const handlePlanSelection = async () => {
     if (!selectedPlan) {
       setError('Por favor, selecione um plano');
       return;
@@ -150,7 +232,47 @@ export function PaymentManagement() {
       return;
     }
 
-    // Fechar modal de seleção e abrir modal de confirmação
+    // Se o plano selecionado for o plano gratuito (100), redirecionar para o Customer Portal
+    if (selectedPlan === '100') {
+      try {
+        setIsLoadingPortal(true);
+        setError(null);
+
+        const response = await axios.post(
+          `${API_URL}/stripe/create-portal-session`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+
+        const { url } = response.data;
+
+        if (!url) {
+          throw new Error('URL do portal não recebida');
+        }
+
+        // Fechar modal e redirecionar para o portal
+        setShowChangePlanModal(false);
+        setSelectedPlan(null);
+        
+        // Abrir portal do Stripe em nova guia
+        window.open(url, '_blank', 'noopener,noreferrer');
+        setIsLoadingPortal(false);
+        return;
+      } catch (err: any) {
+        console.error('Erro ao criar sessão do portal:', err);
+        setError(
+          err.response?.data?.error ||
+          err.message ||
+          'Erro ao acessar o portal de pagamento. Tente novamente.'
+        );
+        setIsLoadingPortal(false);
+        return;
+      }
+    }
+
+    // Para outros planos, fechar modal de seleção e abrir modal de confirmação
     setShowChangePlanModal(false);
     setShowConfirmModal(true);
     setError(null);
@@ -222,9 +344,9 @@ export function PaymentManagement() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Gerenciamento de Pagamento</h2>
+        <h2 className="text-xl font-semibold text-gray-900">Gerenciamento de Plano</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Gerencie sua assinatura, método de pagamento e faturas.
+          Gerencie seu plano, assinatura e pagamentos.
         </p>
       </div>
 
@@ -258,33 +380,134 @@ export function PaymentManagement() {
 
       {/* Status da Assinatura */}
       {hasSubscription ? (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
-          {/* Status */}
-          <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Status da Assinatura</h3>
-            {subscriptionStatus && statusLabels[subscriptionStatus] ? (
-              <div className={`inline-flex items-center px-3 py-1 rounded-full ${statusLabels[subscriptionStatus].bgColor}`}>
-                {subscriptionStatus === 'active' && <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />}
-                {subscriptionStatus === 'canceled' && <XCircle className="w-4 h-4 mr-2 text-red-600" />}
-                {subscriptionStatus === 'past_due' && <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />}
-                <span className={`text-sm font-medium ${statusLabels[subscriptionStatus].color}`}>
-                  {statusLabels[subscriptionStatus].label}
-                </span>
+        <>
+          {/* Seção para assinatura expirada */}
+          {isSubscriptionExpired() ? (
+            <div className="bg-white rounded-lg border border-red-200 p-6 space-y-6">
+              <div className="text-center py-6">
+                <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Assinatura Expirada
+                </h3>
+                <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
+                  Sua assinatura foi cancelada e já expirou. Agora você está usando o plano gratuito (Limite de 100 membros). Reative a assinatura para voltar ao plano pago.
+                </p>
+                {planType && (planType === '200' || planType === '500' || planType === '800') && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-700 mb-2">
+                      <strong>Último plano utilizado:</strong>
+                    </p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {planNames[planType] || planType}
+                      {planPrices[planType] && (
+                        <span className="text-sm text-gray-600 ml-2">
+                          - {planPrices[planType]}
+                          <span className="text-gray-500">/mês</span>
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <Button
+                    onClick={handleReactivateSubscription}
+                    variant="primary"
+                    className="w-full sm:w-auto"
+                  >
+                    <RefreshCw className="w-5 h-5 mr-2" />
+                    Reativar Assinatura
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-4">
+                  Você será redirecionado para a página de checkout onde poderá escolher um plano e realizar o pagamento.
+                </p>
               </div>
-            ) : (
-              <span className="text-sm text-gray-500">Status não disponível</span>
-            )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+              {/* Status */}
+              <div>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Status da Assinatura</h3>
+            {(() => {
+              // Verificar se há data de encerramento no futuro (assinatura cancelada mas ainda ativa)
+              const hasFutureEndDate = subscriptionEndDate && (() => {
+                const endDate = new Date(subscriptionEndDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                endDate.setHours(0, 0, 0, 0);
+                return endDate > today;
+              })();
+
+              // Não exibir status se houver data de encerramento futura
+              if (hasFutureEndDate) {
+                return null;
+              }
+
+              // Exibir status normalmente
+              if (subscriptionStatus && statusLabels[subscriptionStatus]) {
+                return (
+                  <div className={`inline-flex items-center px-3 py-1 rounded-full ${statusLabels[subscriptionStatus].bgColor}`}>
+                    {subscriptionStatus === 'active' && <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />}
+                    {subscriptionStatus === 'canceled' && <XCircle className="w-4 h-4 mr-2 text-red-600" />}
+                    {subscriptionStatus === 'past_due' && <AlertCircle className="w-4 h-4 mr-2 text-yellow-600" />}
+                    <span className={`text-sm font-medium ${statusLabels[subscriptionStatus].color}`}>
+                      {statusLabels[subscriptionStatus].label}
+                    </span>
+                  </div>
+                );
+              }
+
+              return <span className="text-sm text-gray-500">Status não disponível</span>;
+            })()}
+            
+            {/* Alerta para assinatura cancelada (verifica subscription_end_date) */}
+            {subscriptionEndDate && (() => {
+              // Verificar se a data de encerramento está no futuro (assinatura cancelada mas ainda ativa)
+              const endDate = new Date(subscriptionEndDate);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0); // Zerar horas para comparação apenas de data
+              endDate.setHours(0, 0, 0, 0);
+              const isCanceled = endDate > today;
+              
+              return isCanceled ? (
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start">
+                    <AlertCircle className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-900 mb-1">
+                        Assinatura Cancelada
+                      </p>
+                      <p className="text-sm text-amber-800">
+                        Sua assinatura foi cancelada, mas você continuará tendo acesso ao plano pago até{' '}
+                        <strong>{formatDate(subscriptionEndDate)}</strong>. 
+                        Após essa data, o acesso mudará para o plano gratuito.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
           </div>
 
           {/* Plano Atual */}
           {planType && (
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">Plano Atual</h3>
-              <div className="flex items-center">
-                <Package className="w-5 h-5 text-gray-400 mr-2" />
-                <span className="text-lg font-semibold text-gray-900">
-                  {planNames[planType] || planType}
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Package className="w-5 h-5 text-gray-400 mr-2" />
+                  <div>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {planNames[planType] || planType}
+                    </span>
+                    {planPrices[planType] && (
+                      <span className="text-sm text-gray-600 ml-2">
+                        - {planPrices[planType]}
+                        {planType && planType !== '100' && planType !== 'custom' && <span className="text-gray-500">/mês</span>}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -303,19 +526,6 @@ export function PaymentManagement() {
               </div>
             )}
 
-            {subscriptionEndDate && (
-              <div>
-                <h3 className="text-sm font-medium text-gray-700 mb-2">
-                  {subscriptionStatus === 'canceled' ? 'Data de Cancelamento' : 'Próxima Renovação'}
-                </h3>
-                <div className="flex items-center">
-                  <Calendar className="w-5 h-5 text-gray-400 mr-2" />
-                  <span className="text-sm text-gray-900">
-                    {formatDate(subscriptionEndDate)}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Botões de Ação */}
@@ -339,15 +549,17 @@ export function PaymentManagement() {
                   </>
                 )}
               </Button>
-              <Button
-                onClick={() => setShowChangePlanModal(true)}
-                disabled={isChangingPlan || subscriptionStatus !== 'active'}
-                variant="secondary"
-                className="flex-1"
-              >
-                <ArrowUpDown className="w-5 h-5 mr-2" />
-                Trocar de Plano
-              </Button>
+              {!subscriptionEndDate && (
+                <Button
+                  onClick={() => setShowChangePlanModal(true)}
+                  disabled={isChangingPlan || subscriptionStatus !== 'active'}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  <ArrowUpDown className="w-5 h-5 mr-2" />
+                  Trocar de Plano
+                </Button>
+              )}
               <Button
                 onClick={handleSyncSubscription}
                 disabled={isSyncing}
@@ -369,13 +581,19 @@ export function PaymentManagement() {
             </div>
             <p className="text-xs text-gray-500">
               <strong>Gerenciar Assinatura:</strong> Acesse o portal do Stripe para atualizar método de pagamento, cancelar ou alterar plano.
-              <br />
-              <strong>Trocar de Plano:</strong> Altere seu plano atual para outro disponível (apenas para assinaturas ativas).
+              {!subscriptionEndDate && (
+                <>
+                  <br />
+                  <strong>Trocar de Plano:</strong> Altere seu plano atual para outro disponível (apenas para assinaturas ativas).
+                </>
+              )}
               <br />
               <strong>Sincronizar:</strong> Atualize os dados da assinatura diretamente do Stripe (útil se o webhook não processou corretamente).
             </p>
           </div>
         </div>
+          )}
+        </>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="text-center py-8">
@@ -386,7 +604,7 @@ export function PaymentManagement() {
             <p className="text-sm text-gray-500 mb-6">
               {user?.stripe_customer_id 
                 ? 'Não foi encontrada uma assinatura ativa no sistema. Se você acabou de fazer o pagamento, tente sincronizar.'
-                : 'Você ainda não possui uma assinatura ativa. Assine um plano para começar a usar o sistema.'}
+                : 'Você está usando o plano gratuito (Limite de 100 membros). Faça uma assinatura para ativar o plano pago (Limite de 200 membros).'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {user?.stripe_customer_id && (
@@ -451,16 +669,8 @@ export function PaymentManagement() {
             Selecione o novo plano para sua assinatura. A alteração será aplicada imediatamente e você será cobrado proporcionalmente.
           </p>
 
-          {planType && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
-                <strong>Plano Atual:</strong> {planNames[planType] || planType}
-              </p>
-            </div>
-          )}
-
           <div className="space-y-2">
-            {(['200', '500', '800'] as const).map((planKey) => {
+            {(['100', '200', '500', '800'] as const).map((planKey) => {
               const isCurrentPlan = planType === planKey;
               const isSelected = selectedPlan === planKey;
 
@@ -483,7 +693,8 @@ export function PaymentManagement() {
                         {planNames[planKey]}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
-                        {planPrices[planKey]} <span className="text-gray-500">/mês</span>
+                        {planPrices[planKey]}
+                        {planKey !== '100' && <span className="text-gray-500"> /mês</span>}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -499,6 +710,18 @@ export function PaymentManagement() {
               );
             })}
           </div>
+
+          {/* Observação para plano gratuito */}
+          {selectedPlan === '100' && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-blue-800">
+                  Para alterar para o plano gratuito você precisa cancelar a assinatura atual, clique e continuar para ser redirecionado para o gerenciamento de assinatura e faça o cancelamento.
+                </p>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -521,11 +744,20 @@ export function PaymentManagement() {
             </Button>
             <Button
               onClick={handlePlanSelection}
-              disabled={!selectedPlan || isChangingPlan || selectedPlan === planType}
+              disabled={!selectedPlan || isChangingPlan || selectedPlan === planType || isLoadingPortal}
               className="flex-1"
             >
-              <ArrowUpDown className="w-5 h-5 mr-2" />
-              Continuar
+              {isLoadingPortal ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin mr-2" />
+                  Carregando...
+                </>
+              ) : (
+                <>
+                  <ArrowUpDown className="w-5 h-5 mr-2" />
+                  Continuar
+                </>
+              )}
             </Button>
           </div>
         </div>

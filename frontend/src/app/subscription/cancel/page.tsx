@@ -44,14 +44,6 @@ export default function SubscriptionCancelPage() {
 
         <div className="space-y-3">
           <Button
-            onClick={() => router.push('/')}
-            className="w-full"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Voltar para o Início
-          </Button>
-          <Button
-            variant="secondary"
             onClick={() => router.push('/checkout')}
             className="w-full"
           >

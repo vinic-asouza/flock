@@ -52,13 +52,14 @@ function LoginPageComponent() {
     // Só redirecionar automaticamente se:
     // 1. Usuário está autenticado
     // 2. NÃO estamos no meio de um processo de login (para evitar conflito)
-    // 3. Não há redirectUrl OU há redirectUrl (vamos respeitar o redirectUrl sempre)
-    if (user && !isLoggingIn) {
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else {
-        router.push('/');
-      }
+    // 3. Há redirectUrl (vamos respeitar o redirectUrl sempre)
+    if (user && !isLoggingIn && redirectUrl) {
+      // Usar window.location.href para garantir que o redirect aconteça corretamente
+      // Usar replace para evitar adicionar ao histórico
+      window.location.replace(redirectUrl);
+    } else if (user && !isLoggingIn && !redirectUrl) {
+      // Se não houver redirectUrl, redirecionar para home
+      router.push('/');
     }
   }, [user, redirectUrl, router, isLoggingIn]);
 
@@ -88,9 +89,10 @@ function LoginPageComponent() {
       await new Promise(resolve => setTimeout(resolve, 150));
       
       // Redirecionar para URL de redirect se houver, senão para home
-      // Usar window.location para garantir que o redirecionamento aconteça
+      // Usar window.location.replace para garantir que o redirecionamento aconteça
+      // e evitar adicionar ao histórico (evita loops de redirecionamento)
       if (redirectUrl) {
-        window.location.href = redirectUrl;
+        window.location.replace(redirectUrl);
       } else {
         router.push('/');
       }
@@ -210,23 +212,6 @@ function LoginPageComponent() {
           Entrar
         </Button>
       </form>
-
-      {/* Links */}
-      <div className="text-center">
-        <p className="text-sm text-gray-600">
-          Não tem uma conta?{' '}
-          <Link
-            href="/register"
-            className="font-medium text-primary hover:text-primary/80 cursor-pointer"
-            onClick={() => {
-              globalLoginError = null;
-              globalLoginErrorDetails = null;
-            }}
-          >
-            Registre sua igreja
-          </Link>
-        </p>
-      </div>
     </div>
   );
 }

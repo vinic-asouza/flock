@@ -30,6 +30,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     validationResult,
     importResult,
     error,
+    setError,
     validateImport,
     importMembers,
     reset,
@@ -81,6 +82,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
       setStep('validation');
     } catch (err) {
       console.error('Erro ao validar:', err);
+      // O erro já foi definido pelo hook
     }
   };
 
@@ -94,6 +96,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
       setStep('result');
     } catch (err) {
       console.error('Erro ao importar:', err);
+      // O erro já foi definido pelo hook
       setStep('validation'); // Voltar para validação em caso de erro
     }
   };
@@ -230,12 +233,43 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
         )}
 
         {/* Step 2: Validation Results */}
-        {step === 'validation' && validationResult && (
+        {step === 'validation' && (
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-3">
-                Resultado da Validação
-              </h3>
+            {/* Exibir erro se houver */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-800">Erro ao processar importação</p>
+                    <p className="text-sm text-red-600 mt-1">{error}</p>
+                    {error.toLowerCase().includes('limite') && (
+                      <div className="mt-3 pt-3 border-t border-red-200">
+                        <p className="text-xs text-red-700">
+                          💡 <strong>Dica:</strong> Você pode reduzir a quantidade de membros no arquivo CSV ou{' '}
+                          <a 
+                            href="/settings?tab=payment" 
+                            className="underline font-medium hover:text-red-800"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            alterar seu plano
+                          </a>
+                          {' '}para aumentar o limite de membros.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {validationResult && (
+              <>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    Resultado da Validação
+                  </h3>
               <div className="flex gap-3 overflow-x-auto">
                 <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg flex-shrink-0 min-w-0">
                   <List className="h-5 w-5 text-blue-600 flex-shrink-0" />
@@ -332,23 +366,25 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               </div>
             )}
 
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setStep('upload')} disabled={importing}>
-                Voltar
-              </Button>
-              {validationResult.validRows > 0 && (
-                <Button onClick={handleImport} disabled={importing}>
-                  {importing ? (
-                    <>
-                      <Loader2 className="animate-spin mr-2" size={16} />
-                      Importando...
-                    </>
-                  ) : (
-                    `Importar ${validationResult.validRows} Membros`
+                <div className="flex justify-end gap-3">
+                  <Button variant="secondary" onClick={() => setStep('upload')} disabled={importing}>
+                    Voltar
+                  </Button>
+                  {validationResult.validRows > 0 && !error && (
+                    <Button onClick={handleImport} disabled={importing}>
+                      {importing ? (
+                        <>
+                          <Loader2 className="animate-spin mr-2" size={16} />
+                          Importando...
+                        </>
+                      ) : (
+                        `Importar ${validationResult.validRows} Membros`
+                      )}
+                    </Button>
                   )}
-                </Button>
-              )}
-            </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

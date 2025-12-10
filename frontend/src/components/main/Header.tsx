@@ -113,7 +113,7 @@ export function Header() {
                     href="/settings?tab=payment"
                     className="underline hover:text-primary"
                   >
-                    Altere seu plano
+                    Atualize seu plano
                   </a>
                 </>
               ) : (
@@ -125,7 +125,7 @@ export function Header() {
                     href="/settings?tab=payment"
                     className="underline hover:text-primary"
                   >
-                    Altere seu plano
+                    Atualize seu plano
                   </a>
                 </>
               )}

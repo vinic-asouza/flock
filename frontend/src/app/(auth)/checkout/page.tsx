@@ -4,44 +4,78 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Loader, CreditCard, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader, CreditCard, CheckCircle2, XCircle, ArrowRight, Check } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
+const planOptions = [
+  { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },
+  { value: '200', name: 'Plano 200 Membros', price: 'R$ 29,00/mês', description: 'Para igrejas pequenas', members: 200 },
+  { value: '500', name: 'Plano 500 Membros', price: 'R$ 59,00/mês', description: 'Para igrejas médias', members: 500 },
+  { value: '800', name: 'Plano 800 Membros', price: 'R$ 89,00/mês', description: 'Para igrejas grandes', members: 800 },
+];
 
 export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const plan = searchParams.get('plan') as '200' | '500' | '800' | 'custom' | null;
+  const { user, refreshChurch } = useAuth();
+  const initialPlan = searchParams.get('plan') as '100' | '200' | '500' | '800' | 'custom' | null;
+  const [selectedPlan, setSelectedPlan] = useState<'100' | '200' | '500' | '800' | 'custom' | null>(
+    initialPlan && ['100', '200', '500', '800'].includes(initialPlan) ? initialPlan : null
+  );
 
   useEffect(() => {
     // Verificar se usuário está autenticado
     if (!user) {
-      router.push('/login?redirect=/checkout' + (plan ? `?plan=${plan}` : ''));
+      // Usar initialPlan da URL ou selectedPlan do estado
+      const planToRedirect = initialPlan || selectedPlan;
+      router.push('/login?redirect=/checkout' + (planToRedirect ? `?plan=${planToRedirect}` : ''));
       return;
     }
 
-    // Verificar se plano é válido
-    if (!plan || !['200', '500', '800', 'custom'].includes(plan)) {
-      setError('Plano inválido. Por favor, selecione um plano válido.');
-      return;
+    // Se não houver plano selecionado e não houver plano inicial, definir padrão como 100
+    if (!selectedPlan && !initialPlan) {
+      setSelectedPlan('100');
     }
-  }, [user, plan, router]);
+  }, [user, router, initialPlan, selectedPlan]);
 
   const handleCheckout = async () => {
+    if (!selectedPlan) {
+      setError('Por favor, selecione um plano');
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
-      // Criar sessão de checkout
+      // Se for plano gratuito (100), ativar diretamente
+      if (selectedPlan === '100') {
+        const response = await axios.post(
+          `${API_URL}/stripe/activate-free-plan`,
+          {},
+          {
+            withCredentials: true,
+          }
+        );
+
+        // Atualizar dados da igreja
+        await refreshChurch();
+
+        // Redirecionar para o sistema
+        router.push('/');
+        return;
+      }
+
+      // Para planos pagos, criar sessão de checkout
       const response = await axios.post(
         `${API_URL}/stripe/create-checkout-session`,
-        { plan },
+        { plan: selectedPlan },
         {
-          withCredentials: true, // Incluir cookies de autenticação
+          withCredentials: true,
         }
       );
 
@@ -54,10 +88,9 @@ export default function CheckoutPage() {
       // Redirecionar para checkout do Stripe
       window.location.href = url;
     } catch (err: any) {
-      console.error('Erro ao criar checkout:', err);
+      console.error('Erro ao processar:', err);
       
-      // Extrair mensagem de erro mais detalhada
-      let errorMessage = 'Erro ao iniciar processo de pagamento. Tente novamente.';
+      let errorMessage = 'Erro ao processar sua solicitação. Tente novamente.';
       let errorDetails = '';
       
       if (err.response?.data) {
@@ -67,7 +100,6 @@ export default function CheckoutPage() {
         errorMessage = err.message;
       }
       
-      // Mostrar mensagem de erro com detalhes se houver
       setError(
         errorDetails 
           ? `${errorMessage}: ${errorDetails}`
@@ -81,42 +113,20 @@ export default function CheckoutPage() {
     return null; // Redirecionamento em andamento
   }
 
-  if (!plan || !['200', '500', '800', 'custom'].includes(plan)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Plano Inválido</h1>
-          <p className="text-gray-600 mb-6">
-            {error || 'Por favor, selecione um plano válido na página de planos.'}
-          </p>
-          <Button onClick={() => router.push('/')}>
-            Voltar para o Início
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const planNames: Record<string, string> = {
-    '200': 'Plano 200 Membros',
-    '500': 'Plano 500 Membros',
-    '800': 'Plano 800 Membros',
-    'custom': 'Plano Personalizado',
-  };
+  const selectedPlanData = planOptions.find(p => p.value === selectedPlan);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center mb-8">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4">
-            <CreditCard className="h-8 w-8 text-primary" />
+    <div className="flex items-center justify-center w-full">
+      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
+        <div className="text-center mb-6">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-3">
+            <CreditCard className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Finalizar Assinatura
+          <h1 className="text-xl font-bold text-gray-900 mb-1">
+            Escolha seu Plano
           </h1>
-          <p className="text-gray-600">
-            Você está prestes a assinar o <strong>{planNames[plan]}</strong>
+          <p className="text-sm text-gray-600">
+            Selecione o plano ideal para sua igreja
           </p>
         </div>
 
@@ -126,55 +136,113 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        <div className="space-y-4 mb-8">
-          <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-            <span className="text-gray-700">Plano selecionado:</span>
-            <span className="font-semibold text-gray-900">{planNames[plan]}</span>
+        {/* Seletor de Planos */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          {planOptions.map((plan) => {
+            const isSelected = selectedPlan === plan.value;
+            const isFree = plan.value === '100';
+            
+            return (
+              <button
+                key={plan.value}
+                onClick={() => setSelectedPlan(plan.value as '100' | '200' | '500' | '800')}
+                className={`relative p-3 rounded-lg border transition-all ${
+                  isSelected
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-gray-200 hover:border-primary/40 hover:bg-gray-50'
+                }`}
+              >
+                {isSelected && (
+                  <div className="absolute -top-1.5 -right-1.5">
+                    <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                      <Check className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">
+                    {plan.members}
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-2">membros</p>
+                  <div className="flex flex-col items-center">
+                    <span className={`text-base font-bold ${isFree ? 'text-green-600' : 'text-primary'}`}>
+                      {isFree ? 'Grátis' : plan.price.split('/')[0]}
+                    </span>
+                    {!isFree && (
+                      <span className="text-[10px] text-gray-500 mt-0.5">/mês</span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Resumo do Plano Selecionado */}
+        {selectedPlanData && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Plano selecionado</p>
+                <p className="text-base font-semibold text-gray-900">{selectedPlanData.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500 mb-0.5">Valor</p>
+                <p className={`text-lg font-bold ${selectedPlan === '100' ? 'text-green-600' : 'text-primary'}`}>
+                  {selectedPlanData.price}
+                </p>
+              </div>
+            </div>
+            {selectedPlan !== '100' ? (
+              <div className="pt-3 border-t border-gray-200">
+                <p className="text-xs text-blue-700">
+                  <strong>Próximo passo:</strong> Você será redirecionado para a página de pagamento seguro do Stripe.
+                </p>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-gray-200">
+                <p className="text-xs text-green-700">
+                  <strong>Plano Gratuito:</strong> Acesso imediato ao sistema sem necessidade de pagamento.
+                </p>
+              </div>
+            )}
           </div>
-          <div className="p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Próximo passo:</strong> Você será redirecionado para a página de pagamento
-              seguro do Stripe para finalizar sua assinatura.
+        )}
+
+        {/* Botão de Ação */}
+        <Button
+          onClick={handleCheckout}
+          disabled={isLoading || !selectedPlan}
+          className="w-full"
+        >
+          {isLoading ? (
+            <>
+              <Loader className="w-5 h-5 animate-spin mr-2" />
+              Processando...
+            </>
+          ) : selectedPlan === '100' ? (
+            <>
+              <CheckCircle2 className="w-5 h-5 mr-2" />
+              Acessar Sistema
+            </>
+          ) : (
+            <>
+              <CreditCard className="w-5 h-5 mr-2" />
+              Continuar para Pagamento
+            </>
+          )}
+        </Button>
+
+        {selectedPlan !== '100' && (
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              Seu pagamento será processado de forma segura pelo Stripe.
+              Você receberá um email de confirmação após o pagamento.
             </p>
           </div>
-        </div>
-
-        <div className="space-y-3">
-          <Button
-            onClick={handleCheckout}
-            disabled={isLoading}
-            className="w-full"
-          >
-            {isLoading ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin mr-2" />
-                Processando...
-              </>
-            ) : (
-              <>
-                <CreditCard className="w-5 h-5 mr-2" />
-                Continuar para Pagamento
-              </>
-            )}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => router.push('/')}
-            className="w-full"
-            disabled={isLoading}
-          >
-            Cancelar
-          </Button>
-        </div>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Seu pagamento será processado de forma segura pelo Stripe.
-            Você receberá um email de confirmação após o pagamento.
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );
 }
-

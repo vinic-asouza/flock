@@ -8,7 +8,10 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import apiService from '@/services/api';
 import { formatPhone } from '@/utils';
-import { Edit, Key, Trash2, Mail, Phone } from 'lucide-react';
+import { Edit, Key, Trash2, Mail, Phone, ExternalLink, RefreshCw } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 interface AccountData {
   id: string;
@@ -42,7 +45,7 @@ interface DeleteAccountData {
 }
 
 export function AccountManagement() {
-  const { logout } = useAuth();
+  const { logout, user, refreshChurch } = useAuth();
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -61,6 +64,9 @@ export function AccountManagement() {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   
+  // Estados para verificação de plano
+  const [isSyncing, setIsSyncing] = useState(false);
+  
   // Dados dos formulários
   const [emailData, setEmailData] = useState<ChangeEmailData>({ newEmail: '', password: '' });
   const [passwordData, setPasswordData] = useState<ChangePasswordData>({ 
@@ -70,6 +76,87 @@ export function AccountManagement() {
   });
   const [phoneData, setPhoneData] = useState<ChangePhoneData>({ newPhone: '', password: '' });
   const [deleteData, setDeleteData] = useState<DeleteAccountData>({ password: '', confirmation: '' });
+
+  // Verificar se há plano pago ativo
+  const hasActivePaidPlan = () => {
+    if (!user) return false;
+    const subscriptionStatus = user.subscription_status;
+    const planType = user.plan_type;
+    const subscriptionEndDate = user.subscription_end_date;
+    
+    // Se subscription_end_date está preenchido, significa que a assinatura foi cancelada
+    // e está apenas aguardando o término do período pago - permitir exclusão
+    if (subscriptionEndDate) {
+      return false;
+    }
+    
+    // Verificar se tem assinatura ativa e não é plano gratuito
+    const isActive = subscriptionStatus === 'active' && planType && planType !== '100' && planType !== null;
+    
+    return isActive;
+  };
+
+  const handleSyncSubscription = async () => {
+    try {
+      setIsSyncing(true);
+      setDeleteError(null);
+      
+      await axios.post(
+        `${API_URL}/stripe/sync-subscription`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      
+      // Atualizar dados da igreja após sincronização
+      if (refreshChurch) {
+        await refreshChurch();
+      }
+      
+      // Mensagem de sucesso genérica - o componente será re-renderizado e hasActivePaidPlan() será atualizado
+      setSuccess('Assinatura sincronizada com sucesso! Se você cancelou sua assinatura, os campos de exclusão aparecerão automaticamente.');
+    } catch (err: any) {
+      console.error('Erro ao sincronizar assinatura:', err);
+      setDeleteError(
+        err.response?.data?.error ||
+        err.message ||
+        'Erro ao sincronizar assinatura. Tente novamente.'
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleOpenPortal = async () => {
+    try {
+      setDeleteError(null);
+      
+      const response = await axios.post(
+        `${API_URL}/stripe/create-portal-session`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+      
+      const { url } = response.data;
+      
+      if (!url) {
+        throw new Error('URL do portal não recebida');
+      }
+      
+      // Abrir portal do Stripe em nova guia
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err: any) {
+      console.error('Erro ao criar sessão do portal:', err);
+      setDeleteError(
+        err.response?.data?.error ||
+        err.message ||
+        'Erro ao acessar o portal de pagamento. Tente novamente.'
+      );
+    }
+  };
 
 
   // Carregar dados da conta
@@ -492,13 +579,24 @@ export function AccountManagement() {
       {/* Modal para excluir conta */}
       <Modal
         isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeleteError(null);
+          setSuccess(null);
+          setDeleteData({ password: '', confirmation: '' });
+        }}
         title="Excluir Conta"
       >
         <div className="space-y-4 p-4">
           {deleteError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{deleteError}</p>
+            </div>
+          )}
+          
+          {success && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 text-sm">{success}</p>
             </div>
           )}
           
@@ -516,37 +614,81 @@ export function AccountManagement() {
               <li>Relatórios e histórico</li>
             </ul>
           </div>
+
+          {/* Aviso sobre plano ativo */}
+          {hasActivePaidPlan() && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-800 font-medium mb-2">
+                ⚠️ Plano Pago Ativo Detectado
+              </p>
+              <p className="text-sm text-orange-700 mb-3">
+                Para excluir sua conta, é necessário cancelar sua assinatura ativa primeiro. 
+                Após o cancelamento, você poderá excluir sua conta.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={handleOpenPortal}
+                  variant="primary"
+                  className="flex items-center justify-center gap-2"
+                >
+                  <ExternalLink size={16} />
+                  Gerenciar Assinatura no Stripe
+                </Button>
+                <Button
+                  onClick={handleSyncSubscription}
+                  disabled={isSyncing}
+                  variant="secondary"
+                  className="flex items-center justify-center gap-2"
+                >
+                  <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                  {isSyncing ? 'Sincronizando...' : 'Já realizei o cancelamento'}
+                </Button>
+              </div>
+            </div>
+          )}
           
-          <Input
-            label="Senha Atual"
-            type="password"
-            value={deleteData.password}
-            onChange={(e) => setDeleteData(prev => ({ ...prev, password: e.target.value }))}
-            placeholder="Digite sua senha atual"
-          />
-          
-          <Input
-            label="Confirmação"
-            value={deleteData.confirmation}
-            onChange={(e) => setDeleteData(prev => ({ ...prev, confirmation: e.target.value }))}
-            placeholder="Digite: EXCLUIR CONTA"
-          />
+          {/* Campos de senha e confirmação - apenas se não houver plano ativo */}
+          {!hasActivePaidPlan() && (
+            <>
+              <Input
+                label="Senha Atual"
+                type="password"
+                value={deleteData.password}
+                onChange={(e) => setDeleteData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Digite sua senha atual"
+              />
+              
+              <Input
+                label="Confirmação"
+                value={deleteData.confirmation}
+                onChange={(e) => setDeleteData(prev => ({ ...prev, confirmation: e.target.value }))}
+                placeholder="Digite: EXCLUIR CONTA"
+              />
+            </>
+          )}
           
           <div className="flex justify-end gap-3 pt-3">
             <Button
-              onClick={() => setShowDeleteModal(false)}
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteError(null);
+                setSuccess(null);
+                setDeleteData({ password: '', confirmation: '' });
+              }}
               variant="secondary"
             >
               Cancelar
             </Button>
-            <Button
-              onClick={handleDeleteAccount}
-              disabled={isSaving}
-              variant="primary"
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              {isSaving ? 'Excluindo...' : 'Excluir Conta'}
-            </Button>
+            {!hasActivePaidPlan() && (
+              <Button
+                onClick={handleDeleteAccount}
+                disabled={isSaving}
+                variant="primary"
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {isSaving ? 'Excluindo...' : 'Excluir Conta'}
+              </Button>
+            )}
           </div>
         </div>
       </Modal>
