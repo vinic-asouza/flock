@@ -21,10 +21,10 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     });
 
     // Validar plano (100 não precisa de checkout, é gratuito)
-    if (!plan || !['200', '500', '800', 'custom'].includes(plan)) {
+    if (!plan || !['200', '500', '800'].includes(plan)) {
       return res.status(400).json({
         error: 'Plano inválido',
-        details: 'Plano deve ser: 200, 500, 800 ou custom',
+        details: 'Plano deve ser: 200, 500 ou 800',
       });
     }
 
@@ -474,7 +474,7 @@ async function handleCheckoutCompleted(session: any) {
   // Determinar tipo de plano baseado no price_id
   const planType = Object.entries(STRIPE_PRICE_IDS).find(
     ([_, id]) => id === priceId
-  )?.[0] || plan || 'custom';
+  )?.[0] || plan || null;
 
   // Acessar propriedades com type assertion (Stripe SDK pode ter tipos incompletos)
   const sub = subscription as any;
@@ -606,7 +606,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Determinar tipo de plano
   const planType = Object.entries(STRIPE_PRICE_IDS).find(
     ([_, id]) => id === priceId
-  )?.[0] || 'custom';
+  )?.[0] || null;
 
   // Acessar propriedades com type assertion para evitar erros de tipo
   const currentPeriodStart = (subscription as any).current_period_start as number;
@@ -783,7 +783,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     // Determinar tipo de plano baseado no price_id
     const planType = Object.entries(STRIPE_PRICE_IDS).find(
       ([_, id]) => id === priceId
-    )?.[0] || 'custom';
+    )?.[0] || null;
 
     // Acessar propriedades com type assertion
     const sub = subscription as any;
@@ -932,7 +932,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
     // Determinar tipo de plano
     const planType = Object.entries(STRIPE_PRICE_IDS).find(
       ([_, id]) => id === newPriceId
-    )?.[0] || 'custom';
+    )?.[0] || null;
 
     // Atualizar banco de dados (o webhook também atualizará, mas fazemos aqui para resposta imediata)
     const sub = updatedSubscription as any;

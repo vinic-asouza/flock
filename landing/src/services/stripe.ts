@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export interface CreateCheckoutSessionRequest {
-  plan: '200' | '500' | '800' | 'custom';
+  plan: '200' | '500' | '800';
   email?: string;
   name?: string;
   church_id?: string;

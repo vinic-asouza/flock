@@ -40,7 +40,7 @@ DROP CONSTRAINT IF EXISTS check_plan_type_valid;
 
 ALTER TABLE churches
 ADD CONSTRAINT check_plan_type_valid
-CHECK (plan_type IS NULL OR plan_type IN ('200', '500', '800', 'custom'));
+CHECK (plan_type IS NULL OR plan_type IN ('100', '200', '500', '800'));
 
 -- Criar função para atualizar subscription_updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_church_subscription_updated_at()
@@ -66,7 +66,7 @@ CREATE TRIGGER trigger_update_church_subscription_updated_at
 COMMENT ON COLUMN churches.stripe_customer_id IS 'ID do cliente no Stripe (começa com cus_)';
 COMMENT ON COLUMN churches.stripe_subscription_id IS 'ID da assinatura ativa no Stripe (começa com sub_)';
 COMMENT ON COLUMN churches.subscription_status IS 'Status da assinatura: active, canceled, past_due, etc.';
-COMMENT ON COLUMN churches.plan_type IS 'Tipo de plano: 200, 500, 800 ou custom';
+COMMENT ON COLUMN churches.plan_type IS 'Tipo de plano: 100 (gratuito), 200, 500 ou 800';
 COMMENT ON COLUMN churches.subscription_start_date IS 'Data de início da assinatura';
 COMMENT ON COLUMN churches.subscription_end_date IS 'Data de término da assinatura (se cancelada)';
 COMMENT ON COLUMN churches.subscription_updated_at IS 'Data da última atualização da assinatura';

@@ -39,7 +39,6 @@ const loadPlanNames = async (): Promise<Record<string, string>> => {
       '200': 'Plano 200 Membros',
       '500': 'Plano 500 Membros',
       '800': 'Plano 800 Membros',
-      'custom': 'Plano Personalizado',
     };
   }
 };
@@ -59,7 +58,6 @@ const loadPlanPrices = async (): Promise<Record<string, string>> => {
       '200': 'R$ 29,99',
       '500': 'R$ 59,99',
       '800': 'R$ 89,99',
-      'custom': 'Sob consulta',
     };
   }
 };
@@ -70,7 +68,6 @@ const planNames: Record<string, string> = {
   '200': 'Plano 200 Membros',
   '500': 'Plano 500 Membros',
   '800': 'Plano 800 Membros',
-  'custom': 'Plano Personalizado',
 };
 
 const planPrices: Record<string, string> = {
@@ -78,7 +75,6 @@ const planPrices: Record<string, string> = {
   '200': 'R$ 29,99',
   '500': 'R$ 59,99',
   '800': 'R$ 89,99',
-  'custom': 'Sob consulta',
 };
 
 const statusLabels: Record<string, { label: string; color: string; bgColor: string }> = {
@@ -187,7 +183,7 @@ export function PaymentManagement() {
 
   const handleReactivateSubscription = () => {
     // Redirecionar para checkout com o último plano que o usuário tinha (ou plano padrão)
-    const planToReactivate = planType && planType !== '100' && planType !== 'custom' 
+    const planToReactivate = planType && planType !== '100' 
       ? planType 
       : '200'; // Plano padrão se não houver plano anterior válido
     
@@ -646,7 +642,7 @@ export function PaymentManagement() {
                     {planPricesState[planType] && (
                       <span className="text-sm text-gray-600 ml-2">
                         - {planPricesState[planType]}
-                        {planType && planType !== '100' && planType !== 'custom' && <span className="text-gray-500">/mês</span>}
+                        {planType && planType !== '100' && <span className="text-gray-500">/mês</span>}
                       </span>
                     )}
                   </div>

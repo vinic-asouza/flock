@@ -46,7 +46,6 @@ export const STRIPE_PRICE_IDS = {
   '200': process.env.STRIPE_PRICE_ID_M200!,
   '500': process.env.STRIPE_PRICE_ID_M500!,
   '800': process.env.STRIPE_PRICE_ID_M800!,
-  // 'custom': process.env.STRIPE_PRICE_ID_CUSTOM || '',
 };
 
 /**

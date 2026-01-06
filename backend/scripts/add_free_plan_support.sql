@@ -7,8 +7,8 @@ DROP CONSTRAINT IF EXISTS check_plan_type_valid;
 
 ALTER TABLE churches
 ADD CONSTRAINT check_plan_type_valid
-CHECK (plan_type IS NULL OR plan_type IN ('100', '200', '500', '800', 'custom'));
+CHECK (plan_type IS NULL OR plan_type IN ('100', '200', '500', '800'));
 
 -- Atualizar comentário da coluna
-COMMENT ON COLUMN churches.plan_type IS 'Tipo de plano: 100 (gratuito), 200, 500, 800 ou custom';
+COMMENT ON COLUMN churches.plan_type IS 'Tipo de plano: 100 (gratuito), 200, 500 ou 800';
 

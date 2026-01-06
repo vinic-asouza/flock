@@ -31,7 +31,7 @@ export function Hero({ onOpenWaitlist }: HeroProps) {
                 onMouseLeave={() => setIsHovered(false)}
                 className="group bg-primary text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 relative overflow-hidden"
               >
-                <span className="relative z-10">Entrar na Lista de Espera</span>
+                <span className="relative z-10">Solicitar Agora</span>
                 <ArrowRight 
                   size={20} 
                   className={`relative z-10 transition-all duration-300 ${isHovered ? 'translate-x-2 scale-110' : ''}`}

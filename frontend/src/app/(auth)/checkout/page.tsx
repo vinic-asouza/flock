@@ -24,8 +24,8 @@ export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, refreshChurch } = useAuth();
-  const initialPlan = searchParams.get('plan') as '100' | '200' | '500' | '800' | 'custom' | null;
-  const [selectedPlan, setSelectedPlan] = useState<'100' | '200' | '500' | '800' | 'custom' | null>(
+  const initialPlan = searchParams.get('plan') as '100' | '200' | '500' | '800' | null;
+  const [selectedPlan, setSelectedPlan] = useState<'100' | '200' | '500' | '800' | null>(
     initialPlan && ['100', '200', '500', '800'].includes(initialPlan) ? initialPlan : null
   );
   const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
@@ -38,7 +38,7 @@ export default function CheckoutPage() {
         const plans = response.data.plans.map((plan: any) => ({
           value: plan.id,
           name: plan.name,
-          price: plan.priceFormatted + (plan.id !== '100' && plan.id !== 'custom' ? '/mês' : ''),
+          price: plan.priceFormatted + (plan.id !== '100' ? '/mês' : ''),
           description: plan.description,
           members: plan.members,
         }));

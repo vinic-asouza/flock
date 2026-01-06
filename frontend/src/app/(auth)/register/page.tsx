@@ -309,7 +309,7 @@ export default function RegisterPage() {
       setRegisteredEmail(cleanData.email);
 
       // Se houver plano selecionado, fazer login automático e redirecionar para checkout
-      if (selectedPlan && ['100', '200', '500', '800', 'custom'].includes(selectedPlan)) {
+      if (selectedPlan && ['100', '200', '500', '800'].includes(selectedPlan)) {
         try {
           // Marcar que estamos fazendo um redirect programático para checkout
           sessionStorage.setItem('redirectingToCheckout', 'true');

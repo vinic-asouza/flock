@@ -40,13 +40,6 @@ export const PLAN_CONFIG: Record<string, PlanConfig> = {
     members: 800,
     description: 'Para igrejas grandes',
   },
-  'custom': {
-    name: 'Plano Personalizado',
-    price: 0,
-    priceFormatted: 'Sob consulta',
-    members: Infinity,
-    description: 'Plano sob medida para sua igreja',
-  },
 };
 
 /**
@@ -89,11 +82,11 @@ export function getAllPlans(): PlanConfig[] {
 }
 
 /**
- * Listar planos pagos (excluindo gratuito e custom)
+ * Listar planos pagos (excluindo gratuito)
  */
 export function getPaidPlans(): PlanConfig[] {
   return Object.entries(PLAN_CONFIG)
-    .filter(([key]) => key !== '100' && key !== 'custom')
+    .filter(([key]) => key !== '100')
     .map(([_, config]) => config);
 }
 

@@ -7,7 +7,7 @@ import { stripeService } from '@/services/stripe';
 import toast from 'react-hot-toast';
 
 interface CheckoutButtonProps {
-  plan: '200' | '500' | '800' | 'custom';
+  plan: '200' | '500' | '800';
   email?: string;
   name?: string;
   className?: string;

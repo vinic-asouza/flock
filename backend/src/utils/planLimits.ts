@@ -8,7 +8,6 @@ const PLAN_LIMITS: Record<string, number> = {
   '200': 200,
   '500': 500,
   '800': 800,
-  'custom': Infinity, // Plano customizado sem limite
 };
 
 /**
@@ -77,7 +76,7 @@ export async function checkMemberLimit(
     // Mas vamos verificar o limite mesmo assim
     const limit = PLAN_LIMITS[planType] ?? Infinity;
 
-    // Se o limite é infinito (plano custom), permitir sempre
+    // Se o limite é infinito (plano não definido), permitir sempre
     if (limit === Infinity) {
       return {
         canAdd: true,

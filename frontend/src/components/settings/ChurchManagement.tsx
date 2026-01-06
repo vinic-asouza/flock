@@ -62,7 +62,6 @@ const planNames: Record<string, string> = {
   '200': 'Plano 200 Membros',
   '500': 'Plano 500 Membros',
   '800': 'Plano 800 Membros',
-  'custom': 'Plano Personalizado',
 };
 
 const planPrices: Record<string, string> = {
@@ -70,7 +69,6 @@ const planPrices: Record<string, string> = {
   '200': 'R$ 29,99',
   '500': 'R$ 59,99',
   '800': 'R$ 89,99',
-  'custom': 'Sob consulta',
 };
 
 export function ChurchManagement() {
