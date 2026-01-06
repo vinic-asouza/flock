@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+import cron from 'node-cron';
 
 import authRoutes from './routes/auth';
 import passwordRoutes from './routes/password';
@@ -22,6 +23,7 @@ import stripeRoutes from './routes/stripe';
 import publicRoutes from './routes/public';
 import registrationLinksRoutes from './routes/registrationLinks';
 import integrationLinksRoutes from './routes/integrationLinks';
+import plansRoutes from './routes/plans';
 
 dotenv.config();
 
@@ -100,10 +102,24 @@ app.use('/api/stripe', stripeRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/registration-links', registrationLinksRoutes);
 app.use('/api/integration-links', integrationLinksRoutes);
+app.use('/api/plans', plansRoutes);
 
-// Rota de healthcheck
+// Rota de healthcheck básico
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+// Rota de healthcheck do Stripe
+app.get('/api/health/stripe', async (_req, res) => {
+  try {
+    const { checkStripeHealth } = require('./controllers/stripeController');
+    await checkStripeHealth(_req, res);
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: 'Erro ao verificar saúde do Stripe',
+    });
+  }
 });
 
 // Handler de erros
@@ -114,6 +130,22 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
     details: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
+
+// Configurar jobs agendados (cron jobs)
+// Limpeza de assinaturas pendentes expiradas - roda diariamente às 2h da manhã
+if (process.env.ENABLE_CRON_JOBS !== 'false') {
+  const { runCleanupJob } = require('./jobs/cleanupPendingSubscriptions');
+  
+  // Executar limpeza diariamente às 2h da manhã
+  cron.schedule('0 2 * * *', async () => {
+    console.log('🕐 Executando limpeza automática de assinaturas pendentes expiradas...');
+    await runCleanupJob();
+  }, {
+    timezone: 'America/Sao_Paulo'
+  });
+  
+  console.log('✅ Jobs agendados configurados (limpeza de assinaturas pendentes: diariamente às 2h)');
+}
 
 // Iniciar servidor
 const PORT = process.env.PORT || 4000;

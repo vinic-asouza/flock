@@ -23,6 +23,48 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
+// Carregar planos da API (com fallback)
+const loadPlanNames = async (): Promise<Record<string, string>> => {
+  try {
+    const response = await axios.get(`${API_URL}/plans`);
+    const names: Record<string, string> = {};
+    response.data.plans.forEach((plan: any) => {
+      names[plan.id] = plan.name;
+    });
+    return names;
+  } catch {
+    // Fallback
+    return {
+      '100': 'Plano 100 Membros',
+      '200': 'Plano 200 Membros',
+      '500': 'Plano 500 Membros',
+      '800': 'Plano 800 Membros',
+      'custom': 'Plano Personalizado',
+    };
+  }
+};
+
+const loadPlanPrices = async (): Promise<Record<string, string>> => {
+  try {
+    const response = await axios.get(`${API_URL}/plans`);
+    const prices: Record<string, string> = {};
+    response.data.plans.forEach((plan: any) => {
+      prices[plan.id] = plan.priceFormatted;
+    });
+    return prices;
+  } catch {
+    // Fallback
+    return {
+      '100': 'Gratuito',
+      '200': 'R$ 29,99',
+      '500': 'R$ 59,99',
+      '800': 'R$ 89,99',
+      'custom': 'Sob consulta',
+    };
+  }
+};
+
+// Valores padrão (serão substituídos quando carregados)
 const planNames: Record<string, string> = {
   '100': 'Plano 100 Membros',
   '200': 'Plano 200 Membros',
@@ -58,12 +100,64 @@ export function PaymentManagement() {
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   
   // Flag para garantir que a sincronização aconteça apenas uma vez
   const hasSyncedRef = useRef(false);
+  const [planNamesState, setPlanNamesState] = useState(planNames);
+  const [planPricesState, setPlanPricesState] = useState(planPrices);
+  
+  // Cache para sincronização (5 minutos)
+  const SYNC_CACHE_KEY = 'stripe_sync_cache';
+  const SYNC_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+  // Carregar planos da API ao montar componente
+  useEffect(() => {
+    const loadPlans = async () => {
+      const names = await loadPlanNames();
+      const prices = await loadPlanPrices();
+      setPlanNamesState(names);
+      setPlanPricesState(prices);
+    };
+    loadPlans();
+  }, []);
+
+  // Verificar se há cache válido de sincronização
+  const getCachedSyncResult = (): { cached: boolean; timestamp: number } | null => {
+    try {
+      const cached = localStorage.getItem(SYNC_CACHE_KEY);
+      if (!cached) return null;
+
+      const { timestamp } = JSON.parse(cached);
+      const now = Date.now();
+      
+      // Se cache ainda é válido (menos de 5 minutos)
+      if (now - timestamp < SYNC_CACHE_DURATION) {
+        return { cached: true, timestamp };
+      }
+      
+      // Cache expirado, remover
+      localStorage.removeItem(SYNC_CACHE_KEY);
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Salvar resultado de sincronização no cache
+  const setCachedSyncResult = () => {
+    try {
+      localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+      }));
+    } catch (error) {
+      // Ignorar erros de localStorage (pode estar desabilitado)
+      console.warn('Não foi possível salvar cache de sincronização:', error);
+    }
+  };
 
   const subscriptionStatus = user?.subscription_status;
   const planType = user?.plan_type;
@@ -183,7 +277,16 @@ export function PaymentManagement() {
     }
   };
 
-  const handleSyncSubscription = async () => {
+  const handleSyncSubscription = async (force: boolean = false) => {
+    // Verificar cache antes de sincronizar (se não for forçado)
+    if (!force) {
+      const cache = getCachedSyncResult();
+      if (cache?.cached) {
+        setSyncMessage('Dados já sincronizados recentemente. Use "Sincronizar Novamente" para forçar atualização.');
+        return;
+      }
+    }
+
     try {
       setIsSyncing(true);
       setError(null);
@@ -199,6 +302,11 @@ export function PaymentManagement() {
 
       if (response.data.synced) {
         setSyncMessage('Assinatura sincronizada com sucesso!');
+        setSuccessMessage('Dados atualizados com sucesso!');
+        
+        // Salvar no cache
+        setCachedSyncResult();
+        
         // Atualizar dados do usuário
         if (refreshChurch) {
           await refreshChurch();
@@ -206,8 +314,14 @@ export function PaymentManagement() {
           // Recarregar a página para atualizar os dados
           window.location.reload();
         }
+        // Remover mensagem de sucesso após 5 segundos
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 5000);
       } else {
         setSyncMessage('Nenhuma assinatura encontrada no Stripe.');
+        // Salvar no cache mesmo quando não há assinatura (evita requisições desnecessárias)
+        setCachedSyncResult();
       }
     } catch (err: any) {
       console.error('Erro ao sincronizar assinatura:', err);
@@ -284,6 +398,19 @@ export function PaymentManagement() {
       return;
     }
 
+    // Confirmação adicional antes de trocar plano
+    const currentPlanName = planNamesState[planType || ''] || planType || 'atual';
+    const newPlanName = planNamesState[selectedPlan] || selectedPlan;
+    
+    const confirmed = window.confirm(
+      `Tem certeza que deseja alterar de "${currentPlanName}" para "${newPlanName}"?\n\n` +
+      'A alteração será aplicada imediatamente e você será cobrado proporcionalmente.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
       setIsChangingPlan(true);
       setError(null);
@@ -297,7 +424,8 @@ export function PaymentManagement() {
         }
       );
 
-      setSyncMessage('Plano alterado com sucesso!');
+      setSuccessMessage('Plano alterado com sucesso!');
+      setSyncMessage(null);
       setShowConfirmModal(false);
       setShowChangePlanModal(false);
       setSelectedPlan(null);
@@ -308,6 +436,11 @@ export function PaymentManagement() {
       } else {
         window.location.reload();
       }
+
+      // Remover mensagem de sucesso após 5 segundos
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
     } catch (err: any) {
       console.error('Erro ao trocar plano:', err);
       setError(
@@ -378,6 +511,16 @@ export function PaymentManagement() {
         </div>
       )}
 
+      {/* Mensagem de sucesso */}
+      {successMessage && (
+        <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center">
+            <CheckCircle2 className="w-5 h-5 text-green-600 mr-2 flex-shrink-0" />
+            <p className="text-sm text-green-800 font-medium">{successMessage}</p>
+          </div>
+        </div>
+      )}
+
       {/* Status da Assinatura */}
       {hasSubscription ? (
         <>
@@ -398,10 +541,10 @@ export function PaymentManagement() {
                       <strong>Último plano utilizado:</strong>
                     </p>
                     <p className="text-lg font-semibold text-gray-900">
-                      {planNames[planType] || planType}
-                      {planPrices[planType] && (
+                      {planNamesState[planType] || planType}
+                      {planPricesState[planType] && (
                         <span className="text-sm text-gray-600 ml-2">
-                          - {planPrices[planType]}
+                          - {planPricesState[planType]}
                           <span className="text-gray-500">/mês</span>
                         </span>
                       )}
@@ -498,11 +641,11 @@ export function PaymentManagement() {
                   <Package className="w-5 h-5 text-gray-400 mr-2" />
                   <div>
                     <span className="text-lg font-semibold text-gray-900">
-                      {planNames[planType] || planType}
+                      {planNamesState[planType] || planType}
                     </span>
-                    {planPrices[planType] && (
+                    {planPricesState[planType] && (
                       <span className="text-sm text-gray-600 ml-2">
-                        - {planPrices[planType]}
+                        - {planPricesState[planType]}
                         {planType && planType !== '100' && planType !== 'custom' && <span className="text-gray-500">/mês</span>}
                       </span>
                     )}
@@ -561,7 +704,7 @@ export function PaymentManagement() {
                 </Button>
               )}
               <Button
-                onClick={handleSyncSubscription}
+                onClick={() => handleSyncSubscription(false)}
                 disabled={isSyncing}
                 variant="secondary"
                 className="flex-1"
@@ -609,10 +752,11 @@ export function PaymentManagement() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {user?.stripe_customer_id && (
                 <Button
-                  onClick={handleSyncSubscription}
+                  onClick={() => handleSyncSubscription(false)}
                   disabled={isSyncing}
                   variant="secondary"
                   className="w-full sm:w-auto"
+                  title="Sincroniza apenas se não houver cache válido (últimos 5 minutos)"
                 >
                   {isSyncing ? (
                     <>
@@ -690,10 +834,10 @@ export function PaymentManagement() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">
-                        {planNames[planKey]}
+                        {planNamesState[planKey]}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
-                        {planPrices[planKey]}
+                        {planPricesState[planKey]}
                         {planKey !== '100' && <span className="text-gray-500"> /mês</span>}
                       </p>
                     </div>
@@ -794,10 +938,10 @@ export function PaymentManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-gray-900">
-                    {planType ? planNames[planType] : 'N/A'}
+                    {planType ? planNamesState[planType] : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {planType ? planPrices[planType] : 'N/A'} <span className="text-gray-500">/mês</span>
+                    {planType ? planPricesState[planType] : 'N/A'} <span className="text-gray-500">/mês</span>
                   </p>
                 </div>
                 <XCircle className="w-5 h-5 text-gray-400" />
@@ -815,10 +959,10 @@ export function PaymentManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-gray-900">
-                    {selectedPlan ? planNames[selectedPlan] : 'N/A'}
+                    {selectedPlan ? planNamesState[selectedPlan] : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {selectedPlan ? planPrices[selectedPlan] : 'N/A'} <span className="text-gray-500">/mês</span>
+                    {selectedPlan ? planPricesState[selectedPlan] : 'N/A'} <span className="text-gray-500">/mês</span>
                   </p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 text-primary" />

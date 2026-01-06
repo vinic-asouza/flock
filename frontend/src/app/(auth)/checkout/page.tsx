@@ -9,15 +9,17 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-const planOptions = [
-  { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },
-  { value: '200', name: 'Plano 200 Membros', price: 'R$ 29,00/mês', description: 'Para igrejas pequenas', members: 200 },
-  { value: '500', name: 'Plano 500 Membros', price: 'R$ 59,00/mês', description: 'Para igrejas médias', members: 500 },
-  { value: '800', name: 'Plano 800 Membros', price: 'R$ 89,00/mês', description: 'Para igrejas grandes', members: 800 },
-];
+interface PlanOption {
+  value: string;
+  name: string;
+  price: string;
+  description?: string;
+  members: number;
+}
 
 export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -26,6 +28,37 @@ export default function CheckoutPage() {
   const [selectedPlan, setSelectedPlan] = useState<'100' | '200' | '500' | '800' | 'custom' | null>(
     initialPlan && ['100', '200', '500', '800'].includes(initialPlan) ? initialPlan : null
   );
+  const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
+
+  // Carregar planos da API
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/plans`);
+        const plans = response.data.plans.map((plan: any) => ({
+          value: plan.id,
+          name: plan.name,
+          price: plan.priceFormatted + (plan.id !== '100' && plan.id !== 'custom' ? '/mês' : ''),
+          description: plan.description,
+          members: plan.members,
+        }));
+        setPlanOptions(plans);
+      } catch (err) {
+        console.error('Erro ao carregar planos:', err);
+        // Fallback para planos padrão em caso de erro
+        setPlanOptions([
+          { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },
+          { value: '200', name: 'Plano 200 Membros', price: 'R$ 29,99/mês', description: 'Para igrejas pequenas', members: 200 },
+          { value: '500', name: 'Plano 500 Membros', price: 'R$ 59,99/mês', description: 'Para igrejas médias', members: 500 },
+          { value: '800', name: 'Plano 800 Membros', price: 'R$ 89,99/mês', description: 'Para igrejas grandes', members: 800 },
+        ]);
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
 
   useEffect(() => {
     // Verificar se usuário está autenticado
@@ -109,8 +142,15 @@ export default function CheckoutPage() {
     }
   };
 
-  if (!user) {
-    return null; // Redirecionamento em andamento
+  if (!user || isLoadingPlans) {
+    return (
+      <div className="flex items-center justify-center w-full">
+        <div className="text-center">
+          <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-sm text-gray-600">Carregando planos...</p>
+        </div>
+      </div>
+    );
   }
 
   const selectedPlanData = planOptions.find(p => p.value === selectedPlan);

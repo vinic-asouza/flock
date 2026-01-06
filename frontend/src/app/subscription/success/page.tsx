@@ -5,24 +5,72 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle2, Loader, XCircle, ArrowRight } from 'lucide-react';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export default function SubscriptionSuccessPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, refreshChurch } = useAuth();
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    // Aguardar um momento para garantir que o webhook processou
-    // O webhook do Stripe processa a assinatura em background
-    const timer = setTimeout(() => {
+    if (!sessionId || !user) {
+      // Se não tem session_id ou usuário não está autenticado, apenas parar loading
       setIsLoading(false);
-    }, 2000);
+      return;
+    }
 
-    return () => clearTimeout(timer);
-  }, []);
+    let attempts = 0;
+    const maxAttempts = 15; // 15 tentativas = ~30 segundos
+    const pollInterval = 2000; // 2 segundos entre tentativas
+
+    const checkSubscriptionStatus = async () => {
+      try {
+        const response = await axios.get(
+          `${API_URL}/stripe/checkout-status?session_id=${sessionId}`,
+          { withCredentials: true }
+        );
+
+        if (response.data.confirmed) {
+          setIsLoading(false);
+          // Atualizar dados do usuário
+          if (refreshChurch) {
+            await refreshChurch();
+          }
+          return;
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          // Continuar polling
+          setTimeout(checkSubscriptionStatus, pollInterval);
+        } else {
+          // Máximo de tentativas atingido
+          setIsLoading(false);
+          setError('Não foi possível confirmar o pagamento automaticamente. Verifique sua assinatura nas configurações ou tente sincronizar manualmente.');
+        }
+      } catch (err: any) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          // Continuar tentando em caso de erro
+          setTimeout(checkSubscriptionStatus, pollInterval);
+        } else {
+          setIsLoading(false);
+          setError(
+            err.response?.data?.error ||
+            'Erro ao verificar status do pagamento. Tente sincronizar manualmente nas configurações.'
+          );
+        }
+      }
+    };
+
+    // Aguardar 2 segundos antes do primeiro check (dar tempo para webhook processar)
+    setTimeout(checkSubscriptionStatus, pollInterval);
+  }, [sessionId, user, refreshChurch]);
 
   if (isLoading) {
     return (
