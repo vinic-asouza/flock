@@ -582,6 +582,7 @@ class ApiService {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 60000, // 60 segundos para validação (pode demorar com arquivos grandes)
     });
     return response.data;
   }
@@ -600,6 +601,7 @@ class ApiService {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 120000, // 120 segundos para importação (pode demorar com arquivos grandes)
     });
     return response.data;
   }

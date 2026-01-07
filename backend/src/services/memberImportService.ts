@@ -74,11 +74,8 @@ export async function validateCSV(
     // Normaliza dados
     const normalizedRows = mappedRows.map(normalizeRow);
     
-    // Valida cada linha
-    const errors: Array<{ row: number; errors: ValidationError[] }> = [];
-    const validRows: Partial<Member>[] = [];
-    
-    // Map para rastrear documentos duplicados dentro do próprio CSV
+    // Prepara todos os dados dos membros primeiro
+    const memberDataList: Array<{ data: Partial<Member>; rowNumber: number }> = [];
     const documentOccurrences = new Map<string, number[]>(); // document -> array de números de linha
     
     for (let i = 0; i < normalizedRows.length; i++) {
@@ -122,10 +119,34 @@ export async function validateCSV(
         // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
       };
       
+      memberDataList.push({ data: memberData, rowNumber });
+      
+      // Verifica duplicatas dentro do próprio CSV (por documento)
+      if (memberData.document && memberData.document.trim() !== '') {
+        const document = memberData.document.trim();
+        if (documentOccurrences.has(document)) {
+          documentOccurrences.get(document)!.push(rowNumber);
+        } else {
+          documentOccurrences.set(document, [rowNumber]);
+        }
+      }
+    }
+    
+    // Busca duplicatas no banco de dados em batch (otimização)
+    const existingDuplicates = await checkDuplicatesBatch(
+      memberDataList.map(m => m.data),
+      churchId
+    );
+    
+    // Valida cada linha
+    const errors: Array<{ row: number; errors: ValidationError[] }> = [];
+    const validRows: Partial<Member>[] = [];
+    
+    for (const { data: memberData, rowNumber } of memberDataList) {
+      const rowErrors: ValidationError[] = [];
+      
       // Valida usando o validator existente
       const { error: validationError } = validateMember(memberData);
-      
-      const rowErrors: ValidationError[] = [];
       
       if (validationError) {
         const validationRowErrors: ValidationError[] = validationError.details.map(detail => ({
@@ -140,31 +161,40 @@ export async function validateCSV(
       // Verifica duplicatas dentro do próprio CSV (por documento)
       if (memberData.document && memberData.document.trim() !== '') {
         const document = memberData.document.trim();
-        if (documentOccurrences.has(document)) {
-          const existingRows = documentOccurrences.get(document)!;
-          existingRows.push(rowNumber);
-          rowErrors.push({
-            row: rowNumber,
-            field: 'document',
-            message: `Documento duplicado no arquivo CSV. Aparece também nas linhas: ${existingRows.slice(0, -1).join(', ')}`,
-            value: document
-          });
-        } else {
-          documentOccurrences.set(document, [rowNumber]);
+        const occurrences = documentOccurrences.get(document);
+        if (occurrences && occurrences.length > 1) {
+          const otherRows = occurrences.filter(r => r !== rowNumber);
+          if (otherRows.length > 0) {
+            rowErrors.push({
+              row: rowNumber,
+              field: 'document',
+              message: `Documento duplicado no arquivo CSV. Aparece também nas linhas: ${otherRows.join(', ')}`,
+              value: document
+            });
+          }
         }
       }
       
-      // Verifica duplicatas no banco de dados (por documento)
-      if (memberData.document && memberData.document.trim() !== '') {
-        const isDuplicate = await checkDuplicate(memberData, churchId);
-        if (isDuplicate) {
-          rowErrors.push({
-            row: rowNumber,
-            field: 'document',
-            message: 'Documento já está cadastrado no sistema, provavelmente você está tentando importar um membro que já existe.',
-            value: memberData.document
-          });
-        }
+      // Verifica duplicatas no banco de dados (usando resultado do batch)
+      let isDuplicate = false;
+      if (memberData.document && memberData.document.trim()) {
+        isDuplicate = existingDuplicates.has(`doc:${memberData.document.trim()}`);
+      }
+      if (!isDuplicate && memberData.email && memberData.email.trim()) {
+        isDuplicate = existingDuplicates.has(`email:${memberData.email.trim()}`);
+      }
+      if (!isDuplicate && memberData.name && memberData.birth) {
+        const key = `${memberData.name.trim().toLowerCase()}|${memberData.birth.toISOString()}`;
+        isDuplicate = existingDuplicates.has(`namebirth:${key}`);
+      }
+      
+      if (isDuplicate) {
+        rowErrors.push({
+          row: rowNumber,
+          field: 'document',
+          message: 'Membro já está cadastrado no sistema (mesmo documento, email ou nome+data de nascimento).',
+          value: memberData.document || memberData.email || memberData.name || ''
+        });
       }
       
       if (rowErrors.length > 0) {
@@ -209,7 +239,99 @@ export async function validateCSV(
 }
 
 /**
- * Verifica se um membro já existe (duplicata)
+ * Verifica duplicatas em batch (otimização para validação)
+ * Retorna um Set com chaves únicas dos membros que são duplicatas
+ * Chave: "doc:XXX" ou "email:XXX" ou "namebirth:XXX|YYYY"
+ */
+async function checkDuplicatesBatch(
+  memberDataList: Partial<Member>[],
+  churchId: string
+): Promise<Set<string>> {
+  const duplicateKeys = new Set<string>();
+  
+  try {
+    // Coleta todos os documentos, emails e combinações nome+birth únicos
+    const documents = new Set<string>();
+    const emails = new Set<string>();
+    const nameBirthKeys = new Set<string>();
+    
+    for (const memberData of memberDataList) {
+      if (memberData.document && memberData.document.trim()) {
+        documents.add(memberData.document.trim());
+      }
+      if (memberData.email && memberData.email.trim()) {
+        emails.add(memberData.email.trim());
+      }
+      if (memberData.name && memberData.birth) {
+        const key = `${memberData.name.trim().toLowerCase()}|${memberData.birth.toISOString()}`;
+        nameBirthKeys.add(key);
+      }
+    }
+    
+    // Busca documentos existentes em batch
+    if (documents.size > 0) {
+      const { data: existingDocs } = await supabase
+        .from('members')
+        .select('document')
+        .eq('church_id', churchId)
+        .in('document', Array.from(documents));
+      
+      if (existingDocs) {
+        const existingDocSet = new Set(existingDocs.map(m => m.document).filter(Boolean));
+        for (const doc of existingDocSet) {
+          duplicateKeys.add(`doc:${doc}`);
+        }
+      }
+    }
+    
+    // Busca emails existentes em batch
+    if (emails.size > 0) {
+      const { data: existingEmails } = await supabase
+        .from('members')
+        .select('email')
+        .eq('church_id', churchId)
+        .in('email', Array.from(emails));
+      
+      if (existingEmails) {
+        const existingEmailSet = new Set(existingEmails.map(m => m.email).filter(Boolean));
+        for (const email of existingEmailSet) {
+          duplicateKeys.add(`email:${email}`);
+        }
+      }
+    }
+    
+    // Busca nome+birth existentes em batch
+    if (nameBirthKeys.size > 0) {
+      const names = Array.from(nameBirthKeys).map(k => k.split('|')[0]);
+      const uniqueNames = [...new Set(names)];
+      
+      // Busca membros com esses nomes
+      const { data: existingNameBirth } = await supabase
+        .from('members')
+        .select('name, birth')
+        .eq('church_id', churchId)
+        .in('name', uniqueNames);
+      
+      if (existingNameBirth) {
+        for (const member of existingNameBirth) {
+          const key = `${member.name.toLowerCase()}|${new Date(member.birth).toISOString()}`;
+          if (nameBirthKeys.has(key)) {
+            duplicateKeys.add(`namebirth:${key}`);
+          }
+        }
+      }
+    }
+    
+  } catch (error) {
+    // Em caso de erro, logar mas não bloquear
+    console.error('Erro ao verificar duplicatas em batch:', error);
+  }
+  
+  return duplicateKeys;
+}
+
+/**
+ * Verifica se um membro já existe (duplicata) - usado na importação
  */
 async function checkDuplicate(
   memberData: Partial<Member>,
