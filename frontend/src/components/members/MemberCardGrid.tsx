@@ -1,6 +1,7 @@
 'use client';
 
 import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle } from 'lucide-react';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface MemberCardGridProps {
   member: {
@@ -42,8 +43,8 @@ export function MemberCardGrid({ member, onView, onEdit, onDeactivate, onReactiv
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e flags */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
-          <span className="font-semibold text-gray-900 text-base truncate" title={member.name}>
-            {member.name}
+          <span className="font-semibold text-gray-900 text-base truncate uppercase" title={member.name}>
+            {formatMemberName(member.name)}
           </span>
           <div className="flex flex-wrap items-center gap-2">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${

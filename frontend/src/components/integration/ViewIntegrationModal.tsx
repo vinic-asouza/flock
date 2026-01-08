@@ -7,6 +7,7 @@ import { Loader, MessageCircle, User, Clipboard, Info, Download, Loader2, Trash2
 import apiService from '@/services/api';
 import { IntegrationMember } from '@/types';
 import { DeleteIntegrationModal } from './DeleteIntegrationModal';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface ViewIntegrationModalProps {
   isOpen: boolean;
@@ -123,7 +124,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
     if (!integrationMemberId) return;
     
     const confirmed = window.confirm(
-      `Tem certeza de que deseja descartar ${member?.name || 'este integrante'}? Essa ação não poderá ser desfeita.`
+      `Tem certeza de que deseja descartar ${member?.name ? formatMemberName(member.name) : 'este integrante'}? Essa ação não poderá ser desfeita.`
     );
     
     if (!confirmed) return;
@@ -181,7 +182,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
           <div className="flex-1 p-6 space-y-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900">{member.name}</h3>
+                <h3 className="text-xl font-semibold text-gray-900 uppercase">{formatMemberName(member.name)}</h3>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[member.status] ?? 'bg-gray-100 text-gray-700'}`}>
                     {statusLabels[member.status] ?? member.status}

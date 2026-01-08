@@ -118,7 +118,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
     doc
       .fontSize(18)
       .font('Helvetica-Bold')
-      .text(member.name, { align: 'center' })
+      .text(member.name.toUpperCase(), { align: 'center' })
       .moveDown(1);
 
     // Linha separadora
@@ -427,7 +427,7 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
     doc
       .fontSize(18)
       .font('Helvetica-Bold')
-      .text(integrationMember.name, { align: 'center' })
+      .text(integrationMember.name.toUpperCase(), { align: 'center' })
       .moveDown(1);
 
     doc
@@ -753,7 +753,7 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
 
         switch (field) {
           case 'name':
-            value = member.name || '-';
+            value = member.name ? member.name.toUpperCase() : '-';
             break;
           case 'birth':
             value = formatIntegrationDate(member.birth);
@@ -1752,7 +1752,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
 
         switch (field) {
           case 'name':
-            value = member.name || '-';
+            value = member.name ? member.name.toUpperCase() : '-';
             break;
           case 'age':
             const age = calculateAge(member.birth);

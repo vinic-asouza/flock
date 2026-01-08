@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Loader, Mail, MessageCircle, User, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
 import apiService from '@/services/api';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface Member {
   id: string;
@@ -190,7 +191,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
               {/* Header com nome e status */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{member.name}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 uppercase">{formatMemberName(member.name)}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                       }`}>

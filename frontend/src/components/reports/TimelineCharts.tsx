@@ -6,6 +6,7 @@ import { LineChart } from '@/components/reports/charts/LineChart';
 import { Select } from '@/components/ui/Select';
 import { Droplets, UserPlus, TrendingUp, ChevronLeft, ChevronRight, ExternalLink, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface TimelineChartsProps {
   data: Timeline;
@@ -428,8 +429,8 @@ export function TimelineCharts({
                           ) : (
                             <UserPlus size={12} className="text-green-600 flex-shrink-0" />
                           )}
-                          <div className="text-[13px] font-medium text-gray-900 truncate">
-                            {member.name}
+                          <div className="text-[13px] font-medium text-gray-900 truncate uppercase">
+                            {formatMemberName(member.name)}
                           </div>
                           <div className="text-xs text-gray-500">
                             {formatAdmissionDate(member.admission_date)
@@ -581,8 +582,8 @@ export function TimelineCharts({
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <div className="text-[13px] font-medium text-gray-900 truncate">
-                              {member.name}
+                            <div className="text-[13px] font-medium text-gray-900 truncate uppercase">
+                              {formatMemberName(member.name)}
                             </div>
                             <div className="text-xs text-gray-500">
                               {formatIntegrationDate(member.created_at)}

@@ -39,29 +39,21 @@ export function Footer({ onOpenWaitlist }: FooterProps) {
               </li>
               <li>
                 <Link href="#waitlist" className="text-gray-600 hover:text-primary transition-colors">
-                  Lista de Espera
+                  Solicitar Contato
                 </Link>
               </li>
             </ul>
           </div>
           <div>
             <h4 className="text-primary font-semibold mb-4">Contato</h4>
-            <Link
-              href="#waitlist"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.hash = '#waitlist';
-                setTimeout(() => {
-                  const waitlistSection = document.getElementById('waitlist');
-                  if (waitlistSection) {
-                    waitlistSection.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }, 100);
-              }}
-              className="text-gray-600 hover:text-primary transition-colors text-sm inline-block"
-            >
-              Solicite contato
-            </Link>
+            <div>
+              <a
+                href="mailto:contato@flockapp.com.br"
+                className="text-gray-600 hover:text-primary transition-colors text-sm"
+              >
+                contato@flockapp.com.br
+              </a>
+            </div>
           </div>
         </div>
         <div className="border-t border-gray-300 pt-8 text-center text-sm text-gray-600">

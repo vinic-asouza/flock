@@ -35,6 +35,9 @@ export const waitlistSchema = Joi.object({
     'any.only': 'Plano deve ser 200, 500, 800 ou personalizado',
     'any.required': 'Plano é obrigatório',
   }),
+  message: Joi.string().max(1000).optional().allow('', null).messages({
+    'string.max': 'Mensagem deve ter no máximo 1000 caracteres',
+  }),
 });
 
 export const validateWaitlist = (data: unknown) => {

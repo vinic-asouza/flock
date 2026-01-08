@@ -10,6 +10,7 @@ export interface WaitlistData {
   city: string;
   state: string;
   plan: '200' | '500' | '800' | 'personalizado';
+  message?: string;
 }
 
 class WaitlistService {

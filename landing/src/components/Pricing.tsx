@@ -145,7 +145,7 @@ export function Pricing() {
                   >
                     Assinar Agora
                   </CheckoutButton>
-                  <button
+                  {/* <button
                     onClick={(e) => {
                       e.preventDefault();
                       const newHash = `#waitlist?plan=${plan.maxMembers}`;
@@ -165,7 +165,7 @@ export function Pricing() {
                   >
                     Selecionar Plano
                     <ArrowRight className="w-5 h-5" />
-                  </button>
+                  </button> */}
                 </div>
               </div>
             );

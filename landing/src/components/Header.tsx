@@ -62,7 +62,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               href="#pricing"
               className="bg-white text-primary px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg inline-block"
             >
-              Solicitar Agora
+              Assinar agora
             </Link>
           </div>
 
@@ -106,7 +106,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               className="w-full bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-block text-center"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Solicitar Agora
+              Assinar agora
             </Link>
           </div>
         )}

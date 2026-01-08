@@ -1,6 +1,7 @@
 'use client';
 
 import { Mail, MessageCircle, Phone } from 'lucide-react';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface MemberCardCompactProps {
   member: {
@@ -43,8 +44,8 @@ export function MemberCardCompact({ member }: MemberCardCompactProps) {
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e selos */}
         <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="font-medium text-gray-900 text-sm truncate max-w-xs" title={member.name}>
-            {member.name}
+          <span className="font-medium text-gray-900 text-sm truncate max-w-xs uppercase" title={member.name}>
+            {formatMemberName(member.name)}
           </span>
           {/* <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
             {member.active ? 'Ativo' : 'Inativo'}

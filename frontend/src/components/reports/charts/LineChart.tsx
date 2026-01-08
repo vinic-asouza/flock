@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { LineChartData } from '@/types';
 
 interface LineChartProps {
@@ -10,6 +10,20 @@ interface LineChartProps {
 
 export function LineChart({ data, height = 300 }: LineChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<{ index: number; x: number; y: number } | null>(null);
+  const [containerWidth, setContainerWidth] = useState(800);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   if (!data || data.length === 0) {
     return (
@@ -19,7 +33,8 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
     );
   }
 
-  const width = 800;
+  const minWidth = 800;
+  const width = Math.max(containerWidth, minWidth);
   const padding = 40;
   const chartWidth = width - (padding * 2);
   const chartHeight = height - (padding * 2);
@@ -45,8 +60,8 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
     .join(' ');
 
   return (
-    <div className="w-full overflow-x-auto relative">
-      <svg width={width} height={height} className="mx-auto">
+    <div ref={containerRef} className="w-full relative">
+      <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
         {/* Linha de total */}
         <polyline
           points={totalPoints}
@@ -90,13 +105,13 @@ export function LineChart({ data, height = 300 }: LineChartProps) {
       </svg>
 
       {/* Tooltip */}
-      {hoveredPoint && (
+      {hoveredPoint && containerRef.current && (
         <div
-          className="absolute bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none z-10"
+          className="absolute bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none z-10 whitespace-nowrap"
           style={{
-            left: `${hoveredPoint.x + 10}px`,
-            top: `${hoveredPoint.y - 10}px`,
-            transform: 'translateX(-50%)'
+            left: `${(hoveredPoint.x / width) * 100}%`,
+            top: `${(hoveredPoint.y / height) * 100}%`,
+            transform: 'translateX(-50%) translateY(-100%)'
           }}
         >
           {data[hoveredPoint.index].label}: {data[hoveredPoint.index].total} membro(s)

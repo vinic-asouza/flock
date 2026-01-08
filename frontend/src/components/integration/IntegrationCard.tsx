@@ -1,6 +1,7 @@
 import { IntegrationMember } from '@/types';
 import { IntegrationStatusBadge } from './IntegrationStatusBadge';
 import { Edit, UserPlus, Trash2, MessageCircle, Eye, Phone } from 'lucide-react';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface IntegrationCardProps {
   member: IntegrationMember;
@@ -63,10 +64,10 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <span
-            className="font-semibold text-gray-900 text-base truncate max-w-xs md:max-w-sm"
+            className="font-semibold text-gray-900 text-base truncate max-w-xs md:max-w-sm uppercase"
             title={member.name}
           >
-            {member.name}
+            {formatMemberName(member.name)}
           </span>
           <IntegrationStatusBadge status={member.status} />
           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">

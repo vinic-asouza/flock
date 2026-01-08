@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Loader, ArrowRight, CheckCircle2, ArrowLeft, Mail } from 'lucide-react';
 import { waitlistService } from '@/services/waitlist';
 import toast from 'react-hot-toast';
 import { useIbgeData } from '@/hooks/useIbgeData';
@@ -22,6 +22,7 @@ const waitlistSchema = z.object({
   plan: z.enum(['200', '500', '800', 'personalizado'], {
     errorMap: () => ({ message: 'Selecione um plano válido' }),
   }),
+  message: z.string().optional(),
 });
 
 type WaitlistFormData = z.infer<typeof waitlistSchema>;
@@ -380,6 +381,22 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
         )}
       </div>
 
+      <div>
+        <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1.5">
+          Mensagem
+        </label>
+        <textarea
+          id="message"
+          {...register('message')}
+          rows={4}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm resize-none"
+          placeholder="Deixe uma mensagem adicional (opcional)"
+        />
+        {errors.message && (
+          <p className="mt-1 text-xs text-red-600">{errors.message.message}</p>
+        )}
+      </div>
+
       <div className="pt-3">
         <button
           type="submit"
@@ -395,11 +412,11 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
             </>
           ) : (
             <>
-              <span className="relative z-10">Enviar Solicitação</span>
-              <ArrowRight 
-                size={20} 
-                className={`relative z-10 transition-all duration-300 ${isHovered ? 'translate-x-2 scale-110' : ''}`}
+              <Mail
+                size={20}
+                className="relative z-10 mr-1"
               />
+              <span className="relative z-10">Enviar Solicitação de Contato</span>
               <div className="absolute inset-0 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </>
           )}

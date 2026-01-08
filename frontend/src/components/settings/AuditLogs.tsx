@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
+import { formatMemberName } from '@/utils/formatMemberName';
 import { 
   FileText, 
   UserPlus, 
@@ -224,13 +225,13 @@ export default function AuditLogs() {
 
   const getMemberName = (log: AuditLog): string => {
     if (log.action === 'create' && log.changes_after?.name) {
-      return String(log.changes_after.name);
+      return formatMemberName(String(log.changes_after.name));
     }
     if (log.action === 'update' && log.changes_after?.name) {
-      return String(log.changes_after.name);
+      return formatMemberName(String(log.changes_after.name));
     }
     if (log.action === 'delete' && log.changes_before?.name) {
-      return String(log.changes_before.name);
+      return formatMemberName(String(log.changes_before.name));
     }
     return 'Nome não disponível';
   };

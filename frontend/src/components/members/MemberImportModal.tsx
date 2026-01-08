@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { useMemberImport } from '@/hooks/useMemberImport';
 import { apiService } from '@/services/api';
 import type { Congregation } from '@/types/congregation';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 interface MemberImportModalProps {
   isOpen: boolean;
@@ -319,7 +320,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                     <tbody className="bg-white divide-y divide-gray-200">
                       {validationResult.preview.map((member, index) => (
                         <tr key={index}>
-                          <td className="px-3 py-2 text-sm text-gray-900">{member.name}</td>
+                          <td className="px-3 py-2 text-sm text-gray-900 uppercase">{formatMemberName(member.name)}</td>
                           <td className="px-3 py-2 text-sm text-gray-500">
                             {member.birth ? new Date(member.birth).toLocaleDateString('pt-BR') : '-'}
                           </td>
