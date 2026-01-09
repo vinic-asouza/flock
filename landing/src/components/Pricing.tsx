@@ -118,9 +118,9 @@ export function Pricing() {
                     {plan.price}
                     <span className="text-sm md:text-base font-normal text-gray-500 ml-1">/mês</span>
                   </div>
-                  <p className="text-xs md:text-sm text-gray-600 mt-1 font-semibold">
+                  {/* <p className="text-xs md:text-sm text-gray-600 mt-1 font-semibold">
                     {plan.annualPrice}
-                  </p>
+                  </p> */}
                 </div>
 
                 {/* Lista de Recursos */}
