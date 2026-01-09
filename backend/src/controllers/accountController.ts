@@ -4,7 +4,7 @@ import { AuthRequest } from '../types';
 import { validateEmailChange, validatePasswordChange, validateAccountDeletion } from '../validators/accountValidator';
 import { logAudit } from '../utils/auditLogger';
 import { sendEmail } from '../services/emailService';
-import { getEmailChangeNotificationTemplate, getAccountDeletedTemplate } from '../templates/emailTemplates';
+import { getEmailChangeNotificationTemplate, getAccountDeletedTemplate, getPasswordChangedTemplate } from '../templates/emailTemplates';
 
 /**
  * Buscar dados da conta do usuário
@@ -224,6 +224,30 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
         error: 'Erro ao alterar senha',
         details: updateError.message
       });
+    }
+
+    // Enviar email de confirmação (não bloquear o fluxo se der erro)
+    try {
+      const userName = req.user.email?.split('@')[0] || 'Usuário';
+      const changeDate = new Date().toLocaleString('pt-BR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Sao_Paulo'
+      });
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      await sendEmail({
+        to: req.user.email!,
+        subject: 'Senha Alterada - Flock',
+        html: getPasswordChangedTemplate({
+          userName,
+          changeDate,
+          ipAddress: typeof ipAddress === 'string' ? ipAddress : undefined,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de alteração de senha
+      console.error('Erro ao enviar email de confirmação de alteração de senha:', emailError);
     }
 
     res.json({

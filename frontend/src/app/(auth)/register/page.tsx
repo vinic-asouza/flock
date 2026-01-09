@@ -314,15 +314,21 @@ export default function RegisterPage() {
           // Marcar que estamos fazendo um redirect programático para checkout
           sessionStorage.setItem('redirectingToCheckout', 'true');
           
+          // Mostrar mensagem de sucesso antes de redirecionar
+          setSuccess(true);
+          
           // Fazer login automático com as credenciais do registro
           await login({
             email: cleanData.email,
             password: cleanData.password,
           });
           
-          // Redirecionar imediatamente para checkout sem esperar
-          // Usar window.location.replace para evitar que o usuário veja a página intermediária
-          window.location.replace(`/checkout?plan=${selectedPlan}`);
+          // Aguardar um tempo para o usuário ver a mensagem de sucesso antes de redirecionar
+          // Usar setTimeout para dar feedback visual ao usuário
+          setTimeout(() => {
+            // Usar window.location.replace para evitar que o usuário veja a página intermediária
+            window.location.replace(`/checkout?plan=${selectedPlan}`);
+          }, 2000); // 2 segundos para o usuário ver a mensagem de sucesso
           return;
         } catch (loginError: any) {
           // Limpar flag de redirect em caso de erro
@@ -397,6 +403,9 @@ export default function RegisterPage() {
   };
 
   if (success) {
+    // Verificar se está redirecionando para checkout
+    const isRedirectingToCheckout = typeof window !== 'undefined' && sessionStorage.getItem('redirectingToCheckout') === 'true';
+    
     return (
       <div className="space-y-8">
         <div className="text-center">
@@ -405,26 +414,33 @@ export default function RegisterPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Verifique seu email</h1>
-          <p className="mt-2 text-gray-600">
-            Enviamos um link de confirmação para {registeredEmail || 'seu email'}. 
-          </p>
-          <p className="mt-1 text-gray-500">
-            Confirme o endereço para ativar sua conta. Após confirmar, clique no botão abaixo para acessar a página de login.
-          </p>
-          <p className="mt-1 text-gray-500">
-            
-          </p>
+          {isRedirectingToCheckout ? (
+            <>
+              <h1 className="text-3xl font-bold text-gray-900">Cadastro Realizado com Sucesso!</h1>
+              <p className="mt-2 text-gray-600">
+                Sua conta foi criada com sucesso. Você será redirecionado para a página de pagamento em instantes...
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-gray-900">Verifique seu email</h1>
+              <p className="mt-2 text-gray-600">
+                Enviamos um link de confirmação para {registeredEmail || 'seu email'}. 
+              </p>
+            </>
+          )}
         </div>
         
-        <div className="w-full">
-          <Button 
-            className="w-full"
-            onClick={() => router.push('/login')}
-          >
-            Ir para o Login
-          </Button>
-        </div>
+        {!isRedirectingToCheckout && (
+          <div className="w-full">
+            <Button 
+              className="w-full"
+              onClick={() => router.push('/login')}
+            >
+              Ir para o Login
+            </Button>
+          </div>
+        )}
       </div>
     );
   }

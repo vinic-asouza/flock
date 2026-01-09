@@ -7,7 +7,7 @@ import { formatErrorResponse, getFriendlyErrorMessage } from '../utils/errorMess
 import { PLAN_CONFIG, getPlanConfig, getAllPlans, getPlanName, getPlanPrice } from '../config/plans';
 import { logger, logStripeEvent, logStripeOperation, logSubscriptionChange, logPaymentFlow } from '../utils/logger';
 import { sendEmail } from '../services/emailService';
-import { getPaymentSuccessTemplate, getPaymentFailedTemplate, getSubscriptionCanceledTemplate, getRenewalSuccessTemplate, getPlanChangedTemplate } from '../templates/stripeEmailTemplates';
+import { getPaymentSuccessTemplate, getPaymentFailedTemplate, getSubscriptionCanceledTemplate, getRenewalSuccessTemplate, getPlanChangedTemplate, getSubscriptionReactivatedTemplate } from '../templates/stripeEmailTemplates';
 
 /**
  * Criar sessão de checkout
@@ -699,6 +699,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       ? '100'
       : planType;
 
+    // Buscar status anterior da igreja ANTES de atualizar para detectar reativação
+    const { data: churchBeforeUpdate } = await supabase
+      .from('churches')
+      .select('id, name, subscription_status, plan_type, subscription_end_date')
+      .eq('stripe_customer_id', customerId)
+      .single();
+
     // Atualizar igreja
     const { data: church, error: churchError } = await supabase
       .from('churches')
@@ -715,6 +722,53 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       .select('id, name')
       .single();
 
+    if (!church || churchError) {
+      return;
+    }
+
+    // Verificar se a assinatura foi reativada após cancelamento
+    // Condições para reativação:
+    // 1. Status atual é 'active'
+    // 2. cancel_at_period_end é false (foi removido o cancelamento)
+    // 3. Status anterior era 'canceled' ou null OU tinha subscription_end_date (estava cancelada/expirada)
+    const isNowActive = subscription.status === 'active';
+    const cancelAtPeriodEnd = (subscription as any).cancel_at_period_end === false;
+    const wasCanceled = churchBeforeUpdate?.subscription_status === 'canceled' || 
+                       churchBeforeUpdate?.subscription_status === null ||
+                       (churchBeforeUpdate?.subscription_end_date !== null && 
+                        churchBeforeUpdate?.subscription_end_date !== undefined);
+    
+    const isReactivated = isNowActive && cancelAtPeriodEnd && wasCanceled;
+
+    // Se a assinatura foi reativada, enviar email de reativação
+    if (isReactivated) {
+      const userEmail = await getUserEmailFromChurch(church.id);
+      
+      if (userEmail) {
+        const planConfig = getPlanConfig(planType);
+        const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
+        const amount = planConfig?.priceFormatted || 'N/A';
+        const currentPeriodEnd = (subscription as any).current_period_end as number | null;
+        const nextBillingDate = currentPeriodEnd
+          ? formatDate(new Date(currentPeriodEnd * 1000))
+          : formatDate(new Date());
+
+        await sendEmail({
+          to: userEmail,
+          subject: 'Assinatura Reativada - Flock',
+          html: getSubscriptionReactivatedTemplate({
+            churchName: church.name,
+            planName,
+            amount,
+            nextBillingDate,
+          }),
+        });
+
+        console.log('✅ Email de reativação enviado para:', userEmail);
+        return; // Não processar cancelamento se foi reativação
+      }
+    }
+
     // Se a assinatura foi cancelada, enviar email de cancelamento
     // Verificar se foi cancelada: status 'canceled' OU cancel_at_period_end OU canceled_at
     const isCanceled = subscription.status === 'canceled' || 
@@ -722,7 +776,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
                       (subscription as any).canceled_at !== null ||
                       (subscription as any).cancel_at !== null;
 
-    if (isCanceled && church && !churchError) {
+    if (isCanceled) {
       const userEmail = await getUserEmailFromChurch(church.id);
       
       if (userEmail) {

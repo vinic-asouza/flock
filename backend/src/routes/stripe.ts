@@ -14,19 +14,20 @@ router.post(
 );
 
 // Criar sessão de checkout (pode ser autenticado ou não)
-router.post('/create-checkout-session', optionalAuth, createCheckout);
+// Adicionar express.json() para parsear o body, já que a rota do Stripe está antes do express.json() global
+router.post('/create-checkout-session', express.json(), optionalAuth, createCheckout);
 
 // Criar sessão do portal do cliente (requer autenticação)
-router.post('/create-portal-session', authMiddleware, createPortalSession);
+router.post('/create-portal-session', express.json(), authMiddleware, createPortalSession);
 
 // Sincronizar assinatura do Stripe (requer autenticação)
-router.post('/sync-subscription', authMiddleware, syncSubscription);
+router.post('/sync-subscription', express.json(), authMiddleware, syncSubscription);
 
 // Trocar plano da assinatura (requer autenticação)
-router.post('/change-plan', authMiddleware, changePlan);
+router.post('/change-plan', express.json(), authMiddleware, changePlan);
 
 // Ativar plano gratuito (requer autenticação)
-router.post('/activate-free-plan', authMiddleware, activateFreePlan);
+router.post('/activate-free-plan', express.json(), authMiddleware, activateFreePlan);
 
 // Verificar status de checkout (requer autenticação)
 router.get('/checkout-status', authMiddleware, checkCheckoutStatus);

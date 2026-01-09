@@ -81,3 +81,15 @@ export const getSubscriptionExpiringWarningTemplate = (data: {
 }): string => {
   return renderTemplate('subscription-expiring-warning', data);
 };
+
+/**
+ * Template de assinatura reativada após cancelamento
+ */
+export const getSubscriptionReactivatedTemplate = (data: {
+  churchName: string;
+  planName: string;
+  amount: string;
+  nextBillingDate: string;
+}): string => {
+  return renderTemplate('subscription-reactivated', data);
+};

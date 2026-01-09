@@ -74,6 +74,22 @@ export const getWaitlistConfirmationTemplate = (data: {
 };
 
 /**
+ * Template de notificação para administradores sobre novo cadastro na waitlist
+ */
+export const getWaitlistNotificationTemplate = (data: {
+  userName: string;
+  userEmail: string;
+  phone?: string;
+  churchName?: string;
+  city?: string;
+  state?: string;
+  plan?: string;
+  message?: string;
+}): string => {
+  return renderTemplate('waitlist-notification', data);
+};
+
+/**
  * Template de aviso de limite de membros
  */
 export const getMemberLimitWarningTemplate = (data: {

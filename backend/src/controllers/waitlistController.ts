@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import supabase from '../services/supabase';
 import { validateWaitlist } from '../validators/waitlistValidator';
 import { sendEmail } from '../services/emailService';
-import { getWaitlistConfirmationTemplate } from '../templates/emailTemplates';
+import { getWaitlistConfirmationTemplate, getWaitlistNotificationTemplate } from '../templates/emailTemplates';
 
 export const subscribe = async (req: Request, res: Response) => {
   try {
@@ -64,8 +64,9 @@ export const subscribe = async (req: Request, res: Response) => {
       });
     }
 
-    // Enviar email de confirmação (não bloquear o fluxo se der erro)
+    // Enviar emails (não bloquear o fluxo se der erro)
     try {
+      // Email de confirmação para o usuário
       await sendEmail({
         to: email,
         subject: 'Solicitação Recebida - Flock',
@@ -74,9 +75,26 @@ export const subscribe = async (req: Request, res: Response) => {
           userEmail: email,
         }),
       });
+
+      // Email de notificação para administradores
+      const adminEmail = process.env.ADMIN_EMAIL || 'contato@flockapp.com.br';
+      await sendEmail({
+        to: adminEmail,
+        subject: `Novo Cadastro na Waitlist: ${name}`,
+        html: getWaitlistNotificationTemplate({
+          userName: name,
+          userEmail: email,
+          phone: phone || undefined,
+          churchName: churchName || undefined,
+          city: city || undefined,
+          state: state || undefined,
+          plan: plan || undefined,
+          message: message || undefined,
+        }),
+      });
     } catch (emailError) {
       // Logar erro mas não quebrar o fluxo de cadastro na waitlist
-      console.error('Erro ao enviar email de confirmação de waitlist:', emailError);
+      console.error('Erro ao enviar emails de waitlist:', emailError);
     }
 
     res.status(201).json({

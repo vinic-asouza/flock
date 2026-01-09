@@ -278,7 +278,7 @@ export function PaymentManagement() {
     if (!force) {
       const cache = getCachedSyncResult();
       if (cache?.cached) {
-        setSyncMessage('Dados já sincronizados recentemente. Use "Sincronizar Novamente" para forçar atualização.');
+        setSyncMessage('Dados já sincronizados recentemente. Recarregue a página para forçar a atualização.');
         return;
       }
     }
