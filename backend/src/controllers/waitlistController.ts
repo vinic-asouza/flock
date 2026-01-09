@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import supabase from '../services/supabase';
 import { validateWaitlist } from '../validators/waitlistValidator';
+import { sendEmail } from '../services/emailService';
+import { getWaitlistConfirmationTemplate } from '../templates/emailTemplates';
 
 export const subscribe = async (req: Request, res: Response) => {
   try {
@@ -60,6 +62,21 @@ export const subscribe = async (req: Request, res: Response) => {
         error: 'Erro ao cadastrar na lista de espera',
         details: insertError.message,
       });
+    }
+
+    // Enviar email de confirmação (não bloquear o fluxo se der erro)
+    try {
+      await sendEmail({
+        to: email,
+        subject: 'Solicitação Recebida - Flock',
+        html: getWaitlistConfirmationTemplate({
+          userName: name,
+          userEmail: email,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de cadastro na waitlist
+      console.error('Erro ao enviar email de confirmação de waitlist:', emailError);
     }
 
     res.status(201).json({

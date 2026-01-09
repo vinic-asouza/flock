@@ -3,6 +3,8 @@ import supabase from '../services/supabase';
 import { validateChurch } from '../validators/churchValidator';
 import { ChurchRegistrationData, AuthRequest } from '../types';
 import { setAccessToken, setRefreshToken, setSessionCookie, clearAuthCookies, cookieConfig } from '../utils/cookieUtils';
+import { sendEmail } from '../services/emailService';
+import { getWelcomeEmailTemplate, getNewUserNotificationTemplate } from '../templates/emailTemplates';
 
 export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res: Response) => {
   try {
@@ -123,6 +125,39 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       } else {
         console.error('Erro ao vincular assinatura pendente:', linkError);
       }
+    }
+
+    // Enviar emails (não bloquear o fluxo se der erro)
+    try {
+      const userName = churchData.name || email.split('@')[0];
+      const churchName = churchRecord.name || churchData.name || 'Igreja';
+
+      // Email de boas-vindas para o usuário
+      await sendEmail({
+        to: email,
+        subject: 'Bem-vindo ao Flock!',
+        html: getWelcomeEmailTemplate({
+          userName,
+          churchName,
+          email,
+        }),
+      });
+
+      // Email de notificação para administradores
+      await sendEmail({
+        to: process.env.ADMIN_EMAIL || 'contato@flockapp.com.br',
+        subject: `Novo usuário registrado: ${churchName}`,
+        html: getNewUserNotificationTemplate({
+          userName,
+          churchName,
+          email,
+          cnpj,
+          phone,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de registro
+      console.error('Erro ao enviar emails de boas-vindas:', emailError);
     }
 
     res.status(201).json({

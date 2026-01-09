@@ -1,11 +1,13 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { stripe, STRIPE_PRICE_IDS, getOrCreateCustomer, createCheckoutSession, createCustomerPortalSession, updateSubscription } from '../services/stripe';
-import supabase from '../services/supabase';
+import supabase, { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { formatErrorResponse, getFriendlyErrorMessage } from '../utils/errorMessages';
-import { PLAN_CONFIG, getPlanConfig, getAllPlans } from '../config/plans';
+import { PLAN_CONFIG, getPlanConfig, getAllPlans, getPlanName, getPlanPrice } from '../config/plans';
 import { logger, logStripeEvent, logStripeOperation, logSubscriptionChange, logPaymentFlow } from '../utils/logger';
+import { sendEmail } from '../services/emailService';
+import { getPaymentSuccessTemplate, getPaymentFailedTemplate, getSubscriptionCanceledTemplate, getRenewalSuccessTemplate, getPlanChangedTemplate } from '../templates/stripeEmailTemplates';
 
 /**
  * Criar sessão de checkout
@@ -14,11 +16,6 @@ import { logger, logStripeEvent, logStripeOperation, logSubscriptionChange, logP
 export const createCheckout = async (req: AuthRequest, res: Response) => {
   try {
     const { plan } = req.body;
-
-    console.log('📦 Criando checkout session:', {
-      plan,
-      user: req.user ? { id: req.user.id, email: req.user.email } : 'não autenticado',
-    });
 
     // Validar plano (100 não precisa de checkout, é gratuito)
     if (!plan || !['200', '500', '800'].includes(plan)) {
@@ -41,27 +38,12 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    logger.debug(`Price ID encontrado para plano ${plan}: ${priceId}`, {
-      planType: plan,
-      stripePriceId: priceId,
-    });
-
-    // Debug: verificar autenticação
-    console.log('🔐 Status de autenticação:', {
-      hasUser: !!req.user,
-      userId: req.user?.id,
-      userEmail: req.user?.email,
-      hasCookies: !!req.cookies,
-      cookieNames: req.cookies ? Object.keys(req.cookies) : [],
-    });
-
     // Tentar autenticar novamente se não estiver autenticado mas houver cookies
     if (!req.user && req.cookies) {
       const { cookieConfig } = require('../utils/cookieUtils');
       const accessToken = req.cookies[cookieConfig.names.accessToken];
       
       if (accessToken) {
-        console.log('🔄 Tentando autenticar com token do cookie...');
         try {
           const { data: { user }, error } = await supabase.auth.getUser(accessToken);
           if (!error && user) {
@@ -69,9 +51,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
               id: user.id,
               email: user.email || ''
             };
-            console.log('✅ Autenticação bem-sucedida via token do cookie');
           } else if (error) {
-            console.log('⚠️ Erro ao validar token:', error.message);
             // Tentar renovar token
             const refreshToken = req.cookies[cookieConfig.names.refreshToken];
             if (refreshToken) {
@@ -83,7 +63,6 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
                   id: authData.user.id,
                   email: authData.user.email || ''
                 };
-                console.log('✅ Token renovado e usuário autenticado');
               }
             }
           }
@@ -100,7 +79,6 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     let customerName: string;
 
     if (req.user) {
-      console.log('✅ Usuário autenticado, buscando dados da igreja...');
       // Buscar igreja do usuário
       const { data: church, error: churchError } = await supabase
         .from('churches')
@@ -116,7 +94,9 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       }
 
       churchId = church.id;
-      customerEmail = church.email_church || req.user.email;
+      // Sempre usar o email principal da conta (req.user.email) para o checkout do Stripe
+      // O email_church é apenas opcional e não deve ser usado para pagamentos
+      customerEmail = req.user.email!;
       customerName = church.name;
 
       // Se já tem customer_id, usar ele
@@ -142,11 +122,9 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       }
     } else {
       // Usuário não autenticado (checkout da landing page)
-      console.log('⚠️ Usuário não autenticado, esperando email e nome no body');
       const { email, name, church_id } = req.body;
 
       if (!email || !name) {
-        console.error('❌ Email e nome não fornecidos no body:', { email, name, body: req.body });
         return res.status(400).json({
           error: 'Email e nome são obrigatórios',
           details: 'Para checkout não autenticado, é necessário fornecer email e nome no body da requisição',
@@ -355,7 +333,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET não configurado');
+    console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
     return res.status(500).json({ error: 'Webhook secret não configurado' });
   }
 
@@ -370,8 +348,6 @@ export const handleWebhook = async (req: Request, res: Response) => {
       clientIP,
       endpoint: '/stripe/webhook',
     });
-    // Em produção, pode querer bloquear completamente
-    // Em desenvolvimento, apenas logar o aviso
     if (process.env.NODE_ENV === 'production') {
       return res.status(403).json({ error: 'IP não autorizado' });
     }
@@ -380,10 +356,9 @@ export const handleWebhook = async (req: Request, res: Response) => {
   let event: any;
 
   try {
-    // Verificar assinatura do webhook
     event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
   } catch (err: any) {
-    console.error('Erro ao verificar webhook:', err.message);
+    console.error('❌ Erro ao verificar webhook:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -445,14 +420,60 @@ export const handleWebhook = async (req: Request, res: Response) => {
 
     res.json({ received: true });
   } catch (error: any) {
+    console.error('❌ Erro ao processar webhook:', error);
     logger.error('Erro ao processar webhook', error as Error, {
       stripeEventId: event?.id,
       stripeEventType: event?.type,
     });
-    // Não marcar como processado em caso de erro para permitir retry
     res.status(500).json({ error: 'Erro ao processar webhook' });
   }
 };
+
+/**
+ * Função auxiliar para buscar o email do usuário a partir do user_id da igreja
+ */
+async function getUserEmailFromChurch(churchId: string): Promise<string | null> {
+  try {
+    // Buscar user_id da igreja
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('user_id')
+      .eq('id', churchId)
+      .single();
+
+    if (churchError || !church || !church.user_id) {
+      console.error('Erro ao buscar user_id da igreja:', churchError);
+      return null;
+    }
+
+    // Buscar email do usuário através do user_id
+    if (!supabaseAdmin) {
+      console.error('supabaseAdmin não configurado');
+      return null;
+    }
+
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(church.user_id);
+    
+    if (userError || !user || !user.email) {
+      console.error('Erro ao buscar email do usuário:', userError);
+      return null;
+    }
+
+    return user.email;
+  } catch (error) {
+    console.error('Erro ao buscar email do usuário:', error);
+    return null;
+  }
+}
+
+/**
+ * Formata data para exibição em português brasileiro
+ */
+function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
 /**
  * Handler para checkout completado
@@ -487,7 +508,7 @@ async function handleCheckoutCompleted(session: any) {
 
   if (churchId && churchId !== 'pending') {
     // Igreja existe, vincular diretamente
-    await supabase
+    const { data: church } = await supabase
       .from('churches')
       .update({
         stripe_customer_id: customerId,
@@ -501,7 +522,34 @@ async function handleCheckoutCompleted(session: any) {
           ? new Date(cancelAt * 1000).toISOString()
           : null,
       })
-      .eq('id', churchId);
+      .eq('id', churchId)
+      .select('name')
+      .single();
+
+    // Buscar email do usuário e enviar email de confirmação de pagamento
+    if (church) {
+      const userEmail = await getUserEmailFromChurch(churchId);
+      if (userEmail) {
+        const planConfig = getPlanConfig(planType);
+        const planName = planConfig?.name || `Plano ${planType}`;
+        const amount = planConfig?.priceFormatted || 'N/A';
+        const currentPeriodEnd = (subscription as any).current_period_end as number | null;
+        const nextBillingDate = currentPeriodEnd
+          ? formatDate(new Date(currentPeriodEnd * 1000))
+          : undefined;
+
+        await sendEmail({
+          to: userEmail,
+          subject: 'Pagamento Confirmado - Flock',
+          html: getPaymentSuccessTemplate({
+            churchName: church.name,
+            planName,
+            amount,
+            nextBillingDate,
+          }),
+        });
+      }
+    }
   } else {
     // Tentar buscar igreja por customer_id (caso já exista)
     const { data: existingChurch } = await supabase
@@ -512,7 +560,7 @@ async function handleCheckoutCompleted(session: any) {
 
     if (existingChurch) {
       // Igreja encontrada por customer_id, vincular
-      await supabase
+      const { data: church } = await supabase
         .from('churches')
         .update({
           stripe_customer_id: customerId,
@@ -526,7 +574,34 @@ async function handleCheckoutCompleted(session: any) {
             ? new Date(cancelAt * 1000).toISOString()
             : null,
         })
-        .eq('id', existingChurch.id);
+        .eq('id', existingChurch.id)
+        .select('name')
+        .single();
+
+      // Buscar email do usuário e enviar email de confirmação de pagamento
+      if (church) {
+        const userEmail = await getUserEmailFromChurch(existingChurch.id);
+        if (userEmail) {
+          const planConfig = getPlanConfig(planType);
+          const planName = planConfig?.name || `Plano ${planType}`;
+          const amount = planConfig?.priceFormatted || 'N/A';
+          const currentPeriodEnd = (subscription as any).current_period_end as number | null;
+          const nextBillingDate = currentPeriodEnd
+            ? formatDate(new Date(currentPeriodEnd * 1000))
+            : undefined;
+
+          await sendEmail({
+            to: userEmail,
+            subject: 'Pagamento Confirmado - Flock',
+            html: getPaymentSuccessTemplate({
+              churchName: church.name,
+              planName,
+              amount,
+              nextBillingDate,
+            }),
+          });
+        }
+      }
     } else if (customerEmail) {
       // Igreja não existe, salvar como assinatura pendente vinculada ao email
       await supabase
@@ -541,8 +616,6 @@ async function handleCheckoutCompleted(session: any) {
             ? new Date(currentPeriodStart * 1000).toISOString()
             : null,
         });
-      
-      console.log(`✅ Assinatura pendente salva para email: ${customerEmail}`);
     } else {
       logger.warn('Não foi possível vincular assinatura: email não encontrado', {
         customerEmail,
@@ -599,73 +672,210 @@ function getSubscriptionEndDate(subscription: any): Date | null {
  * Handler para assinatura atualizada
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const customerId = subscription.customer;
-  const subscriptionId = subscription.id;
-  const priceId = subscription.items.data[0].price.id;
+  try {
+    const customerId = typeof subscription.customer === 'string' 
+      ? subscription.customer 
+      : subscription.customer?.id || subscription.customer;
+    
+    if (!customerId) {
+      console.error('❌ customerId não encontrado');
+      return;
+    }
+    
+    const subscriptionId = subscription.id;
+    const priceId = subscription.items.data[0].price.id;
 
-  // Determinar tipo de plano
-  const planType = Object.entries(STRIPE_PRICE_IDS).find(
-    ([_, id]) => id === priceId
-  )?.[0] || null;
+    // Determinar tipo de plano
+    const planType = Object.entries(STRIPE_PRICE_IDS).find(
+      ([_, id]) => id === priceId
+    )?.[0] || null;
 
-  // Acessar propriedades com type assertion para evitar erros de tipo
-  const currentPeriodStart = (subscription as any).current_period_start as number;
-  const endDate = getSubscriptionEndDate(subscription);
+    // Acessar propriedades com type assertion para evitar erros de tipo
+    const currentPeriodStart = (subscription as any).current_period_start as number;
+    const endDate = getSubscriptionEndDate(subscription);
 
-  // Verificar se deve alterar para plano gratuito
-  const finalPlanType = shouldSetToFreePlan(subscription.status, endDate)
-    ? '100'
-    : planType;
+    // Verificar se deve alterar para plano gratuito
+    const finalPlanType = shouldSetToFreePlan(subscription.status, endDate)
+      ? '100'
+      : planType;
 
-  // Atualizar igreja
-  await supabase
-    .from('churches')
-    .update({
-      stripe_subscription_id: subscriptionId,
-      subscription_status: subscription.status,
-      plan_type: finalPlanType,
-      subscription_start_date: currentPeriodStart
-        ? new Date(currentPeriodStart * 1000).toISOString()
-        : null,
-      subscription_end_date: endDate ? endDate.toISOString() : null,
-    })
-    .eq('stripe_customer_id', customerId);
+    // Atualizar igreja
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .update({
+        stripe_subscription_id: subscriptionId,
+        subscription_status: subscription.status,
+        plan_type: finalPlanType,
+        subscription_start_date: currentPeriodStart
+          ? new Date(currentPeriodStart * 1000).toISOString()
+          : null,
+        subscription_end_date: endDate ? endDate.toISOString() : null,
+      })
+      .eq('stripe_customer_id', customerId)
+      .select('id, name')
+      .single();
+
+    // Se a assinatura foi cancelada, enviar email de cancelamento
+    // Verificar se foi cancelada: status 'canceled' OU cancel_at_period_end OU canceled_at
+    const isCanceled = subscription.status === 'canceled' || 
+                      (subscription as any).cancel_at_period_end === true ||
+                      (subscription as any).canceled_at !== null ||
+                      (subscription as any).cancel_at !== null;
+
+    if (isCanceled && church && !churchError) {
+      const userEmail = await getUserEmailFromChurch(church.id);
+      
+      if (userEmail) {
+        const planConfig = getPlanConfig(planType);
+        const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
+        const endDateFormatted = endDate ? formatDate(endDate) : 'N/A';
+
+        await sendEmail({
+          to: userEmail,
+          subject: 'Assinatura Cancelada - Flock',
+          html: getSubscriptionCanceledTemplate({
+            churchName: church.name,
+            planName,
+            endDate: endDateFormatted,
+          }),
+        });
+
+        console.log('✅ Email de cancelamento enviado para:', userEmail);
+      }
+    }
+  } catch (error) {
+    console.error('❌ Erro ao processar atualização de assinatura:', error);
+  }
 }
 
 /**
  * Handler para assinatura cancelada
  */
 async function handleSubscriptionDeleted(subscription: any) {
-  const customerId = subscription.customer;
-  const endDate = getSubscriptionEndDate(subscription) || new Date();
+  try {
+    const customerId = typeof subscription.customer === 'string' 
+      ? subscription.customer 
+      : subscription.customer?.id || subscription.customer;
+    
+    if (!customerId) {
+      console.error('❌ customerId não encontrado no evento de assinatura deletada');
+      return;
+    }
+    
+    const endDate = getSubscriptionEndDate(subscription) || new Date();
 
-  // Quando a assinatura é deletada, sempre alterar para plano gratuito
-  // (usando a função unificada para consistência)
-  await supabase
-    .from('churches')
-    .update({
-      subscription_status: 'canceled',
-      subscription_end_date: endDate.toISOString(),
-      plan_type: '100', // Plano gratuito quando cancelada
-    })
-    .eq('stripe_customer_id', customerId);
+    // Buscar informações do plano antes de atualizar
+    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const planType = priceId
+      ? Object.entries(STRIPE_PRICE_IDS).find(([_, id]) => id === priceId)?.[0] || null
+      : null;
+
+    // Quando a assinatura é deletada, sempre alterar para plano gratuito
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .update({
+        subscription_status: 'canceled',
+        subscription_end_date: endDate.toISOString(),
+        plan_type: '100', // Plano gratuito quando cancelada
+      })
+      .eq('stripe_customer_id', customerId)
+      .select('id, name')
+      .single();
+
+    if (churchError || !church) {
+      if (churchError) {
+        console.error('❌ Erro ao buscar igreja para cancelamento:', churchError);
+      }
+      return;
+    }
+
+    // Buscar email do usuário e enviar email de assinatura cancelada
+    const userEmail = await getUserEmailFromChurch(church.id);
+    
+    if (userEmail) {
+      const planConfig = getPlanConfig(planType);
+      const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
+      const endDateFormatted = formatDate(endDate);
+
+      await sendEmail({
+        to: userEmail,
+        subject: 'Assinatura Cancelada - Flock',
+        html: getSubscriptionCanceledTemplate({
+          churchName: church.name,
+          planName,
+          endDate: endDateFormatted,
+        }),
+      });
+
+      console.log('✅ Email de cancelamento enviado para:', userEmail);
+    }
+  } catch (error) {
+    console.error('❌ Erro ao processar cancelamento de assinatura:', error);
+  }
 }
 
 /**
  * Handler para pagamento bem-sucedido
  */
 async function handlePaymentSucceeded(invoice: any) {
-  const customerId = invoice.customer;
-  const subscriptionId = invoice.subscription;
+  try {
+    const customerId = typeof invoice.customer === 'string' 
+      ? invoice.customer 
+      : invoice.customer?.id || invoice.customer;
+    const subscriptionId = invoice.subscription;
 
-  if (subscriptionId) {
+    if (!customerId || !subscriptionId) {
+      return;
+    }
+
+    // Buscar assinatura para obter informações do plano
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
+    const priceId = subscription.items.data[0].price.id;
+    const planType = Object.entries(STRIPE_PRICE_IDS).find(
+      ([_, id]) => id === priceId
+    )?.[0] || null;
+
     // Atualizar data de renovação
-    await supabase
+    const { data: church, error: churchError } = await supabase
       .from('churches')
       .update({
         subscription_status: 'active',
       })
-      .eq('stripe_customer_id', customerId);
+      .eq('stripe_customer_id', customerId)
+      .select('id, name')
+      .single();
+
+    if (churchError || !church) {
+      return;
+    }
+
+    // Buscar email do usuário e enviar email de renovação bem-sucedida
+    const userEmail = await getUserEmailFromChurch(church.id);
+    
+    if (userEmail) {
+      const planConfig = getPlanConfig(planType);
+      const planName = planConfig?.name || `Plano ${planType}`;
+      const amount = planConfig?.priceFormatted || 'N/A';
+      const currentPeriodEnd = (subscription as any).current_period_end as number | null;
+      const nextBillingDate = currentPeriodEnd
+        ? formatDate(new Date(currentPeriodEnd * 1000))
+        : formatDate(new Date());
+
+      await sendEmail({
+        to: userEmail,
+        subject: 'Renovação Confirmada - Flock',
+        html: getRenewalSuccessTemplate({
+          churchName: church.name,
+          planName,
+          amount,
+          nextBillingDate,
+        }),
+      });
+
+      console.log('✅ Email de renovação enviado para:', userEmail);
+    }
+  } catch (error) {
+    console.error('❌ Erro ao processar pagamento bem-sucedido:', error);
   }
 }
 
@@ -673,17 +883,63 @@ async function handlePaymentSucceeded(invoice: any) {
  * Handler para pagamento falhado
  */
 async function handlePaymentFailed(invoice: any) {
-  const customerId = invoice.customer;
-  const subscriptionId = invoice.subscription;
+  try {
+    const customerId = typeof invoice.customer === 'string' 
+      ? invoice.customer 
+      : invoice.customer?.id || invoice.customer;
+    const subscriptionId = invoice.subscription;
 
-  if (subscriptionId) {
+    if (!customerId || !subscriptionId) {
+      return;
+    }
+
+    // Buscar assinatura para obter informações do plano
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
+    const priceId = subscription.items.data[0].price.id;
+    const planType = Object.entries(STRIPE_PRICE_IDS).find(
+      ([_, id]) => id === priceId
+    )?.[0] || null;
+
     // Atualizar status para past_due
-    await supabase
+    const { data: church, error: churchError } = await supabase
       .from('churches')
       .update({
         subscription_status: 'past_due',
       })
-      .eq('stripe_customer_id', customerId);
+      .eq('stripe_customer_id', customerId)
+      .select('id, name')
+      .single();
+
+    if (churchError || !church) {
+      return;
+    }
+
+    // Buscar email do usuário e enviar email de pagamento falhado
+    const userEmail = await getUserEmailFromChurch(church.id);
+    
+    if (userEmail) {
+      const planConfig = getPlanConfig(planType);
+      const planName = planConfig?.name || `Plano ${planType}`;
+      const amount = planConfig?.priceFormatted || 'N/A';
+      const retryDate = invoice.next_payment_attempt
+        ? formatDate(new Date(invoice.next_payment_attempt * 1000))
+        : undefined;
+
+      await sendEmail({
+        to: userEmail,
+        subject: 'Pagamento Não Processado - Flock',
+        html: getPaymentFailedTemplate({
+          churchName: church.name,
+          planName,
+          amount,
+          retryDate,
+        }),
+      });
+
+      console.log('✅ Email de pagamento falhado enviado para:', userEmail);
+    }
+  } catch (error) {
+    console.error('❌ Erro ao processar pagamento falhado:', error);
   }
 }
 
@@ -956,6 +1212,65 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
         subscription_updated_at: new Date().toISOString(),
       })
       .eq('id', church.id);
+
+    // Buscar informações completas da igreja para o email
+    const { data: churchData } = await supabase
+      .from('churches')
+      .select('name')
+      .eq('id', church.id)
+      .single();
+
+    // Buscar email do usuário e enviar email de confirmação (não bloquear o fluxo se der erro)
+    if (churchData) {
+      try {
+        const userEmail = await getUserEmailFromChurch(church.id);
+        if (userEmail) {
+          const oldPlanConfig = getPlanConfig(church.plan_type);
+          const newPlanConfig = getPlanConfig(planType);
+          const oldPlanName = oldPlanConfig?.name || `Plano ${church.plan_type || 'N/A'}`;
+          const newPlanName = newPlanConfig?.name || `Plano ${planType || 'N/A'}`;
+          const newPlanPrice = newPlanConfig?.priceFormatted || 'N/A';
+          
+          // Determinar se é upgrade ou downgrade
+          const oldPlanMembers = oldPlanConfig?.members || 0;
+          const newPlanMembers = newPlanConfig?.members || 0;
+          const isUpgrade = newPlanMembers > oldPlanMembers;
+          const isDowngrade = newPlanMembers < oldPlanMembers;
+
+          // Obter próxima data de cobrança
+          const currentPeriodEnd = (updatedSubscription as any).current_period_end as number | null;
+          const nextBillingDate = currentPeriodEnd
+            ? new Date(currentPeriodEnd * 1000).toLocaleDateString('pt-BR', {
+                dateStyle: 'long',
+                timeZone: 'America/Sao_Paulo'
+              })
+            : undefined;
+
+          const userName = churchData.name || userEmail.split('@')[0] || 'Usuário';
+          const changeDate = new Date().toLocaleDateString('pt-BR', {
+            dateStyle: 'long',
+            timeZone: 'America/Sao_Paulo'
+          });
+
+          await sendEmail({
+            to: userEmail,
+            subject: 'Plano Alterado - Flock',
+            html: getPlanChangedTemplate({
+              userName,
+              oldPlanName,
+              newPlanName,
+              newPlanPrice,
+              nextBillingDate,
+              isUpgrade,
+              isDowngrade,
+            }),
+          });
+        }
+      } catch (emailError) {
+        // Logar erro mas não quebrar o fluxo de troca de plano
+        console.error('Erro ao enviar email de confirmação de troca de plano:', emailError);
+      }
+    }
 
     res.json({
       message: 'Plano alterado com sucesso',

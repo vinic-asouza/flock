@@ -1,4 +1,44 @@
-import supabase from '../services/supabase';
+import supabase, { supabaseAdmin } from '../services/supabase';
+import { sendEmail } from '../services/emailService';
+import { getMemberLimitWarningTemplate } from '../templates/emailTemplates';
+import { getPlanName, getPlanConfig } from '../config/plans';
+
+/**
+ * Função auxiliar para buscar o email do usuário a partir do user_id da igreja
+ */
+async function getUserEmailFromChurch(churchId: string): Promise<string | null> {
+  try {
+    // Buscar user_id da igreja
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('user_id')
+      .eq('id', churchId)
+      .single();
+
+    if (churchError || !church || !church.user_id) {
+      console.error('Erro ao buscar user_id da igreja:', churchError);
+      return null;
+    }
+
+    // Buscar email do usuário através do user_id
+    if (!supabaseAdmin) {
+      console.error('supabaseAdmin não configurado');
+      return null;
+    }
+
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(church.user_id);
+    
+    if (userError || !user || !user.email) {
+      console.error('Erro ao buscar email do usuário:', userError);
+      return null;
+    }
+
+    return user.email;
+  } catch (error) {
+    console.error('Erro ao buscar email do usuário:', error);
+    return null;
+  }
+}
 
 /**
  * Limites de membros por tipo de plano
@@ -9,6 +49,27 @@ const PLAN_LIMITS: Record<string, number> = {
   '500': 500,
   '800': 800,
 };
+
+/**
+ * Cache para rastrear avisos de limite enviados
+ * Formato: { "churchId:threshold": timestamp }
+ * Exemplo: { "abc123:80": 1234567890, "abc123:90": 1234567891 }
+ */
+const limitWarningCache = new Map<string, number>();
+
+/**
+ * Limpar cache de avisos antigos (mais de 7 dias)
+ */
+const CLEANUP_INTERVAL = 7 * 24 * 60 * 60 * 1000; // 7 dias em milissegundos
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of limitWarningCache.entries()) {
+    if (now - timestamp > CLEANUP_INTERVAL) {
+      limitWarningCache.delete(key);
+    }
+  }
+}, 24 * 60 * 60 * 1000); // Limpar diariamente
 
 /**
  * Resultado da verificação de limite de membros
@@ -124,6 +185,102 @@ export async function checkMemberLimit(
         message = `Limite de membros atingido. Você possui ${totalCount} de ${limit} membros permitidos no plano ${planType}. Ative sua assinatura para continuar adicionando membros.`;
       } else {
         message = `Limite de membros atingido. Você possui ${totalCount} de ${limit} membros permitidos no plano ${planType}. Faça upgrade para adicionar mais membros.`;
+      }
+    }
+
+    // Verificar e enviar avisos de limite (80%, 90%, 100%)
+    // Apenas se tiver plano definido e limite finito
+    if (planType && limit !== Infinity && totalCount > 0) {
+      const percentage = Math.round((totalCount / limit) * 100);
+      const thresholds = [100, 90, 80]; // Verificar do maior para o menor
+      
+      // Encontrar o threshold mais alto atingido que ainda não foi notificado
+      let thresholdToNotify: number | null = null;
+      const now = Date.now();
+      
+      for (const threshold of thresholds) {
+        if (percentage >= threshold) {
+          const cacheKey = `${churchId}:${threshold}`;
+          const lastSent = limitWarningCache.get(cacheKey);
+          
+          // Se não foi enviado nos últimos 7 dias, este é o threshold a notificar
+          if (!lastSent || (now - lastSent) > CLEANUP_INTERVAL) {
+            thresholdToNotify = threshold;
+            break; // Usar o threshold mais alto atingido
+          }
+        }
+      }
+      
+      // Enviar email apenas se encontrou um threshold para notificar
+      if (thresholdToNotify !== null) {
+        // Buscar informações completas da igreja para o email
+        const { data: churchData } = await supabase
+          .from('churches')
+          .select('name')
+          .eq('id', churchId)
+          .single();
+
+        if (churchData) {
+          try {
+            // Buscar email do usuário
+            const userEmail = await getUserEmailFromChurch(churchId);
+            if (!userEmail) {
+              console.warn(`Não foi possível encontrar email do usuário para a igreja ${churchId}`);
+              // Continuar sem enviar email, mas não quebrar o fluxo
+            } else {
+              const planConfig = getPlanConfig(planType);
+              const planName = planConfig?.name || getPlanName(planType);
+              const isLimitReached = thresholdToNotify >= 100;
+              
+              // Determinar cores e título baseado no threshold
+              let warningTitle: string;
+              let warningColor: string;
+              let borderColor: string;
+              
+              if (isLimitReached) {
+                warningTitle = '⚠️ Limite de Membros Atingido';
+                warningColor = '#fee2e2';
+                borderColor = '#ef4444';
+              } else if (thresholdToNotify >= 90) {
+                warningTitle = '⚠️ Limite de Membros Próximo (90%)';
+                warningColor = '#fff7ed';
+                borderColor = '#f59e0b';
+              } else {
+                warningTitle = 'ℹ️ Limite de Membros Próximo (80%)';
+                warningColor = '#fef3c7';
+                borderColor = '#fbbf24';
+              }
+
+              const userName = churchData.name || userEmail.split('@')[0] || 'Usuário';
+
+              await sendEmail({
+                to: userEmail,
+                subject: isLimitReached 
+                  ? 'Limite de Membros Atingido - Flock' 
+                  : `Aviso: ${percentage}% do Limite de Membros - Flock`,
+                html: getMemberLimitWarningTemplate({
+                  userName,
+                  currentCount: totalCount,
+                  limit,
+                  remaining,
+                  planName,
+                  percentage,
+                  warningTitle,
+                  warningColor,
+                  borderColor,
+                  isLimitReached,
+                }),
+              });
+
+              // Atualizar cache
+              const cacheKey = `${churchId}:${thresholdToNotify}`;
+              limitWarningCache.set(cacheKey, now);
+            }
+          } catch (emailError) {
+            // Logar erro mas não quebrar o fluxo
+            console.error(`Erro ao enviar aviso de limite (${thresholdToNotify}%):`, emailError);
+          }
+        }
       }
     }
 

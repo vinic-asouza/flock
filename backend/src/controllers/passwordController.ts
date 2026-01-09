@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest } from '../types';
 import { validateChangePassword, validateResetPassword } from '../validators/passwordValidator';
+import { sendEmail } from '../services/emailService';
+import { getPasswordChangedTemplate } from '../templates/emailTemplates';
 
 /**
  * Envia email para recuperação de senha
@@ -90,6 +92,30 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Enviar email de confirmação (não bloquear o fluxo se der erro)
+    try {
+      const userName = req.user.email?.split('@')[0] || 'Usuário';
+      const changeDate = new Date().toLocaleString('pt-BR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Sao_Paulo'
+      });
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      await sendEmail({
+        to: req.user.email!,
+        subject: 'Senha Alterada - Flock',
+        html: getPasswordChangedTemplate({
+          userName,
+          changeDate,
+          ipAddress: typeof ipAddress === 'string' ? ipAddress : undefined,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de alteração de senha
+      console.error('Erro ao enviar email de confirmação de alteração de senha:', emailError);
+    }
+
     res.json({
       message: 'Senha alterada com sucesso',
       details: 'Sua senha foi atualizada. Por favor, use a nova senha para seus próximos logins'
@@ -154,6 +180,31 @@ export const resetPassword = async (req: Request<{}, {}, { newPassword: string, 
         error: 'Erro ao redefinir senha',
         details: updateError.message
       });
+    }
+
+    // Enviar email de confirmação (não bloquear o fluxo se der erro)
+    try {
+      const userEmail = user.email || '';
+      const userName = userEmail.split('@')[0] || 'Usuário';
+      const changeDate = new Date().toLocaleString('pt-BR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Sao_Paulo'
+      });
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      await sendEmail({
+        to: userEmail,
+        subject: 'Senha Redefinida - Flock',
+        html: getPasswordChangedTemplate({
+          userName,
+          changeDate,
+          ipAddress: typeof ipAddress === 'string' ? ipAddress : undefined,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de redefinição de senha
+      console.error('Erro ao enviar email de confirmação de redefinição de senha:', emailError);
     }
 
     res.json({

@@ -79,11 +79,15 @@ const generalLimiter = rateLimit({
 // Aplicar rate limiting geral
 app.use(generalLimiter);
 
-// Parser para JSON
-app.use(express.json());
-
 // Parser para cookies
 app.use(cookieParser());
+
+// IMPORTANTE: Registrar rota do webhook ANTES do express.json()
+// O webhook precisa receber o body raw (não parseado) para verificar a assinatura
+app.use('/api/stripe', stripeRoutes);
+
+// Parser para JSON (após a rota do webhook)
+app.use(express.json());
 
 // Rotas com rate limiting específico
 app.use('/api/auth', authRoutes);
@@ -98,7 +102,6 @@ app.use('/api/auth', authCallbackRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/integration', integrationRoutes);
 app.use('/api/waitlist', waitlistRoutes);
-app.use('/api/stripe', stripeRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/registration-links', registrationLinksRoutes);
 app.use('/api/integration-links', integrationLinksRoutes);
@@ -133,8 +136,10 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 // Configurar jobs agendados (cron jobs)
 // Limpeza de assinaturas pendentes expiradas - roda diariamente às 2h da manhã
+// Verificação de expiração de assinaturas - roda diariamente às 9h da manhã
 if (process.env.ENABLE_CRON_JOBS !== 'false') {
   const { runCleanupJob } = require('./jobs/cleanupPendingSubscriptions');
+  const { runExpirationCheckJob } = require('./jobs/checkSubscriptionExpiration');
   
   // Executar limpeza diariamente às 2h da manhã
   cron.schedule('0 2 * * *', async () => {
@@ -144,7 +149,17 @@ if (process.env.ENABLE_CRON_JOBS !== 'false') {
     timezone: 'America/Sao_Paulo'
   });
   
-  console.log('✅ Jobs agendados configurados (limpeza de assinaturas pendentes: diariamente às 2h)');
+  // Executar verificação de expiração diariamente às 9h da manhã
+  cron.schedule('0 9 * * *', async () => {
+    console.log('🕐 Executando verificação de assinaturas próximas do vencimento...');
+    await runExpirationCheckJob();
+  }, {
+    timezone: 'America/Sao_Paulo'
+  });
+  
+  console.log('✅ Jobs agendados configurados:');
+  console.log('   - Limpeza de assinaturas pendentes: diariamente às 2h');
+  console.log('   - Verificação de expiração: diariamente às 9h');
 }
 
 // Iniciar servidor

@@ -3,6 +3,8 @@ import supabase, { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { validateEmailChange, validatePasswordChange, validateAccountDeletion } from '../validators/accountValidator';
 import { logAudit } from '../utils/auditLogger';
+import { sendEmail } from '../services/emailService';
+import { getEmailChangeNotificationTemplate, getAccountDeletedTemplate } from '../templates/emailTemplates';
 
 /**
  * Buscar dados da conta do usuário
@@ -116,6 +118,9 @@ export const changeEmail = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Salvar email antigo antes de alterar
+    const oldEmail = req.user.email!;
+
     // Atualizar email com redirecionamento para o callback do frontend
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     // Em supabase-js v2, updateUser aceita um segundo parâmetro com emailRedirectTo
@@ -131,6 +136,32 @@ export const changeEmail = async (req: AuthRequest, res: Response) => {
         error: 'Erro ao alterar email',
         details: updateError.message
       });
+    }
+
+    // Enviar email de notificação para o email antigo (não bloquear o fluxo se der erro)
+    try {
+      const userName = oldEmail.split('@')[0] || 'Usuário';
+      const changeDate = new Date().toLocaleString('pt-BR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Sao_Paulo'
+      });
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      await sendEmail({
+        to: oldEmail,
+        subject: 'Alteração de Email Solicitada - Flock',
+        html: getEmailChangeNotificationTemplate({
+          userName,
+          oldEmail,
+          newEmail,
+          changeDate,
+          ipAddress: typeof ipAddress === 'string' ? ipAddress : undefined,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de alteração de email
+      console.error('Erro ao enviar email de notificação de alteração de email:', emailError);
     }
 
     res.json({
@@ -306,6 +337,10 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Salvar informações do usuário antes de excluir (para enviar email)
+    const userEmail = req.user.email!;
+    const userName = userEmail.split('@')[0] || 'Usuário';
+
     // Excluir usuário do Supabase Auth (requer Service Role Key)
     if (!supabaseAdmin) {
       return res.status(500).json({
@@ -321,6 +356,31 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         error: 'Erro ao excluir conta',
         details: deleteError.message
       });
+    }
+
+    // Enviar email de confirmação de exclusão (não bloquear o fluxo se der erro)
+    // IMPORTANTE: Enviar após exclusão bem-sucedida, mas capturar email antes
+    try {
+      const deletionDate = new Date().toLocaleString('pt-BR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Sao_Paulo'
+      });
+      const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+      await sendEmail({
+        to: userEmail,
+        subject: 'Conta Excluída - Flock',
+        html: getAccountDeletedTemplate({
+          userName,
+          userEmail,
+          deletionDate,
+          ipAddress: typeof ipAddress === 'string' ? ipAddress : undefined,
+        }),
+      });
+    } catch (emailError) {
+      // Logar erro mas não quebrar o fluxo de exclusão
+      console.error('Erro ao enviar email de confirmação de exclusão de conta:', emailError);
     }
 
     res.json({
