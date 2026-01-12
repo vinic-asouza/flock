@@ -21,13 +21,13 @@ function loadTemplate(templateName: string): string {
   // Resolver caminho do template (funciona tanto em desenvolvimento quanto em produção)
   // Em desenvolvimento: __dirname = backend/src/templates
   // Em produção: __dirname = backend/dist/templates
-  // Os templates HTML devem estar em backend/src/templates/emails (não são compilados)
+  // Os templates HTML são copiados para dist/templates/emails durante o build
   const isProduction = __dirname.includes('dist');
   const baseDir = isProduction 
-    ? path.resolve(__dirname, '..', 'src', 'templates')
-    : __dirname;
+    ? path.join(__dirname, 'emails')  // Em produção: dist/templates/emails
+    : path.join(__dirname, 'emails'); // Em desenvolvimento: src/templates/emails
   
-  const templatePath = path.join(baseDir, 'emails', `${templateName}.html`);
+  const templatePath = path.join(baseDir, `${templateName}.html`);
   
   try {
     const template = fs.readFileSync(templatePath, 'utf-8');
