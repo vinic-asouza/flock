@@ -10,6 +10,8 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DENOMINATIONS } from '@/utils';
+import axios from 'axios';
+import { Loader } from 'lucide-react';
 
 // Estado global para erros de registro (persiste entre re-renderizações)
 let globalRegisterError: string | null = null;
@@ -66,10 +68,10 @@ interface City {
 const formatCNPJ = (value: string): string => {
   // Remove tudo que não é número
   const numbers = value.replace(/\D/g, '');
-  
+
   // Limita a 14 dígitos
   const limitedNumbers = numbers.slice(0, 14);
-  
+
   // Aplica a formatação XX.XXX.XXX/XXXX-XX
   if (limitedNumbers.length <= 2) {
     return limitedNumbers;
@@ -93,10 +95,10 @@ const removeCNPJFormatting = (value: string): string => {
 const formatPhone = (value: string): string => {
   // Remove tudo que não é número
   const numbers = value.replace(/\D/g, '');
-  
+
   // Limita a 11 dígitos (DDD + 9 dígitos)
   const limitedNumbers = numbers.slice(0, 11);
-  
+
   // Se tem 11 dígitos, assume que é celular (formato: (XX) 9XXXX-XXXX)
   if (limitedNumbers.length === 11) {
     return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
@@ -122,6 +124,8 @@ const removePhoneFormatting = (value: string): string => {
   return value.replace(/\D/g, '');
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(globalRegisterError);
   const [errorDetails, setErrorDetails] = useState<string | null>(globalRegisterErrorDetails);
@@ -134,11 +138,13 @@ export default function RegisterPage() {
   const [cnpjDisplay, setCnpjDisplay] = useState('');
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
+  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { register: registerChurch, login, isOperationLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan');
-  
+
   // Ref para manter os estados durante re-renderizações
   const errorRef = useRef<string | null>(globalRegisterError);
   const errorDetailsRef = useRef<string | null>(globalRegisterErrorDetails);
@@ -248,7 +254,7 @@ export default function RegisterPage() {
     const value = e.target.value;
     const formatted = formatCNPJ(value);
     setCnpjDisplay(formatted);
-    
+
     // Atualizar o valor no formulário sem formatação
     const unformatted = removeCNPJFormatting(formatted);
     setValue('cnpj', unformatted);
@@ -259,7 +265,7 @@ export default function RegisterPage() {
     const value = e.target.value;
     const formatted = formatPhone(value);
     setPhoneDisplay(formatted);
-    
+
     // Atualizar o valor no formulário sem formatação
     const unformatted = removePhoneFormatting(formatted);
     setValue('phone', unformatted);
@@ -270,20 +276,26 @@ export default function RegisterPage() {
     const value = e.target.value;
     const formatted = formatPhone(value);
     setPhoneChurchDisplay(formatted);
-    
+
     // Atualizar o valor no formulário sem formatação
     const unformatted = removePhoneFormatting(formatted);
     setValue('phone_church', unformatted);
   };
 
   const onSubmit = async (data: RegisterFormData) => {
+    // Prevenir múltiplos envios
+    if (isSubmitting) {
+      return;
+    }
+
     try {
+      setIsSubmitting(true);
       setError(null);
       setErrorDetails(null);
       // Limpar estado global
       globalRegisterError = null;
       globalRegisterErrorDetails = null;
-      
+
       // Remover confirmPassword e garantir que o CNPJ esteja sem formatação
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...dataToSend } = data;
@@ -295,78 +307,121 @@ export default function RegisterPage() {
         email_church: dataToSend.email_church || undefined,
         phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined
       };
-      
+
+      // Se houver plano selecionado (pago), criar checkout session IMEDIATAMENTE após registro
+      if (selectedPlan && ['200', '500', '800'].includes(selectedPlan)) {
+        try {
+          // 1. Criar conta
+          await registerChurch(cleanData);
+
+          // Limpar dados do formulário em caso de sucesso
+          globalFormData = null;
+          reset();
+          setCnpjDisplay('');
+          setPhoneDisplay('');
+          setPhoneChurchDisplay('');
+          setRegisteredEmail(cleanData.email);
+
+          // 2. Fazer login automático
+          await login({
+            email: cleanData.email,
+            password: cleanData.password,
+          });
+
+          // 3. Mostrar feedback visual
+          setSuccess(true);
+          setIsCreatingCheckout(true);
+          sessionStorage.setItem('redirectingToCheckout', 'true');
+
+          // 4. Criar checkout session IMEDIATAMENTE
+          const checkoutResponse = await axios.post(
+            `${API_URL}/stripe/create-checkout-session`,
+            { plan: selectedPlan },
+            {
+              withCredentials: true,
+            }
+          );
+
+          const { url: checkoutUrl } = checkoutResponse.data;
+
+          if (!checkoutUrl) {
+            throw new Error('URL de checkout não recebida');
+          }
+
+          // 5. Redirecionar DIRETAMENTE para Stripe (sem passar pela página de checkout)
+          window.location.href = checkoutUrl;
+          return;
+
+        } catch (checkoutError: unknown) {
+          // Limpar flags em caso de erro
+          sessionStorage.removeItem('redirectingToCheckout');
+          setIsCreatingCheckout(false);
+
+          // Verificar tipo de erro
+          let errorMessage = 'Erro ao processar sua solicitação';
+          let errorDetails: string | null = null;
+
+          if (checkoutError instanceof Error) {
+            errorMessage = checkoutError.message;
+          } else if (checkoutError && typeof checkoutError === 'object' && 'response' in checkoutError) {
+            const axiosError = checkoutError as { response?: { data?: { error?: string; details?: string } } };
+            if (axiosError.response?.data) {
+              errorMessage = axiosError.response.data.error || errorMessage;
+              errorDetails = axiosError.response.data.details || null;
+            }
+          }
+
+          // Verificar se é erro de CNPJ duplicado
+          const isCNPJError = errorMessage.toLowerCase().includes('cnpj') ||
+            errorMessage.toLowerCase().includes('já cadastrado') ||
+            errorMessage.toLowerCase().includes('already registered');
+
+          if (isCNPJError) {
+            setError('CNPJ já cadastrado');
+            setErrorDetails(
+              'Este CNPJ já está cadastrado no sistema. ' +
+              'Se você já possui uma conta, faça login. ' +
+              'Se você acabou de se registrar, aguarde alguns instantes ou verifique seu email. ' +
+              'Caso contrário, entre em contato com o suporte.'
+            );
+            globalRegisterError = errorMessage;
+            globalRegisterErrorDetails = errorDetails;
+            return;
+          }
+
+          // Outro erro - conta foi criada mas checkout falhou
+          setError('Conta criada com sucesso, mas houve um problema ao iniciar o pagamento.');
+          setErrorDetails('Você pode acessar o sistema e configurar seu plano nas configurações.');
+          setSuccess(true);
+          setRegisteredEmail(cleanData.email);
+
+          // Redirecionar para dashboard após 3 segundos
+          setTimeout(() => {
+            router.push('/');
+          }, 3000);
+          return;
+        }
+      }
+
+      // Se for plano gratuito (100) ou sem plano selecionado, fluxo normal
       await registerChurch(cleanData);
-      
+
       // Limpar dados do formulário em caso de sucesso
       globalFormData = null;
       reset();
       setCnpjDisplay('');
       setPhoneDisplay('');
-      setPhoneChurchDisplay(''); // Limpar o display do telefone da igreja
-      
-      // Guardar email para instrução de confirmação
+      setPhoneChurchDisplay('');
       setRegisteredEmail(cleanData.email);
-
-      // Se houver plano selecionado, fazer login automático e redirecionar para checkout
-      if (selectedPlan && ['100', '200', '500', '800'].includes(selectedPlan)) {
-        try {
-          // Marcar que estamos fazendo um redirect programático para checkout
-          sessionStorage.setItem('redirectingToCheckout', 'true');
-          
-          // Mostrar mensagem de sucesso antes de redirecionar
-          setSuccess(true);
-          
-          // Fazer login automático com as credenciais do registro
-          await login({
-            email: cleanData.email,
-            password: cleanData.password,
-          });
-          
-          // Aguardar um tempo para o usuário ver a mensagem de sucesso antes de redirecionar
-          // Usar setTimeout para dar feedback visual ao usuário
-          setTimeout(() => {
-            // Usar window.location.replace para evitar que o usuário veja a página intermediária
-            window.location.replace(`/checkout?plan=${selectedPlan}`);
-          }, 2000); // 2 segundos para o usuário ver a mensagem de sucesso
-          return;
-        } catch (loginError: unknown) {
-          // Limpar flag de redirect em caso de erro
-          sessionStorage.removeItem('redirectingToCheckout');
-          
-          // Se o login falhar (ex: email precisa ser confirmado)
-          // Verificar se é erro de email não confirmado
-          const errorMessage = loginError instanceof Error 
-            ? loginError.message 
-            : (loginError && typeof loginError === 'object' && 'message' in loginError)
-            ? String((loginError as { message: unknown }).message)
-            : '';
-          const isEmailNotConfirmed = errorMessage.toLowerCase().includes('confirm') || 
-                                     errorMessage.toLowerCase().includes('email não confirmado');
-          
-          if (isEmailNotConfirmed) {
-            // Email não confirmado - redirecionar para login com mensagem
-            // O usuário precisará confirmar o email primeiro
-            router.push(`/login?redirect=/checkout?plan=${selectedPlan}&message=email_confirm_required`);
-            return;
-          }
-          
-          // Outro erro - redirecionar para login normalmente
-          console.warn('Login automático falhou:', loginError);
-          router.push(`/login?redirect=/checkout?plan=${selectedPlan}`);
-          return;
-        }
-      }
-
       setSuccess(true);
-      
+
     } catch (err: unknown) {
       let errorMessage = 'Erro ao registrar igreja';
       let errorDetails: string | null = null;
-      
+
       if (err instanceof Error) {
         errorMessage = err.message;
-        
+
         // Verificar se tem detalhes customizados
         const errorObj = err as Error & { details?: string | string[] };
         if (errorObj.details) {
@@ -380,7 +435,7 @@ export default function RegisterPage() {
         if (errorObj.message && typeof errorObj.message === 'string') {
           errorMessage = errorObj.message;
         }
-        
+
         if (errorObj.details) {
           const details = errorObj.details;
           if (typeof details === 'string') {
@@ -390,54 +445,89 @@ export default function RegisterPage() {
           }
         }
       }
-      
+
+      // Verificar se é erro de CNPJ duplicado
+      const isCNPJError = errorMessage.toLowerCase().includes('cnpj') ||
+        errorMessage.toLowerCase().includes('já cadastrado') ||
+        errorMessage.toLowerCase().includes('already registered') ||
+        (errorDetails && (
+          errorDetails.toLowerCase().includes('cnpj') ||
+          errorDetails.toLowerCase().includes('já cadastrado')
+        ));
+
+      if (isCNPJError) {
+        errorMessage = 'CNPJ já cadastrado';
+        errorDetails =
+          'Este CNPJ já está cadastrado no sistema. ' +
+          'Se você já possui uma conta, faça login. ' +
+          'Se você acabou de se registrar, aguarde alguns instantes ou verifique seu email. ' +
+          'Caso contrário, entre em contato com o suporte.';
+      }
+
       // Salvar dados do formulário para manter durante re-renderizações
       globalFormData = data;
-      
+
       // Salvar no estado global para persistir durante re-renderizações
       globalRegisterError = errorMessage;
       globalRegisterErrorDetails = errorDetails;
-      
+
       // Atualizar tanto o estado quanto a ref
       setError(errorMessage);
       setErrorDetails(errorDetails);
       errorRef.current = errorMessage;
       errorDetailsRef.current = errorDetails;
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (success) {
     // Verificar se está redirecionando para checkout
     const isRedirectingToCheckout = typeof window !== 'undefined' && sessionStorage.getItem('redirectingToCheckout') === 'true';
-    
+
     return (
       <div className="space-y-8">
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+            {isCreatingCheckout ? (
+              <Loader className="h-6 w-6 text-green-600 animate-spin" />
+            ) : (
+              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </div>
-          {isRedirectingToCheckout ? (
+          {isRedirectingToCheckout || isCreatingCheckout ? (
             <>
               <h1 className="text-3xl font-bold text-gray-900">Cadastro Realizado com Sucesso!</h1>
               <p className="mt-2 text-gray-600">
-                Sua conta foi criada com sucesso. Você será redirecionado para a página de pagamento em instantes...
+                Preparando sua página de pagamento...
               </p>
+              <div className="mt-6 max-w-md mx-auto">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300 animate-pulse"
+                    style={{ width: '60%' }}
+                  ></div>
+                </div>
+                <p className="mt-3 text-sm text-gray-500">
+                  Isso pode levar alguns segundos. Por favor, aguarde...
+                </p>
+              </div>
             </>
           ) : (
             <>
               <h1 className="text-3xl font-bold text-gray-900">Verifique seu email</h1>
               <p className="mt-2 text-gray-600">
-                Enviamos um link de confirmação para {registeredEmail || 'seu email'}. 
+                Enviamos um link de confirmação para {registeredEmail || 'seu email'}.
               </p>
             </>
           )}
         </div>
-        
-        {!isRedirectingToCheckout && (
+
+        {!isRedirectingToCheckout && !isCreatingCheckout && (
           <div className="w-full">
-            <Button 
+            <Button
               className="w-full"
               onClick={() => router.push('/login')}
             >
@@ -600,10 +690,10 @@ export default function RegisterPage() {
               disabled={!selectedState || isLoadingCities || isOperationLoading}
             >
               <option value="">
-                {!selectedState 
-                  ? 'Selecione o estado primeiro' 
-                  : isLoadingCities 
-                    ? 'Carregando...' 
+                {!selectedState
+                  ? 'Selecione o estado primeiro'
+                  : isLoadingCities
+                    ? 'Carregando...'
                     : 'Selecione a cidade'
                 }
               </option>
@@ -640,9 +730,10 @@ export default function RegisterPage() {
         <Button
           type="submit"
           className="w-full"
-          isLoading={isOperationLoading}
+          isLoading={isOperationLoading || isSubmitting}
+          disabled={isSubmitting}
         >
-          Registrar Igreja
+          {isSubmitting ? 'Processando...' : 'Registrar Igreja'}
         </Button>
       </form>
 
