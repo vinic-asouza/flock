@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, memo } from 'react';
+import { useEffect, memo, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Spinner } from '@/components/ui/Spinner';
@@ -9,7 +9,7 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
-function AuthGuardComponent({ children }: AuthGuardProps) {
+function AuthGuardContent({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading, isOperationLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -73,6 +73,23 @@ function AuthGuardComponent({ children }: AuthGuardProps) {
   }
 
   return <>{children}</>;
+}
+
+function AuthGuardComponent({ children }: AuthGuardProps) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+          <div className="text-center">
+            <Spinner className="mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 mb-2">Carregando...</p>
+          </div>
+        </div>
+      }
+    >
+      <AuthGuardContent>{children}</AuthGuardContent>
+    </Suspense>
+  );
 }
 
 // Memoizar o componente para evitar re-renderizações desnecessárias

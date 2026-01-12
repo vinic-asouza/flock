@@ -20,22 +20,27 @@ export function useMemberImport() {
       const result = await apiService.validateMemberImport(file, congregationId);
       setValidationResult(result);
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Erro ao validar arquivo CSV';
       
-      if (err?.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err?.response?.data?.details) {
-        errorMessage = Array.isArray(err.response.data.details) 
-          ? err.response.data.details.join(', ')
-          : err.response.data.details;
-      } else if (err?.message) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { error?: string; details?: string | string[] }; status?: number }; message?: string };
+        if (axiosError.response?.data?.error) {
+          errorMessage = axiosError.response.data.error;
+        } else if (axiosError.response?.data?.details) {
+          errorMessage = Array.isArray(axiosError.response.data.details) 
+            ? axiosError.response.data.details.join(', ')
+            : axiosError.response.data.details;
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message;
+        }
+        
+        // Se for erro de limite, mostrar mensagem específica
+        if (errorMessage.toLowerCase().includes('limite') || axiosError.response?.status === 403) {
+          errorMessage = 'Limite de membros atingido. A quantidade de membros no arquivo CSV ultrapassa o limite do seu plano atual.';
+        }
+      } else if (err instanceof Error) {
         errorMessage = err.message;
-      }
-      
-      // Se for erro de limite, mostrar mensagem específica
-      if (errorMessage.toLowerCase().includes('limite') || err?.response?.status === 403) {
-        errorMessage = 'Limite de membros atingido. A quantidade de membros no arquivo CSV ultrapassa o limite do seu plano atual.';
       }
       
       setError(errorMessage);
@@ -58,22 +63,27 @@ export function useMemberImport() {
       const result = await apiService.importMembers(file, congregationId, skipDuplicates);
       setImportResult(result);
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Erro ao importar membros';
       
-      if (err?.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err?.response?.data?.details) {
-        errorMessage = Array.isArray(err.response.data.details) 
-          ? err.response.data.details.join(', ')
-          : err.response.data.details;
-      } else if (err?.message) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { error?: string; details?: string | string[] }; status?: number }; message?: string };
+        if (axiosError.response?.data?.error) {
+          errorMessage = axiosError.response.data.error;
+        } else if (axiosError.response?.data?.details) {
+          errorMessage = Array.isArray(axiosError.response.data.details) 
+            ? axiosError.response.data.details.join(', ')
+            : axiosError.response.data.details;
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message;
+        }
+        
+        // Se for erro de limite, mostrar mensagem específica
+        if (errorMessage.toLowerCase().includes('limite') || axiosError.response?.status === 403) {
+          errorMessage = 'Limite de membros atingido. A quantidade de membros no arquivo CSV ultrapassa o limite do seu plano atual.';
+        }
+      } else if (err instanceof Error) {
         errorMessage = err.message;
-      }
-      
-      // Se for erro de limite, mostrar mensagem específica
-      if (errorMessage.toLowerCase().includes('limite') || err?.response?.status === 403) {
-        errorMessage = 'Limite de membros atingido. A quantidade de membros no arquivo CSV ultrapassa o limite do seu plano atual.';
       }
       
       setError(errorMessage);

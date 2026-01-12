@@ -28,7 +28,7 @@ const loadPlanNames = async (): Promise<Record<string, string>> => {
   try {
     const response = await axios.get(`${API_URL}/plans`);
     const names: Record<string, string> = {};
-    response.data.plans.forEach((plan: any) => {
+    response.data.plans.forEach((plan: { id: string; name: string }) => {
       names[plan.id] = plan.name;
     });
     return names;
@@ -47,7 +47,7 @@ const loadPlanPrices = async (): Promise<Record<string, string>> => {
   try {
     const response = await axios.get(`${API_URL}/plans`);
     const prices: Record<string, string> = {};
-    response.data.plans.forEach((plan: any) => {
+    response.data.plans.forEach((plan: { id: string; priceFormatted: string }) => {
       prices[plan.id] = plan.priceFormatted;
     });
     return prices;
@@ -228,9 +228,14 @@ export function PaymentManagement() {
             await refreshChurch();
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Não mostrar erro na sincronização automática, apenas logar
-        console.log('Sincronização automática:', err.response?.data?.error || err.message);
+        const errorMessage = err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          : err instanceof Error
+          ? err.message
+          : undefined;
+        console.log('Sincronização automática:', errorMessage);
       } finally {
         setIsSyncing(false);
       }
@@ -262,11 +267,14 @@ export function PaymentManagement() {
       // Abrir portal do Stripe em nova guia
       window.open(url, '_blank', 'noopener,noreferrer');
       setIsLoadingPortal(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao criar sessão do portal:', err);
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+          (err as { message?: string }).message
+        : undefined;
       setError(
-        err.response?.data?.error ||
-        err.message ||
+        errorMessage ||
         'Erro ao acessar o portal de pagamento. Tente novamente.'
       );
       setIsLoadingPortal(false);
@@ -319,11 +327,14 @@ export function PaymentManagement() {
         // Salvar no cache mesmo quando não há assinatura (evita requisições desnecessárias)
         setCachedSyncResult();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao sincronizar assinatura:', err);
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+          (err as { message?: string }).message
+        : undefined;
       setError(
-        err.response?.data?.error ||
-        err.message ||
+        errorMessage ||
         'Erro ao sincronizar assinatura. Tente novamente.'
       );
     } finally {
@@ -370,11 +381,14 @@ export function PaymentManagement() {
         window.open(url, '_blank', 'noopener,noreferrer');
         setIsLoadingPortal(false);
         return;
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Erro ao criar sessão do portal:', err);
+        const errorMessage = err && typeof err === 'object' && 'response' in err
+          ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+            (err as { message?: string }).message
+          : undefined;
         setError(
-          err.response?.data?.error ||
-          err.message ||
+          errorMessage ||
           'Erro ao acessar o portal de pagamento. Tente novamente.'
         );
         setIsLoadingPortal(false);
@@ -412,7 +426,7 @@ export function PaymentManagement() {
       setError(null);
       setSyncMessage(null);
 
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/stripe/change-plan`,
         { plan: selectedPlan },
         {
@@ -437,12 +451,15 @@ export function PaymentManagement() {
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao trocar plano:', err);
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string; details?: string } }; message?: string }).response?.data?.error ||
+          (err as { response?: { data?: { details?: string } } }).response?.data?.details ||
+          (err as { message?: string }).message
+        : undefined;
       setError(
-        err.response?.data?.error ||
-        err.response?.data?.details ||
-        err.message ||
+        errorMessage ||
         'Erro ao trocar plano. Tente novamente.'
       );
       setShowConfirmModal(false);

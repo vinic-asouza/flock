@@ -31,7 +31,6 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     validationResult,
     importResult,
     error,
-    setError,
     validateImport,
     importMembers,
     reset,

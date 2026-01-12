@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -64,16 +63,8 @@ const planNames: Record<string, string> = {
   '800': 'Plano 800 Membros',
 };
 
-const planPrices: Record<string, string> = {
-  '100': 'Gratuito',
-  '200': 'R$ 29,99',
-  '500': 'R$ 59,99',
-  '800': 'R$ 89,99',
-};
-
 export function ChurchManagement() {
   const { user, updateChurch } = useAuth();
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -197,10 +188,6 @@ export function ChurchManagement() {
     return cnpj;
   };
 
-  const handleManagePlan = () => {
-    router.push('/settings?tab=payment');
-  };
-
   const handleCNPJChange = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
     if (cleaned.length <= 14) {
@@ -239,7 +226,6 @@ export function ChurchManagement() {
 
   const planType = user?.plan_type;
   const planName = planType ? planNames[planType] || 'Plano não definido' : 'Nenhum plano ativo';
-  const planPrice = planType ? planPrices[planType] || '' : '';
 
   return (
     <div className="space-y-4">

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Loader, CreditCard, CheckCircle2, XCircle, ArrowRight, Check } from 'lucide-react';
+import { Loader, CreditCard, CheckCircle2, Check } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -35,7 +35,7 @@ export default function CheckoutPage() {
     const loadPlans = async () => {
       try {
         const response = await axios.get(`${API_URL}/plans`);
-        const plans = response.data.plans.map((plan: any) => ({
+        const plans = response.data.plans.map((plan: { id: string; name: string; priceFormatted: string; description?: string; members: number }) => ({
           value: plan.id,
           name: plan.name,
           price: plan.priceFormatted + (plan.id !== '100' ? '/mês' : ''),
@@ -87,7 +87,7 @@ export default function CheckoutPage() {
 
       // Se for plano gratuito (100), ativar diretamente
       if (selectedPlan === '100') {
-        const response = await axios.post(
+        await axios.post(
           `${API_URL}/stripe/activate-free-plan`,
           {},
           {
@@ -120,16 +120,19 @@ export default function CheckoutPage() {
 
       // Redirecionar para checkout do Stripe
       window.location.href = url;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao processar:', err);
       
       let errorMessage = 'Erro ao processar sua solicitação. Tente novamente.';
       let errorDetails = '';
       
-      if (err.response?.data) {
-        errorMessage = err.response.data.error || errorMessage;
-        errorDetails = err.response.data.details || '';
-      } else if (err.message) {
+      if (err && typeof err === 'object' && 'response' in err) {
+        const axiosError = err as { response?: { data?: { error?: string; details?: string } } };
+        if (axiosError.response?.data) {
+          errorMessage = axiosError.response.data.error || errorMessage;
+          errorDetails = axiosError.response.data.details || '';
+        }
+      } else if (err instanceof Error) {
         errorMessage = err.message;
       }
       

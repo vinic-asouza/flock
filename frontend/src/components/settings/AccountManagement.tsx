@@ -116,11 +116,14 @@ export function AccountManagement() {
       
       // Mensagem de sucesso genérica - o componente será re-renderizado e hasActivePaidPlan() será atualizado
       setSuccess('Assinatura sincronizada com sucesso! Se você cancelou sua assinatura, os campos de exclusão aparecerão automaticamente.');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao sincronizar assinatura:', err);
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+          (err as { message?: string }).message
+        : undefined;
       setDeleteError(
-        err.response?.data?.error ||
-        err.message ||
+        errorMessage ||
         'Erro ao sincronizar assinatura. Tente novamente.'
       );
     } finally {
@@ -148,11 +151,14 @@ export function AccountManagement() {
       
       // Abrir portal do Stripe em nova guia
       window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao criar sessão do portal:', err);
+      const errorMessage = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
+          (err as { message?: string }).message
+        : undefined;
       setDeleteError(
-        err.response?.data?.error ||
-        err.message ||
+        errorMessage ||
         'Erro ao acessar o portal de pagamento. Tente novamente.'
       );
     }

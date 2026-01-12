@@ -330,13 +330,17 @@ export default function RegisterPage() {
             window.location.replace(`/checkout?plan=${selectedPlan}`);
           }, 2000); // 2 segundos para o usuário ver a mensagem de sucesso
           return;
-        } catch (loginError: any) {
+        } catch (loginError: unknown) {
           // Limpar flag de redirect em caso de erro
           sessionStorage.removeItem('redirectingToCheckout');
           
           // Se o login falhar (ex: email precisa ser confirmado)
           // Verificar se é erro de email não confirmado
-          const errorMessage = loginError?.message || '';
+          const errorMessage = loginError instanceof Error 
+            ? loginError.message 
+            : (loginError && typeof loginError === 'object' && 'message' in loginError)
+            ? String((loginError as { message: unknown }).message)
+            : '';
           const isEmailNotConfirmed = errorMessage.toLowerCase().includes('confirm') || 
                                      errorMessage.toLowerCase().includes('email não confirmado');
           

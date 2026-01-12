@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +9,7 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
-export default function SubscriptionSuccessPage() {
+function SubscriptionSuccessContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -53,15 +53,18 @@ export default function SubscriptionSuccessPage() {
           setIsLoading(false);
           setError('Não foi possível confirmar o pagamento automaticamente. Verifique sua assinatura nas configurações ou tente sincronizar manualmente.');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         attempts++;
         if (attempts < maxAttempts) {
           // Continuar tentando em caso de erro
           setTimeout(checkSubscriptionStatus, pollInterval);
         } else {
           setIsLoading(false);
+          const errorMessage = err && typeof err === 'object' && 'response' in err
+            ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
+            : undefined;
           setError(
-            err.response?.data?.error ||
+            errorMessage ||
             'Erro ao verificar status do pagamento. Tente sincronizar manualmente nas configurações.'
           );
         }
@@ -162,3 +165,19 @@ export default function SubscriptionSuccessPage() {
   );
 }
 
+export default function SubscriptionSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 mb-2">Carregando...</p>
+          </div>
+        </div>
+      }
+    >
+      <SubscriptionSuccessContent />
+    </Suspense>
+  );
+}

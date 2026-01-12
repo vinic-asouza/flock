@@ -6,7 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import { useState, useEffect, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import apiService from '@/services/api';
 
 interface MemberLimitInfo {
@@ -20,15 +19,12 @@ interface MemberLimitInfo {
 
 export function Header() {
   const router = useRouter();
-  const pathname = usePathname();
   const { user, session, logout } = useAuth();
   const [memberLimit, setMemberLimit] = useState<MemberLimitInfo | null>(null);
-  const [isLoadingLimit, setIsLoadingLimit] = useState(false);
 
   // Função para carregar informações do limite
   const loadMemberLimit = useCallback(async () => {
     if (user) {
-      setIsLoadingLimit(true);
       try {
         const data = await apiService.getMemberLimit();
         setMemberLimit(data);
@@ -36,8 +32,6 @@ export function Header() {
         console.error('Erro ao carregar limite de membros:', error);
         // Em caso de erro, não mostrar o alerta
         setMemberLimit(null);
-      } finally {
-        setIsLoadingLimit(false);
       }
     } else {
       setMemberLimit(null);

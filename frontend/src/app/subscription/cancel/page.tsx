@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { XCircle, ArrowLeft, CreditCard } from 'lucide-react';
+import { XCircle, CreditCard } from 'lucide-react';
 
 export default function SubscriptionCancelPage() {
   const router = useRouter();
