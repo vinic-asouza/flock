@@ -112,6 +112,263 @@ Webhooks são notificações que o Stripe envia para o servidor quando eventos i
 
 ---
 
+## 🛠️ Stripe CLI - Ferramenta de Teste
+
+O **Stripe CLI** é uma ferramenta de linha de comando que permite testar webhooks localmente durante o desenvolvimento, sem precisar configurar túneis ou expor seu servidor local publicamente.
+
+### Instalação
+
+**Windows (via Scoop ou Chocolatey):**
+```bash
+# Via Scoop
+scoop install stripe
+
+# Via Chocolatey
+choco install stripe-cli
+```
+
+**macOS (via Homebrew):**
+```bash
+brew install stripe/stripe-cli/stripe
+```
+
+**Linux:**
+```bash
+# Baixar binário
+wget https://github.com/stripe/stripe-cli/releases/latest/download/stripe_*_linux_x86_64.tar.gz
+tar -xvf stripe_*_linux_x86_64.tar.gz
+sudo mv stripe /usr/local/bin/
+```
+
+**Verificar instalação:**
+```bash
+stripe --version
+```
+
+### Autenticação
+
+**Primeiro uso:**
+```bash
+stripe login
+```
+
+Este comando abre o navegador para autenticar com sua conta Stripe. Você pode usar tanto a conta de **test mode** quanto **live mode**.
+
+**Verificar autenticação:**
+```bash
+stripe config --list
+```
+
+### Comandos Básicos
+
+#### 1. Escutar Webhooks Localmente
+
+**Comando principal:**
+```bash
+stripe listen --forward-to localhost:4000/api/stripe/webhook
+```
+
+**O que faz:**
+- Cria um túnel seguro entre Stripe e seu servidor local
+- Captura eventos do Stripe e os encaminha para seu backend
+- Exibe o **webhook signing secret** necessário para validar eventos
+
+**Exemplo de saída:**
+```
+> Ready! Your webhook signing secret is whsec_xxxxxxxxxxxxx (^C to quit)
+```
+
+**Importante:**
+- Use o `webhook signing secret` exibido na variável `STRIPE_WEBHOOK_SECRET` do seu `.env`
+- O backend deve estar rodando na porta especificada (ex: `4000`)
+- Mantenha este terminal aberto enquanto testa
+
+#### 2. Disparar Eventos de Teste
+
+**Eventos mais usados:**
+
+```bash
+# Checkout concluído (pagamento bem-sucedido)
+stripe trigger checkout.session.completed
+
+# Assinatura criada
+stripe trigger customer.subscription.created
+
+# Assinatura atualizada (cancelamento, mudança de plano, etc.)
+stripe trigger customer.subscription.updated
+
+# Assinatura cancelada/deletada
+stripe trigger customer.subscription.deleted
+
+# Pagamento bem-sucedido (renovação)
+stripe trigger invoice.payment_succeeded
+
+# Pagamento falhado
+stripe trigger invoice.payment_failed
+```
+
+**Com dados customizados:**
+```bash
+# Disparar evento com dados específicos
+stripe trigger checkout.session.completed --override checkout_session:customer=cus_xxxxx
+```
+
+#### 3. Ver Eventos em Tempo Real
+
+**Ver todos os eventos:**
+```bash
+stripe listen
+```
+
+**Ver eventos específicos:**
+```bash
+stripe listen --events checkout.session.completed,customer.subscription.updated
+```
+
+**Ver eventos com detalhes:**
+```bash
+stripe listen --print-json
+```
+
+#### 4. Reenviar Evento Específico
+
+**Reenviar evento por ID:**
+```bash
+stripe events resend evt_xxxxxxxxxxxxx
+```
+
+**Útil quando:**
+- Um webhook falhou e você quer testar novamente
+- Você quer reprocessar um evento específico
+
+#### 5. Listar Eventos Recentes
+
+**Ver últimos eventos:**
+```bash
+stripe events list
+```
+
+**Ver eventos de um tipo específico:**
+```bash
+stripe events list --type checkout.session.completed
+```
+
+**Ver eventos com limite:**
+```bash
+stripe events list --limit 10
+```
+
+### Fluxo de Teste Completo
+
+**1. Iniciar o backend:**
+```bash
+cd backend
+npm run dev
+# Backend rodando em http://localhost:4000
+```
+
+**2. Em outro terminal, iniciar o Stripe CLI:**
+```bash
+stripe listen --forward-to localhost:4000/api/stripe/webhook
+```
+
+**3. Copiar o webhook secret:**
+- Copie o `whsec_xxxxx` exibido
+- Adicione ao `.env`: `STRIPE_WEBHOOK_SECRET=whsec_xxxxx`
+- Reinicie o backend se necessário
+
+**4. Disparar evento de teste:**
+```bash
+# Em um terceiro terminal
+stripe trigger checkout.session.completed
+```
+
+**5. Verificar logs:**
+- No terminal do backend, você deve ver logs do webhook sendo processado
+- No terminal do Stripe CLI, você verá a requisição sendo encaminhada
+
+### Modo de Teste vs Produção
+
+**Test Mode (Recomendado para desenvolvimento):**
+```bash
+# Usar chaves de teste
+stripe listen --forward-to localhost:4000/api/stripe/webhook
+```
+
+**Live Mode (Cuidado!):**
+```bash
+# Usar chaves de produção
+stripe listen --forward-to localhost:4000/api/stripe/webhook --api-key sk_live_xxxxx
+```
+
+**⚠️ Atenção:** Sempre use **test mode** durante desenvolvimento. Eventos em **live mode** podem criar assinaturas reais e cobranças reais!
+
+### Comandos Úteis para Debugging
+
+**Ver detalhes de um evento:**
+```bash
+stripe events retrieve evt_xxxxxxxxxxxxx
+```
+
+**Ver detalhes de uma assinatura:**
+```bash
+stripe subscriptions retrieve sub_xxxxxxxxxxxxx
+```
+
+**Ver detalhes de um customer:**
+```bash
+stripe customers retrieve cus_xxxxxxxxxxxxx
+```
+
+**Ver detalhes de um checkout session:**
+```bash
+stripe checkout sessions retrieve cs_test_xxxxxxxxxxxxx
+```
+
+**Listar assinaturas:**
+```bash
+stripe subscriptions list
+```
+
+**Listar customers:**
+```bash
+stripe customers list
+```
+
+### Troubleshooting do Stripe CLI
+
+**Problema: "command not found"**
+- Verificar se Stripe CLI está instalado: `stripe --version`
+- Verificar se está no PATH do sistema
+
+**Problema: "Unable to authenticate"**
+- Executar `stripe login` novamente
+- Verificar se está usando a conta correta (test vs live)
+
+**Problema: "Connection refused" ao fazer forward**
+- Verificar se o backend está rodando
+- Verificar se a porta está correta (ex: `4000`)
+- Verificar se a URL do webhook está correta (`/api/stripe/webhook`)
+
+**Problema: Webhook não chega no backend**
+- Verificar se `STRIPE_WEBHOOK_SECRET` está correto (deve ser o `whsec_xxxxx` do `stripe listen`)
+- Verificar logs do backend para erros
+- Verificar se o endpoint está acessível
+
+**Problema: "Webhook payload must be provided as a string or a Buffer"**
+- Verificar ordem dos middlewares no Express
+- O middleware `express.json()` não deve processar a rota `/api/stripe/webhook`
+- Verificar se `express.raw()` está sendo usado para o webhook
+
+### Recursos Adicionais
+
+- **Documentação oficial**: https://stripe.com/docs/stripe-cli
+- **Comandos disponíveis**: `stripe --help`
+- **Ajuda de um comando**: `stripe <comando> --help`
+- **Exemplos**: https://stripe.com/docs/stripe-cli/webhooks
+
+---
+
 ## 🔄 Sincronização de Assinatura
 
 ### Sincronização Automática

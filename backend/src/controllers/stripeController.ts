@@ -42,7 +42,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     if (!req.user && req.cookies) {
       const { cookieConfig } = require('../utils/cookieUtils');
       const accessToken = req.cookies[cookieConfig.names.accessToken];
-      
+
       if (accessToken) {
         try {
           const { data: { user }, error } = await supabase.auth.getUser(accessToken);
@@ -170,7 +170,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error('Erro ao criar checkout:', error);
-    
+
     // Log detalhado do erro
     if (error.type === 'StripeInvalidRequestError') {
       console.error('Erro do Stripe:', {
@@ -180,7 +180,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
         param: error.param,
       });
     }
-    
+
     const errorResponse = formatErrorResponse(error, 'Erro ao criar sessão de checkout');
     res.status(500).json(errorResponse);
   }
@@ -248,12 +248,12 @@ async function isEventProcessed(eventId: string): Promise<boolean> {
       .select('id')
       .eq('stripe_event_id', eventId)
       .single();
-    
+
     if (error && error.code !== 'PGRST116') { // PGRST116 = not found
       console.error('Erro ao verificar evento processado:', error);
       return false; // Em caso de erro, processar para não perder evento
     }
-    
+
     return !!data;
   } catch (error) {
     console.error('Erro ao verificar evento processado:', error);
@@ -315,12 +315,12 @@ function isValidStripeIP(ip: string | undefined): boolean {
   if (!ip) {
     return false;
   }
-  
+
   // Em desenvolvimento, permitir localhost
   if (process.env.NODE_ENV === 'development' && (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('::ffff:127.0.0.1'))) {
     return true;
   }
-  
+
   return STRIPE_WEBHOOK_IPS.includes(ip);
 }
 
@@ -338,7 +338,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
   }
 
   // Validar IP de origem (segurança adicional)
-  const clientIP = req.ip || 
+  const clientIP = req.ip ||
     (req.socket.remoteAddress) ||
     (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
     req.headers['x-real-ip'] as string;
@@ -453,7 +453,7 @@ async function getUserEmailFromChurch(churchId: string): Promise<string | null> 
     }
 
     const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(church.user_id);
-    
+
     if (userError || !user || !user.email) {
       console.error('Erro ao buscar email do usuário:', userError);
       return null;
@@ -638,12 +638,12 @@ function shouldSetToFreePlan(
   if (status !== 'canceled') {
     return false;
   }
-  
+
   if (!endDate) {
     // Se cancelada mas sem data de término, considerar expirada
     return true;
   }
-  
+
   // Se data de término está no passado, está expirada
   return endDate < new Date();
 }
@@ -673,15 +673,15 @@ function getSubscriptionEndDate(subscription: any): Date | null {
  */
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   try {
-    const customerId = typeof subscription.customer === 'string' 
-      ? subscription.customer 
+    const customerId = typeof subscription.customer === 'string'
+      ? subscription.customer
       : subscription.customer?.id || subscription.customer;
-    
+
     if (!customerId) {
       console.error('❌ customerId não encontrado');
       return;
     }
-    
+
     const subscriptionId = subscription.id;
     const priceId = subscription.items.data[0].price.id;
 
@@ -702,7 +702,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     // Buscar status anterior da igreja ANTES de atualizar para detectar reativação
     const { data: churchBeforeUpdate } = await supabase
       .from('churches')
-      .select('id, name, subscription_status, plan_type, subscription_end_date')
+      .select('id, name, subscription_status, plan_type, subscription_end_date, stripe_subscription_id')
       .eq('stripe_customer_id', customerId)
       .single();
 
@@ -730,20 +730,28 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     // Condições para reativação:
     // 1. Status atual é 'active'
     // 2. cancel_at_period_end é false (foi removido o cancelamento)
-    // 3. Status anterior era 'canceled' ou null OU tinha subscription_end_date (estava cancelada/expirada)
+    // 3. Havia uma assinatura anterior que estava cancelada/expirada
     const isNowActive = subscription.status === 'active';
     const cancelAtPeriodEnd = (subscription as any).cancel_at_period_end === false;
-    const wasCanceled = churchBeforeUpdate?.subscription_status === 'canceled' || 
-                       churchBeforeUpdate?.subscription_status === null ||
-                       (churchBeforeUpdate?.subscription_end_date !== null && 
-                        churchBeforeUpdate?.subscription_end_date !== undefined);
-    
+
+    // Verificar se realmente havia uma assinatura anterior cancelada/expirada
+    // NÃO considerar null como cancelado, pois null pode significar "nunca teve assinatura"
+    const hadPreviousSubscription = churchBeforeUpdate?.stripe_subscription_id !== null &&
+      churchBeforeUpdate?.stripe_subscription_id !== undefined;
+
+    const wasCanceled = hadPreviousSubscription && (
+      churchBeforeUpdate?.subscription_status === 'canceled' ||
+      (churchBeforeUpdate?.subscription_end_date !== null &&
+        churchBeforeUpdate?.subscription_end_date !== undefined &&
+        new Date(churchBeforeUpdate.subscription_end_date) < new Date())
+    );
+
     const isReactivated = isNowActive && cancelAtPeriodEnd && wasCanceled;
 
     // Se a assinatura foi reativada, enviar email de reativação
     if (isReactivated) {
       const userEmail = await getUserEmailFromChurch(church.id);
-      
+
       if (userEmail) {
         const planConfig = getPlanConfig(planType);
         const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
@@ -771,14 +779,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
     // Se a assinatura foi cancelada, enviar email de cancelamento
     // Verificar se foi cancelada: status 'canceled' OU cancel_at_period_end OU canceled_at
-    const isCanceled = subscription.status === 'canceled' || 
-                      (subscription as any).cancel_at_period_end === true ||
-                      (subscription as any).canceled_at !== null ||
-                      (subscription as any).cancel_at !== null;
+    const isCanceled = subscription.status === 'canceled' ||
+      (subscription as any).cancel_at_period_end === true ||
+      (subscription as any).canceled_at !== null ||
+      (subscription as any).cancel_at !== null;
 
     if (isCanceled) {
       const userEmail = await getUserEmailFromChurch(church.id);
-      
+
       if (userEmail) {
         const planConfig = getPlanConfig(planType);
         const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
@@ -807,15 +815,15 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
  */
 async function handleSubscriptionDeleted(subscription: any) {
   try {
-    const customerId = typeof subscription.customer === 'string' 
-      ? subscription.customer 
+    const customerId = typeof subscription.customer === 'string'
+      ? subscription.customer
       : subscription.customer?.id || subscription.customer;
-    
+
     if (!customerId) {
       console.error('❌ customerId não encontrado no evento de assinatura deletada');
       return;
     }
-    
+
     const endDate = getSubscriptionEndDate(subscription) || new Date();
 
     // Buscar informações do plano antes de atualizar
@@ -845,7 +853,7 @@ async function handleSubscriptionDeleted(subscription: any) {
 
     // Buscar email do usuário e enviar email de assinatura cancelada
     const userEmail = await getUserEmailFromChurch(church.id);
-    
+
     if (userEmail) {
       const planConfig = getPlanConfig(planType);
       const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
@@ -873,8 +881,8 @@ async function handleSubscriptionDeleted(subscription: any) {
  */
 async function handlePaymentSucceeded(invoice: any) {
   try {
-    const customerId = typeof invoice.customer === 'string' 
-      ? invoice.customer 
+    const customerId = typeof invoice.customer === 'string'
+      ? invoice.customer
       : invoice.customer?.id || invoice.customer;
     const subscriptionId = invoice.subscription;
 
@@ -905,7 +913,7 @@ async function handlePaymentSucceeded(invoice: any) {
 
     // Buscar email do usuário e enviar email de renovação bem-sucedida
     const userEmail = await getUserEmailFromChurch(church.id);
-    
+
     if (userEmail) {
       const planConfig = getPlanConfig(planType);
       const planName = planConfig?.name || `Plano ${planType}`;
@@ -938,8 +946,8 @@ async function handlePaymentSucceeded(invoice: any) {
  */
 async function handlePaymentFailed(invoice: any) {
   try {
-    const customerId = typeof invoice.customer === 'string' 
-      ? invoice.customer 
+    const customerId = typeof invoice.customer === 'string'
+      ? invoice.customer
       : invoice.customer?.id || invoice.customer;
     const subscriptionId = invoice.subscription;
 
@@ -970,7 +978,7 @@ async function handlePaymentFailed(invoice: any) {
 
     // Buscar email do usuário e enviar email de pagamento falhado
     const userEmail = await getUserEmailFromChurch(church.id);
-    
+
     if (userEmail) {
       const planConfig = getPlanConfig(planType);
       const planName = planConfig?.name || `Plano ${planType}`;
@@ -1066,11 +1074,11 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
 
     if (activeSubscriptions.length > 0) {
       // Ordenar por data de criação (mais recente primeiro)
-      activeSubscriptions.sort((a, b) => 
+      activeSubscriptions.sort((a, b) =>
         (b.created as number) - (a.created as number)
       );
       subscription = activeSubscriptions[0];
-      
+
       if (activeSubscriptions.length > 1) {
         console.warn(
           `⚠️ Múltiplas assinaturas ativas encontradas para customer ${church.stripe_customer_id}. Usando a mais recente (${subscription.id}).`
@@ -1079,7 +1087,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     } else {
       // Se não há ativas, usar a primeira (cancelada/expirada)
       // Ordenar por data de criação (mais recente primeiro)
-      subscriptions.data.sort((a, b) => 
+      subscriptions.data.sort((a, b) =>
         (b.created as number) - (a.created as number)
       );
       subscription = subscriptions.data[0];
@@ -1261,8 +1269,8 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
         subscription_end_date: cancelAt
           ? new Date(cancelAt * 1000).toISOString()
           : canceledAt
-          ? new Date(canceledAt * 1000).toISOString()
-          : null,
+            ? new Date(canceledAt * 1000).toISOString()
+            : null,
         subscription_updated_at: new Date().toISOString(),
       })
       .eq('id', church.id);
@@ -1284,7 +1292,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
           const oldPlanName = oldPlanConfig?.name || `Plano ${church.plan_type || 'N/A'}`;
           const newPlanName = newPlanConfig?.name || `Plano ${planType || 'N/A'}`;
           const newPlanPrice = newPlanConfig?.priceFormatted || 'N/A';
-          
+
           // Determinar se é upgrade ou downgrade
           const oldPlanMembers = oldPlanConfig?.members || 0;
           const newPlanMembers = newPlanConfig?.members || 0;
@@ -1295,9 +1303,9 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
           const currentPeriodEnd = (updatedSubscription as any).current_period_end as number | null;
           const nextBillingDate = currentPeriodEnd
             ? new Date(currentPeriodEnd * 1000).toLocaleDateString('pt-BR', {
-                dateStyle: 'long',
-                timeZone: 'America/Sao_Paulo'
-              })
+              dateStyle: 'long',
+              timeZone: 'America/Sao_Paulo'
+            })
             : undefined;
 
           const userName = churchData.name || userEmail.split('@')[0] || 'Usuário';
@@ -1349,7 +1357,7 @@ export const checkStripeHealth = async (req: Request, res: Response) => {
   try {
     // Verificar se consegue listar customers (operação leve)
     await stripe.customers.list({ limit: 1 });
-    
+
     res.json({
       status: 'healthy',
       stripe: {
@@ -1517,7 +1525,7 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       console.error('Detalhes do erro:', JSON.stringify(updateError, null, 2));
       return res.status(500).json({
         error: 'Erro ao ativar plano gratuito',
-        details: process.env.NODE_ENV === 'development' 
+        details: process.env.NODE_ENV === 'development'
           ? `Erro do banco de dados: ${updateError.message || JSON.stringify(updateError)}`
           : 'Não foi possível atualizar o plano. Verifique se o plano gratuito está habilitado no banco de dados.',
       });
