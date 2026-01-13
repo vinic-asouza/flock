@@ -13,9 +13,9 @@ const createTransporter = () => {
       pass: process.env.SMTP_PASS || 'sua_senha_aqui',
     },
     // Adicionar timeout e opções de conexão
-    connectionTimeout: 10000, // 10 segundos
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    connectionTimeout: 15000, // 15 segundos (aumentado para evitar timeouts)
+    greetingTimeout: 15000,
+    socketTimeout: 30000, // 30 segundos para operações de envio
   };
 
   return nodemailer.createTransport(smtpConfig);
@@ -62,10 +62,8 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
   try {
     const transporter = createTransporter();
 
-    // Verificar conexão antes de enviar
-    console.log(`🔍 Tentando conectar ao servidor SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}`);
-    await transporter.verify();
-    console.log('✅ Conexão SMTP verificada com sucesso');
+    // Não verificar conexão antes de cada envio - pode causar timeout
+    // O sendMail() já faz a conexão automaticamente quando necessário
 
     const mailOptions = {
       from: {
@@ -94,6 +92,8 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
       console.error('💡 Conexão recusada. Verifique se o SMTP_HOST e SMTP_PORT estão corretos.');
     } else if (error.code === 'EAUTH') {
       console.error('💡 Erro de autenticação. Verifique SMTP_USER e SMTP_PASS.');
+    } else if (error.code === 'ETIMEDOUT') {
+      console.error('💡 Timeout ao conectar ao servidor SMTP. Verifique conectividade e configurações.');
     }
     
     // Não lançar erro para não quebrar o fluxo principal
