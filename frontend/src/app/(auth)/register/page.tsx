@@ -143,7 +143,9 @@ export default function RegisterPage() {
   const { register: registerChurch, login, isOperationLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const selectedPlan = searchParams.get('plan');
+  
+  // Capturar plano com fallback para window.location caso useSearchParams falhe
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Ref para manter os estados durante re-renderizações
   const errorRef = useRef<string | null>(globalRegisterError);
@@ -249,6 +251,30 @@ export default function RegisterPage() {
     };
   }, []);
 
+  // Efeito para capturar o plano da URL com fallback
+  useEffect(() => {
+    // Tentar usar useSearchParams primeiro
+    const planFromSearchParams = searchParams.get('plan');
+    
+    if (planFromSearchParams) {
+      setSelectedPlan(planFromSearchParams);
+      return;
+    }
+
+    // Fallback: tentar capturar da URL diretamente (para casos onde useSearchParams não funciona)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const planFromUrl = urlParams.get('plan');
+      
+      if (planFromUrl) {
+        setSelectedPlan(planFromUrl);
+        console.log('Plano capturado via window.location:', planFromUrl);
+      } else {
+        console.log('Nenhum plano encontrado na URL');
+      }
+    }
+  }, [searchParams]);
+
   // Função para lidar com mudanças no CNPJ
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -308,9 +334,15 @@ export default function RegisterPage() {
         phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined
       };
 
+      // Log para debug em produção
+      console.log('Plano selecionado:', selectedPlan);
+      console.log('É plano pago?', selectedPlan && ['200', '500', '800'].includes(selectedPlan));
+
       // Se houver plano selecionado (pago), criar checkout session IMEDIATAMENTE após registro
       if (selectedPlan && ['200', '500', '800'].includes(selectedPlan)) {
         try {
+          console.log('Iniciando fluxo de checkout para plano:', selectedPlan);
+          
           // 1. Criar conta
           await registerChurch(cleanData);
 
@@ -334,6 +366,7 @@ export default function RegisterPage() {
           sessionStorage.setItem('redirectingToCheckout', 'true');
 
           // 4. Criar checkout session IMEDIATAMENTE
+          console.log('Criando checkout session para plano:', selectedPlan);
           const checkoutResponse = await axios.post(
             `${API_URL}/stripe/create-checkout-session`,
             { plan: selectedPlan },
@@ -348,6 +381,8 @@ export default function RegisterPage() {
             throw new Error('URL de checkout não recebida');
           }
 
+          console.log('Checkout URL recebida, redirecionando...');
+
           // 5. Redirecionar DIRETAMENTE para Stripe (sem passar pela página de checkout)
           window.location.href = checkoutUrl;
           return;
@@ -356,6 +391,8 @@ export default function RegisterPage() {
           // Limpar flags em caso de erro
           sessionStorage.removeItem('redirectingToCheckout');
           setIsCreatingCheckout(false);
+
+          console.error('Erro ao criar checkout:', checkoutError);
 
           // Verificar tipo de erro
           let errorMessage = 'Erro ao processar sua solicitação';
@@ -404,6 +441,7 @@ export default function RegisterPage() {
       }
 
       // Se for plano gratuito (100) ou sem plano selecionado, fluxo normal
+      console.log('Fluxo normal (plano gratuito ou sem plano)');
       await registerChurch(cleanData);
 
       // Limpar dados do formulário em caso de sucesso
