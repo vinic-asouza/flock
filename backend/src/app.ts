@@ -29,6 +29,13 @@ dotenv.config();
 
 const app = express();
 
+// Configurar trust proxy para produção (necessário quando há proxy reverso)
+// Railway, Nginx, Cloudflare, etc. usam proxies reversos
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', true);
+  console.log('✅ Trust proxy habilitado para produção');
+}
+
 // Configuração de segurança básica
 app.use(helmet());
 

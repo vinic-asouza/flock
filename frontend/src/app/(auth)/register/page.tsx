@@ -256,8 +256,11 @@ export default function RegisterPage() {
     // Tentar usar useSearchParams primeiro
     const planFromSearchParams = searchParams.get('plan');
     
+    console.log('🔍 useSearchParams retornou:', planFromSearchParams);
+    
     if (planFromSearchParams) {
       setSelectedPlan(planFromSearchParams);
+      console.log('✅ Plano capturado via useSearchParams:', planFromSearchParams);
       return;
     }
 
@@ -266,11 +269,14 @@ export default function RegisterPage() {
       const urlParams = new URLSearchParams(window.location.search);
       const planFromUrl = urlParams.get('plan');
       
+      console.log('🔍 window.location.search:', window.location.search);
+      console.log('🔍 planFromUrl:', planFromUrl);
+      
       if (planFromUrl) {
         setSelectedPlan(planFromUrl);
-        console.log('Plano capturado via window.location:', planFromUrl);
+        console.log('✅ Plano capturado via window.location:', planFromUrl);
       } else {
-        console.log('Nenhum plano encontrado na URL');
+        console.log('❌ Nenhum plano encontrado na URL');
       }
     }
   }, [searchParams]);
@@ -392,7 +398,21 @@ export default function RegisterPage() {
           sessionStorage.removeItem('redirectingToCheckout');
           setIsCreatingCheckout(false);
 
-          console.error('Erro ao criar checkout:', checkoutError);
+          console.error('❌ Erro completo ao criar checkout:', checkoutError);
+          
+          // Log detalhado do erro
+          if (checkoutError && typeof checkoutError === 'object' && 'response' in checkoutError) {
+            const axiosError = checkoutError as { 
+              response?: { 
+                status?: number;
+                data?: { error?: string; details?: string };
+                statusText?: string;
+              } 
+            };
+            console.error('❌ Status HTTP:', axiosError.response?.status);
+            console.error('❌ Status Text:', axiosError.response?.statusText);
+            console.error('❌ Response Data:', axiosError.response?.data);
+          }
 
           // Verificar tipo de erro
           let errorMessage = 'Erro ao processar sua solicitação';
