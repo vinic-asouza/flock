@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -125,8 +124,6 @@ const removePhoneFormatting = (value: string): string => {
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(globalRegisterError);
   const [errorDetails, setErrorDetails] = useState<string | null>(globalRegisterErrorDetails);
-  const [success, setSuccess] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [states, setStates] = useState<State[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [isLoadingStates, setIsLoadingStates] = useState(true);
@@ -136,7 +133,6 @@ export default function RegisterPage() {
   const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register: registerChurch, login, isOperationLoading } = useAuth();
-  const router = useRouter();
 
   // Ref para manter os estados durante re-renderizações
   const errorRef = useRef<string | null>(globalRegisterError);
@@ -310,7 +306,6 @@ export default function RegisterPage() {
       setCnpjDisplay('');
       setPhoneDisplay('');
       setPhoneChurchDisplay('');
-      setRegisteredEmail(cleanData.email);
 
       // 2. Definir flag para evitar redirecionamento do AuthGuard para dashboard
       sessionStorage.setItem('redirectingToCheckout', 'true');
@@ -391,25 +386,6 @@ export default function RegisterPage() {
       setIsSubmitting(false);
     }
   };
-
-  if (success) {
-    // Tela de sucesso (caso o redirecionamento não funcione)
-    return (
-      <div className="space-y-8">
-        <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Cadastro Realizado com Sucesso!</h1>
-          <p className="mt-2 text-gray-600">
-            Redirecionando para seleção de plano...
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
