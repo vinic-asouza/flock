@@ -34,10 +34,8 @@ export function CheckoutButton({
 
       // Se não estiver autenticado, redirecionar para registro primeiro
       if (!isAuthenticated) {
-        // Salvar plano escolhido em localStorage para usar após registro
-        localStorage.setItem('selectedPlan', plan);
-        // Redirecionar para página de registro no frontend
-        window.location.href = `${FRONTEND_URL}/register?plan=${plan}`;
+        // Redirecionar para página de registro no frontend (sem parâmetro de plano)
+        window.location.href = `${FRONTEND_URL}/register`;
         return;
       }
 

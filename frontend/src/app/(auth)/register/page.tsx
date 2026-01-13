@@ -5,13 +5,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DENOMINATIONS } from '@/utils';
-import axios from 'axios';
-import { Loader } from 'lucide-react';
 
 // Estado global para erros de registro (persiste entre re-renderizações)
 let globalRegisterError: string | null = null;
@@ -124,8 +122,6 @@ const removePhoneFormatting = (value: string): string => {
   return value.replace(/\D/g, '');
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(globalRegisterError);
   const [errorDetails, setErrorDetails] = useState<string | null>(globalRegisterErrorDetails);
@@ -138,14 +134,9 @@ export default function RegisterPage() {
   const [cnpjDisplay, setCnpjDisplay] = useState('');
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
-  const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register: registerChurch, login, isOperationLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  
-  // Capturar plano com fallback para window.location caso useSearchParams falhe
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Ref para manter os estados durante re-renderizações
   const errorRef = useRef<string | null>(globalRegisterError);
@@ -251,36 +242,6 @@ export default function RegisterPage() {
     };
   }, []);
 
-  // Efeito para capturar o plano da URL com fallback
-  useEffect(() => {
-    // Tentar usar useSearchParams primeiro
-    const planFromSearchParams = searchParams.get('plan');
-    
-    console.log('🔍 useSearchParams retornou:', planFromSearchParams);
-    
-    if (planFromSearchParams) {
-      setSelectedPlan(planFromSearchParams);
-      console.log('✅ Plano capturado via useSearchParams:', planFromSearchParams);
-      return;
-    }
-
-    // Fallback: tentar capturar da URL diretamente (para casos onde useSearchParams não funciona)
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const planFromUrl = urlParams.get('plan');
-      
-      console.log('🔍 window.location.search:', window.location.search);
-      console.log('🔍 planFromUrl:', planFromUrl);
-      
-      if (planFromUrl) {
-        setSelectedPlan(planFromUrl);
-        console.log('✅ Plano capturado via window.location:', planFromUrl);
-      } else {
-        console.log('❌ Nenhum plano encontrado na URL');
-      }
-    }
-  }, [searchParams]);
-
   // Função para lidar com mudanças no CNPJ
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -340,128 +301,7 @@ export default function RegisterPage() {
         phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined
       };
 
-      // Log para debug em produção
-      console.log('Plano selecionado:', selectedPlan);
-      console.log('É plano pago?', selectedPlan && ['200', '500', '800'].includes(selectedPlan));
-
-      // Se houver plano selecionado (pago), criar checkout session IMEDIATAMENTE após registro
-      if (selectedPlan && ['200', '500', '800'].includes(selectedPlan)) {
-        try {
-          console.log('Iniciando fluxo de checkout para plano:', selectedPlan);
-          
-          // 1. Criar conta
-          await registerChurch(cleanData);
-
-          // Limpar dados do formulário em caso de sucesso
-          globalFormData = null;
-          reset();
-          setCnpjDisplay('');
-          setPhoneDisplay('');
-          setPhoneChurchDisplay('');
-          setRegisteredEmail(cleanData.email);
-
-          // 2. Fazer login automático
-          await login({
-            email: cleanData.email,
-            password: cleanData.password,
-          });
-
-          // 3. Mostrar feedback visual
-          setSuccess(true);
-          setIsCreatingCheckout(true);
-          sessionStorage.setItem('redirectingToCheckout', 'true');
-
-          // 4. Criar checkout session IMEDIATAMENTE
-          console.log('Criando checkout session para plano:', selectedPlan);
-          const checkoutResponse = await axios.post(
-            `${API_URL}/stripe/create-checkout-session`,
-            { plan: selectedPlan },
-            {
-              withCredentials: true,
-            }
-          );
-
-          const { url: checkoutUrl } = checkoutResponse.data;
-
-          if (!checkoutUrl) {
-            throw new Error('URL de checkout não recebida');
-          }
-
-          console.log('Checkout URL recebida, redirecionando...');
-
-          // 5. Redirecionar DIRETAMENTE para Stripe (sem passar pela página de checkout)
-          window.location.href = checkoutUrl;
-          return;
-
-        } catch (checkoutError: unknown) {
-          // Limpar flags em caso de erro
-          sessionStorage.removeItem('redirectingToCheckout');
-          setIsCreatingCheckout(false);
-
-          console.error('❌ Erro completo ao criar checkout:', checkoutError);
-          
-          // Log detalhado do erro
-          if (checkoutError && typeof checkoutError === 'object' && 'response' in checkoutError) {
-            const axiosError = checkoutError as { 
-              response?: { 
-                status?: number;
-                data?: { error?: string; details?: string };
-                statusText?: string;
-              } 
-            };
-            console.error('❌ Status HTTP:', axiosError.response?.status);
-            console.error('❌ Status Text:', axiosError.response?.statusText);
-            console.error('❌ Response Data:', axiosError.response?.data);
-          }
-
-          // Verificar tipo de erro
-          let errorMessage = 'Erro ao processar sua solicitação';
-          let errorDetails: string | null = null;
-
-          if (checkoutError instanceof Error) {
-            errorMessage = checkoutError.message;
-          } else if (checkoutError && typeof checkoutError === 'object' && 'response' in checkoutError) {
-            const axiosError = checkoutError as { response?: { data?: { error?: string; details?: string } } };
-            if (axiosError.response?.data) {
-              errorMessage = axiosError.response.data.error || errorMessage;
-              errorDetails = axiosError.response.data.details || null;
-            }
-          }
-
-          // Verificar se é erro de CNPJ duplicado
-          const isCNPJError = errorMessage.toLowerCase().includes('cnpj') ||
-            errorMessage.toLowerCase().includes('já cadastrado') ||
-            errorMessage.toLowerCase().includes('already registered');
-
-          if (isCNPJError) {
-            setError('CNPJ já cadastrado');
-            setErrorDetails(
-              'Este CNPJ já está cadastrado no sistema. ' +
-              'Se você já possui uma conta, faça login. ' +
-              'Se você acabou de se registrar, aguarde alguns instantes ou verifique seu email. ' +
-              'Caso contrário, entre em contato com o suporte.'
-            );
-            globalRegisterError = errorMessage;
-            globalRegisterErrorDetails = errorDetails;
-            return;
-          }
-
-          // Outro erro - conta foi criada mas checkout falhou
-          setError('Conta criada com sucesso, mas houve um problema ao iniciar o pagamento.');
-          setErrorDetails('Você pode acessar o sistema e configurar seu plano nas configurações.');
-          setSuccess(true);
-          setRegisteredEmail(cleanData.email);
-
-          // Redirecionar para dashboard após 3 segundos
-          setTimeout(() => {
-            router.push('/');
-          }, 3000);
-          return;
-        }
-      }
-
-      // Se for plano gratuito (100) ou sem plano selecionado, fluxo normal
-      console.log('Fluxo normal (plano gratuito ou sem plano)');
+      // 1. Criar conta
       await registerChurch(cleanData);
 
       // Limpar dados do formulário em caso de sucesso
@@ -471,7 +311,20 @@ export default function RegisterPage() {
       setPhoneDisplay('');
       setPhoneChurchDisplay('');
       setRegisteredEmail(cleanData.email);
-      setSuccess(true);
+
+      // 2. Definir flag para evitar redirecionamento do AuthGuard para dashboard
+      sessionStorage.setItem('redirectingToCheckout', 'true');
+
+      // 3. Fazer login automático
+      await login({
+        email: cleanData.email,
+        password: cleanData.password,
+      });
+
+      // 4. Redirecionar para página de checkout para selecionar plano
+      // Usar window.location.href para garantir redirecionamento imediato
+      // e evitar que AuthGuard intercepte e redirecione para dashboard
+      window.location.href = '/checkout';
 
     } catch (err: unknown) {
       let errorMessage = 'Erro ao registrar igreja';
@@ -540,59 +393,20 @@ export default function RegisterPage() {
   };
 
   if (success) {
-    // Verificar se está redirecionando para checkout
-    const isRedirectingToCheckout = typeof window !== 'undefined' && sessionStorage.getItem('redirectingToCheckout') === 'true';
-
+    // Tela de sucesso (caso o redirecionamento não funcione)
     return (
       <div className="space-y-8">
         <div className="text-center">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-            {isCreatingCheckout ? (
-              <Loader className="h-6 w-6 text-green-600 animate-spin" />
-            ) : (
-              <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
+            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-          {isRedirectingToCheckout || isCreatingCheckout ? (
-            <>
-              <h1 className="text-3xl font-bold text-gray-900">Cadastro Realizado com Sucesso!</h1>
-              <p className="mt-2 text-gray-600">
-                Preparando sua página de pagamento...
-              </p>
-              <div className="mt-6 max-w-md mx-auto">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300 animate-pulse"
-                    style={{ width: '60%' }}
-                  ></div>
-                </div>
-                <p className="mt-3 text-sm text-gray-500">
-                  Isso pode levar alguns segundos. Por favor, aguarde...
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
-              <h1 className="text-3xl font-bold text-gray-900">Verifique seu email</h1>
-              <p className="mt-2 text-gray-600">
-                Enviamos um link de confirmação para {registeredEmail || 'seu email'}.
-              </p>
-            </>
-          )}
+          <h1 className="text-3xl font-bold text-gray-900">Cadastro Realizado com Sucesso!</h1>
+          <p className="mt-2 text-gray-600">
+            Redirecionando para seleção de plano...
+          </p>
         </div>
-
-        {!isRedirectingToCheckout && !isCreatingCheckout && (
-          <div className="w-full">
-            <Button
-              className="w-full"
-              onClick={() => router.push('/login')}
-            >
-              Ir para o Login
-            </Button>
-          </div>
-        )}
       </div>
     );
   }

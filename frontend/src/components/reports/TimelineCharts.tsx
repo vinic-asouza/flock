@@ -374,7 +374,7 @@ export function TimelineCharts({
                     value={selectedYear}
                     onChange={setSelectedYear}
                     options={availableYears}
-                    placeholder="Selecione o ano"
+                    placeholder="Selecione"
                   />
                 </div>
                 <div className="w-32 space-y-1">
@@ -529,7 +529,7 @@ export function TimelineCharts({
                       value={integrationSelectedYear}
                       onChange={setIntegrationSelectedYear}
                       options={integrationYearOptions}
-                      placeholder="Selecione o ano"
+                      placeholder="Selecione"
                     />
                   </div>
                   <div className="w-32 space-y-1">

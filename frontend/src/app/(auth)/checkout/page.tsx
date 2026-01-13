@@ -69,15 +69,12 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Se não houver plano selecionado e não houver plano inicial, definir padrão como 100
-    if (!selectedPlan && !initialPlan) {
-      setSelectedPlan('100');
-    }
+    // Não definir plano padrão - usuário deve selecionar manualmente
   }, [user, router, initialPlan, selectedPlan]);
 
   const handleCheckout = async () => {
     if (!selectedPlan) {
-      setError('Por favor, selecione um plano');
+      setError('Por favor, selecione um plano antes de continuar');
       return;
     }
 
