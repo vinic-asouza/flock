@@ -127,39 +127,43 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       }
     }
 
-    // Enviar emails (não bloquear o fluxo se der erro)
-    try {
-      const userName = churchData.name || email.split('@')[0];
-      const churchName = churchRecord.name || churchData.name || 'Igreja';
+    // Enviar emails em background (não bloquear a resposta)
+    // Usar IIFE para executar assincronamente sem await
+    (async () => {
+      try {
+        const userName = churchData.name || email.split('@')[0];
+        const churchName = churchRecord.name || churchData.name || 'Igreja';
 
-      // Email de boas-vindas para o usuário
-      await sendEmail({
-        to: email,
-        subject: 'Bem-vindo ao Flock!',
-        html: getWelcomeEmailTemplate({
-          userName,
-          churchName,
-          email,
-        }),
-      });
+        // Email de boas-vindas para o usuário
+        await sendEmail({
+          to: email,
+          subject: 'Bem-vindo ao Flock!',
+          html: getWelcomeEmailTemplate({
+            userName,
+            churchName,
+            email,
+          }),
+        });
 
-      // Email de notificação para administradores
-      await sendEmail({
-        to: process.env.ADMIN_EMAIL || 'contato@flockapp.com.br',
-        subject: `Novo usuário registrado: ${churchName}`,
-        html: getNewUserNotificationTemplate({
-          userName,
-          churchName,
-          email,
-          cnpj,
-          phone,
-        }),
-      });
-    } catch (emailError) {
-      // Logar erro mas não quebrar o fluxo de registro
-      console.error('Erro ao enviar emails de boas-vindas:', emailError);
-    }
+        // Email de notificação para administradores
+        await sendEmail({
+          to: process.env.ADMIN_EMAIL || 'contato@flockapp.com.br',
+          subject: `Novo usuário registrado: ${churchName}`,
+          html: getNewUserNotificationTemplate({
+            userName,
+            churchName,
+            email,
+            cnpj,
+            phone,
+          }),
+        });
+      } catch (emailError) {
+        // Logar erro mas não quebrar o fluxo de registro
+        console.error('Erro ao enviar emails de boas-vindas:', emailError);
+      }
+    })(); // IIFE - executa imediatamente sem bloquear
 
+    // Retornar resposta imediatamente, sem esperar emails
     res.status(201).json({
       message: 'Igreja registrada com sucesso',
       church: churchRecord,

@@ -124,7 +124,9 @@ class ApiService {
   }
 
   async register(data: RegisterData): Promise<RegisterResponse> {
-    const response: AxiosResponse<RegisterResponse> = await this.api.post('/auth/register', data);
+    const response: AxiosResponse<RegisterResponse> = await this.api.post('/auth/register', data, {
+      timeout: 30000, // 30 segundos para registro (pode demorar mais que outras requisições)
+    });
     return response.data;
   }
 
