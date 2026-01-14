@@ -4,18 +4,35 @@ import nodemailer from 'nodemailer';
  * Configuração do transporte SMTP
  */
 const createTransporter = () => {
-  const smtpConfig = {
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const isSecure = port === 465; // SSL para porta 465
+  
+  const smtpConfig: any = {
     host: process.env.SMTP_HOST || 'smtp.umbler.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: false,
+    port: port,
+    secure: isSecure, // SSL para porta 465, TLS para 587
     auth: {
       user: process.env.SMTP_USER || 'contato@flockapp.com.br',
       pass: process.env.SMTP_PASS || 'sua_senha_aqui',
     },
-    // Adicionar timeout e opções de conexão
-    connectionTimeout: 15000, // 15 segundos (aumentado para evitar timeouts)
-    greetingTimeout: 15000,
+    // Timeouts aumentados para produção
+    connectionTimeout: 20000, // 20 segundos
+    greetingTimeout: 20000,
     socketTimeout: 30000, // 30 segundos para operações de envio
+    // Pool de conexões para melhor performance
+    pool: true,
+    maxConnections: 5,
+    maxMessages: 100,
+    // Retry automático em caso de falha temporária
+    retry: {
+      attempts: 3,
+      delay: 5000, // 5 segundos entre tentativas
+    },
+    // TLS options para melhor compatibilidade
+    tls: {
+      // Não rejeitar certificados auto-assinados (apenas se necessário)
+      rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
+    },
   };
 
   return nodemailer.createTransport(smtpConfig);

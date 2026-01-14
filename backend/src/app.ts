@@ -30,10 +30,10 @@ dotenv.config();
 const app = express();
 
 // Configurar trust proxy para produção (necessário quando há proxy reverso)
-// Railway, Nginx, Cloudflare, etc. usam proxies reversos
+// Railway geralmente usa 1 proxy reverso, então confiamos apenas no primeiro
 if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', true);
-  console.log('✅ Trust proxy habilitado para produção');
+  app.set('trust proxy', 1); // Mais seguro que 'true' - confia apenas no primeiro proxy
+  console.log('✅ Trust proxy habilitado para produção (1 proxy)');
 }
 
 // Configuração de segurança básica
@@ -81,6 +81,10 @@ const generalLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Pular rate limiting para health checks
+  skip: (req) => {
+    return req.path === '/health' || req.path === '/api/health/stripe';
+  },
 });
 
 // Aplicar rate limiting geral
