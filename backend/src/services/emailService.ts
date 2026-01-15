@@ -1,70 +1,57 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 /**
- * Configuração do transporte SMTP
+ * Cliente Resend (singleton)
  */
-const createTransporter = () => {
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const isSecure = port === 465; // SSL para porta 465
-  
-  const smtpConfig: any = {
-    host: process.env.SMTP_HOST || 'smtp.umbler.com',
-    port: port,
-    secure: isSecure, // SSL para porta 465, TLS para 587
-    auth: {
-      user: process.env.SMTP_USER || 'contato@flockapp.com.br',
-      pass: process.env.SMTP_PASS || 'sua_senha_aqui',
-    },
-    // Timeouts aumentados para produção
-    connectionTimeout: 20000, // 20 segundos
-    greetingTimeout: 20000,
-    socketTimeout: 30000, // 30 segundos para operações de envio
-    // Pool de conexões para melhor performance
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100,
-    // Retry automático em caso de falha temporária
-    retry: {
-      attempts: 3,
-      delay: 5000, // 5 segundos entre tentativas
-    },
-    // TLS options para melhor compatibilidade
-    tls: {
-      // Não rejeitar certificados auto-assinados (apenas se necessário)
-      rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
-    },
-  };
+let resendClient: Resend | null = null;
 
-  return nodemailer.createTransport(smtpConfig);
+/**
+ * Inicializa o cliente Resend
+ */
+const getResendClient = (): Resend | null => {
+  if (resendClient) {
+    return resendClient;
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('⚠️ RESEND_API_KEY não configurada. Emails não serão enviados.');
+    return null;
+  }
+
+  resendClient = new Resend(apiKey);
+  return resendClient;
 };
 
 /**
  * Verifica se o serviço de email está configurado
  */
 export const isEmailConfigured = (): boolean => {
-  const configured = !!(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS
-  );
+  const configured = !!process.env.RESEND_API_KEY;
   
   if (!configured) {
-    console.warn('⚠️ Email não configurado. Verifique as variáveis SMTP_HOST, SMTP_USER e SMTP_PASS');
+    console.warn('⚠️ Email não configurado. Verifique a variável RESEND_API_KEY');
   }
   
   return configured;
 };
 
 /**
- * Envia um email
+ * Opções para envio de email
  */
 export interface SendEmailOptions {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string; // Para respostas chegarem no Umbler
+  cc?: string | string[];
+  bcc?: string | string[];
 }
 
+/**
+ * Envia um email via Resend API
+ */
 export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
   // Se não estiver configurado, apenas logar e retornar (não quebrar o fluxo)
   if (!isEmailConfigured()) {
@@ -76,26 +63,44 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
     return;
   }
 
+  const client = getResendClient();
+  if (!client) {
+    console.error('❌ Cliente Resend não inicializado');
+    return;
+  }
+
   try {
-    const transporter = createTransporter();
+    // Converter destinatários para array se necessário
+    const toArray = Array.isArray(options.to) ? options.to : [options.to];
+    const ccArray = options.cc ? (Array.isArray(options.cc) ? options.cc : [options.cc]) : undefined;
+    const bccArray = options.bcc ? (Array.isArray(options.bcc) ? options.bcc : [options.bcc]) : undefined;
 
-    // Não verificar conexão antes de cada envio - pode causar timeout
-    // O sendMail() já faz a conexão automaticamente quando necessário
+    // Email remetente configurável
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'contato@flockapp.com.br';
+    const fromName = process.env.RESEND_FROM_NAME || 'Flock App';
+    const from = `${fromName} <${fromEmail}>`;
 
-    const mailOptions = {
-      from: {
-        name: process.env.SMTP_FROM_NAME || 'Flock App',
-        address: process.env.SMTP_FROM || process.env.SMTP_USER || 'contato@flockapp.com.br',
-      },
-      to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
+    // Reply-To padrão para respostas chegarem no Umbler
+    const replyTo = options.replyTo || process.env.ADMIN_EMAIL || 'contato@flockapp.com.br';
+
+    // Enviar email
+    const { data, error } = await client.emails.send({
+      from,
+      to: toArray,
+      cc: ccArray,
+      bcc: bccArray,
+      reply_to: replyTo,
       subject: options.subject,
       html: options.html,
       text: options.text || options.html.replace(/<[^>]*>/g, ''), // Remove HTML tags para versão texto
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
+    if (error) {
+      throw new Error(`Resend API Error: ${JSON.stringify(error)}`);
+    }
+
     console.log('✅ Email enviado com sucesso:', {
-      messageId: info.messageId,
+      messageId: data?.id,
       to: options.to,
       subject: options.subject,
     });
@@ -103,14 +108,14 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
     console.error('❌ Erro ao enviar email:', error);
     
     // Mensagens de erro mais amigáveis
-    if (error.code === 'EAI_AGAIN' || error.code === 'EDNS') {
-      console.error('💡 Erro de DNS. Verifique se o SMTP_HOST está correto.');
-    } else if (error.code === 'ECONNREFUSED') {
-      console.error('💡 Conexão recusada. Verifique se o SMTP_HOST e SMTP_PORT estão corretos.');
-    } else if (error.code === 'EAUTH') {
-      console.error('💡 Erro de autenticação. Verifique SMTP_USER e SMTP_PASS.');
-    } else if (error.code === 'ETIMEDOUT') {
-      console.error('💡 Timeout ao conectar ao servidor SMTP. Verifique conectividade e configurações.');
+    if (error?.message?.includes('API key') || error?.message?.includes('Unauthorized')) {
+      console.error('💡 Erro de autenticação. Verifique se RESEND_API_KEY está correta.');
+    } else if (error?.message?.includes('domain') || error?.message?.includes('Domain')) {
+      console.error('💡 Erro de domínio. Verifique se o domínio está verificado no Resend.');
+    } else if (error?.message?.includes('rate limit') || error?.message?.includes('Rate limit')) {
+      console.error('💡 Limite de taxa excedido. Aguarde antes de tentar novamente.');
+    } else {
+      console.error('💡 Erro ao enviar email via Resend. Verifique logs para mais detalhes.');
     }
     
     // Não lançar erro para não quebrar o fluxo principal
@@ -119,7 +124,18 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
 };
 
 /**
- * Verifica conexão SMTP
+ * Envia email para administradores (helper)
+ */
+export const sendAdminEmail = async (options: Omit<SendEmailOptions, 'to'>): Promise<void> => {
+  const adminEmail = process.env.ADMIN_EMAIL || 'contato@flockapp.com.br';
+  return sendEmail({
+    ...options,
+    to: adminEmail,
+  });
+};
+
+/**
+ * Verifica conexão com Resend (não necessário, mas mantém compatibilidade)
  */
 export const verifySMTPConnection = async (): Promise<boolean> => {
   if (!isEmailConfigured()) {
@@ -127,18 +143,8 @@ export const verifySMTPConnection = async (): Promise<boolean> => {
     return false;
   }
 
-  try {
-    const transporter = createTransporter();
-    await transporter.verify();
-    console.log('✅ Conexão SMTP verificada com sucesso');
-    return true;
-  } catch (error: any) {
-    console.error('❌ Erro ao verificar conexão SMTP:', error);
-    
-    if (error.code === 'EAI_AGAIN' || error.code === 'EDNS') {
-      console.error('💡 Erro de DNS. Verifique se o SMTP_HOST está correto.');
-    }
-    
-    return false;
-  }
+  // Resend não precisa de verificação de conexão prévia
+  // A API é stateless e verifica na hora do envio
+  console.log('✅ Resend configurado (verificação não necessária)');
+  return true;
 };
