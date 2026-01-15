@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LogIn } from 'lucide-react';
 
 interface HeaderProps {
   onOpenWaitlist?: () => void;
 }
+
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
 
 export function Header({ onOpenWaitlist }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -23,7 +25,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
       }}
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex items-center h-16">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center gap-2 text-2xl font-bold text-white hover:text-gray-100 transition-colors">
@@ -38,8 +40,8 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-8">
+          {/* Desktop Navigation - Centralized Links */}
+          <div className="hidden md:flex md:items-center md:justify-center md:flex-1 md:space-x-8">
             <Link
               href="#features"
               className="text-white/90 hover:text-white transition-colors font-medium"
@@ -57,6 +59,25 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               className="text-white/90 hover:text-white transition-colors font-medium"
             >
               Planos
+            </Link>
+            <Link
+              href="#waitlist"
+              className="text-white/90 hover:text-white transition-colors font-medium"
+            >
+              Contato
+            </Link>
+          </div>
+
+          {/* Desktop Actions - Right Side */}
+          <div className="hidden md:flex md:items-center md:space-x-4 md:flex-shrink-0">
+            <Link
+              href={`${FRONTEND_URL}/login`}
+              // target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors font-medium"
+            >
+              <LogIn size={18} />
+              <span>Acessar Painel</span>
             </Link>
             <Link
               href="#pricing"
@@ -100,6 +121,23 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               onClick={() => setMobileMenuOpen(false)}
             >
               Planos
+            </Link>
+            <Link
+              href="#waitlist"
+              className="block text-white/90 hover:text-white transition-colors"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Contato
+            </Link>
+            <Link
+              href={`${FRONTEND_URL}/login`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 text-white/90 hover:text-white transition-colors font-medium"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <LogIn size={18} />
+              <span>Acessar Painel</span>
             </Link>
             <Link
               href="#pricing"

@@ -212,6 +212,19 @@ function LoginPageComponent() {
           Entrar
         </Button>
       </form>
+
+      {/* Link para cadastro */}
+      <div className="text-center pt-4 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          Ainda não possui conta?{' '}
+          <Link
+            href={`${process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3000'}#pricing`}
+            className="text-primary hover:text-primary/80 font-medium underline"
+          >
+            Selecione um plano e realize seu cadastro
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
