@@ -3,6 +3,7 @@ import {
   exportMemberPDF,
   exportDashboardPDF,
   exportMembersList,
+  exportMembersListCSV,
   exportIntegrationMemberPDF,
   exportIntegrationMembersList
 } from '../controllers/exportController';
@@ -21,6 +22,9 @@ router.get('/dashboard/pdf', authMiddleware, exportDashboardPDF);
 
 // Exportar lista de membros em PDF
 router.post('/members/list', authMiddleware, exportMembersList);
+
+// Exportar lista de membros em CSV
+router.post('/members/list/csv', authMiddleware, exportMembersListCSV);
 
 // Exportar lista de integrantes em PDF
 router.post('/integration/list', authMiddleware, exportIntegrationMembersList);

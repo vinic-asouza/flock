@@ -7,7 +7,7 @@ import { ViewMode } from './ViewModeSelector';
 import { Pagination } from '../commom/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
-import { Download, RefreshCcw } from 'lucide-react';
+import { Download, RefreshCcw, FileSpreadsheet } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 
 export function MemberList({ 
@@ -21,7 +21,8 @@ export function MemberList({
   viewModeSelector,
   viewMode,
   isViewModeLoaded,
-  onExport
+  onExport,
+  onExportCSV
 }: { 
   onTotalChange?: (total: number) => void; 
   filters: MemberFilters;
@@ -34,6 +35,7 @@ export function MemberList({
   viewMode: ViewMode;
   isViewModeLoaded?: boolean;
   onExport?: () => void;
+  onExportCSV?: () => void;
 }) {
   const {
     members,
@@ -167,8 +169,17 @@ export function MemberList({
             className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
           >
             <Download size={12} />
-            Exportar lista
+            Exportar PDF
           </button>
+          {onExportCSV && (
+            <button
+              onClick={onExportCSV}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+            >
+              <FileSpreadsheet size={12} />
+              Exportar CSV
+            </button>
+          )}
           {viewModeSelector}
         </div>
       </div>

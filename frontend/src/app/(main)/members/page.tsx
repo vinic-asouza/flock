@@ -15,6 +15,7 @@ import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
 import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
 import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
 import { ExportMembersModal } from '@/components/members/ExportMembersModal';
+import { ExportMembersCSVModal } from '@/components/members/ExportMembersCSVModal';
 import { MemberImportModal } from '@/components/members/MemberImportModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
@@ -91,6 +92,7 @@ function MembersPageContent() {
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
   const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportCSVModalOpen, setExportCSVModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [registrationLinksModalOpen, setRegistrationLinksModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
@@ -386,6 +388,10 @@ function MembersPageContent() {
     setExportModalOpen(true);
   }, []);
 
+  const handleOpenExportCSV = useCallback(() => {
+    setExportCSVModalOpen(true);
+  }, []);
+
   const handleExportMembers = useCallback(async (selectedFields: string[]) => {
     try {
       // Construir parâmetros de filtro
@@ -435,6 +441,58 @@ function MembersPageContent() {
     } catch (error) {
       console.error('Erro ao exportar PDF:', error);
       alert('Erro ao exportar PDF. Tente novamente.');
+    }
+  }, [filters, sorting]);
+
+  const handleExportMembersCSV = useCallback(async (selectedFields: string[], delimiter: string, includeHeaders: boolean) => {
+    try {
+      // Construir parâmetros de filtro
+      const params: Record<string, string | number | boolean | null | undefined> = {};
+      
+      // Adicionar filtros ativos
+      if (filters.search) params.search = filters.search;
+      if (filters.status && filters.status !== 'all') params.status = filters.status;
+      if (filters.roleId) params.role_id = filters.roleId;
+      if (filters.congregationId) params.congregation_id = filters.congregationId;
+      if (filters.gender) params.gender = filters.gender;
+      if (filters.maritalStatus) params.marital_status = filters.maritalStatus;
+      if (filters.nationality) params.nationality = filters.nationality;
+      if (filters.state) params.state = filters.state;
+      if (filters.city) params.city = filters.city;
+      if (filters.neighborhood) params.neighborhood = filters.neighborhood;
+      if (filters.ageFrom) params.age_from = filters.ageFrom;
+      if (filters.ageTo) params.age_to = filters.ageTo;
+      if (filters.occupation) params.occupation = filters.occupation;
+      if (filters.birthDateFrom) params.birth_date_from = filters.birthDateFrom;
+      if (filters.birthDateTo) params.birth_date_to = filters.birthDateTo;
+      if (filters.baptismDateFrom) params.baptism_date_from = filters.baptismDateFrom;
+      if (filters.baptismDateTo) params.baptism_date_to = filters.baptismDateTo;
+      if (filters.admissionDateFrom) params.admission_date_from = filters.admissionDateFrom;
+      if (filters.admissionDateTo) params.admission_date_to = filters.admissionDateTo;
+      
+      // Adicionar ordenação
+      if (sorting) {
+        params.sort_by = sorting.sort_by;
+        params.sort_order = sorting.sort_order;
+      }
+
+      // Chamar API para exportar CSV
+      const blob = await apiService.exportMembersListCSV(params, selectedFields, delimiter, includeHeaders);
+      
+      // Criar URL para download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `membros-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('CSV exportado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar CSV:', error);
+      alert('Erro ao exportar CSV. Tente novamente.');
     }
   }, [filters, sorting]);
 
@@ -507,6 +565,7 @@ function MembersPageContent() {
         onClearAll={handleClearAllFilters}
         sorting={sorting}
         onRemoveSorting={() => setSorting(initialSorting)}
+        defaultSorting={initialSorting}
       />
       <MemberList 
         filters={filters} 
@@ -516,6 +575,7 @@ function MembersPageContent() {
         onDeactivate={handleDeactivateMember}
         onReactivate={handleReactivateMember}
         onExport={handleOpenExport}
+        onExportCSV={handleOpenExportCSV}
         viewMode={viewMode}
         isViewModeLoaded={isLoaded}
         viewModeSelector={<ViewModeSelector mode={viewMode} onModeChange={setViewMode} />}
@@ -583,6 +643,12 @@ function MembersPageContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={handleExportMembers}
+      />
+
+      <ExportMembersCSVModal
+        isOpen={exportCSVModalOpen}
+        onClose={() => setExportCSVModalOpen(false)}
+        onExport={handleExportMembersCSV}
       />
 
       <MemberImportModal

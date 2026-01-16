@@ -1870,3 +1870,342 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
+  try {
+    console.log('📊 Iniciando exportação de lista de membros em CSV...');
+    
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    const { filters, fields, delimiter = ',', includeHeaders = true } = req.body;
+
+    if (!fields || !Array.isArray(fields) || fields.length === 0) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: 'É necessário selecionar pelo menos um campo para exportar'
+      });
+    }
+
+    // Buscar church_id do usuário
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    console.log('✅ Igreja encontrada:', church.name);
+    console.log('🔍 Filtros recebidos:', filters);
+    console.log('📋 Campos selecionados:', fields);
+    console.log('🔧 Delimitador:', delimiter);
+    console.log('📑 Incluir cabeçalho:', includeHeaders);
+
+    // Construir query para buscar membros (mesma lógica do PDF)
+    let query = supabase
+      .from('members')
+      .select(`
+        *,
+        role:roles(name),
+        congregation:congregations(name)
+      `)
+      .eq('church_id', church.id);
+
+    // Aplicar filtros (mesma lógica do PDF)
+    if (filters) {
+      if (filters.search) {
+        const safeSearch = filters.search.replace(/,/g, '');
+        query = query.or(`name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,whatsapp.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
+      }
+      if (filters.status && filters.status !== 'all') {
+        if (filters.status === 'active') {
+          query = query.eq('active', true);
+        } else if (filters.status === 'inactive') {
+          query = query.eq('active', false);
+        }
+      }
+      if (filters.role_id) {
+        query = query.eq('role_id', filters.role_id);
+      }
+      if (filters.congregation_id) {
+        if (filters.congregation_id === 'sede') {
+          query = query.is('congregation_id', null);
+        } else {
+          query = query.eq('congregation_id', filters.congregation_id);
+        }
+      }
+      if (filters.gender) {
+        query = query.eq('gender', filters.gender);
+      }
+      if (filters.marital_status) {
+        query = query.eq('marital_status', filters.marital_status);
+      }
+      if (filters.nationality) {
+        query = query.eq('nationality', filters.nationality);
+      }
+      if (filters.state) {
+        query = query.eq('state', filters.state);
+      }
+      if (filters.city) {
+        query = query.eq('city', filters.city);
+      }
+      if (filters.neighborhood) {
+        query = query.eq('neighborhood', filters.neighborhood);
+      }
+      if (filters.age_from) {
+        const today = new Date();
+        const maxBirthDate = new Date(today.getFullYear() - filters.age_from, today.getMonth(), today.getDate());
+        query = query.lte('birth', maxBirthDate.toISOString().split('T')[0]);
+      }
+      if (filters.age_to) {
+        const today = new Date();
+        const minBirthDate = new Date(today.getFullYear() - filters.age_to - 1, today.getMonth(), today.getDate());
+        query = query.gte('birth', minBirthDate.toISOString().split('T')[0]);
+      }
+      if (filters.occupation) {
+        query = query.eq('occupation', filters.occupation);
+      }
+      if (filters.birth_date_from) {
+        query = query.gte('birth', filters.birth_date_from);
+      }
+      if (filters.birth_date_to) {
+        query = query.lte('birth', filters.birth_date_to);
+      }
+      if (filters.baptism_date_from) {
+        query = query.gte('baptism_date', filters.baptism_date_from);
+      }
+      if (filters.baptism_date_to) {
+        query = query.lte('baptism_date', filters.baptism_date_to);
+      }
+      if (filters.admission_date_from) {
+        query = query.gte('admission_date', filters.admission_date_from);
+      }
+      if (filters.admission_date_to) {
+        query = query.lte('admission_date', filters.admission_date_to);
+      }
+    }
+
+    // Aplicar ordenação
+    if (filters?.sort_by) {
+      query = query.order(filters.sort_by, { ascending: filters.sort_order === 'asc' });
+    } else {
+      query = query.order('name', { ascending: true });
+    }
+
+    const { data: members, error: membersError } = await query;
+
+    if (membersError) {
+      console.error('❌ Erro ao buscar membros:', membersError);
+      return res.status(500).json({
+        error: 'Erro ao buscar membros',
+        details: membersError.message
+      });
+    }
+
+    if (!members || members.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum membro encontrado',
+        details: 'Não há membros que correspondam aos filtros aplicados'
+      });
+    }
+
+    console.log(`✅ ${members.length} membros encontrados`);
+
+    // Helper para calcular idade
+    const calculateAge = (birth: string) => {
+      if (!birth) return null;
+      const birthDate = new Date(birth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    // Helper para formatar data
+    const formatDate = (date: string | null) => {
+      if (!date) return '';
+      return new Date(date).toLocaleDateString('pt-BR');
+    };
+
+    // Helper para escapar valores CSV (tratar vírgulas, aspas, quebras de linha)
+    const escapeCSVValue = (value: string): string => {
+      if (!value) return '';
+      const stringValue = String(value);
+      // Se contém delimitador, aspas ou quebra de linha, precisa ser envolvido em aspas
+      if (stringValue.includes(delimiter) || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
+        // Escapar aspas duplicando-as
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Mapear campos para labels
+    const fieldLabels: Record<string, string> = {
+      name: 'Nome',
+      age: 'Idade',
+      birth: 'Data de Nascimento',
+      gender: 'Gênero',
+      marital_status: 'Estado Civil',
+      nationality: 'Nacionalidade',
+      document: 'Documento',
+      spouse: 'Cônjuge',
+      occupation: 'Profissão',
+      father_name: 'Nome do Pai',
+      mother_name: 'Nome da Mãe',
+      phone: 'Telefone',
+      whatsapp: 'WhatsApp',
+      email: 'Email',
+      active: 'Status',
+      congregation: 'Congregação',
+      role: 'Cargo',
+      baptism_date: 'Data de Batismo',
+      admission: 'Tipo de Admissão',
+      admission_date: 'Data de Admissão',
+      address: 'Endereço',
+      complement: 'Complemento',
+      neighborhood: 'Bairro',
+      city: 'Cidade',
+      state: 'Estado',
+      cep: 'CEP'
+    };
+
+    // Construir CSV
+    let csvContent = '';
+
+    // Cabeçalho (se solicitado)
+    if (includeHeaders) {
+      const headers = fields.map(field => escapeCSVValue(fieldLabels[field] || field));
+      csvContent += headers.join(delimiter) + '\n';
+    }
+
+    // Linhas de dados
+    members.forEach((member) => {
+      const row: string[] = [];
+
+      fields.forEach((field) => {
+        let value = '';
+
+        switch (field) {
+          case 'name':
+            value = member.name || '';
+            break;
+          case 'age':
+            const age = calculateAge(member.birth);
+            value = age !== null ? String(age) : '';
+            break;
+          case 'birth':
+            value = formatDate(member.birth);
+            break;
+          case 'gender':
+            value = member.gender || '';
+            break;
+          case 'marital_status':
+            value = member.marital_status || '';
+            break;
+          case 'nationality':
+            value = member.nationality || '';
+            break;
+          case 'document':
+            value = member.document || '';
+            break;
+          case 'spouse':
+            value = member.spouse || '';
+            break;
+          case 'occupation':
+            value = member.occupation || '';
+            break;
+          case 'father_name':
+            value = member.father_name || '';
+            break;
+          case 'mother_name':
+            value = member.mother_name || '';
+            break;
+          case 'phone':
+            value = member.phone || '';
+            break;
+          case 'whatsapp':
+            value = member.whatsapp || '';
+            break;
+          case 'email':
+            value = member.email || '';
+            break;
+          case 'active':
+            value = member.active ? 'Ativo' : 'Inativo';
+            break;
+          case 'congregation':
+            value = member.congregation?.name || 'Sede';
+            break;
+          case 'role':
+            value = member.role?.name || '';
+            break;
+          case 'baptism_date':
+            value = formatDate(member.baptism_date);
+            break;
+          case 'admission':
+            value = member.admission || '';
+            break;
+          case 'admission_date':
+            value = formatDate(member.admission_date);
+            break;
+          case 'address':
+            value = member.address || '';
+            break;
+          case 'complement':
+            value = member.complement || '';
+            break;
+          case 'neighborhood':
+            value = member.neighborhood || '';
+            break;
+          case 'city':
+            value = member.city || '';
+            break;
+          case 'state':
+            value = member.state || '';
+            break;
+          case 'cep':
+            value = member.cep || '';
+            break;
+          default:
+            value = '';
+        }
+
+        row.push(escapeCSVValue(value));
+      });
+
+      csvContent += row.join(delimiter) + '\n';
+    });
+
+    // Configurar headers para download
+    const filename = `membros-${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+
+    // Adicionar BOM para UTF-8 (ajuda Excel a reconhecer corretamente)
+    const BOM = '\uFEFF';
+    res.send(BOM + csvContent);
+
+    console.log('✅ CSV gerado com sucesso');
+
+  } catch (error) {
+    console.error('❌ Erro ao gerar CSV da lista de membros:', error);
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+};

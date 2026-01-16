@@ -473,11 +473,21 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         birth: child.birth ? formatDateToISO(child.birth) || undefined : undefined,
       }));
 
+      // Lógica para Data de Batismo:
+      // Se for "Batismo" ou "Batismo Infantil", copia a Data de Recebimento
+      // Caso contrário, envia vazio
+      const admissionDateISO = formatDateToISO(data.admission_date) || '';
+      let baptismDateISO: string | undefined = undefined;
+
+      if (data.admission === 'Batismo' || data.admission === 'Batismo Infantil') {
+        baptismDateISO = admissionDateISO;
+      }
+
       const memberData = {
         ...data,
         birth: formatDateToISO(data.birth) || '',
-        baptism_date: data.baptism_date ? formatDateToISO(data.baptism_date) || undefined : undefined,
-        admission_date: formatDateToISO(data.admission_date) || '',
+        baptism_date: baptismDateISO,
+        admission_date: admissionDateISO,
         // Tratar nacionalidade: se for "Outra", usar o valor do campo nationality_other; senão usar o valor selecionado
         nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
         // Tratar profissão: se for "Outra", usar o valor do campo occupation_other; senão usar o valor selecionado
@@ -957,18 +967,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             error={errors.admission?.message}
           />
 
-          {/* Terceira linha: Data de Batismo e Data de Recebimento */}
-          {watch('admission') !== 'Apresentação (sem batismo)' && (
-            <Input
-              label="Data de Batismo"
-              placeholder="DD/MM/AAAA"
-              value={baptismDateDisplay}
-              onChange={(e) => handleDateChange(e, 'baptism_date')}
-              maxLength={10}
-              isLoading={isLoading}
-            />
-          )}
-
+          {/* Terceira linha: Data de Recebimento */}
           <Input
             label="Data de Recebimento *"
             placeholder="DD/MM/AAAA"

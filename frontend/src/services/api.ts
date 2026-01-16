@@ -570,6 +570,23 @@ class ApiService {
     return response.data;
   }
 
+  async exportMembersListCSV(
+    filters: Record<string, string | number | boolean | null | undefined>, 
+    selectedFields: string[],
+    delimiter: string = ',',
+    includeHeaders: boolean = true
+  ): Promise<Blob> {
+    const response = await this.api.post('/export/members/list/csv', {
+      filters,
+      fields: selectedFields,
+      delimiter,
+      includeHeaders
+    }, {
+      responseType: 'blob', // Importante para receber o arquivo como blob
+    });
+    return response.data;
+  }
+
   // Importação de membros via CSV
   async validateMemberImport(file: File, congregationId: string | null = null): Promise<ValidationResult> {
     const formData = new FormData();

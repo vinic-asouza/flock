@@ -13,6 +13,10 @@ interface ActiveFiltersChipsProps {
     sort_order: 'asc' | 'desc';
   };
   onRemoveSorting?: () => void;
+  defaultSorting?: {
+    sort_by: string;
+    sort_order: 'asc' | 'desc';
+  };
 }
 
 export function ActiveFiltersChips({ 
@@ -20,7 +24,8 @@ export function ActiveFiltersChips({
   onRemoveFilter, 
   onClearAll, 
   sorting, 
-  onRemoveSorting 
+  onRemoveSorting,
+  defaultSorting = { sort_by: 'created_at', sort_order: 'desc' }
 }: ActiveFiltersChipsProps) {
   const { roles, congregations } = useFiltersData();
 
@@ -32,7 +37,8 @@ export function ActiveFiltersChips({
       name: 'Nome',
       birth: 'Idade',
       baptism_date: 'Data de Batismo',
-      admission_date: 'Data de Admissão'
+      admission_date: 'Data de Admissão',
+      created_at: 'Data de Cadastro'
     };
     
     const fieldLabel = labels[sorting.sort_by as keyof typeof labels] || sorting.sort_by;
@@ -164,8 +170,11 @@ export function ActiveFiltersChips({
     return isFilterActive(key as keyof MemberFilters, value);
   });
 
-  // Verificar se há ordenação ativa (não padrão)
-  const hasActiveSorting = sorting && (sorting.sort_by !== 'name' || sorting.sort_order !== 'asc');
+  // Verificar se há ordenação ativa (diferente da padrão)
+  const hasActiveSorting = sorting && (
+    sorting.sort_by !== defaultSorting.sort_by || 
+    sorting.sort_order !== defaultSorting.sort_order
+  );
   const sortingLabel = getSortingLabel();
 
   if (activeFilters.length === 0 && !hasActiveSorting) {
