@@ -760,7 +760,7 @@ export function PaymentManagement() {
             <p className="text-sm text-gray-500 mb-6">
               {user?.stripe_customer_id 
                 ? 'Não foi encontrada uma assinatura ativa no sistema. Se você acabou de fazer o pagamento, tente sincronizar.'
-                : 'Você está usando o plano gratuito (Limite de 100 membros). Faça uma assinatura para ativar o plano pago (Limite de 200 membros).'}
+                : 'Você está usando o plano gratuito (Limite de 100 membros). Faça uma assinatura para ativar um dos planos pagos.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               {user?.stripe_customer_id && (

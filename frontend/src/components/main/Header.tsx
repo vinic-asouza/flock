@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LogOut, User, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { LogOut, User, AlertCircle, Crown, Gift } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
@@ -59,6 +60,11 @@ export function Header() {
     await logout();
     router.push('/login');
   };
+
+  // Determinar tipo de plano e limite
+  const planType = user?.plan_type || memberLimit?.planType;
+  const isFreePlan = planType === '100' || !planType;
+  const memberLimitValue = memberLimit?.limit || (planType === '100' ? 100 : planType === '200' ? 200 : planType === '500' ? 500 : planType === '800' ? 800 : 100);
 
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
@@ -125,6 +131,28 @@ export function Header() {
               )}
             </span>
           </div>
+        )}
+
+        {/* Badge do Plano */}
+        {user && (
+          <Link
+            href="/settings?tab=payment"
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all hover:opacity-80 cursor-pointer ${
+              isFreePlan
+                ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
+                : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200'
+            }`}
+          >
+            {isFreePlan ? (
+              <Gift size={12} className="text-green-600" />
+            ) : (
+              <Crown size={12} className="text-blue-600" />
+            )}
+            <span>{isFreePlan ? 'Versão Gratuita' : 'Versão PRO'}</span>
+            {/* <span className="text-[10px] font-medium opacity-90">
+              • Até {memberLimitValue} membros
+            </span> */}
+          </Link>
         )}
 
         {/* Email do Usuário */}
