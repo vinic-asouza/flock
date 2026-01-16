@@ -50,7 +50,7 @@ npm install
 npm run dev
 ```
 
-A aplicação estará disponível em `http://localhost:3001` (ou próxima porta disponível).
+A aplicação estará disponível em `http://localhost:3000` (ou próxima porta disponível).
 
 ## 🌐 Variáveis de Ambiente
 

@@ -63,22 +63,22 @@ Este documento lista **todas** as variáveis de ambiente necessárias para o fun
 
 #### FRONTEND_URL
 - **Descrição:** URL completa do frontend da aplicação
-- **Padrão:** `http://localhost:3000`
+- **Padrão:** `http://localhost:3001`
 - **Formato:** URL completa com protocolo
 - **Uso:** 
   - Redirecionamentos após autenticação
   - URLs de callback
   - Configuração de CORS
-- **Desenvolvimento:** `http://localhost:3000`
+- **Desenvolvimento:** `http://localhost:3001`
 - **Produção:** `https://app.flock.com.br`
 - **Exemplo:** `https://app.flock.com.br`
 
 #### LANDING_URL
 - **Descrição:** URL da landing page (site de marketing)
-- **Padrão:** `http://localhost:3001`
+- **Padrão:** `http://localhost:3000`
 - **Formato:** URL completa com protocolo
 - **Uso:** Configuração de CORS para permitir requisições da landing page
-- **Desenvolvimento:** `http://localhost:3001`
+- **Desenvolvimento:** `http://localhost:3000`
 - **Produção:** `https://flock.com.br`
 - **Exemplo:** `https://flock.com.br`
 
@@ -185,8 +185,8 @@ SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 PORT=4000
 NODE_ENV=development
-FRONTEND_URL=http://localhost:3000
-LANDING_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3001
+LANDING_URL=http://localhost:3000
 ENABLE_CRON_JOBS=true
 
 # Stripe (Test Mode)
@@ -309,8 +309,8 @@ PORT=4000
 NODE_ENV=development
 
 # Frontend URLs
-FRONTEND_URL=http://localhost:3000
-LANDING_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3001
+LANDING_URL=http://localhost:3000
 
 # Cron Jobs
 ENABLE_CRON_JOBS=true
@@ -343,8 +343,8 @@ PORT=4000
 NODE_ENV=development
 
 # Backend - URLs
-FRONTEND_URL=http://localhost:3000
-LANDING_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3001
+LANDING_URL=http://localhost:3000
 
 # Backend - Cron Jobs
 ENABLE_CRON_JOBS=true
@@ -446,8 +446,8 @@ NEXT_PUBLIC_API_URL=http://localhost:4000/api
 ### Backend - Opcionais (com padrão)
 - ⚙️ `PORT` (padrão: 4000)
 - ⚙️ `NODE_ENV` (padrão: development)
-- ⚙️ `FRONTEND_URL` (padrão: http://localhost:3000)
-- ⚙️ `LANDING_URL` (padrão: http://localhost:3001)
+- ⚙️ `FRONTEND_URL` (padrão: http://localhost:3001)
+- ⚙️ `LANDING_URL` (padrão: http://localhost:3000)
 - ⚙️ `ENABLE_CRON_JOBS` (padrão: true)
 
 ### Frontend - Obrigatórias

@@ -46,7 +46,7 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       password,
       phone,
       options: {
-        emailRedirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth/callback`
+        emailRedirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/callback`
       }
     });
 

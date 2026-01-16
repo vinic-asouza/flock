@@ -9,7 +9,7 @@ interface HeaderProps {
   onOpenWaitlist?: () => void;
 }
 
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
 
 export function Header({ onOpenWaitlist }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

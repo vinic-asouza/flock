@@ -15,7 +15,7 @@ interface CheckoutButtonProps {
   isAuthenticated?: boolean;
 }
 
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
 
 export function CheckoutButton({
   plan,

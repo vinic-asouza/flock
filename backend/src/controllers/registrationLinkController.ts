@@ -59,7 +59,7 @@ export const listRegistrationLinks = async (req: AuthRequest, res: Response) => 
     }
 
     // Construir URLs completas para cada link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linksWithUrls = links.map(link => ({
       ...link,
       url: `${frontendUrl}/public/register/${link.token}`,
@@ -130,7 +130,7 @@ export const getRegistrationLink = async (req: AuthRequest, res: Response) => {
     }
 
     // Construir URL completa
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linkWithUrl = {
       ...link,
       url: `${frontendUrl}/public/register/${link.token}`,
@@ -282,7 +282,7 @@ export const createRegistrationLink = async (
     }
 
     // Construir URL completa
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linkWithUrl = {
       ...link,
       url: `${frontendUrl}/public/register/${link.token}`
@@ -439,7 +439,7 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
     }
 
     // Construir URL completa
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linkWithUrl = {
       ...link,
       url: `${frontendUrl}/public/register/${link.token}`

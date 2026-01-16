@@ -41,8 +41,8 @@ app.use(helmet());
 
 // Configuração do CORS - permitir múltiplas origens (frontend e landing)
 const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-  process.env.LANDING_URL || 'http://localhost:3001',
+  process.env.FRONTEND_URL || 'http://localhost:3001',
+  process.env.LANDING_URL || 'http://localhost:3000',
 ].filter(Boolean);
 
 app.use(cors({

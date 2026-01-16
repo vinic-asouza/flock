@@ -73,8 +73,8 @@ PORT=4000
 NODE_ENV=development
 
 # URLs (opcional)
-FRONTEND_URL=http://localhost:3000
-LANDING_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:3001
+LANDING_URL=http://localhost:3000
 ```
 
 ### 3. Configuração do Frontend
@@ -108,7 +108,7 @@ cd frontend
 npm run dev
 ```
 
-O frontend estará disponível em `http://localhost:3000`
+O frontend estará disponível em `http://localhost:3001`
 
 ### Iniciar a Landing
 
@@ -117,7 +117,7 @@ cd landing
 npm run dev
 ```
 
-A landing estará disponível em `http://localhost:3001`
+A landing estará disponível em `http://localhost:3000`
 
 ## 📝 Scripts Disponíveis
 
@@ -137,7 +137,7 @@ A landing estará disponível em `http://localhost:3001`
 
 ## 🔐 Primeiro Acesso
 
-1. Acesse `http://localhost:3000/register`
+1. Acesse `http://localhost:3001/register`
 2. Preencha os dados da igreja
 3. Confirme o email recebido
 4. Faça login com as credenciais criadas

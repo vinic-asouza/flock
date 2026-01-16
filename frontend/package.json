@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --turbopack -p 3001",
     "build": "next build",
     "start": "next start",
-    "start:railway": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "start:railway": "next start -H 0.0.0.0 -p ${PORT:-3001}",
     "lint": "next lint"
   },
   "dependencies": {

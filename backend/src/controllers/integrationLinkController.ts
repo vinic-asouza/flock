@@ -58,7 +58,7 @@ export const listIntegrationLinks = async (req: AuthRequest, res: Response) => {
     }
 
     // Construir URLs completas para cada link
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linksWithUrls = links.map(link => ({
       ...link,
       url: `${frontendUrl}/public/integration/${link.token}`,
@@ -129,7 +129,7 @@ export const getIntegrationLink = async (req: AuthRequest, res: Response) => {
     }
 
     // Construir URL completa
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linkWithUrl = {
       ...link,
       url: `${frontendUrl}/public/integration/${link.token}`
@@ -256,7 +256,7 @@ export const createIntegrationLink = async (
     }
 
     // Construir URL completa
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linkWithUrl = {
       ...link,
       url: `${frontendUrl}/public/integration/${link.token}`
@@ -369,7 +369,7 @@ export const updateIntegrationLink = async (req: AuthRequest, res: Response) => 
     }
 
     // Construir URL completa
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const linkWithUrl = {
       ...updatedLink,
       url: `${frontendUrl}/public/integration/${updatedLink.token}`

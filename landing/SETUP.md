@@ -43,7 +43,7 @@ No backend, adicione a variável de ambiente `LANDING_URL`:
 
 **Desenvolvimento:**
 ```env
-LANDING_URL=http://localhost:3001
+LANDING_URL=http://localhost:3000
 ```
 
 **Produção (Railway):**
@@ -63,7 +63,7 @@ cd landing
 npm run dev
 ```
 
-A landing page estará disponível em `http://localhost:3001` (ou próxima porta disponível).
+A landing page estará disponível em `http://localhost:3000` (ou próxima porta disponível).
 
 ## 🎨 Estrutura Criada
 

@@ -147,7 +147,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     }
 
     // URLs de redirecionamento
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const successUrl = `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${frontendUrl}/subscription/cancel`;
 
@@ -220,7 +220,7 @@ export const createPortalSession = async (req: AuthRequest, res: Response) => {
     }
 
     // Criar sessão do portal
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
     const returnUrl = `${frontendUrl}/settings/subscription`;
 
     const portalSession = await createCustomerPortalSession(

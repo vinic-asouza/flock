@@ -12,7 +12,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3001}
       # Variáveis do Supabase (configure no arquivo .env na raiz)
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
