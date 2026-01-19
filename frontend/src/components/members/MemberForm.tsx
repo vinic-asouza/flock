@@ -222,7 +222,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
   const [cepDisplay, setCepDisplay] = useState('');
   const [birthDisplay, setBirthDisplay] = useState('');
-  const [baptismDateDisplay, setBaptismDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   const [cpfDisplay, setCpfDisplay] = useState('');
   const [nationalityOtherError, setNationalityOtherError] = useState('');
@@ -389,7 +388,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       if (member.cep) setCepDisplay(formatCEP(member.cep));
       if (member.document) setCpfDisplay(formatCPF(member.document));
       if (member.birth) setBirthDisplay(formatDateFromISO(member.birth));
-      if (member.baptism_date) setBaptismDateDisplay(formatDateFromISO(member.baptism_date));
       if (member.admission_date) setAdmissionDateDisplay(formatDateFromISO(member.admission_date));
     }
   }, [member]);
@@ -421,7 +419,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     setValue('document', value.replace(/\D/g, ''));
   };
 
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'baptism_date' | 'admission_date') => {
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'admission_date') => {
     const value = e.target.value;
     const numbers = value.replace(/\D/g, '');
 
@@ -439,9 +437,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     if (field === 'birth') {
       setBirthDisplay(formatted);
       setValue('birth', formatted);
-    } else if (field === 'baptism_date') {
-      setBaptismDateDisplay(formatted);
-      setValue('baptism_date', formatted);
     } else if (field === 'admission_date') {
       setAdmissionDateDisplay(formatted);
       setValue('admission_date', formatted);
@@ -512,7 +507,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         setCepDisplay('');
         setCpfDisplay('');
         setBirthDisplay('');
-        setBaptismDateDisplay('');
         setAdmissionDateDisplay('');
         setNationalityOtherError('');
         setOccupationOtherError('');

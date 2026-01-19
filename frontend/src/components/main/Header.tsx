@@ -64,7 +64,6 @@ export function Header() {
   // Determinar tipo de plano e limite
   const planType = user?.plan_type || memberLimit?.planType;
   const isFreePlan = planType === '100' || !planType;
-  const memberLimitValue = memberLimit?.limit || (planType === '100' ? 100 : planType === '200' ? 200 : planType === '500' ? 500 : planType === '800' ? 800 : 100);
 
   return (
     <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
