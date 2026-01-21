@@ -13,6 +13,7 @@ import { Header } from '@/components/main/Header';
 // Componentes que serão criados
 import { SummaryCards } from '@/components/reports/SummaryCards';
 import { DemographicsCharts } from '@/components/reports/DemographicsCharts';
+import { GroupsCharts } from '@/components/reports/GroupsCharts';
 import { ChurchStructureCharts } from '@/components/reports/ChurchStructureCharts';
 import { TimelineCharts } from '@/components/reports/TimelineCharts';
 import { GeographySection } from '@/components/reports/GeographySection';
@@ -322,6 +323,17 @@ export default function HomePage() {
                             loading={loading}
                             viewMode={viewMode}
                             selectedCongregationId={selectedCongregationId}
+                          />
+
+                          {/* Divisória */}
+                          <div className="border-t border-gray-200"></div>
+
+                          {/* Grupos/Ministérios */}
+                          <GroupsCharts
+                            loading={loading}
+                            viewMode={viewMode}
+                            selectedCongregationId={selectedCongregationId}
+                            totalMembers={reportsData.summary.totalMembers}
                           />
 
                           {/* Divisória */}

@@ -24,6 +24,7 @@ import publicRoutes from './routes/public';
 import registrationLinksRoutes from './routes/registrationLinks';
 import integrationLinksRoutes from './routes/integrationLinks';
 import plansRoutes from './routes/plans';
+import groupsRoutes from './routes/groups';
 
 dotenv.config();
 
@@ -117,6 +118,7 @@ app.use('/api/public', publicRoutes);
 app.use('/api/registration-links', registrationLinksRoutes);
 app.use('/api/integration-links', integrationLinksRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/groups', groupsRoutes);
 
 // Rota de healthcheck básico
 app.get('/health', (_req, res) => {

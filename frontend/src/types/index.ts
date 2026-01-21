@@ -202,3 +202,78 @@ export interface ImportResult {
     reason: string;
   }>;
 }
+
+// Tipos para Grupos
+export type GroupType = 
+  | 'Ministério' 
+  | 'Departamento' 
+  | 'Grupo' 
+  | 'Equipe' 
+  | 'Time' 
+  | 'Comissão' 
+  | 'Célula' 
+  | 'Grupo de Crescimento' 
+  | 'Pequeno Grupo' 
+  | 'Discipulado' 
+  | 'Classe' 
+  | 'Núcleo' 
+  | 'Região';
+
+export interface Group {
+  id: string;
+  church_id: string;
+  congregation_id?: string | null;
+  type: GroupType;
+  name: string;
+  description?: string | null;
+  responsible_id?: string | null;
+  status: boolean;
+  created_at: string;
+  updated_at: string;
+  // Relacionamentos
+  congregations?: {
+    id: string;
+    name: string;
+  } | null;
+  members?: {
+    id: string;
+    name: string;
+  } | null; // Responsável (via foreign key responsible_id)
+  memberCount?: number;
+}
+
+export interface GroupWithMembers extends Omit<Group, 'members'> {
+  // Responsável (renomeado para evitar colisão)
+  responsible?: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+  } | null;
+  // Membros vinculados (quando buscar grupo específico)
+  membersList?: Array<{
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+    active: boolean;
+    congregation_id?: string | null;
+    memberGroupId?: string;
+    addedAt?: string;
+    congregations?: {
+      id: string;
+      name: string;
+    } | null;
+  }>;
+}
+
+export interface GroupPayload {
+  name: string;
+  type: GroupType;
+  description?: string;
+  congregation_id?: string | null;
+  responsible_id?: string | null;
+  status?: boolean;
+}

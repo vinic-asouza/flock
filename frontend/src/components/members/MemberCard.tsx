@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle } from 'lucide-react';
+import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle, Church, Users } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 
 interface MemberCardProps {
@@ -9,8 +9,13 @@ interface MemberCardProps {
     name: string;
     birth: string; // ISO date
     active: boolean;
-    role?: { name: string } | null;
     congregation?: { name: string } | null;
+    groups?: Array<{
+      id: string;
+      name: string;
+      type: string;
+      status: boolean;
+    }>;
     gender: string;
     marital_status: string;
     whatsapp?: string | null;
@@ -44,17 +49,34 @@ export function MemberCard({ member, onView, onEdit, onDeactivate, onReactivate 
         <div className="flex flex-wrap items-center gap-2 mb-1">
           <span className="font-semibold text-gray-900 text-sm truncate max-w-xs md:max-w-sm uppercase" title={member.name}>{formatMemberName(member.name)}</span>
           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>{member.active ? 'Ativo' : 'Inativo'}</span>
-          {member.role?.name && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">{member.role.name}</span>
-          )}
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+            <Church size={12} className="text-gray-600" />
             {member.congregation?.name || 'Sede'}
           </span>
+          {member.groups && member.groups.length > 0 && member.groups
+            .filter(group => group.status) // Apenas grupos ativos
+            .slice(0, 3) // Máximo de 3 grupos no card
+            .map((group) => (
+              <span 
+                key={group.id} 
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
+                title={`${group.type} - ${group.name}`}
+              >
+                <Users size={12} className="text-purple-600" />
+                <span className="text-purple-600">{group.type}</span>
+                <span className="text-purple-500">•</span>
+                <span>{group.name}</span>
+              </span>
+            ))}
+          {member.groups && member.groups.filter(group => group.status).length > 3 && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+              +{member.groups.filter(group => group.status).length - 3}
+            </span>
+          )}
         </div>
         {/* Linha 2: Dados menores */}
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
           <span>{idade !== null ? `${idade} Anos` : '-'}</span>
-          <span>{member.gender}</span>
           {member.whatsapp && (
             <a
               href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}

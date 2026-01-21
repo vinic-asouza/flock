@@ -47,6 +47,7 @@ export interface Role {
 export interface Child {
   name: string;
   birth?: string;
+  dependent?: boolean;
 }
 
 export interface Member {
@@ -173,4 +174,39 @@ export interface CreateIntegrationLinkData {
 export interface PublicIntegrationRequest extends Request {
   integrationLink?: PublicIntegrationLink;
   churchId?: string;
+}
+
+export type GroupType = 
+  | 'Ministério' 
+  | 'Departamento' 
+  | 'Grupo' 
+  | 'Equipe' 
+  | 'Time' 
+  | 'Comissão' 
+  | 'Célula' 
+  | 'Grupo de Crescimento' 
+  | 'Pequeno Grupo' 
+  | 'Discipulado' 
+  | 'Classe' 
+  | 'Núcleo' 
+  | 'Região';
+
+export interface Group {
+  id: string;
+  church_id: string;
+  congregation_id?: string | null;
+  type: GroupType;
+  name: string;
+  description?: string | null;
+  responsible_id?: string | null;
+  status: boolean;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface MemberGroup {
+  id: string;
+  member_id: string;
+  group_id: string;
+  created_at: Date;
 } 

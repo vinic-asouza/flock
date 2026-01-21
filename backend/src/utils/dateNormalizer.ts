@@ -84,9 +84,10 @@ export function normalizeMemberDates(member: Record<string, unknown>): Record<st
 
   // Normalizar datas dos filhos se existirem
   if (normalized.children && Array.isArray(normalized.children)) {
-    normalized.children = (normalized.children as Array<{ name: string; birth?: string | Date | null }>).map(child => ({
+    normalized.children = (normalized.children as Array<{ name: string; birth?: string | Date | null; dependent?: boolean }>).map(child => ({
       ...child,
-      birth: child.birth ? normalizeDateForDatabase(child.birth) : null
+      birth: child.birth ? normalizeDateForDatabase(child.birth) : null,
+      dependent: child.dependent
     }));
   }
 

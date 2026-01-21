@@ -52,12 +52,13 @@ export default function PublicRegisterPage() {
     }
   }, [token]);
 
-  const handleSubmit = async (data: { name: string;[key: string]: unknown }) => {
+  const handleSubmit = async (data: { name: string; groups?: string[]; [key: string]: unknown }) => {
     try {
       setIsSubmitting(true);
       setError(null);
       setErrorType(null);
 
+      // Separar grupos dos dados do membro (serão processados pelo backend)
       await apiService.createMemberViaPublicLink(token, data);
 
       setSuccess(true);
@@ -247,21 +248,8 @@ export default function PublicRegisterPage() {
               onSubmit={handleSubmit}
               isLoading={isSubmitting}
               churchName={linkInfo?.church_name}
+              error={error && errorType === 'submission' ? error : null}
             />
-
-            {error && errorType === 'submission' && (
-              <div className="px-6 pb-6">
-                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-red-600">{error}</p>
-                    <p className="text-xs text-red-600">
-                      <AlertCircle className="inline mr-1" size={14} />
-                      Se o problema persistir, entre em contato com a secretaria da igreja para obter assistência.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Footer com informações */}

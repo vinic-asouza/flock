@@ -5,7 +5,6 @@ import { Demographics } from '@/types';
 import { PieChart } from '@/components/reports/charts/PieChart';
 import { BarChart } from '@/components/reports/charts/BarChart';
 import { MembersModal } from './MembersModal';
-import { AgeRangeModal } from '@/components/reports/AgeRangeModal';
 import { Users, Heart, Calendar, Eye } from 'lucide-react';
 
 interface DemographicsChartsProps {
@@ -166,7 +165,7 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
       />
 
       {/* Modal de Membros por Faixa Etária */}
-      <AgeRangeModal
+      <MembersModal
         isOpen={isAgeRangeModalOpen}
         onClose={() => setIsAgeRangeModalOpen(false)}
         title="Membros por Faixa Etária"
@@ -174,8 +173,17 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         tabs={ageRangeData
           .filter(a => a.rangeKey !== null) // Excluir Total (apenas para visualização no gráfico)
           .map(a => ({ ...a, value: a.rangeKey! }))}
+        filterKey="age_range" // Não usado quando customParamsBuilder está presente
         viewMode={viewMode}
         selectedCongregationId={selectedCongregationId}
+        sideLayout={true}
+        customParamsBuilder={(tabValue) => {
+          const ageRange = parseAgeRange(tabValue);
+          return {
+            birth_date_from: ageRange.birth_date_from,
+            birth_date_to: ageRange.birth_date_to,
+          };
+        }}
       />
     </div>
   );
@@ -236,4 +244,43 @@ function getAgeRangeLabel(range: string): string {
     '65+': 'Idosos (65+ anos)',
   };
   return labels[range] || range;
+}
+
+// Função para converter faixa etária em birth_date_from e birth_date_to
+function parseAgeRange(ageRange: string): { birth_date_from: string; birth_date_to: string } {
+  const ageRanges: Record<string, { birth_date_from: string; birth_date_to: string }> = {
+    '0-12': { 
+      birth_date_from: new Date(new Date().getFullYear() - 12, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date().toISOString().split('T')[0]
+    },
+    '13-17': { 
+      birth_date_from: new Date(new Date().getFullYear() - 17, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date(new Date().getFullYear() - 13, 11, 31).toISOString().split('T')[0]
+    },
+    '18-25': { 
+      birth_date_from: new Date(new Date().getFullYear() - 25, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date(new Date().getFullYear() - 18, 11, 31).toISOString().split('T')[0]
+    },
+    '26-35': { 
+      birth_date_from: new Date(new Date().getFullYear() - 35, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date(new Date().getFullYear() - 26, 11, 31).toISOString().split('T')[0]
+    },
+    '36-50': { 
+      birth_date_from: new Date(new Date().getFullYear() - 50, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date(new Date().getFullYear() - 36, 11, 31).toISOString().split('T')[0]
+    },
+    '51-65': { 
+      birth_date_from: new Date(new Date().getFullYear() - 65, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date(new Date().getFullYear() - 51, 11, 31).toISOString().split('T')[0]
+    },
+    '65+': { 
+      birth_date_from: new Date(new Date().getFullYear() - 120, 0, 1).toISOString().split('T')[0],
+      birth_date_to: new Date(new Date().getFullYear() - 65, 11, 31).toISOString().split('T')[0]
+    },
+  };
+
+  return ageRanges[ageRange] || { 
+    birth_date_from: new Date(new Date().getFullYear() - 120, 0, 1).toISOString().split('T')[0], 
+    birth_date_to: new Date().toISOString().split('T')[0] 
+  };
 }

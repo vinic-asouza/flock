@@ -139,6 +139,28 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'occupation': 'occupation',
   'trabalho': 'occupation',
   'cargo_profissional': 'occupation',
+  
+  // Filhos
+  'filhos': 'children',
+  'filho': 'children',
+  'children': 'children',
+  'child': 'children',
+  'sons': 'children',
+  'filhas': 'children',
+  
+  // Nome do pai
+  'nome_pai': 'father_name',
+  'nome do pai': 'father_name',
+  'father_name': 'father_name',
+  'pai': 'father_name',
+  'father': 'father_name',
+  
+  // Nome da mãe
+  'nome_mae': 'mother_name',
+  'nome da mãe': 'mother_name',
+  'mother_name': 'mother_name',
+  'mãe': 'mother_name',
+  'mother': 'mother_name',
 };
 
 /**
@@ -584,6 +606,62 @@ export function normalizeRow(row: CSVRow): CSVRow {
   // Normaliza CEP
   if (normalized.cep) {
     normalized.cep = normalizeCEP(normalized.cep) || '';
+  }
+  
+  // Normaliza filhos (formato: "Nome1|Data1;Nome2|Data2" ou JSON)
+  if (normalized.children) {
+    try {
+      // Tenta parsear como JSON primeiro
+      const parsed = JSON.parse(normalized.children);
+      if (Array.isArray(parsed)) {
+        // Já é um array JSON válido
+        normalized.children = JSON.stringify(parsed);
+      } else {
+        normalized.children = '';
+      }
+    } catch {
+      // Se não for JSON, tenta parsear como formato delimitado: "Nome|Data;Nome2|Data2"
+      const childrenString = normalized.children.trim();
+      if (childrenString) {
+        const childrenArray: Array<{ name: string; birth?: string; dependent?: boolean }> = [];
+        const childrenParts = childrenString.split(';');
+        
+        for (const part of childrenParts) {
+          const trimmed = part.trim();
+          if (trimmed) {
+            // Formato: "Nome|Data|Dependente" ou "Nome|Data" ou "Nome"
+            const parts = trimmed.split('|').map(s => s.trim());
+            const name = parts[0];
+            const birth = parts[1];
+            const dependentStr = parts[2];
+            
+            if (name) {
+              const child: { name: string; birth?: string; dependent?: boolean } = { name };
+              if (birth) {
+                const birthDate = normalizeDate(birth);
+                if (birthDate) {
+                  child.birth = birthDate.toISOString().split('T')[0];
+                }
+              }
+              // Processar dependente: "true", "false", "sim", "não", "s", "n"
+              if (dependentStr) {
+                const dependentLower = dependentStr.toLowerCase();
+                if (dependentLower === 'true' || dependentLower === 'sim' || dependentLower === 's' || dependentLower === 'yes' || dependentLower === 'y') {
+                  child.dependent = true;
+                } else if (dependentLower === 'false' || dependentLower === 'não' || dependentLower === 'nao' || dependentLower === 'n' || dependentLower === 'no') {
+                  child.dependent = false;
+                }
+              }
+              childrenArray.push(child);
+            }
+          }
+        }
+        
+        normalized.children = childrenArray.length > 0 ? JSON.stringify(childrenArray) : '';
+      } else {
+        normalized.children = '';
+      }
+    }
   }
   
   // Normaliza gênero

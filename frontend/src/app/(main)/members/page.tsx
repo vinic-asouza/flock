@@ -29,7 +29,6 @@ import { Member } from '@/types';
 export type MemberFilters = {
   search: string;
   status: 'all' | 'active' | 'inactive';
-  roleId: string;
   congregationId: string;
   gender: '' | 'Masculino' | 'Feminino';
   maritalStatus: '' | 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro';
@@ -51,7 +50,6 @@ export type MemberFilters = {
 const initialFilters: MemberFilters = {
   search: '',
   status: 'active',
-  roleId: '',
   congregationId: '',
   gender: '',
   maritalStatus: '',
@@ -147,17 +145,12 @@ function MembersPageContent() {
       
       setIsInitializing(true);
       
-      const roleIdFromUrl = searchParams.get('role_id');
       const congregationIdFromUrl = searchParams.get('congregation_id');
       const statusFromUrl = searchParams.get('status');
       
       const filtersToUse = { ...initialFilters };
       
-      if (roleIdFromUrl || congregationIdFromUrl || statusFromUrl) {
-        if (roleIdFromUrl) {
-          filtersToUse.roleId = roleIdFromUrl;
-        }
-        
+      if (congregationIdFromUrl || statusFromUrl) {
         if (congregationIdFromUrl) {
           filtersToUse.congregationId = congregationIdFromUrl;
         }
@@ -262,7 +255,6 @@ function MembersPageContent() {
         whatsapp: currentMember.whatsapp || null,
         email: currentMember.email || null,
         baptism_date: currentMember.baptism_date || null,
-        role_id: currentMember.role_id || null,
         occupation: currentMember.occupation || null,
         admission: currentMember.admission || null,
         admission_date: currentMember.admission_date || null,
@@ -323,7 +315,6 @@ function MembersPageContent() {
         whatsapp: currentMember.whatsapp || null,
         email: currentMember.email || null,
         baptism_date: currentMember.baptism_date || null,
-        role_id: currentMember.role_id || null,
         occupation: currentMember.occupation || null,
         admission: currentMember.admission || null,
         admission_date: currentMember.admission_date || null,
@@ -400,7 +391,6 @@ function MembersPageContent() {
       // Adicionar filtros ativos
       if (filters.search) params.search = filters.search;
       if (filters.status && filters.status !== 'all') params.status = filters.status;
-      if (filters.roleId) params.role_id = filters.roleId;
       if (filters.congregationId) params.congregation_id = filters.congregationId;
       if (filters.gender) params.gender = filters.gender;
       if (filters.maritalStatus) params.marital_status = filters.maritalStatus;
@@ -452,7 +442,6 @@ function MembersPageContent() {
       // Adicionar filtros ativos
       if (filters.search) params.search = filters.search;
       if (filters.status && filters.status !== 'all') params.status = filters.status;
-      if (filters.roleId) params.role_id = filters.roleId;
       if (filters.congregationId) params.congregation_id = filters.congregationId;
       if (filters.gender) params.gender = filters.gender;
       if (filters.maritalStatus) params.marital_status = filters.maritalStatus;

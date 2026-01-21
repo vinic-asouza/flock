@@ -1,7 +1,7 @@
 import Joi from 'joi';
 import { Member } from '../types';
 
-const memberSchema = Joi.object<Partial<Member>>({
+const memberSchema = Joi.object({
   name: Joi.string()
     .required()
     .messages({
@@ -172,16 +172,23 @@ const memberSchema = Joi.object<Partial<Member>>({
     .items(
       Joi.object({
         name: Joi.string().required(),
-        birth: Joi.string().optional().allow(null, '')
+        birth: Joi.string().optional().allow(null, ''),
+        dependent: Joi.boolean().optional()
       })
     )
     .optional()
     .allow(null),
 
   active: Joi.boolean()
-    .default(true)
+    .default(true),
+
+  // Campo auxiliar para grupos (processado separadamente - não faz parte do tipo Member)
+  groups: Joi.array()
+    .items(Joi.string().uuid())
+    .optional()
+    .allow(null)
 });
 
-export const validateMember = (data: Partial<Member>) => {
-  return memberSchema.validate(data, { abortEarly: false });
+export const validateMember = (data: Partial<Member> & { groups?: string[] }) => {
+  return memberSchema.validate(data, { abortEarly: false, allowUnknown: false });
 }; 

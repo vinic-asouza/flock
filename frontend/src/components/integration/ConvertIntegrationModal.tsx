@@ -73,8 +73,7 @@ export function ConvertIntegrationModal({
       birth: integrationMember.birth ?? '',
       gender: mapGender(integrationMember.gender),
       marital_status: mapMaritalStatus(integrationMember.marital_status),
-      nationality: '', // Campo obrigatório no tipo local do MemberForm
-      document: '',
+      nationality: '',
       spouse: '',
       occupation: '', // Campo obrigatório no tipo local do MemberForm
       address: '', // Campo obrigatório no tipo local do MemberForm
@@ -86,10 +85,8 @@ export function ConvertIntegrationModal({
       baptism_date: '',
       admission: mapAdmission(integrationMember.expected_admission_type),
       admission_date: '',
-      role_id: '',
       congregation_id: integrationMember.expected_congregation_id ?? '',
       active: true,
-      role: null,
       congregation: integrationMember.expected_congregation
         ? {
           id: integrationMember.expected_congregation.id,

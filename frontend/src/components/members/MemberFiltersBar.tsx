@@ -25,7 +25,7 @@ export function MemberFiltersBar({
   sorting, 
   onSortingChange 
 }: MemberFiltersBarProps) {
-  const { roles, congregations, loading: filtersLoading, error } = useFiltersData();
+  const { congregations, loading: filtersLoading, error } = useFiltersData();
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [showSortingDropdown, setShowSortingDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -200,65 +200,6 @@ export function MemberFiltersBar({
                       className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                     >
                       {cong.name}
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Função */}
-      <div className="flex flex-col gap-1">
-        <label className="block text-xs font-medium text-gray-600">Função</label>
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpenSelect(openSelect === 'role' ? null : 'role')}
-            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={filtersLoading}
-          >
-            <span>
-              {filters.roleId 
-                ? roles.find(r => r.id === filters.roleId)?.name || 'Função selecionada'
-                : filtersLoading ? 'Carregando...' : 'Todas as funções'
-              }
-            </span>
-            <ChevronDown 
-              size={16} 
-              className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'role' ? 'rotate-180' : ''}`}
-            />
-          </button>
-          
-          {/* Dropdown de Função */}
-          {openSelect === 'role' && (
-            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ roleId: '' });
-                    setOpenSelect(null);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.roleId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Todas as funções
-                </button>
-                {filtersLoading ? (
-                  <div className="px-3 py-2 text-sm text-gray-500">Carregando funções...</div>
-                ) : (
-                  roles.map(role => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => {
-                        onChange({ roleId: role.id });
-                        setOpenSelect(null);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.roleId === role.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                    >
-                      {role.name}
                     </button>
                   ))
                 )}

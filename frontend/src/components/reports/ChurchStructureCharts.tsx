@@ -23,34 +23,7 @@ interface ChartDataItem {
 }
 
 export function ChurchStructureCharts({ data, loading = false, hideCongregations = false, viewMode = 'all', selectedCongregationId }: ChurchStructureChartsProps) {
-  const [isRolesModalOpen, setIsRolesModalOpen] = useState(false);
   const [isCongregationsModalOpen, setIsCongregationsModalOpen] = useState(false);
-  // Converter dados de cargos para formato do gráfico
-  const rolesData = useMemo(() => {
-    const regularRoles = Object.entries(data.roles)
-      .filter(([label, roleData]) => label !== 'Sem cargo' && roleData.id) // Excluir "Sem cargo" e cargos sem ID
-      .map(([label, roleData]) => ({
-        label,
-        value: roleData.count,
-        id: roleData.id,
-        color: getRoleColor(label),
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8); // Top 8 cargos
-
-    // Calcular total
-    const totalValue = Object.values(data.roles).reduce((sum, item) => sum + item.count, 0);
-    const totalItem = {
-      label: 'Total',
-      value: totalValue,
-      id: null,
-      idForModal: null, // Total não aparece no modal
-      color: getRoleColor('Total'),
-    };
-
-    // Combinar: cargos primeiro, Total por último
-    return [...regularRoles, totalItem];
-  }, [data.roles]);
 
 
   // Converter dados de congregações para formato do gráfico
@@ -127,25 +100,7 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
         Estrutura da Igreja
       </h2>
       
-      <div className={`grid grid-cols-1 ${hideCongregations ? 'lg:grid-cols-1' : 'lg:grid-cols-2'} gap-6`}>
-        {/* Gráfico de Cargos */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              Distribuição por Cargos
-            </h3>
-            {/* Botão para visualizar membros */}
-            <button
-              onClick={() => setIsRolesModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <Eye size={14} />
-              Visualizar
-            </button>
-          </div>
-          <BarChart data={rolesData} orientation="horizontal" maxBars={10} />
-        </div>
-
+      <div className={`grid grid-cols-1 ${hideCongregations ? 'lg:grid-cols-1' : 'lg:grid-cols-1'} gap-6`}>
         {/* Gráfico de Congregações - apenas se não estiver oculto */}
         {!hideCongregations && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -162,25 +117,10 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
                 Visualizar
               </button>
             </div>
-            <BarChart data={congregationsData} orientation="horizontal" maxBars={10} />
+            <BarChart data={congregationsData} orientation="horizontal" maxBars={10} showPercentage={true} />
           </div>
         )}
       </div>
-
-      {/* Modal de Membros por Cargos */}
-      <MembersModal
-        isOpen={isRolesModalOpen}
-        onClose={() => setIsRolesModalOpen(false)}
-        title="Membros por Cargos"
-        icon={<Building size={20} className="text-[#090725]" />}
-        tabs={rolesData
-          .filter(r => r.id !== null) // Excluir Total (apenas para visualização no gráfico)
-          .map(r => ({ ...r, value: r.id!, count: r.value }))}
-        filterKey="role_id"
-        viewMode={viewMode}
-        selectedCongregationId={selectedCongregationId}
-        sideLayout={true}
-      />
 
       {/* Modal de Membros por Congregações */}
       {!hideCongregations && (
@@ -207,23 +147,6 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
 }
 
 // Funções auxiliares para cores
-function getRoleColor(role: string): string {
-  const colors: Record<string, string> = {
-    'Pastor(a) titular': '#090725',        // Cor primária
-    'Pastor(a) auxiliar': '#090725',       // Cor primária
-    'Presbítero(a)': '#090725',            // Cor primária
-    'Diácono(isa)': '#090725',             // Cor primária
-    'Obreiro(a)': '#090725',               // Cor primária
-    'Liderança': '#090725',                // Cor primária
-    'Líder de célula/pg': '#090725',       // Cor primária
-    'Líder de ministério': '#090725',      // Cor primária
-    'Conselho': '#090725',                 // Cor primária
-    'Secretário(a)': '#090725',            // Cor primária
-    'Administrativo': '#090725',           // Cor primária
-  };
-  return colors[role] || '#090725';
-}
-
 function getCongregationColor(): string {
   // Todas as congregações usam a cor primária
   return '#090725';

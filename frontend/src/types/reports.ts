@@ -28,7 +28,6 @@ export interface Demographics {
 }
 
 export interface ChurchStructure {
-  roles: Record<string, { count: number; id: string | null }>;
   congregations: Record<string, { count: number; id: string | null }>;
 }
 
@@ -79,11 +78,6 @@ export interface Member {
   name: string;
   birth: string;
   active: boolean;
-  role?: { 
-    id: string;
-    name: string; 
-    description?: string;
-  } | null;
   congregation?: { 
     id: string;
     name: string; 
@@ -109,7 +103,6 @@ export interface Member {
   whatsapp?: string;
   email?: string;
   baptism_date?: string;
-  role_id?: string;
   occupation?: string;
   admission?: string;
   admission_date?: string;

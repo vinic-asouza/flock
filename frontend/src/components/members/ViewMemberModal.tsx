@@ -34,9 +34,20 @@ interface Member {
   children?: Array<{
     name: string;
     birth?: string;
+    dependent?: boolean;
   }>;
-  role?: { name: string } | null;
   congregation?: { name: string } | null;
+  groups?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: boolean;
+    congregation_id?: string | null;
+    congregations?: {
+      id: string;
+      name: string;
+    } | null;
+  }>;
   active: boolean;
 }
 
@@ -197,11 +208,6 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                       }`}>
                       {member.active ? 'Ativo' : 'Inativo'}
                     </span>
-                    {member.role && (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                        {member.role.name}
-                      </span>
-                    )}
                   </div>
                 </div>
                 <Button
@@ -224,22 +230,27 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                 </Button>
               </div>
 
-              {/* Informações Básicas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                    <User size={20} />
-                    Informações Pessoais
-                  </h4>
+              {/* Informações Pessoais */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                  <User size={20} />
+                  Informações Pessoais
+                </h4>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Primeira coluna */}
                   <div className="space-y-3">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Gênero</span>
+                      <p className="text-gray-900">{member.gender}</p>
+                    </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Idade</span>
                       <p className="text-gray-900">{idade !== null ? `${idade} anos` : '-'}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Gênero</span>
-                      <p className="text-gray-900">{member.gender}</p>
+                      <span className="text-sm font-medium text-gray-500">Data de Nascimento</span>
+                      <p className="text-gray-900">{formatarData(member.birth)}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Estado Civil</span>
@@ -249,12 +260,14 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                       <span className="text-sm font-medium text-gray-500">Nacionalidade</span>
                       <p className="text-gray-900">{member.nationality}</p>
                     </div>
-                    {member.document && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Documento</span>
-                        <p className="text-gray-900">{member.document}</p>
-                      </div>
-                    )}
+                    <div>
+                      <span className="text-sm font-medium text-gray-500">Profissão</span>
+                      <p className="text-gray-900">{member.occupation}</p>
+                    </div>
+                  </div>
+
+                  {/* Segunda coluna */}
+                  <div className="space-y-3">
                     {member.spouse && (
                       <div>
                         <span className="text-sm font-medium text-gray-500">Cônjuge</span>
@@ -273,22 +286,34 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                         <p className="text-gray-900">{member.mother_name}</p>
                       </div>
                     )}
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Profissão</span>
-                      <p className="text-gray-900">{member.occupation}</p>
-                    </div>
                     {member.children && member.children.length > 0 && (
                       <div>
                         <span className="text-sm font-medium text-gray-500">Filhos</span>
-                        <div className="mt-1">
+                        <div className="mt-1 space-y-3">
                           {member.children.map((child, index) => {
                             const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
                             const childAge = birthISO ? calcularIdade(birthISO) : null;
                             return (
-                              <p key={index} className="text-gray-900">
-                                {child.name}
-                                {childAge !== null && ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`}
-                              </p>
+                              <div key={index} className="space-y-1">
+                                <p className="text-gray-900">{child.name}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {childAge !== null && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                      {childAge} {childAge === 1 ? 'ano' : 'anos'}
+                                    </span>
+                                  )}
+                                  {child.dependent === true && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                      Dependente
+                                    </span>
+                                  )}
+                                  {child.dependent === false && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                      Não dependente
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
@@ -296,7 +321,73 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                     )}
                   </div>
                 </div>
+              </div>
 
+              {/* Contato, Endereço e Informações Eclesiásticas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Coluna 1: Contato e Endereço */}
+                <div className="space-y-6">
+                  {/* Contato */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                      <Mail size={20} />
+                      Contato
+                    </h4>
+
+                    <div className="space-y-3">
+                      {member.email && (
+                        <div className="flex items-center gap-2">
+                          <Mail size={16} className="text-gray-400" />
+                          <a href={`mailto:${member.email}`} className="text-primary hover:underline">
+                            {member.email}
+                          </a>
+                        </div>
+                      )}
+                      {member.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone size={16} className="text-gray-400" />
+                          <span className="text-gray-900">{formatarTelefone(member.phone)}</span>
+                        </div>
+                      )}
+                      {member.whatsapp && (
+                        <div className="flex items-center gap-2">
+                          <MessageCircle size={16} className="text-green-600" />
+                          <a
+                            href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {formatarTelefone(member.whatsapp)}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Endereço */}
+                  <div className="space-y-4">
+                    <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                      <Home size={20} />
+                      Endereço
+                    </h4>
+
+                    <div className="space-y-2">
+                      <p className="text-gray-900">{member.address}</p>
+                      {member.complement && (
+                        <p className="text-gray-900">{member.complement}</p>
+                      )}
+                      <p className="text-gray-900">
+                        {member.neighborhood && `${member.neighborhood} - `}{member.city}/{member.state}
+                      </p>
+                      {member.cep && (
+                        <p className="text-gray-900">CEP: {member.cep}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coluna 2: Informações Eclesiásticas */}
                 <div className="space-y-4">
                   <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                     <Church size={20} />
@@ -322,66 +413,51 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                         <p className="text-gray-900">{member.admission}</p>
                       </div>
                     )}
+                    {member.groups && member.groups.length > 0 && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Grupos / Ministérios</span>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {member.groups
+                            .filter(group => group.status) // Apenas grupos ativos
+                            .map((group) => (
+                              <span
+                                key={group.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
+                              >
+                                <span className="text-purple-600">{group.type}</span>
+                                <span className="text-purple-500">•</span>
+                                <span>{group.name}</span>
+                              </span>
+                            ))}
+                          {member.groups.filter(group => !group.status).length > 0 && (
+                            <>
+                              <div className="w-full mt-2 pt-2 border-t border-gray-200">
+                                <span className="text-xs text-gray-500">Grupos Inativos:</span>
+                              </div>
+                              {member.groups
+                                .filter(group => !group.status)
+                                .map((group) => (
+                                  <span
+                                    key={group.id}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 opacity-75"
+                                  >
+                                    <span className="text-gray-500">{group.type}</span>
+                                    <span className="text-gray-400">•</span>
+                                    <span>{group.name}</span>
+                                  </span>
+                                ))}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {(!member.groups || member.groups.length === 0) && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Grupos / Ministérios</span>
+                        <p className="text-gray-500 text-sm mt-1">Nenhum grupo vinculado</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-
-              {/* Contato */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <Mail size={20} />
-                  Contato
-                </h4>
-
-                <div className="space-y-3">
-                  {member.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail size={16} className="text-gray-400" />
-                      <a href={`mailto:${member.email}`} className="text-primary hover:underline">
-                        {member.email}
-                      </a>
-                    </div>
-                  )}
-                  {member.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-400" />
-                      <span className="text-gray-900">{formatarTelefone(member.phone)}</span>
-                    </div>
-                  )}
-                  {member.whatsapp && (
-                    <div className="flex items-center gap-2">
-                      <MessageCircle size={16} className="text-green-600" />
-                      <a
-                        href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {formatarTelefone(member.whatsapp)}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Endereço */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                  <Home size={20} />
-                  Endereço
-                </h4>
-
-                <div className="space-y-2">
-                  <p className="text-gray-900">{member.address}</p>
-                  {member.complement && (
-                    <p className="text-gray-900">{member.complement}</p>
-                  )}
-                  <p className="text-gray-900">
-                    {member.neighborhood && `${member.neighborhood} - `}{member.city}/{member.state}
-                  </p>
-                  {member.cep && (
-                    <p className="text-gray-900">CEP: {member.cep}</p>
-                  )}
                 </div>
               </div>
             </div>

@@ -28,15 +28,8 @@ interface Member {
   baptism_date?: string;
   admission?: string;
   admission_date?: string;
-  role_id?: string;
   congregation_id?: string;
   active: boolean;
-  // Campos retornados pela API com detalhes completos
-  role?: {
-    id: string;
-    name: string;
-    description?: string;
-  } | null;
   congregation?: {
     id: string;
     name: string;
@@ -46,6 +39,19 @@ interface Member {
     leader?: string;
     phone?: string;
   } | null;
+  groups?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: boolean;
+    congregation_id?: string | null;
+    memberGroupId?: string;
+    addedAt?: string;
+    congregations?: {
+      id: string;
+      name: string;
+    } | null;
+  }>;
 }
 
 interface EditMemberModalProps {
@@ -83,12 +89,42 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
     }
   };
 
-  const handleSubmit = async (data: { name: string; [key: string]: unknown }) => {
+  const handleSubmit = async (data: { name: string; groups?: string[]; [key: string]: unknown }) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      await apiService.updateMember(memberId, data);
+      // Separar grupos dos dados do membro
+      const { groups, ...memberData } = data;
+      
+      // Atualizar membro
+      await apiService.updateMember(memberId, memberData);
+      
+      // Gerenciar grupos: adicionar novos e remover desmarcados
+      if (member) {
+        const currentGroups = (member.groups || []).map((g) => g.id);
+        const newGroups = groups || [];
+        
+        // Adicionar novos grupos
+        const groupsToAdd = newGroups.filter(id => !currentGroups.includes(id));
+        for (const groupId of groupsToAdd) {
+          try {
+            await apiService.addMemberToGroup(groupId, memberId);
+          } catch (groupError) {
+            console.error('Erro ao adicionar membro ao grupo:', groupError);
+          }
+        }
+        
+        // Remover grupos desmarcados
+        const groupsToRemove = currentGroups.filter(id => !newGroups.includes(id));
+        for (const groupId of groupsToRemove) {
+          try {
+            await apiService.removeMemberFromGroup(groupId, memberId);
+          } catch (groupError) {
+            console.error('Erro ao remover membro do grupo:', groupError);
+          }
+        }
+      }
       
       // Buscar os dados atualizados do membro para garantir que temos todos os dados
       const updatedMember = await apiService.getMember(memberId);
@@ -130,12 +166,6 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
           </div>
         )}
 
-        {error && (
-          <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
-            <p className="text-sm font-medium text-red-600">{error}</p>
-          </div>
-        )}
-
         {member && !isLoadingMember && (
           <div className="flex-1">
             <MemberForm
@@ -144,6 +174,7 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
               onSubmit={handleSubmit}
               onCancel={handleClose}
               isLoading={isLoading}
+              error={error}
             />
           </div>
         )}

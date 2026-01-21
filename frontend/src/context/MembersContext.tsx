@@ -8,11 +8,6 @@ interface Member {
   name: string;
   birth: string;
   active: boolean;
-  role?: { 
-    id: string;
-    name: string; 
-    description?: string;
-  } | null;
   congregation?: { 
     id: string;
     name: string; 
@@ -38,7 +33,6 @@ interface Member {
   whatsapp?: string;
   email?: string;
   baptism_date?: string;
-  role_id?: string;
   occupation?: string;
   admission?: string;
   admission_date?: string;
@@ -101,7 +95,6 @@ export function MembersProvider({ children }: { children: ReactNode }) {
   const [currentFilters, setCurrentFilters] = useState<MemberFilters>({
     search: '',
     status: 'active',
-    roleId: '',
     congregationId: '',
     gender: '',
     maritalStatus: '',
@@ -243,7 +236,6 @@ function filtersToApiParams(filters: MemberFilters, sorting?: { sort_by: string;
   if (filters.search && filters.search.trim()) params.search = filters.search.trim();
   if (filters.status === 'active') params.active = true;
   if (filters.status === 'inactive') params.active = false;
-  if (filters.roleId && filters.roleId.trim()) params.role_id = filters.roleId.trim();
   if (filters.congregationId && filters.congregationId.trim()) params.congregation_id = filters.congregationId.trim();
   if (filters.gender && filters.gender.trim()) params.gender = filters.gender.trim();
   if (filters.maritalStatus && filters.maritalStatus.trim()) params.marital_status = filters.maritalStatus.trim();

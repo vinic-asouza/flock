@@ -13,10 +13,12 @@ export function useMemberOptions({
   initialSearch = '',
   includeInactive = false,
   enabled = true,
+  congregationId,
 }: {
   initialSearch?: string;
   includeInactive?: boolean;
   enabled?: boolean;
+  congregationId?: string | null;
 } = {}) {
   const [options, setOptions] = useState<MemberOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,6 +47,8 @@ export function useMemberOptions({
         limit: 20,
         search: searchValue,
         active: includeInactive ? undefined : true,
+        // Se congregationId é null (sede), passar 'sede'. Se é string, passar a string. Se undefined, não passar
+        congregation_id: congregationId === null ? 'sede' : (congregationId || undefined),
         sort_by: 'name',
         sort_order: 'asc',
       });
@@ -66,7 +70,7 @@ export function useMemberOptions({
     } finally {
       setLoading(false);
     }
-  }, [includeInactive, enabled]);
+  }, [includeInactive, enabled, congregationId]);
 
   useEffect(() => {
     if (!enabled) return;

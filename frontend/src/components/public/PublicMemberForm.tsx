@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,6 +11,8 @@ import { X } from 'lucide-react';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
+import { apiService } from '@/services/api';
+import { Group } from '@/types';
 
 // Schema de validação (idêntico ao MemberForm)
 const memberSchema = z.object({
@@ -21,31 +23,8 @@ const memberSchema = z.object({
   birth: z.string().min(1, 'Data de nascimento é obrigatória'),
   gender: z.enum(['Masculino', 'Feminino']),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro']),
-  nationality: z.string().min(1, 'Nacionalidade é obrigatória'),
+  nationality: z.string().optional().or(z.literal('')),
   nationality_other: z.string().optional().or(z.literal('')),
-  document: z.string()
-    .optional()
-    .or(z.literal(''))
-    .refine((cpf) => {
-      if (!cpf || cpf.trim() === '') return true;
-      const cleanCpf = cpf.replace(/\D/g, '');
-      if (cleanCpf.length !== 11) return false;
-      if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-      let sum = 0;
-      for (let i = 0; i < 9; i++) {
-        sum += parseInt(cleanCpf[i]) * (10 - i);
-      }
-      let remainder = sum % 11;
-      const firstDigit = remainder < 2 ? 0 : 11 - remainder;
-      if (parseInt(cleanCpf[9]) !== firstDigit) return false;
-      sum = 0;
-      for (let i = 0; i < 10; i++) {
-        sum += parseInt(cleanCpf[i]) * (11 - i);
-      }
-      remainder = sum % 11;
-      const secondDigit = remainder < 2 ? 0 : 11 - remainder;
-      return parseInt(cleanCpf[10]) === secondDigit;
-    }, 'CPF inválido'),
   spouse: z.string().optional().or(z.literal('')),
   occupation: z.string().optional().or(z.literal('')),
   occupation_other: z.string().optional().or(z.literal('')),
@@ -58,13 +37,13 @@ const memberSchema = z.object({
   baptism_date: z.string().optional().or(z.literal('')),
   admission: z.string().min(1, 'Tipo de recebimento é obrigatório'),
   admission_date: z.string().min(1, 'Data de recebimento é obrigatória'),
-  role_id: z.string().optional().or(z.literal('')).nullable(),
   congregation_id: z.string().optional().or(z.literal('')).nullable(),
   father_name: z.string().optional().or(z.literal('')),
   mother_name: z.string().optional().or(z.literal('')),
   children: z.array(z.object({
     name: z.string().min(1, 'Nome do filho é obrigatório'),
     birth: z.string().optional().or(z.literal('')),
+    dependent: z.boolean().optional(),
   })).optional(),
   active: z.boolean(),
 });
@@ -74,6 +53,7 @@ type MemberFormData = z.infer<typeof memberSchema>;
 interface Child {
   name: string;
   birth?: string;
+  dependent?: boolean;
 }
 
 interface PublicMemberFormProps {
@@ -81,6 +61,7 @@ interface PublicMemberFormProps {
   onCancel?: () => void;
   isLoading?: boolean;
   churchName?: string;
+  error?: string | null;
 }
 
 // Funções auxiliares (idênticas ao MemberForm)
@@ -98,19 +79,6 @@ const formatCEP = (value: string): string => {
   return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
 };
 
-// Função de formatação de CPF - temporariamente desabilitada
-// const formatCPF = (value: string): string => {
-//   const numbers = value.replace(/\D/g, '');
-//   if (numbers.length <= 3) {
-//     return numbers;
-//   } else if (numbers.length <= 6) {
-//     return numbers.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-//   } else if (numbers.length <= 9) {
-//     return numbers.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-//   } else {
-//     return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-//   }
-// };
 
 const formatDateToISO = (formattedDate: string): string | null => {
   if (!formattedDate) return null;
@@ -137,9 +105,10 @@ export function PublicMemberForm({
   onSubmit,
   onCancel,
   isLoading = false,
-  churchName
+  churchName,
+  error
 }: PublicMemberFormProps) {
-  const { roles, congregations, loading: filtersLoading } = useFiltersData();
+  const { congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
   const { professions, loading: professionsLoading } = useProfessions();
 
@@ -148,12 +117,15 @@ export function PublicMemberForm({
   const [cepDisplay, setCepDisplay] = useState('');
   const [birthDisplay, setBirthDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
-  // const [cpfDisplay, setCpfDisplay] = useState(''); // Temporariamente desabilitado
   const [nationalityOtherError, setNationalityOtherError] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
   const [children, setChildren] = useState<Child[]>([]);
   const [childrenBirthDisplays, setChildrenBirthDisplays] = useState<Record<number, string>>({});
   const [isInfantMember, setIsInfantMember] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -169,6 +141,7 @@ export function PublicMemberForm({
       gender: 'Masculino',
       marital_status: 'Solteiro',
       nationality: 'Brasileiro(a)',
+      congregation_id: '', // Sede por padrão
     },
   });
 
@@ -178,6 +151,37 @@ export function PublicMemberForm({
   const selectedOccupation = watch('occupation');
   const occupationOtherValue = watch('occupation_other');
   const selectedMaritalStatus = watch('marital_status');
+  const selectedCongregationId = watch('congregation_id');
+
+  // Scroll para o erro quando ele aparecer
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [error]);
+
+  // Carregar grupos disponíveis quando congregação mudar
+  useEffect(() => {
+    const loadGroups = async () => {
+      const congregationIdToUse = selectedCongregationId || null;
+      try {
+        setLoadingGroups(true);
+        // Se congregação vazia ou null, buscar grupos da sede
+        const congregationParam = congregationIdToUse === '' || congregationIdToUse === undefined || !congregationIdToUse ? 'sede' : congregationIdToUse;
+        const response = await apiService.listGroups(congregationParam);
+        setAvailableGroups(response);
+      } catch (error) {
+        console.error('Erro ao carregar grupos:', error);
+        setAvailableGroups([]);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+
+    // Carregar grupos sempre (sede por padrão quando congregação estiver vazia ou undefined)
+    // Isso garante que grupos da sede sejam carregados ao abrir o formulário
+    loadGroups();
+  }, [selectedCongregationId]);
 
   // Carregar cidades quando estado mudar
   useEffect(() => {
@@ -223,13 +227,6 @@ export function PublicMemberForm({
     setValue('cep', value.replace(/\D/g, ''));
   };
 
-  // Função de formatação de CPF - temporariamente desabilitada
-  // const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const value = e.target.value;
-  //   const formatted = formatCPF(value);
-  //   setCpfDisplay(formatted);
-  //   setValue('document', value.replace(/\D/g, ''));
-  // };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'admission_date') => {
     const value = e.target.value;
@@ -255,7 +252,7 @@ export function PublicMemberForm({
 
   const handleFormSubmit = async (data: MemberFormData) => {
     try {
-      if (data.nationality === 'Outra' && (!data.nationality_other || data.nationality_other.trim() === '')) {
+      if (data.nationality && data.nationality === 'Outra' && (!data.nationality_other || data.nationality_other.trim() === '')) {
         setNationalityOtherError('Por favor, especifique a nacionalidade');
         return;
       } else {
@@ -272,6 +269,7 @@ export function PublicMemberForm({
       const childrenWithISO = children.map(child => ({
         name: child.name,
         birth: child.birth ? formatDateToISO(child.birth) || undefined : undefined,
+        dependent: child.dependent,
       }));
 
       // Lógica para Data de Batismo:
@@ -289,22 +287,22 @@ export function PublicMemberForm({
         birth: formatDateToISO(data.birth) || '',
         baptism_date: baptismDateISO,
         admission_date: admissionDateISO,
-        nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
+        nationality: data.nationality && data.nationality === 'Outra' ? (data.nationality_other || '') : (data.nationality || ''),
         occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
         nationality_other: undefined,
         occupation_other: undefined,
-        role_id: data.role_id || null,
         congregation_id: data.congregation_id || null,
         children: childrenWithISO,
+        // Incluir grupos selecionados (será processado pelo backend separadamente)
+        groups: selectedGroups,
       };
 
       await onSubmit(memberData);
 
-      // Limpar formulário após sucesso
+      // Limpar formulário apenas após sucesso
       setPhoneDisplay('');
       setWhatsappDisplay('');
       setCepDisplay('');
-      // setCpfDisplay(''); // Temporariamente desabilitado
       setBirthDisplay('');
       setAdmissionDateDisplay('');
       setNationalityOtherError('');
@@ -312,8 +310,10 @@ export function PublicMemberForm({
       setChildren([]);
       setChildrenBirthDisplays({});
       reset();
-    } catch (error) {
-      throw error;
+    } catch (err) {
+      // Em caso de erro, não limpar o formulário
+      // Re-lançar o erro para que o componente pai possa tratá-lo
+      throw err;
     }
   };
 
@@ -400,7 +400,7 @@ export function PublicMemberForm({
           />
 
           <Select
-            label="Nacionalidade (obrigatório)"
+            label="Nacionalidade"
             value={watch('nationality') || ''}
             onChange={(value) => setValue('nationality', value)}
             options={[
@@ -450,15 +450,6 @@ export function PublicMemberForm({
             />
           )}
 
-          {/* <Input
-            label="CPF (opcional)"
-            placeholder="000.000.000-00"
-            value={cpfDisplay}
-            onChange={handleCPFChange}
-            maxLength={14}
-            error={errors.document?.message}
-            isLoading={isLoading}
-          /> */}
 
           {selectedMaritalStatus === 'Casado' && (
             <Input
@@ -592,6 +583,43 @@ export function PublicMemberForm({
                           </p>
                         ) : null;
                       })()}
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dependente
+                      </label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={child.dependent === true}
+                            onChange={(e) => {
+                              const newChildren = [...children];
+                              newChildren[index] = { ...child, dependent: e.target.checked ? true : undefined };
+                              setChildren(newChildren);
+                              setValue('children', newChildren);
+                            }}
+                            disabled={isLoading}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">Sim</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={child.dependent === false}
+                            onChange={(e) => {
+                              const newChildren = [...children];
+                              newChildren[index] = { ...child, dependent: e.target.checked ? false : undefined };
+                              setChildren(newChildren);
+                              setValue('children', newChildren);
+                            }}
+                            disabled={isLoading}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">Não</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -767,41 +795,112 @@ export function PublicMemberForm({
           {/* Quarta linha: Informação e campos de Função e Congregação */}
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800 leading-relaxed">
-              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma <strong>congregação/filial</strong>, informe também se você possui algum <strong>cargo</strong> ou serve em um <strong>ministério</strong> específico.
+              Abaixo informe se você faz parte da igreja sede <strong>{churchName || 'igreja'}</strong>, ou de alguma <strong>congregação/filial</strong>.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="Congregação"
-              value={watch('congregation_id') || ''}
-              onChange={(value) => setValue('congregation_id', value)}
-              options={[
-                { value: '', label: 'Sede' },
-                ...congregations.map((congregation) => ({
-                  value: congregation.id,
-                  label: congregation.name
-                }))
-              ]}
-              disabled={filtersLoading || isLoading}
-            />
+          <Select
+            label="Congregação"
+            value={watch('congregation_id') || ''}
+            onChange={(value) => {
+              setValue('congregation_id', value);
+              // Limpar grupos selecionados quando mudar congregação
+              setSelectedGroups([]);
+            }}
+            options={[
+              { value: '', label: 'Sede' },
+              ...congregations.map((congregation) => ({
+                value: congregation.id,
+                label: congregation.name
+              }))
+            ]}
+            disabled={filtersLoading || isLoading}
+          />
 
-            <Select
-              label="Cargo ou Ministério"
-              value={watch('role_id') || ''}
-              onChange={(value) => setValue('role_id', value)}
-              options={[
-                { value: '', label: 'Nenhuma' },
-                ...roles.map((role) => ({
-                  value: role.id,
-                  label: role.name
-                }))
-              ]}
-              disabled={filtersLoading || isLoading}
-            />
+          {/* Campo de Grupos */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Grupos / Ministérios
+            </label>
+            <div className="border border-gray-300 rounded-md p-3 bg-gray-50 max-h-80 overflow-y-auto">
+              {loadingGroups ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-sm text-gray-500">Carregando grupos...</p>
+                </div>
+              ) : availableGroups.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <p className="text-sm text-gray-500">
+                    {selectedCongregationId !== undefined ? 'Nenhum grupo disponível para esta congregação' : 'Nenhum grupo disponível'}
+                  </p>
+                </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {availableGroups.map((group) => {
+                  const isSelected = selectedGroups.includes(group.id);
+                  // Congregação sempre está disponível (sede por padrão quando vazio)
+                  return (
+                    <label
+                      key={group.id}
+                      className={`
+                        relative flex items-start gap-2 p-3 border rounded-md cursor-pointer transition-all
+                        ${isSelected 
+                          ? 'border-primary bg-primary/5 shadow-sm' 
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                        }
+                        ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedGroups([...selectedGroups, group.id]);
+                          } else {
+                            setSelectedGroups(selectedGroups.filter(id => id !== group.id));
+                          }
+                        }}
+                        disabled={isLoading}
+                        className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
+                      />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-sm text-gray-500 block truncate">
+                              {group.type}
+                              {group.congregations && ` • ${group.congregations.name}`}
+                            </span>
+                            <span className={`text-sm font-medium block truncate ${isSelected ? 'text-primary' : 'text-gray-900'}`}>
+                              {group.name}
+                            </span>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Selecione os grupos aos quais você pertence. Os grupos são filtrados pela congregação selecionada.
+            </p>
+            {selectedGroups.length > 0 && (
+              <p className="mt-1 text-xs text-primary font-medium">
+                {selectedGroups.length} {selectedGroups.length === 1 ? 'grupo selecionado' : 'grupos selecionados'}
+              </p>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Mensagem de erro */}
+      {error && (
+        <div 
+          ref={errorRef}
+          className="p-4 bg-red-50 border border-red-200 rounded-md"
+        >
+          <p className="text-sm font-medium text-red-600">{error}</p>
+        </div>
+      )}
 
       {/* Botões */}
       <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

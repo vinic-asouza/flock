@@ -17,7 +17,6 @@ interface ReportsFiltersProps {
 
 export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFiltersProps) {
   const [localFilters, setLocalFilters] = useState<ReportFilters>(filters);
-  const [roles, setRoles] = useState<Array<{ value: string; label: string }>>([]);
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [loading, setLoading] = useState(false);
 
@@ -26,18 +25,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
     const loadData = async () => {
       try {
         setLoading(true);
-        const [rolesData, congregationsData] = await Promise.all([
-          apiService.listRoles(),
-          apiService.listCongregations(),
-        ]);
-
-        setRoles([
-          { value: '', label: 'Todos os cargos' },
-          ...rolesData.map((role: { id: string; name: string }) => ({
-            value: role.id,
-            label: role.name,
-          })),
-        ]);
+        const congregationsData = await apiService.listCongregations();
 
         setCongregations([
           { value: '', label: 'Todas as congregações' },
@@ -113,16 +101,6 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
               { value: 'true', label: 'Ativo' },
               { value: 'false', label: 'Inativo' },
             ]}
-            disabled={loading}
-          />
-        </div>
-
-        <div>
-          <Select
-            label="Cargo"
-            value={localFilters.role_id || ''}
-            onChange={(value) => handleFilterChange('role_id', value)}
-            options={roles}
             disabled={loading}
           />
         </div>

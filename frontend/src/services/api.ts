@@ -15,7 +15,10 @@ import {
   IntegrationMemberPayload,
   IntegrationFilters,
   ValidationResult,
-  ImportResult
+  ImportResult,
+  Group,
+  GroupPayload,
+  GroupWithMembers
 } from '@/types';
 
 class ApiService {
@@ -411,6 +414,59 @@ class ApiService {
   // Criar congregações em lote
   async createCongregationsBatch(data: Array<{ name: string; address: string; city: string; state: string; leader?: string; phone?: string }>) {
     const response = await this.api.post('/congregations/batch', data);
+    return response.data;
+  }
+
+  // Listar grupos
+  async listGroups(congregationId?: string): Promise<Group[]> {
+    const queryParams = new URLSearchParams();
+    if (congregationId) {
+      queryParams.append('congregation_id', congregationId);
+    }
+    const url = `/groups${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data as Group[];
+  }
+
+  // Buscar grupo por ID
+  async getGroup(id: string): Promise<GroupWithMembers> {
+    const response = await this.api.get(`/groups/${id}`);
+    return response.data as GroupWithMembers;
+  }
+
+  // Criar grupo
+  async createGroup(data: GroupPayload): Promise<Group> {
+    const response = await this.api.post('/groups', data);
+    return response.data as Group;
+  }
+
+  // Atualizar grupo
+  async updateGroup(id: string, data: Partial<GroupPayload>): Promise<Group> {
+    const response = await this.api.put(`/groups/${id}`, data);
+    return response.data as Group;
+  }
+
+  // Deletar grupo
+  async deleteGroup(id: string): Promise<{ message?: string }> {
+    const response = await this.api.delete(`/groups/${id}`);
+    return response.data;
+  }
+
+  // Listar membros de um grupo
+  async getGroupMembers(groupId: string) {
+    const response = await this.api.get(`/groups/${groupId}/members`);
+    return response.data;
+  }
+
+  // Adicionar membro ao grupo
+  async addMemberToGroup(groupId: string, memberId: string) {
+    const response = await this.api.post(`/groups/${groupId}/members`, { member_id: memberId });
+    return response.data;
+  }
+
+  // Remover membro do grupo
+  async removeMemberFromGroup(groupId: string, memberId: string) {
+    const response = await this.api.delete(`/groups/${groupId}/members/${memberId}`);
     return response.data;
   }
 

@@ -143,6 +143,51 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               </p>
             </div>
 
+            {/* Instruções e Planilha de Exemplo */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <FileText className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                      📋 Planilha de Exemplo
+                    </h4>
+                    <p className="text-sm text-blue-800 mb-3">
+                      Use nossa planilha modelo como base para criar seu arquivo CSV. A planilha contém todas as colunas necessárias com exemplos de dados.
+                    </p>
+                    <a
+                      href="https://docs.google.com/spreadsheets/d/1Hdwzg89d0-r7WXF8OGkAYgte8R4kOqgo5MArxcwGTIU/edit?usp=sharing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      <FileText size={16} />
+                      Abrir Planilha de Exemplo
+                    </a>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-blue-200">
+                    <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                      📝 Instruções
+                    </h4>
+                    <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+                      <li>Clique no botão acima para abrir a planilha de exemplo</li>
+                      <li>No Google Sheets, clique em <strong>&quot;Arquivo&quot; → &quot;Fazer uma cópia&quot;</strong> para criar sua própria cópia</li>
+                      <li>Preencha os dados dos membros na sua cópia da planilha</li>
+                      <li>Para <strong>Filhos</strong>, use o formato: <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Sim</code> ou <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Não</code>. Para múltiplos filhos, separe por ponto e vírgula: <code className="bg-blue-100 px-1 rounded text-xs">Filho1|01/01/2010|Sim;Filho2|15/03/2012|Não</code></li>
+                      <li>Exporte como CSV: <strong>&quot;Arquivo&quot; → &quot;Fazer download&quot; → &quot;Valores separados por vírgula (.csv)&quot;</strong></li>
+                      <li>Faça upload do arquivo CSV exportado neste modal</li>
+                    </ol>
+                    <div className="mt-3 p-3 bg-blue-100 rounded-md">
+                      <p className="text-xs text-blue-900">
+                        <strong>💡 Dica:</strong> Campos obrigatórios são: <strong>Nome</strong>, <strong>Data de Nascimento</strong>, <strong>Gênero</strong>, <strong>Estado Civil</strong>, <strong>Endereço</strong>, <strong>Cidade</strong>, <strong>Estado</strong>, <strong>Tipo de Admissão</strong> e <strong>Data de Admissão</strong>. Os demais campos são opcionais e podem ser deixados em branco.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Seleção de congregação */}
             <div>
               <Select

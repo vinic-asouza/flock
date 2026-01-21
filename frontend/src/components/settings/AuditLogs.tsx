@@ -65,7 +65,6 @@ const ACTION_LABELS = {
 
 const ENTITY_LABELS = {
   member: 'Membro',
-  role: 'Cargo',
   congregation: 'Congregação',
 };
 

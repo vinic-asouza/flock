@@ -76,7 +76,7 @@ export async function validateCSV(
     
     // Prepara todos os dados dos membros primeiro
     const memberDataList: Array<{ data: Partial<Member>; rowNumber: number }> = [];
-    const documentOccurrences = new Map<string, number[]>(); // document -> array de números de linha
+    const nameOccurrences = new Map<string, number[]>(); // nome (lowercase) -> array de números de linha
     
     for (let i = 0; i < normalizedRows.length; i++) {
       const row = normalizedRows[i];
@@ -91,6 +91,26 @@ export async function validateCSV(
       const maritalStatus = row.marital_status && row.marital_status.trim() !== '' 
         ? row.marital_status 
         : undefined;
+      
+      // Processar filhos: normalizeRow converte para JSON string, precisamos fazer parse
+      let childrenArray: Array<{ name: string; birth?: string; dependent?: boolean }> | undefined = undefined;
+      if (row.children) {
+        try {
+          // Se já é um array, usar diretamente
+          if (Array.isArray(row.children)) {
+            childrenArray = row.children;
+          } else if (typeof row.children === 'string' && row.children.trim() !== '') {
+            // Se é string JSON, fazer parse
+            const parsed = JSON.parse(row.children);
+            if (Array.isArray(parsed)) {
+              childrenArray = parsed;
+            }
+          }
+        } catch (error) {
+          // Se falhar o parse, ignorar (children ficará undefined)
+          console.warn('Erro ao processar filhos na linha', rowNumber, ':', error);
+        }
+      }
       
       const memberData: Partial<Member> = {
         name: row.name || '',
@@ -115,19 +135,22 @@ export async function validateCSV(
         congregation_id: congregationId || undefined,
         role_id: undefined, // Sempre undefined conforme requisitos
         occupation: row.occupation || undefined,
+        father_name: row.father_name || undefined,
+        mother_name: row.mother_name || undefined,
+        children: childrenArray,
         active: true
         // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
       };
       
       memberDataList.push({ data: memberData, rowNumber });
       
-      // Verifica duplicatas dentro do próprio CSV (por documento)
-      if (memberData.document && memberData.document.trim() !== '') {
-        const document = memberData.document.trim();
-        if (documentOccurrences.has(document)) {
-          documentOccurrences.get(document)!.push(rowNumber);
+      // Verifica duplicatas dentro do próprio CSV (por nome em lowercase)
+      if (memberData.name && memberData.name.trim() !== '') {
+        const normalizedName = memberData.name.trim().toLowerCase();
+        if (nameOccurrences.has(normalizedName)) {
+          nameOccurrences.get(normalizedName)!.push(rowNumber);
         } else {
-          documentOccurrences.set(document, [rowNumber]);
+          nameOccurrences.set(normalizedName, [rowNumber]);
         }
       }
     }
@@ -158,42 +181,37 @@ export async function validateCSV(
         rowErrors.push(...validationRowErrors);
       }
       
-      // Verifica duplicatas dentro do próprio CSV (por documento)
-      if (memberData.document && memberData.document.trim() !== '') {
-        const document = memberData.document.trim();
-        const occurrences = documentOccurrences.get(document);
+      // Verifica duplicatas dentro do próprio CSV (por nome em lowercase)
+      if (memberData.name && memberData.name.trim() !== '') {
+        const normalizedName = memberData.name.trim().toLowerCase();
+        const occurrences = nameOccurrences.get(normalizedName);
         if (occurrences && occurrences.length > 1) {
           const otherRows = occurrences.filter(r => r !== rowNumber);
           if (otherRows.length > 0) {
             rowErrors.push({
               row: rowNumber,
-              field: 'document',
-              message: `Documento duplicado no arquivo CSV. Aparece também nas linhas: ${otherRows.join(', ')}`,
-              value: document
+              field: 'name',
+              message: `Nome duplicado no arquivo CSV. Aparece também nas linhas: ${otherRows.join(', ')}`,
+              value: memberData.name
             });
           }
         }
       }
       
       // Verifica duplicatas no banco de dados (usando resultado do batch)
+      // Verifica apenas por nome (lowercase)
       let isDuplicate = false;
-      if (memberData.document && memberData.document.trim()) {
-        isDuplicate = existingDuplicates.has(`doc:${memberData.document.trim()}`);
-      }
-      if (!isDuplicate && memberData.email && memberData.email.trim()) {
-        isDuplicate = existingDuplicates.has(`email:${memberData.email.trim()}`);
-      }
-      if (!isDuplicate && memberData.name && memberData.birth) {
-        const key = `${memberData.name.trim().toLowerCase()}|${memberData.birth.toISOString()}`;
-        isDuplicate = existingDuplicates.has(`namebirth:${key}`);
+      if (memberData.name && memberData.name.trim()) {
+        const normalizedName = memberData.name.trim().toLowerCase();
+        isDuplicate = existingDuplicates.has(`name:${normalizedName}`);
       }
       
       if (isDuplicate) {
         rowErrors.push({
           row: rowNumber,
-          field: 'document',
-          message: 'Membro já está cadastrado no sistema (mesmo documento, email ou nome+data de nascimento).',
-          value: memberData.document || memberData.email || memberData.name || ''
+          field: 'name',
+          message: 'Membro já está cadastrado no sistema (mesmo nome completo).',
+          value: memberData.name || ''
         });
       }
       
@@ -241,7 +259,7 @@ export async function validateCSV(
 /**
  * Verifica duplicatas em batch (otimização para validação)
  * Retorna um Set com chaves únicas dos membros que são duplicatas
- * Chave: "doc:XXX" ou "email:XXX" ou "namebirth:XXX|YYYY"
+ * Chave: "name:XXX" (nome em lowercase)
  */
 async function checkDuplicatesBatch(
   memberDataList: Partial<Member>[],
@@ -250,73 +268,31 @@ async function checkDuplicatesBatch(
   const duplicateKeys = new Set<string>();
   
   try {
-    // Coleta todos os documentos, emails e combinações nome+birth únicos
-    const documents = new Set<string>();
-    const emails = new Set<string>();
-    const nameBirthKeys = new Set<string>();
+    // Coleta todos os nomes únicos (em lowercase)
+    const names = new Set<string>();
     
     for (const memberData of memberDataList) {
-      if (memberData.document && memberData.document.trim()) {
-        documents.add(memberData.document.trim());
-      }
-      if (memberData.email && memberData.email.trim()) {
-        emails.add(memberData.email.trim());
-      }
-      if (memberData.name && memberData.birth) {
-        const key = `${memberData.name.trim().toLowerCase()}|${memberData.birth.toISOString()}`;
-        nameBirthKeys.add(key);
+      if (memberData.name && memberData.name.trim()) {
+        const normalizedName = memberData.name.trim().toLowerCase();
+        names.add(normalizedName);
       }
     }
     
-    // Busca documentos existentes em batch
-    if (documents.size > 0) {
-      const { data: existingDocs } = await supabase
+    // Busca membros existentes com esses nomes em batch
+    if (names.size > 0) {
+      // Busca todos os membros da igreja e compara nomes em lowercase
+      const { data: existingMembers } = await supabase
         .from('members')
-        .select('document')
-        .eq('church_id', churchId)
-        .in('document', Array.from(documents));
+        .select('name')
+        .eq('church_id', churchId);
       
-      if (existingDocs) {
-        const existingDocSet = new Set(existingDocs.map(m => m.document).filter(Boolean));
-        for (const doc of existingDocSet) {
-          duplicateKeys.add(`doc:${doc}`);
-        }
-      }
-    }
-    
-    // Busca emails existentes em batch
-    if (emails.size > 0) {
-      const { data: existingEmails } = await supabase
-        .from('members')
-        .select('email')
-        .eq('church_id', churchId)
-        .in('email', Array.from(emails));
-      
-      if (existingEmails) {
-        const existingEmailSet = new Set(existingEmails.map(m => m.email).filter(Boolean));
-        for (const email of existingEmailSet) {
-          duplicateKeys.add(`email:${email}`);
-        }
-      }
-    }
-    
-    // Busca nome+birth existentes em batch
-    if (nameBirthKeys.size > 0) {
-      const names = Array.from(nameBirthKeys).map(k => k.split('|')[0]);
-      const uniqueNames = [...new Set(names)];
-      
-      // Busca membros com esses nomes
-      const { data: existingNameBirth } = await supabase
-        .from('members')
-        .select('name, birth')
-        .eq('church_id', churchId)
-        .in('name', uniqueNames);
-      
-      if (existingNameBirth) {
-        for (const member of existingNameBirth) {
-          const key = `${member.name.toLowerCase()}|${new Date(member.birth).toISOString()}`;
-          if (nameBirthKeys.has(key)) {
-            duplicateKeys.add(`namebirth:${key}`);
+      if (existingMembers) {
+        for (const member of existingMembers) {
+          if (member.name) {
+            const normalizedName = member.name.trim().toLowerCase();
+            if (names.has(normalizedName)) {
+              duplicateKeys.add(`name:${normalizedName}`);
+            }
           }
         }
       }
@@ -332,52 +308,32 @@ async function checkDuplicatesBatch(
 
 /**
  * Verifica se um membro já existe (duplicata) - usado na importação
+ * Verifica apenas por nome completo (lowercase)
  */
 async function checkDuplicate(
   memberData: Partial<Member>,
   churchId: string
 ): Promise<boolean> {
   try {
-    // Verifica por documento (se fornecido)
-    if (memberData.document) {
-      const { data, error } = await supabase
-        .from('members')
-        .select('id')
-        .eq('church_id', churchId)
-        .eq('document', memberData.document)
-        .single();
+    // Verifica apenas por nome (lowercase)
+    if (memberData.name && memberData.name.trim()) {
+      const normalizedName = memberData.name.trim().toLowerCase();
       
-      if (!error && data) {
-        return true;
-      }
-    }
-    
-    // Verifica por nome + data de nascimento (se ambos fornecidos)
-    if (memberData.name && memberData.birth) {
-      const { data, error } = await supabase
+      // Busca todos os membros da igreja e compara nomes em lowercase
+      const { data: existingMembers, error } = await supabase
         .from('members')
-        .select('id')
-        .eq('church_id', churchId)
-        .eq('name', memberData.name)
-        .eq('birth', memberData.birth.toISOString())
-        .single();
+        .select('name')
+        .eq('church_id', churchId);
       
-      if (!error && data) {
-        return true;
-      }
-    }
-    
-    // Verifica por email (se fornecido)
-    if (memberData.email) {
-      const { data, error } = await supabase
-        .from('members')
-        .select('id')
-        .eq('church_id', churchId)
-        .eq('email', memberData.email)
-        .single();
-      
-      if (!error && data) {
-        return true;
+      if (!error && existingMembers) {
+        for (const member of existingMembers) {
+          if (member.name) {
+            const existingNormalizedName = member.name.trim().toLowerCase();
+            if (existingNormalizedName === normalizedName) {
+              return true;
+            }
+          }
+        }
       }
     }
     
@@ -444,6 +400,26 @@ export async function importMembers(
         ? row.marital_status 
         : undefined;
       
+      // Processar filhos: normalizeRow converte para JSON string, precisamos fazer parse
+      let childrenArray: Array<{ name: string; birth?: string; dependent?: boolean }> | undefined = undefined;
+      if (row.children) {
+        try {
+          // Se já é um array, usar diretamente
+          if (Array.isArray(row.children)) {
+            childrenArray = row.children;
+          } else if (typeof row.children === 'string' && row.children.trim() !== '') {
+            // Se é string JSON, fazer parse
+            const parsed = JSON.parse(row.children);
+            if (Array.isArray(parsed)) {
+              childrenArray = parsed;
+            }
+          }
+        } catch (error) {
+          // Se falhar o parse, ignorar (children ficará undefined)
+          console.warn('Erro ao processar filhos na linha', rowNumber, ':', error);
+        }
+      }
+      
       const memberData: Partial<Member> = {
         name: row.name || '',
         birth: birthDate,
@@ -467,6 +443,9 @@ export async function importMembers(
         congregation_id: congregationId || undefined,
         role_id: undefined, // Sempre undefined conforme requisitos
         occupation: row.occupation || undefined,
+        father_name: row.father_name || undefined,
+        mother_name: row.mother_name || undefined,
+        children: childrenArray,
         active: true
         // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
       };
@@ -489,7 +468,7 @@ export async function importMembers(
         if (isDuplicate) {
           skipped.push({
             row: rowNumber,
-            reason: 'Membro duplicado (mesmo documento, nome+nascimento ou email)'
+            reason: 'Membro duplicado (mesmo nome completo)'
           });
           continue;
         }
@@ -514,6 +493,10 @@ export async function importMembers(
         birth: member.birth ? member.birth.toISOString() : null,
         baptism_date: member.baptism_date ? member.baptism_date.toISOString() : null,
         admission_date: member.admission_date ? member.admission_date.toISOString() : null,
+        // Garante que children seja um array JSON válido
+        children: member.children && Array.isArray(member.children) 
+          ? member.children 
+          : [],
       }));
       
       const { error: insertError } = await supabase

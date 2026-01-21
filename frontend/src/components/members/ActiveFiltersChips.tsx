@@ -27,7 +27,7 @@ export function ActiveFiltersChips({
   onRemoveSorting,
   defaultSorting = { sort_by: 'created_at', sort_order: 'desc' }
 }: ActiveFiltersChipsProps) {
-  const { roles, congregations } = useFiltersData();
+  const { congregations } = useFiltersData();
 
   // Função para obter o label de ordenação
   const getSortingLabel = () => {
@@ -52,9 +52,6 @@ export function ActiveFiltersChips({
     switch (key) {
       case 'status':
         return value === 'active' ? 'Ativo' : value === 'inactive' ? 'Inativo' : 'Todos';
-      case 'roleId':
-        const role = roles.find(r => r.id === value);
-        return role ? role.name : '';
       case 'congregationId':
         if (value === 'sede') {
           return 'Sede';

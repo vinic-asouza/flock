@@ -10,7 +10,8 @@ import { Select } from '@/components/ui/Select';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
-import { useAuth } from '@/context/AuthContext';
+import { apiService } from '@/services/api';
+import { Group } from '@/types';
 
 // Schema de validação
 const memberSchema = z.object({
@@ -21,42 +22,8 @@ const memberSchema = z.object({
   birth: z.string().min(1, 'Data de nascimento é obrigatória'),
   gender: z.enum(['Masculino', 'Feminino']),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro']),
-  nationality: z.string().min(1, 'Nacionalidade é obrigatória'),
+  nationality: z.string().optional().or(z.literal('')),
   nationality_other: z.string().optional().or(z.literal('')),
-  document: z.string()
-    .optional()
-    .or(z.literal(''))
-    .refine((cpf) => {
-      if (!cpf || cpf.trim() === '') return true; // CPF é opcional agora
-      // Remove caracteres não numéricos
-      const cleanCpf = cpf.replace(/\D/g, '');
-      
-      // Verifica se tem 11 dígitos
-      if (cleanCpf.length !== 11) return false;
-      
-      // Verifica se todos os dígitos são iguais (CPF inválido)
-      if (/^(\d)\1{10}$/.test(cleanCpf)) return false;
-      
-      // Validação do primeiro dígito verificador
-      let sum = 0;
-      for (let i = 0; i < 9; i++) {
-        sum += parseInt(cleanCpf[i]) * (10 - i);
-      }
-      let remainder = sum % 11;
-      const firstDigit = remainder < 2 ? 0 : 11 - remainder;
-      
-      if (parseInt(cleanCpf[9]) !== firstDigit) return false;
-      
-      // Validação do segundo dígito verificador
-      sum = 0;
-      for (let i = 0; i < 10; i++) {
-        sum += parseInt(cleanCpf[i]) * (11 - i);
-      }
-      remainder = sum % 11;
-      const secondDigit = remainder < 2 ? 0 : 11 - remainder;
-      
-      return parseInt(cleanCpf[10]) === secondDigit;
-    }, 'CPF inválido'),
   spouse: z.string().optional().or(z.literal('')),
   occupation: z.string().optional().or(z.literal('')),
   occupation_other: z.string().optional().or(z.literal('')),
@@ -69,13 +36,13 @@ const memberSchema = z.object({
   baptism_date: z.string().optional().or(z.literal('')),
   admission: z.string().min(1, 'Tipo de recebimento é obrigatório'),
   admission_date: z.string().min(1, 'Data de recebimento é obrigatória'),
-  role_id: z.string().optional().or(z.literal('')).nullable(),
   congregation_id: z.string().optional().or(z.literal('')).nullable(),
   father_name: z.string().optional().or(z.literal('')),
   mother_name: z.string().optional().or(z.literal('')),
   children: z.array(z.object({
     name: z.string().min(1, 'Nome do filho é obrigatório'),
     birth: z.string().optional().or(z.literal('')),
+    dependent: z.boolean().optional(),
   })).optional(),
   active: z.boolean(),
 });
@@ -86,6 +53,7 @@ interface Child {
   id?: string;
   name: string;
   birth?: string;
+  dependent?: boolean;
 }
 
 interface Member {
@@ -110,18 +78,12 @@ interface Member {
   baptism_date?: string;
   admission?: string;
   admission_date?: string;
-  role_id?: string;
   congregation_id?: string;
   father_name?: string;
   mother_name?: string;
   children?: Child[];
   active: boolean;
   // Campos retornados pela API com detalhes completos
-  role?: {
-    id: string;
-    name: string;
-    description?: string;
-  } | null;
   congregation?: {
     id: string;
     name: string;
@@ -131,6 +93,19 @@ interface Member {
     leader?: string;
     phone?: string;
   } | null;
+  groups?: Array<{
+    id: string;
+    name: string;
+    type: string;
+    status: boolean;
+    congregation_id?: string | null;
+    memberGroupId?: string;
+    addedAt?: string;
+    congregations?: {
+      id: string;
+      name: string;
+    } | null;
+  }>;
 }
 
 interface MemberFormProps {
@@ -139,6 +114,7 @@ interface MemberFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   mode: 'create' | 'edit';
+  error?: string | null;
 }
 
 // Função para formatar telefone
@@ -157,19 +133,6 @@ const formatCEP = (value: string): string => {
   return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
 };
 
-// Função para formatar CPF
-const formatCPF = (value: string): string => {
-  const numbers = value.replace(/\D/g, '');
-  if (numbers.length <= 3) {
-    return numbers;
-  } else if (numbers.length <= 6) {
-    return numbers.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-  } else if (numbers.length <= 9) {
-    return numbers.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-  } else {
-    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-  }
-};
 
 // Função para formatar data (não utilizada atualmente)
 // const formatDate = (value: string): string => {
@@ -212,9 +175,8 @@ const calcularIdade = (birth: string): number | null => {
   return age;
 };
 
-export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode }: MemberFormProps) {
-  const { user } = useAuth();
-  const { roles, congregations, loading: filtersLoading } = useFiltersData();
+export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode, error }: MemberFormProps) {
+  const { congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
   const { professions, loading: professionsLoading } = useProfessions();
 
@@ -223,13 +185,16 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [cepDisplay, setCepDisplay] = useState('');
   const [birthDisplay, setBirthDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
-  const [cpfDisplay, setCpfDisplay] = useState('');
   const [nationalityOtherError, setNationalityOtherError] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
   const [children, setChildren] = useState<Child[]>([]);
   const [childrenBirthDisplays, setChildrenBirthDisplays] = useState<Record<number, string>>({});
   const [isInfantMember, setIsInfantMember] = useState(false);
   const prevMemberRef = useRef<Member | null>(null);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   const {
     register,
@@ -247,6 +212,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     } : {
       // Para modo edit, deixar vazio e usar reset
     },
+    shouldUnregister: false, // Manter valores mesmo quando campos são desregistrados
   });
 
   const selectedState = watch('state');
@@ -255,6 +221,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const selectedOccupation = watch('occupation');
   const occupationOtherValue = watch('occupation_other');
   const selectedMaritalStatus = watch('marital_status');
+
+  // Scroll para o erro quando ele aparecer
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [error]);
 
   // Preencher formulário quando member mudar
   useEffect(() => {
@@ -286,7 +259,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setValue('nationality_other', nationality);
     }
 
-    setValue('document', member.document || '');
     setValue('spouse', member.spouse || '');
 
     const occupation = member.occupation || '';
@@ -340,11 +312,57 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setChildrenBirthDisplays({});
     }
 
-    const roleId = member.role?.id || member.role_id || '';
     const congregationId = member.congregation?.id || member.congregation_id || '';
-    setValue('role_id', roleId);
     setValue('congregation_id', congregationId);
+
+    // Carregar grupos do membro no modo edit
+    if (member.groups && member.groups.length > 0) {
+      setSelectedGroups(member.groups.map((g) => g.id));
+    } else {
+      setSelectedGroups([]);
+    }
   }, [member, professions, setValue]);
+
+  // Carregar grupos disponíveis quando congregação mudar
+  const selectedCongregationId = watch('congregation_id');
+  useEffect(() => {
+    const loadGroups = async () => {
+      const congregationIdToUse = selectedCongregationId || null;
+      try {
+        setLoadingGroups(true);
+        // Se congregação vazia ou null, buscar grupos da sede
+        const congregationParam = congregationIdToUse === '' || !congregationIdToUse ? 'sede' : congregationIdToUse;
+        const response = await apiService.listGroups(congregationParam);
+        setAvailableGroups(response);
+        
+        // No modo edit, manter grupos selecionados se ainda estiverem disponíveis
+        if (mode === 'edit' && member?.groups) {
+          const availableGroupIds = response.map(g => g.id);
+          // Manter apenas grupos que ainda estão disponíveis
+          setSelectedGroups(prev => {
+            const toKeep = prev.filter(id => availableGroupIds.includes(id));
+            return toKeep;
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao carregar grupos:', error);
+        setAvailableGroups([]);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+
+    // Carregar grupos:
+    // - No modo create: sempre carregar (sede por padrão)
+    // - No modo edit: quando o membro for carregado
+    if (mode === 'create') {
+      // No modo create, sempre carregar grupos da sede por padrão
+      loadGroups();
+    } else if (mode === 'edit' && member) {
+      // No modo edit, carregar quando membro estiver carregado
+      loadGroups();
+    }
+  }, [selectedCongregationId, mode, member]);
 
   // Carregar cidades quando estado mudar
   useEffect(() => {
@@ -386,7 +404,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       if (member.phone) setPhoneDisplay(formatPhone(member.phone));
       if (member.whatsapp) setWhatsappDisplay(formatPhone(member.whatsapp));
       if (member.cep) setCepDisplay(formatCEP(member.cep));
-      if (member.document) setCpfDisplay(formatCPF(member.document));
       if (member.birth) setBirthDisplay(formatDateFromISO(member.birth));
       if (member.admission_date) setAdmissionDateDisplay(formatDateFromISO(member.admission_date));
     }
@@ -410,13 +427,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     const formatted = formatCEP(value);
     setCepDisplay(formatted);
     setValue('cep', value.replace(/\D/g, ''));
-  };
-
-  const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatCPF(value);
-    setCpfDisplay(formatted);
-    setValue('document', value.replace(/\D/g, ''));
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'admission_date') => {
@@ -446,7 +456,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const handleFormSubmit = async (data: MemberFormData) => {
     try {
       // Validar nacionalidade: se "Outra" for selecionada, nationality_other deve estar preenchido
-      if (data.nationality === 'Outra' && (!data.nationality_other || data.nationality_other.trim() === '')) {
+      if (data.nationality && data.nationality === 'Outra' && (!data.nationality_other || data.nationality_other.trim() === '')) {
         setNationalityOtherError('Por favor, especifique a nacionalidade');
         return;
       } else {
@@ -466,6 +476,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       const childrenWithISO = children.map(child => ({
         name: child.name,
         birth: child.birth ? formatDateToISO(child.birth) || undefined : undefined,
+        dependent: child.dependent,
       }));
 
       // Lógica para Data de Batismo:
@@ -484,28 +495,28 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         baptism_date: baptismDateISO,
         admission_date: admissionDateISO,
         // Tratar nacionalidade: se for "Outra", usar o valor do campo nationality_other; senão usar o valor selecionado
-        nationality: data.nationality === 'Outra' ? (data.nationality_other || '') : data.nationality,
+        nationality: data.nationality && data.nationality === 'Outra' ? (data.nationality_other || '') : (data.nationality || ''),
         // Tratar profissão: se for "Outra", usar o valor do campo occupation_other; senão usar o valor selecionado
         occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
         // Remover campos auxiliares do payload
         nationality_other: undefined,
         occupation_other: undefined,
         // Tratar campos UUID opcionais - enviar null quando vazio
-        role_id: data.role_id || null,
         congregation_id: data.congregation_id || null,
         // Incluir filhos
         children: childrenWithISO,
+        // Incluir grupos selecionados (será processado nos modais)
+        groups: selectedGroups,
       };
 
       await onSubmit(memberData);
 
-      // Limpar displays formatados e resetar formulário apenas após sucesso
+      // Limpar displays formatados e resetar formulário apenas após sucesso confirmado
       // Só limpar se estiver no modo de criação
       if (mode === 'create') {
         setPhoneDisplay('');
         setWhatsappDisplay('');
         setCepDisplay('');
-        setCpfDisplay('');
         setBirthDisplay('');
         setAdmissionDateDisplay('');
         setNationalityOtherError('');
@@ -514,11 +525,11 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         setChildrenBirthDisplays({});
         reset();
       }
-    } catch (error) {
+    } catch (err) {
       // Em caso de erro, não limpar o formulário
       // O erro será tratado pelo componente pai
       // Re-lançar o erro para que o componente pai possa tratá-lo
-      throw error;
+      throw err;
     }
   };
 
@@ -605,7 +616,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           />
 
           <Select
-            label="Nacionalidade *"
+            label="Nacionalidade"
             value={watch('nationality') || ''}
             onChange={(value) => setValue('nationality', value)}
             options={[
@@ -620,7 +631,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           {selectedNationality === 'Outra' && (
             <Input
-              label="Especifique a nacionalidade *"
+              label="Especifique a nacionalidade"
               placeholder="Digite a nacionalidade"
               error={nationalityOtherError}
               isLoading={isLoading}
@@ -654,16 +665,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               {...register('occupation_other')}
             />
           )}
-
-          <Input
-            label="CPF"
-            placeholder="000.000.000-00"
-            value={cpfDisplay}
-            onChange={handleCPFChange}
-            maxLength={14}
-            error={errors.document?.message}
-            isLoading={isLoading}
-          />
 
           {selectedMaritalStatus === 'Casado' && (
             <Input
@@ -803,6 +804,43 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                         ) : null;
                       })()}
                     </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dependente
+                      </label>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={child.dependent === true}
+                            onChange={(e) => {
+                              const newChildren = [...children];
+                              newChildren[index] = { ...child, dependent: e.target.checked ? true : undefined };
+                              setChildren(newChildren);
+                              setValue('children', newChildren);
+                            }}
+                            disabled={isLoading}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">Sim</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={child.dependent === false}
+                            onChange={(e) => {
+                              const newChildren = [...children];
+                              newChildren[index] = { ...child, dependent: e.target.checked ? false : undefined };
+                              setChildren(newChildren);
+                              setValue('children', newChildren);
+                            }}
+                            disabled={isLoading}
+                            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">Não</span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
@@ -901,21 +939,12 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
         {/* Bloco informativo */}
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-          <p className="text-sm text-blue-800">
-            <strong>Orientações importantes:</strong>
-          </p>
           <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
             <li>
-              Para membros que se batizaram em nossa igreja, a <strong>Data de Batismo</strong> e <strong>Data de Recebimento</strong> devem ser iguais.
+              Abaixo informe a forma e a data de recebimento na igreja.
             </li>
             <li>
-              Para membros que se batizaram em outra igreja, insira a data em que ele(a) se batizou em <strong>Data de Batismo</strong>, e insira a data que ele(a) foi recebido em nossa igreja em <strong>Data de Recebimento</strong>.
-            </li>
-            <li>
-              Se não souber a data de batismo exata pode ser uma data aproximada, ou deixe em branco.
-            </li>
-            <li>
-              Para crianças, selecione a opção abaixo e informe se já foi batizado(a) ou apenas apresentado(a) na igreja.
+              Para <strong>crianças</strong> que ainda não possuem profissão de fé, selecione a opção abaixo e informe se já foi batizado(a) ou apenas apresentado(a) na igreja.
             </li>
           </ul>
         </div>
@@ -975,30 +1004,23 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           {/* Quarta linha: Informação e campos de Função e Congregação */}
           <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800">
-              Abaixo informe se você faz parte da igreja sede <strong>{user?.name || 'igreja'}</strong>, ou de alguma congregação/filial, informe também se você possui algum cargo ou faz parte de um ministério específico.
+              Abaixo informe se o membro faz parte da igreja sede, ou de alguma congregação/filial.
             </p>
           </div>
 
           <Select
-            label="Cargo ou Ministério"
-            value={watch('role_id') || ''}
-            onChange={(value) => setValue('role_id', value)}
-            options={[
-              { value: '', label: 'Nenhuma' },
-              ...roles.map((role) => ({
-                value: role.id,
-                label: role.name
-              }))
-            ]}
-            disabled={filtersLoading || isLoading}
-          />
-
-          <Select
             label="Congregação"
             value={watch('congregation_id') || ''}
-            onChange={(value) => setValue('congregation_id', value)}
+            onChange={(value) => {
+              setValue('congregation_id', value);
+              // Limpar grupos selecionados quando mudar congregação apenas no modo create
+              // No modo edit, os grupos serão filtrados automaticamente
+              if (mode === 'create') {
+                setSelectedGroups([]);
+              }
+            }}
             options={[
-              { value: '', label: 'Nenhuma' },
+              { value: '', label: 'Sede' },
               ...congregations.map((congregation) => ({
                 value: congregation.id,
                 label: congregation.name
@@ -1006,9 +1028,90 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             ]}
             disabled={filtersLoading || isLoading}
           />
+        </div>
 
+        {/* Campo de Grupos */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Grupos / Ministérios
+          </label>
+          <div className="border border-gray-300 rounded-md p-3 bg-gray-50 max-h-80 overflow-y-auto">
+            {loadingGroups ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-sm text-gray-500">Carregando grupos...</p>
+              </div>
+            ) : availableGroups.length === 0 ? (
+              <div className="flex items-center justify-center py-8">
+                <p className="text-sm text-gray-500">
+                  {selectedCongregationId !== undefined ? 'Nenhum grupo disponível para esta congregação' : 'Selecione uma congregação para ver os grupos disponíveis'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {availableGroups.map((group) => {
+                  const isSelected = selectedGroups.includes(group.id);
+                  return (
+                    <label
+                      key={group.id}
+                      className={`
+                        relative flex items-start gap-2 p-3 border rounded-md cursor-pointer transition-all
+                        ${isSelected 
+                          ? 'border-primary bg-primary/5 shadow-sm' 
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                        }
+                        ${isLoading || selectedCongregationId === undefined ? 'opacity-50 cursor-not-allowed' : ''}
+                      `}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedGroups([...selectedGroups, group.id]);
+                          } else {
+                            setSelectedGroups(selectedGroups.filter(id => id !== group.id));
+                          }
+                        }}
+                        disabled={isLoading || selectedCongregationId === undefined}
+                        className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-sm text-gray-500 block truncate">
+                            {group.type}
+                            {group.congregations && ` • ${group.congregations.name}`}
+                          </span>
+                          <span className={`text-sm font-medium block truncate ${isSelected ? 'text-primary' : 'text-gray-900'}`}>
+                            {group.name}
+                          </span>
+                        </div>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Selecione os grupos aos quais este membro pertence. Os grupos são filtrados pela congregação selecionada.
+          </p>
+          {selectedGroups.length > 0 && (
+            <p className="mt-1 text-xs text-primary font-medium">
+              {selectedGroups.length} {selectedGroups.length === 1 ? 'grupo selecionado' : 'grupos selecionados'}
+            </p>
+          )}
         </div>
       </div>
+
+      {/* Mensagem de erro */}
+      {error && (
+        <div 
+          ref={errorRef}
+          className="p-4 bg-red-50 border border-red-200 rounded-md"
+        >
+          <p className="text-sm font-medium text-red-600">{error}</p>
+        </div>
+      )}
 
       {/* Botões */}
       <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

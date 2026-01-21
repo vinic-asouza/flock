@@ -34,7 +34,6 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       .from('members')
       .select(`
         *,
-        role:roles(name),
         congregation:congregations(name)
       `)
       .eq('id', id)
@@ -42,10 +41,43 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (memberError || !member) {
+      const errorMessage = memberError 
+        ? (typeof memberError === 'object' && 'message' in memberError 
+          ? (memberError as { message: string }).message 
+          : String(memberError))
+        : 'Membro não existe ou não pertence a esta igreja';
+      
       return res.status(404).json({
         error: 'Membro não encontrado',
-        details: memberError?.message || 'Membro não existe ou não pertence a esta igreja'
+        details: errorMessage
       });
+    }
+
+    // Buscar grupos do membro
+    const { data: memberGroups, error: memberGroupsError } = await supabase
+      .from('member_groups')
+      .select(`
+        id,
+        groups (
+          id,
+          name,
+          type,
+          status,
+          congregation_id,
+          congregations (
+            id,
+            name
+          )
+        )
+      `)
+      .eq('member_id', id);
+
+    if (!memberGroupsError && memberGroups) {
+      (member as any).groups = memberGroups
+        .filter((mg: any) => mg.groups)
+        .map((mg: any) => mg.groups);
+    } else {
+      (member as any).groups = [];
     }
 
     // Criar documento PDF
@@ -140,17 +172,19 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
     const idade = calculateAge(member.birth);
     const personalInfo = [
       { label: 'Idade', value: idade !== null ? `${idade} anos` : '-' },
+      { label: 'Data de Nascimento', value: formatDate(member.birth) },
       { label: 'Gênero', value: member.gender || '-' },
       { label: 'Estado Civil', value: member.marital_status || '-' },
       { label: 'Nacionalidade', value: member.nationality || '-' },
-      { label: 'Documento', value: member.document || '-' },
-      { label: 'Cônjuge', value: member.spouse || '-' },
       { label: 'Profissão', value: member.occupation || '-' },
+      { label: 'Cônjuge', value: member.spouse || '-' },
+      { label: 'Nome do Pai', value: member.father_name || '-' },
+      { label: 'Nome da Mãe', value: member.mother_name || '-' },
     ];
 
     doc.fontSize(11).font('Helvetica');
     personalInfo.forEach(info => {
-      if (info.value !== '-' || ['Idade', 'Gênero', 'Estado Civil', 'Profissão'].includes(info.label)) {
+      if (info.value !== '-' || ['Idade', 'Data de Nascimento', 'Gênero', 'Estado Civil', 'Profissão'].includes(info.label)) {
         doc
           .font('Helvetica-Bold')
           .text(info.label + ': ', { continued: true })
@@ -158,6 +192,30 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
           .text(info.value);
       }
     });
+
+    // Filhos
+    if (member.children && Array.isArray(member.children) && member.children.length > 0) {
+      doc.moveDown(0.5);
+      doc
+        .font('Helvetica-Bold')
+        .text('Filhos:');
+      
+      member.children.forEach((child: any) => {
+        const childAge = child.birth ? calculateAge(child.birth) : null;
+        let childText = `  • ${child.name}`;
+        if (childAge !== null) {
+          childText += ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`;
+        }
+        if (child.dependent === true) {
+          childText += ' - Dependente';
+        } else if (child.dependent === false) {
+          childText += ' - Não dependente';
+        }
+        doc
+          .font('Helvetica')
+          .text(childText);
+      });
+    }
 
     doc.moveDown(1);
 
@@ -170,7 +228,6 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
 
     const churchInfo = [
       { label: 'Congregação', value: member.congregation?.name || 'Sede' },
-      { label: 'Cargo', value: member.role?.name || '-' },
       { label: 'Data de Batismo', value: formatDate(member.baptism_date) },
       { label: 'Data de Admissão', value: formatDate(member.admission_date) },
       { label: 'Tipo de Admissão', value: member.admission || '-' },
@@ -186,6 +243,38 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
           .text(info.value);
       }
     });
+
+    // Grupos/Ministérios
+    if (member.groups && Array.isArray(member.groups) && member.groups.length > 0) {
+      doc.moveDown(0.5);
+      doc
+        .font('Helvetica-Bold')
+        .text('Grupos / Ministérios:');
+      
+      const activeGroups = member.groups.filter((g: any) => g.status);
+      const inactiveGroups = member.groups.filter((g: any) => !g.status);
+      
+      if (activeGroups.length > 0) {
+        activeGroups.forEach((group: any) => {
+          doc
+            .font('Helvetica')
+            .text(`  • ${group.type} - ${group.name}`);
+        });
+      }
+      
+      if (inactiveGroups.length > 0) {
+        doc
+          .font('Helvetica')
+          .fillColor('#6B7280')
+          .text('  Grupos Inativos:');
+        inactiveGroups.forEach((group: any) => {
+          doc
+            .font('Helvetica')
+            .text(`  • ${group.type} - ${group.name}`);
+        });
+        doc.fillColor('#000000');
+      }
+    }
 
     doc.moveDown(1);
 
@@ -1392,6 +1481,143 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
     doc.fillColor('#000000').moveDown(2);
 
+    // ===== GRUPOS/MINISTÉRIOS =====
+    if (doc.y > 600) {
+      doc.addPage();
+    }
+
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .fillColor('#1F2937')
+      .text('Grupos/Ministérios')
+      .fillColor('#000000')
+      .moveDown(0.5);
+
+    // Buscar grupos da igreja
+    let groupsQuery = supabase
+      .from('groups')
+      .select(`
+        id,
+        name,
+        type,
+        status,
+        congregation_id
+      `)
+      .eq('church_id', church.id)
+      .eq('status', true); // Apenas grupos ativos
+
+    // Aplicar filtro de congregação se necessário
+    if (congregation_id) {
+      if (congregation_id === 'sede') {
+        groupsQuery = groupsQuery.is('congregation_id', null);
+      } else {
+        groupsQuery = groupsQuery.eq('congregation_id', congregation_id);
+      }
+    }
+
+    const { data: groups, error: groupsError } = await groupsQuery;
+
+    if (!groupsError && groups && groups.length > 0) {
+      // Contar membros em cada grupo
+      const groupsWithCounts = await Promise.all(
+        groups.map(async (group: any) => {
+          const { count: memberCount } = await supabase
+            .from('member_groups')
+            .select('*', { count: 'exact', head: true })
+            .eq('group_id', group.id);
+          
+          return {
+            ...group,
+            memberCount: memberCount || 0
+          };
+        })
+      );
+
+      // Agrupar por tipo
+      const groupsByType: Record<string, typeof groupsWithCounts> = {};
+      groupsWithCounts.forEach((group: any) => {
+        const type = group.type || 'Outros';
+        if (!groupsByType[type]) {
+          groupsByType[type] = [];
+        }
+        groupsByType[type].push(group);
+      });
+
+      // Ordenar tipos e grupos dentro de cada tipo
+      const typeOrder = [
+        'Ministério', 'Departamento', 'Grupo', 'Equipe', 'Time', 'Comissão',
+        'Célula', 'Grupo de Crescimento', 'Pequeno Grupo', 'Discipulado',
+        'Classe', 'Núcleo', 'Região'
+      ];
+
+      const sortedTypes = Object.keys(groupsByType).sort((a, b) => {
+        const indexA = typeOrder.indexOf(a);
+        const indexB = typeOrder.indexOf(b);
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+
+      doc.fontSize(11).font('Helvetica');
+      
+      sortedTypes.forEach((type) => {
+        const typeGroups = groupsByType[type]
+          .sort((a: any, b: any) => (b.memberCount || 0) - (a.memberCount || 0));
+        
+        const totalMembersInType = typeGroups.reduce((sum: number, g: any) => sum + (g.memberCount || 0), 0);
+        const totalMembersForPercentage = summary.totalMembers;
+
+        // Verificar se precisa de nova página
+        if (doc.y > 550) {
+          doc.addPage();
+        }
+
+        // Título do tipo
+        doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor('#374151')
+          .text(type)
+          .moveDown(0.3);
+
+        // Informação do total do tipo
+        if (totalMembersForPercentage > 0) {
+          const typePercentage = ((totalMembersInType / totalMembersForPercentage) * 100).toFixed(1);
+          doc
+            .fontSize(10)
+            .font('Helvetica')
+            .fillColor('#6B7280')
+            .text(`  Total: ${totalMembersInType} membros de ${totalMembersForPercentage} (${typePercentage}%)`)
+            .moveDown(0.2);
+        }
+
+        doc.fontSize(11).font('Helvetica');
+        
+        // Listar grupos do tipo
+        typeGroups.forEach((group: any) => {
+          const groupPercentage = totalMembersInType > 0 
+            ? ((group.memberCount / totalMembersInType) * 100).toFixed(1)
+            : '0.0';
+          
+          doc
+            .fillColor('#374151')
+            .font('Helvetica-Bold')
+            .text(`    • ${group.name}: `, { continued: true })
+            .font('Helvetica')
+            .fillColor('#6B7280')
+            .text(`${group.memberCount} membros (${groupPercentage}%)`);
+        });
+
+        doc.fillColor('#000000').moveDown(0.5);
+      });
+    } else {
+      doc.fontSize(10).font('Helvetica').fillColor('#6B7280').text('Nenhum grupo registrado');
+    }
+
+    doc.fillColor('#000000').moveDown(2);
+
     // Rodapé
     doc
       .fontSize(8)
@@ -1624,15 +1850,16 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       gender: 'Gênero',
       marital_status: 'Estado Civil',
       nationality: 'Nacionalidade',
-      document: 'Documento',
       spouse: 'Cônjuge',
+      father_name: 'Nome do Pai',
+      mother_name: 'Nome da Mãe',
       occupation: 'Profissão',
+      children: 'Filhos',
       phone: 'Telefone',
       whatsapp: 'WhatsApp',
       email: 'Email',
       active: 'Status',
       congregation: 'Congregação',
-      role: 'Cargo',
       baptism_date: 'Batismo',
       admission: 'Admissão',
       admission_date: 'Data Admissão',
@@ -1776,8 +2003,34 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
           case 'spouse':
             value = member.spouse || '-';
             break;
+          case 'father_name':
+            value = member.father_name || '-';
+            break;
+          case 'mother_name':
+            value = member.mother_name || '-';
+            break;
           case 'occupation':
             value = member.occupation || '-';
+            break;
+          case 'children':
+            if (member.children && Array.isArray(member.children) && member.children.length > 0) {
+              const childrenText = member.children.map((child: any) => {
+                const childAge = child.birth ? calculateAge(child.birth) : null;
+                let text = child.name;
+                if (childAge !== null) {
+                  text += ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`;
+                }
+                if (child.dependent === true) {
+                  text += ' - Dependente';
+                } else if (child.dependent === false) {
+                  text += ' - Não dependente';
+                }
+                return text;
+              }).join('; ');
+              value = childrenText;
+            } else {
+              value = '-';
+            }
             break;
           case 'phone':
             value = formatPhone(member.phone);
@@ -1793,9 +2046,6 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
             break;
           case 'congregation':
             value = member.congregation?.name || 'Sede';
-            break;
-          case 'role':
-            value = member.role?.name || '-';
             break;
           case 'baptism_date':
             value = formatDate(member.baptism_date);
@@ -2078,7 +2328,8 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       neighborhood: 'Bairro',
       city: 'Cidade',
       state: 'Estado',
-      cep: 'CEP'
+      cep: 'CEP',
+      children: 'Filhos'
     };
 
     // Construir CSV
@@ -2174,12 +2425,31 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
           case 'state':
             value = member.state || '';
             break;
-          case 'cep':
-            value = member.cep || '';
-            break;
-          default:
-            value = '';
+      case 'cep':
+        value = member.cep || '';
+        break;
+      case 'children':
+        // Formato: "Nome1|Data1|Dependente1;Nome2|Data2|Dependente2"
+        if (member.children && Array.isArray(member.children) && member.children.length > 0) {
+          const childrenParts = member.children.map((child: any) => {
+            const parts = [child.name || ''];
+            if (child.birth) {
+              const birthDate = formatDate(child.birth);
+              parts.push(birthDate);
+            }
+            if (child.dependent !== undefined) {
+              parts.push(child.dependent ? 'Sim' : 'Não');
+            }
+            return parts.join('|');
+          });
+          value = childrenParts.join(';');
+        } else {
+          value = '';
         }
+        break;
+      default:
+        value = '';
+    }
 
         row.push(escapeCSVValue(value));
       });

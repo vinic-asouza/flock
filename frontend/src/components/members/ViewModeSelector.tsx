@@ -22,7 +22,7 @@ export function ViewModeSelector({ mode, onModeChange }: ViewModeSelectorProps) 
         title="Visualização em lista"
       >
         <List size={16} />
-        Lista
+        Compacto
       </button>
       <button
         onClick={() => onModeChange('card')}
@@ -34,7 +34,7 @@ export function ViewModeSelector({ mode, onModeChange }: ViewModeSelectorProps) 
         title="Visualização em cards"
       >
         <Grid3X3 size={16} />
-        Cards
+        Detalhado
       </button>
     </div>
   );

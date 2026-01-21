@@ -46,7 +46,7 @@ export function MemberModalWithSelect({
   onFilterChange,
   viewMode = 'all', 
   selectedCongregationId,
-  itemsPerPage = 6
+  itemsPerPage = 10
 }: MemberModalWithSelectProps) {
   const [members, setMembers] = useState<{ id: string; [key: string]: unknown }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -383,24 +383,33 @@ export function MemberModalWithSelect({
                 <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-600">
-                      Página {pagination.page} de {pagination.totalPages} 
-                      ({pagination.total} membro(s) total)
+                      Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, pagination.total)} de {pagination.total} membro(s)
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                        title="Página anterior"
                       >
                         <ChevronLeft size={16} className="text-gray-600" />
                       </button>
-                      <span className="text-sm text-gray-600 px-2">
-                        {currentPage}
-                      </span>
+                      <div className="flex items-center gap-1 px-2">
+                        <span className="text-sm text-gray-700 font-medium">
+                          {currentPage}
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          de
+                        </span>
+                        <span className="text-sm text-gray-700 font-medium">
+                          {pagination.totalPages}
+                        </span>
+                      </div>
                       <button
                         onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
                         disabled={currentPage === pagination.totalPages}
-                        className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                        title="Próxima página"
                       >
                         <ChevronRight size={16} className="text-gray-600" />
                       </button>

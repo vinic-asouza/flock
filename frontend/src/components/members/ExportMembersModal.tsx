@@ -24,9 +24,11 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: 'gender', label: 'Gênero', category: 'personal' },
   { id: 'marital_status', label: 'Estado Civil', category: 'personal' },
   { id: 'nationality', label: 'Nacionalidade', category: 'personal' },
-  { id: 'document', label: 'Documento', category: 'personal' },
   { id: 'spouse', label: 'Cônjuge', category: 'personal' },
+  { id: 'father_name', label: 'Nome do Pai', category: 'personal' },
+  { id: 'mother_name', label: 'Nome da Mãe', category: 'personal' },
   { id: 'occupation', label: 'Profissão', category: 'personal' },
+  { id: 'children', label: 'Filhos', category: 'personal' },
   
   // Contato
   { id: 'phone', label: 'Telefone', category: 'contact' },
@@ -36,7 +38,6 @@ const FIELD_OPTIONS: FieldOption[] = [
   // Informações Eclesiásticas
   { id: 'active', label: 'Status', category: 'ecclesiastical' },
   { id: 'congregation', label: 'Congregação', category: 'ecclesiastical' },
-  { id: 'role', label: 'Cargo', category: 'ecclesiastical' },
   { id: 'baptism_date', label: 'Data de Batismo', category: 'ecclesiastical' },
   { id: 'admission', label: 'Tipo de Admissão', category: 'ecclesiastical' },
   { id: 'admission_date', label: 'Data de Admissão', category: 'ecclesiastical' },

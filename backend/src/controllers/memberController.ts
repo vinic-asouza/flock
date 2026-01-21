@@ -256,11 +256,48 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Buscar grupos para todos os membros
+    const memberIds = filteredMembers.map(m => m.id);
+    let memberGroupsMap: Record<string, any[]> = {};
+    
+    if (memberIds.length > 0) {
+      const { data: memberGroups, error: memberGroupsError } = await supabase
+        .from('member_groups')
+        .select(`
+          member_id,
+          groups (
+            id,
+            name,
+            type,
+            status,
+            congregation_id,
+            congregations (
+              id,
+              name
+            )
+          )
+        `)
+        .in('member_id', memberIds);
+
+      if (!memberGroupsError && memberGroups) {
+        // Agrupar grupos por member_id
+        memberGroups.forEach((mg: any) => {
+          if (mg.groups) {
+            if (!memberGroupsMap[mg.member_id]) {
+              memberGroupsMap[mg.member_id] = [];
+            }
+            memberGroupsMap[mg.member_id].push(mg.groups);
+          }
+        });
+      }
+    }
+
     // Formatar a resposta para manter compatibilidade
     const formattedMembers = filteredMembers.map(member => ({
       ...member,
       role: member.roles,
       congregation: member.congregations,
+      groups: memberGroupsMap[member.id] || [],
       roles: undefined, // Remove o campo roles da resposta
       congregations: undefined // Remove o campo congregations da resposta
     }));
@@ -378,6 +415,30 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Buscar grupos do membro
+    const { data: memberGroups, error: memberGroupsError } = await supabase
+      .from('member_groups')
+      .select(`
+        id,
+        created_at,
+        groups (
+          id,
+          name,
+          type,
+          status,
+          congregation_id,
+          congregations (
+            id,
+            name
+          )
+        )
+      `)
+      .eq('member_id', id);
+
+    if (memberGroupsError) {
+      console.error('Erro ao buscar grupos do membro:', memberGroupsError);
+    }
+
     // Formatar a resposta para manter compatibilidade
     // children já vem no memberWithDetails como JSONB
     const formattedMember = {
@@ -385,6 +446,11 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       role: memberWithDetails.roles,
       congregation: memberWithDetails.congregations,
       children: memberWithDetails.children || [],
+      groups: memberGroups?.map((mg: any) => ({
+        ...mg.groups,
+        memberGroupId: mg.id,
+        addedAt: mg.created_at
+      })) || [],
       roles: undefined, // Remove o campo roles da resposta
       congregations: undefined // Remove o campo congregations da resposta
     };
@@ -441,6 +507,31 @@ export const createMember = async (req: AuthRequest, res: Response) => {
 
     // Normalizar datas antes de criar o membro (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(req.body);
+
+    // Verificar duplicidade por nome (lowercase)
+    if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
+      const normalizedName = normalizedData.name.trim().toLowerCase();
+      
+      // Busca membros existentes com o mesmo nome (lowercase)
+      const { data: existingMembers, error: checkError } = await supabase
+        .from('members')
+        .select('id, name')
+        .eq('church_id', church.id);
+      
+      if (!checkError && existingMembers) {
+        for (const existingMember of existingMembers) {
+          if (existingMember.name) {
+            const existingNormalizedName = existingMember.name.trim().toLowerCase();
+            if (existingNormalizedName === normalizedName) {
+              return res.status(400).json({
+                error: 'Membro já cadastrado',
+                details: 'Já existe um membro cadastrado com este nome completo.'
+              });
+            }
+          }
+        }
+      }
+    }
 
     const memberData: Partial<Member> = {
       ...normalizedData,
