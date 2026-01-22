@@ -20,6 +20,13 @@ import {
   GroupPayload,
   GroupWithMembers
 } from '@/types';
+import {
+  CalendarItem,
+  CreateCalendarItemData,
+  UpdateCalendarItemData,
+  CalendarFilters,
+  CalendarListResponse
+} from '@/types/calendar';
 
 class ApiService {
   private api: AxiosInstance;
@@ -467,6 +474,85 @@ class ApiService {
   // Remover membro do grupo
   async removeMemberFromGroup(groupId: string, memberId: string) {
     const response = await this.api.delete(`/groups/${groupId}/members/${memberId}`);
+    return response.data;
+  }
+
+  // ========== Calendário ==========
+
+  // Listar itens do calendário
+  async listCalendarItems(filters?: CalendarFilters): Promise<CalendarListResponse> {
+    const queryParams = new URLSearchParams();
+    
+    if (filters?.type && filters.type.length > 0) {
+      filters.type.forEach(type => queryParams.append('type', type));
+    }
+    if (filters?.congregation_id) {
+      queryParams.append('congregation_id', filters.congregation_id);
+    }
+    if (filters?.group_id) {
+      queryParams.append('group_id', filters.group_id);
+    }
+    if (filters?.start_date) {
+      queryParams.append('start_date', filters.start_date);
+    }
+    if (filters?.end_date) {
+      queryParams.append('end_date', filters.end_date);
+    }
+    if (filters?.limit) {
+      queryParams.append('limit', filters.limit.toString());
+    }
+
+    const url = `/calendar${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data as CalendarListResponse;
+  }
+
+  // Buscar grupos que têm itens de calendário vinculados
+  async listGroupsWithCalendarItems(): Promise<Group[]> {
+    const response = await this.api.get('/calendar/groups');
+    return response.data as Group[];
+  }
+
+  // Buscar item do calendário por ID
+  async getCalendarItem(id: string): Promise<CalendarItem> {
+    const response = await this.api.get(`/calendar/${id}`);
+    return response.data as CalendarItem;
+  }
+
+  // Criar item do calendário
+  async createCalendarItem(data: CreateCalendarItemData): Promise<CalendarItem> {
+    const response = await this.api.post('/calendar', data);
+    return response.data as CalendarItem;
+  }
+
+  // Atualizar item do calendário
+  async updateCalendarItem(id: string, data: UpdateCalendarItemData): Promise<CalendarItem> {
+    const response = await this.api.put(`/calendar/${id}`, data);
+    return response.data as CalendarItem;
+  }
+
+  // Deletar item do calendário
+  async deleteCalendarItem(id: string): Promise<void> {
+    await this.api.delete(`/calendar/${id}`);
+  }
+
+  // Exportar calendário em PDF
+  async exportCalendarPDF(params?: {
+    month?: number;
+    year?: number;
+    congregation_id?: string;
+    group_id?: string;
+  }): Promise<Blob> {
+    const queryParams = new URLSearchParams();
+    if (params?.month) queryParams.append('month', params.month.toString());
+    if (params?.year) queryParams.append('year', params.year.toString());
+    if (params?.congregation_id) queryParams.append('congregation_id', params.congregation_id);
+    if (params?.group_id) queryParams.append('group_id', params.group_id);
+
+    const url = `/calendar/export/pdf${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.api.get(url, {
+      responseType: 'blob'
+    });
     return response.data;
   }
 

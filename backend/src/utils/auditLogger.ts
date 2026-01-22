@@ -2,7 +2,7 @@ import supabase from '../services/supabase';
 import { Request } from 'express';
 
 interface AuditLogData {
-  entity: 'member' | 'role' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group';
+  entity: 'member' | 'role' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'calendar_item';
   entityId: string | null;
   action: 'create' | 'update' | 'delete' | 'convert' | 'import' | 'deactivate';
   changesBefore?: any;

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import type { MouseEvent } from 'react';
-import { Users, Home, Layers, Settings, Loader2, UserPlus, BookOpen, UserCog } from 'lucide-react';
+import { Users, Home, Layers, Settings, Loader2, UserPlus, BookOpen, UserCog, Calendar } from 'lucide-react';
 
 interface SidebarProps {
   churchName: string;
@@ -15,6 +15,7 @@ const navItems = [
   { label: 'Membros', href: '/members', icon: Users },
   { label: 'Integração', href: '/integration', icon: UserPlus },
   { label: 'Grupos', href: '/groups', icon: UserCog },
+  { label: 'Calendário', href: '/calendar', icon: Calendar },
   { label: 'Congregações', href: '/congregations', icon: Layers },
   { label: 'Configurações', href: '/settings', icon: Settings },
   { label: 'Tutoriais', href: '/tutorials', icon: BookOpen },

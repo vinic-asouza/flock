@@ -209,4 +209,49 @@ export interface MemberGroup {
   member_id: string;
   group_id: string;
   created_at: Date;
+}
+
+// Tipos para Calendário
+export type CalendarItemType = 'Programação' | 'Evento' | 'Encontro' | 'Reunião';
+export type CalendarStatus = 'active' | 'cancelled' | 'postponed';
+export type RecurrencePattern = 'weekly' | 'monthly';
+
+export interface CalendarItem {
+  id: string;
+  church_id: string;
+  title: string;
+  type: CalendarItemType;
+  description?: string | null;
+  start_date: Date;
+  end_date?: Date | null;
+  is_recurring: boolean;
+  recurrence_pattern?: RecurrencePattern | null;
+  recurrence_end_date?: Date | null;
+  recurrence_time?: string | null; // Formato TIME (HH:mm:ss)
+  recurrence_duration_minutes?: number | null;
+  recurrence_day_of_week?: number | null; // 0 = Domingo, 6 = Sábado
+  recurrence_day_of_month?: number | null; // 1-31
+  recurrence_week_of_month?: number | null; // -1 = último, 1-4 = primeira a quarta semana
+  location?: string | null;
+  congregation_id?: string | null;
+  status: CalendarStatus;
+  group_id?: string | null;
+  responsible_member_id?: string | null;
+  created_at: Date;
+  updated_at: Date;
+  created_by?: string | null;
+  // Relacionamentos (via joins)
+  congregation?: {
+    id: string;
+    name: string;
+  } | null;
+  group?: {
+    id: string;
+    name: string;
+    type: string;
+  } | null;
+  responsible_member?: {
+    id: string;
+    name: string;
+  } | null;
 } 
