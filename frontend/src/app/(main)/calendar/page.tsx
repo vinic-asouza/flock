@@ -23,6 +23,8 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
   const [activeTab, setActiveTab] = useState<'calendar' | 'list'>('calendar');
+  const [birthdayCount, setBirthdayCount] = useState<number>(0);
+  const [loadingBirthdays, setLoadingBirthdays] = useState(true);
 
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -79,6 +81,30 @@ export default function CalendarPage() {
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  // Carregar contagem de aniversariantes do mês selecionado
+  const loadBirthdaysCount = useCallback(async () => {
+    try {
+      setLoadingBirthdays(true);
+      const month = currentMonth.getMonth() + 1;
+      const year = currentMonth.getFullYear();
+      const response = await apiService.getBirthdaysCount({
+        month,
+        year,
+        congregation_id: filters.congregation_id
+      });
+      setBirthdayCount(response.count || 0);
+    } catch (err: any) {
+      console.error('Erro ao carregar aniversariantes:', err);
+      setBirthdayCount(0);
+    } finally {
+      setLoadingBirthdays(false);
+    }
+  }, [currentMonth, filters.congregation_id]);
+
+  useEffect(() => {
+    loadBirthdaysCount();
+  }, [loadBirthdaysCount]);
 
   const handleCreateItem = async (data: CreateCalendarItemData) => {
     try {
@@ -216,6 +242,9 @@ export default function CalendarPage() {
             onDayClick={handleCreateQuick}
             currentDate={currentMonth}
             onDateChange={setCurrentMonth}
+            birthdayCount={birthdayCount}
+            loadingBirthdays={loadingBirthdays}
+            congregationId={filters.congregation_id}
           />
         ) : (
           <div className="space-y-4">

@@ -1335,4 +1335,223 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       details: error instanceof Error ? error.message : 'Erro desconhecido'
     });
   }
+};
+
+/**
+ * Retorna a contagem de aniversariantes em um mês específico
+ */
+export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    // Parâmetros de filtro (mês, ano e congregação)
+    const month = parseInt(req.query.month as string) || new Date().getMonth() + 1; // 1-12
+    const year = parseInt(req.query.year as string) || new Date().getFullYear();
+    const congregationId = req.query.congregation_id as string | undefined;
+
+    // Validar mês
+    if (month < 1 || month > 12) {
+      return res.status(400).json({
+        error: 'Parâmetro inválido',
+        details: 'O mês deve estar entre 1 e 12'
+      });
+    }
+
+    // Buscar church_id do usuário autenticado
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    // Buscar todos os membros ativos da igreja com data de nascimento
+    let query = supabase
+      .from('members')
+      .select('id, name, birth')
+      .eq('church_id', church.id)
+      .eq('active', true)
+      .not('birth', 'is', null);
+
+    // Aplicar filtro de congregação se fornecido
+    if (congregationId) {
+      if (congregationId === 'sede') {
+        // "sede" representa membros sem congregação (congregation_id = null)
+        query = query.is('congregation_id', null);
+      } else {
+        // Filtrar por UUID da congregação específica
+        query = query.eq('congregation_id', congregationId);
+      }
+    }
+
+    const { data: members, error: membersError } = await query;
+
+    if (membersError) {
+      console.error('Erro ao buscar membros:', membersError);
+      return res.status(500).json({
+        error: 'Erro ao buscar membros',
+        details: membersError.message
+      });
+    }
+
+    console.log(`🎂 Total de membros ativos com data de nascimento: ${members.length}`);
+    console.log(`🎂 Buscando aniversariantes do mês ${month}/${year}`);
+
+    // Filtrar membros que fazem aniversário no mês especificado
+    const birthdaysInMonth = members.filter(member => {
+      if (!member.birth) return false;
+      const birthDate = new Date(member.birth);
+      const birthMonth = birthDate.getMonth() + 1; // getMonth() retorna 0-11
+      if (birthMonth === month) {
+        console.log(`🎂 Aniversariante encontrado: ${member.name} - ${member.birth}`);
+      }
+      return birthMonth === month;
+    });
+
+    console.log(`🎂 Aniversariantes no mês ${month}: ${birthdaysInMonth.length}`);
+
+    res.json({
+      count: birthdaysInMonth.length,
+      month,
+      year
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar aniversariantes:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+/**
+ * Retorna a lista completa de aniversariantes em um mês específico
+ */
+export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    // Parâmetros de filtro (mês, ano e congregação)
+    const month = parseInt(req.query.month as string) || new Date().getMonth() + 1; // 1-12
+    const year = parseInt(req.query.year as string) || new Date().getFullYear();
+    const congregationId = req.query.congregation_id as string | undefined;
+
+    // Validar mês
+    if (month < 1 || month > 12) {
+      return res.status(400).json({
+        error: 'Parâmetro inválido',
+        details: 'O mês deve estar entre 1 e 12'
+      });
+    }
+
+    // Buscar church_id do usuário autenticado
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (churchError || !church) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
+    // Buscar todos os membros ativos da igreja com data de nascimento
+    let query = supabase
+      .from('members')
+      .select(`
+        id,
+        name,
+        birth,
+        phone,
+        whatsapp,
+        email,
+        congregations (
+          id,
+          name
+        )
+      `)
+      .eq('church_id', church.id)
+      .eq('active', true)
+      .not('birth', 'is', null);
+
+    // Aplicar filtro de congregação se fornecido
+    if (congregationId) {
+      if (congregationId === 'sede') {
+        // "sede" representa membros sem congregação (congregation_id = null)
+        query = query.is('congregation_id', null);
+      } else {
+        // Filtrar por UUID da congregação específica
+        query = query.eq('congregation_id', congregationId);
+      }
+    }
+
+    const { data: members, error: membersError } = await query;
+
+    if (membersError) {
+      console.error('Erro ao buscar membros:', membersError);
+      return res.status(500).json({
+        error: 'Erro ao buscar membros',
+        details: membersError.message
+      });
+    }
+
+    // Filtrar e mapear membros que fazem aniversário no mês especificado
+    const birthdaysInMonth = members
+      .filter(member => {
+        if (!member.birth) return false;
+        const birthDate = new Date(member.birth);
+        return birthDate.getMonth() + 1 === month;
+      })
+      .map(member => {
+        const birthDate = new Date(member.birth);
+        return {
+          id: member.id,
+          name: member.name,
+          birth: member.birth,
+          birthDay: birthDate.getDate(),
+          birthMonth: birthDate.getMonth() + 1,
+          phone: member.phone,
+          whatsapp: member.whatsapp,
+          email: member.email,
+          congregation: Array.isArray(member.congregations) 
+            ? member.congregations[0] 
+            : member.congregations
+        };
+      })
+      .sort((a, b) => a.birthDay - b.birthDay); // Ordenar por dia do mês
+
+    res.json({
+      data: birthdaysInMonth,
+      count: birthdaysInMonth.length,
+      month,
+      year
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar lista de aniversariantes:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
 }; 

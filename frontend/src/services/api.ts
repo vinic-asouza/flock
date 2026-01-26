@@ -273,6 +273,30 @@ class ApiService {
     };
   }
 
+  // Buscar contagem de aniversariantes do mês
+  async getBirthdaysCount(params?: { month?: number; year?: number; congregation_id?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.month) queryParams.append('month', params.month.toString());
+    if (params?.year) queryParams.append('year', params.year.toString());
+    if (params?.congregation_id) queryParams.append('congregation_id', params.congregation_id);
+
+    const url = `/members/birthdays/count${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
+  // Buscar lista de aniversariantes do mês
+  async getBirthdaysList(params?: { month?: number; year?: number; congregation_id?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.month) queryParams.append('month', params.month.toString());
+    if (params?.year) queryParams.append('year', params.year.toString());
+    if (params?.congregation_id) queryParams.append('congregation_id', params.congregation_id);
+
+    const url = `/members/birthdays/list${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
   // Gerenciar integrantes
   async listIntegrationMembers(params: {
     page?: number;

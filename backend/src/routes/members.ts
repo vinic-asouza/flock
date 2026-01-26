@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers, getMemberReports } from '../controllers/memberController';
+import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers, getMemberReports, getBirthdaysCount, getBirthdaysList } from '../controllers/memberController';
 import { validateImport, importMembersFromCSV } from '../controllers/memberImportController';
 import authMiddleware from '../middlewares/auth';
 import { uploadCSV } from '../middlewares/upload';
@@ -14,6 +14,12 @@ router.get('/', listMembers);
 
 // Gerar relatórios de membros
 router.get('/reports', getMemberReports);
+
+// Buscar contagem de aniversariantes do mês
+router.get('/birthdays/count', getBirthdaysCount);
+
+// Buscar lista de aniversariantes do mês
+router.get('/birthdays/list', getBirthdaysList);
 
 // Validar arquivo CSV antes da importação
 router.post('/import/validate', uploadCSV.single('file'), validateImport);
