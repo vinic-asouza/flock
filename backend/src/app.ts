@@ -26,6 +26,7 @@ import integrationLinksRoutes from './routes/integrationLinks';
 import plansRoutes from './routes/plans';
 import groupsRoutes from './routes/groups';
 import calendarRoutes from './routes/calendar';
+import calendarParticipantsRoutes from './routes/calendarParticipants';
 
 dotenv.config();
 
@@ -121,6 +122,7 @@ app.use('/api/integration-links', integrationLinksRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api', calendarParticipantsRoutes);
 
 // Rota de healthcheck básico
 app.get('/health', (_req, res) => {

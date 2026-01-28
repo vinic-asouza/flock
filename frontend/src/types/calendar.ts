@@ -42,6 +42,39 @@ export interface CalendarItem {
     id: string;
     name: string;
   } | null;
+  // Participantes
+  participants?: CalendarParticipant[];
+}
+
+export interface CalendarParticipant {
+  id: string;
+  calendar_item_id: string;
+  member_id?: string | null;
+  guest_name?: string | null;
+  guest_email?: string | null;
+  guest_phone?: string | null;
+  guest_whatsapp?: string | null;
+  created_at: string;
+  updated_at: string;
+  // Relacionamento
+  member?: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+  } | null;
+}
+
+export interface CreateParticipantData {
+  member_id?: string;
+  guest_name?: string;
+  guest_email?: string;
+  guest_phone?: string;
+  guest_whatsapp?: string;
+  // Campos temporários para exibição (não enviados ao backend)
+  _tempMemberName?: string;
+  _tempMemberContact?: string;
 }
 
 export interface CreateCalendarItemData {
@@ -63,6 +96,7 @@ export interface CreateCalendarItemData {
   status?: CalendarStatus;
   group_id?: string | null;
   responsible_member_id?: string | null;
+  participants?: CreateParticipantData[]; // Array de participantes (opcional)
 }
 
 export interface UpdateCalendarItemData extends Partial<CreateCalendarItemData> {}

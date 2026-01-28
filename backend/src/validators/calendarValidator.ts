@@ -96,7 +96,38 @@ export const createCalendarItemSchema = Joi.object({
   }),
   responsible_member_id: Joi.string().uuid().allow(null, '').optional().messages({
     'string.guid': 'O ID do membro responsável deve ser um UUID válido'
-  })
+  }),
+  // Array de participantes (opcional)
+  participants: Joi.array().items(
+    Joi.object({
+      member_id: Joi.string().uuid().optional().allow(null, '').messages({
+        'string.guid': 'O ID do membro participante deve ser um UUID válido'
+      }),
+      guest_name: Joi.string().optional().allow(null, ''),
+      guest_email: Joi.string().email().optional().allow(null, '').messages({
+        'string.email': 'O email do convidado deve ser um email válido'
+      }),
+      guest_phone: Joi.string().optional().allow(null, ''),
+      guest_whatsapp: Joi.string().optional().allow(null, '')
+    }).custom((participant, helpers) => {
+      const hasMember = participant.member_id && participant.member_id.trim() !== '';
+      const hasGuest = participant.guest_name && participant.guest_name.trim() !== '';
+      
+      if (!hasMember && !hasGuest) {
+        return helpers.error('any.custom', {
+          message: 'Um participante deve ter member_id ou guest_name'
+        });
+      }
+      
+      if (hasMember && hasGuest) {
+        return helpers.error('any.custom', {
+          message: 'Um participante não pode ser membro e convidado simultaneamente'
+        });
+      }
+      
+      return participant;
+    })
+  ).optional()
 }).unknown(true).custom((value, helpers) => {
   // Validação customizada para recorrência mensal
   if (value.is_recurring && value.recurrence_pattern === 'monthly') {

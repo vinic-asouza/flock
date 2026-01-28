@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarItemForm } from '@/components/calendar/CalendarItemForm';
@@ -10,7 +10,7 @@ import { CalendarFiltersHorizontal } from '@/components/calendar/CalendarFilters
 import { Tabs } from '@/components/ui/Tabs';
 import { CalendarItem, CreateCalendarItemData, CalendarFilters as CalendarFiltersType, typeColors } from '@/types/calendar';
 import { apiService } from '@/services/api';
-import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, subMonths, addMonths, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -25,6 +25,8 @@ export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState<'calendar' | 'list'>('calendar');
   const [birthdayCount, setBirthdayCount] = useState<number>(0);
   const [loadingBirthdays, setLoadingBirthdays] = useState(true);
+  const [participantsPage, setParticipantsPage] = useState(1);
+  const [loadingItemDetails, setLoadingItemDetails] = useState(false);
 
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -160,10 +162,34 @@ export default function CalendarPage() {
     }
   };
 
-  const handleViewItem = (item: CalendarItem) => {
-    setSelectedItem(item);
-    setViewModalOpen(true);
+  const handleViewItem = async (item: CalendarItem) => {
+    try {
+      setLoadingItemDetails(true);
+      // Buscar detalhes completos do item (incluindo participantes)
+      const fullItem = await apiService.getCalendarItem(item.id);
+      setSelectedItem(fullItem);
+      setParticipantsPage(1); // Reset para primeira página
+      setViewModalOpen(true);
+    } catch (err: any) {
+      console.error('Erro ao carregar detalhes do item:', err);
+      toast.error('Erro ao carregar detalhes do item');
+    } finally {
+      setLoadingItemDetails(false);
+    }
   };
+
+  // Paginação de participantes
+  const paginatedParticipants = useMemo(() => {
+    if (!selectedItem?.participants) return { items: [], totalPages: 0 };
+    
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(selectedItem.participants.length / itemsPerPage);
+    const startIndex = (participantsPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const items = selectedItem.participants.slice(startIndex, endIndex);
+    
+    return { items, totalPages };
+  }, [selectedItem?.participants, participantsPage]);
 
   const handleEditClick = () => {
     setViewModalOpen(false);
@@ -328,6 +354,11 @@ export default function CalendarPage() {
           title={selectedItem.title}
           size="lg"
         >
+          {loadingItemDetails ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
           <div className="p-6 space-y-6">
             {/* Header com badges */}
             <div className="flex flex-wrap items-center gap-3">
@@ -512,6 +543,113 @@ export default function CalendarPage() {
               </div>
             )}
 
+            {/* Seção: Participantes */}
+            {selectedItem.participants && selectedItem.participants.length > 0 && (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
+                  <Users size={16} className="text-gray-500" />
+                  Participantes ({selectedItem.participants.length})
+                </h3>
+
+                {/* Lista de Participantes - Grid com 2 colunas */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {paginatedParticipants.items.map((participant) => {
+                    const name = participant.member?.name || participant.guest_name || 'Sem nome';
+                    const whatsapp = participant.member?.whatsapp || participant.guest_whatsapp;
+                    const phone = participant.member?.phone || participant.guest_phone;
+                    const email = participant.member?.email || participant.guest_email;
+                    const isMember = !!participant.member;
+
+                    // Determinar contato prioritário: WhatsApp > Telefone > Email
+                    let contactLink = '';
+                    let contactText = '';
+                    let contactIcon = null;
+                    let contactColor = '';
+
+                    if (whatsapp) {
+                      contactLink = `https://wa.me/55${whatsapp.replace(/\D/g, '')}`;
+                      contactText = whatsapp;
+                      contactIcon = <MessageCircle size={12} />;
+                      contactColor = 'text-gray-600 hover:text-green-600';
+                    } else if (phone) {
+                      contactLink = `tel:${phone.replace(/\D/g, '')}`;
+                      contactText = phone;
+                      contactIcon = <Phone size={12} />;
+                      contactColor = 'text-gray-600 hover:text-gray-900';
+                    } else if (email) {
+                      contactLink = `mailto:${email}`;
+                      contactText = email;
+                      contactIcon = <Mail size={12} />;
+                      contactColor = 'text-gray-600 hover:text-gray-900';
+                    }
+
+                    return (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-3 py-2"
+                      >
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                            <User size={16} className="text-gray-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {name}
+                            </p>
+                            {!isMember && (
+                              <span className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                                Convidado
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Contato prioritário clicável com ícone */}
+                          {contactLink && (
+                            <a
+                              href={contactLink}
+                              target={whatsapp ? "_blank" : undefined}
+                              rel={whatsapp ? "noopener noreferrer" : undefined}
+                              className={`flex items-center gap-1 text-xs ${contactColor} hover:underline`}
+                            >
+                              {contactIcon}
+                              <span className="truncate">{contactText}</span>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Paginação */}
+                {paginatedParticipants.totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                    <div className="text-xs text-gray-600">
+                      Página {participantsPage} de {paginatedParticipants.totalPages}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setParticipantsPage(p => Math.max(1, p - 1))}
+                        disabled={participantsPage === 1}
+                        className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft size={16} className="text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => setParticipantsPage(p => Math.min(paginatedParticipants.totalPages, p + 1))}
+                        disabled={participantsPage === paginatedParticipants.totalPages}
+                        className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight size={16} className="text-gray-700" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Botões de Ação */}
             <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
               <Button
@@ -540,6 +678,7 @@ export default function CalendarPage() {
               </Button>
             </div>
           </div>
+          )}
         </Modal>
       )}
 

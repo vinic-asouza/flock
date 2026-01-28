@@ -25,7 +25,9 @@ import {
   CreateCalendarItemData,
   UpdateCalendarItemData,
   CalendarFilters,
-  CalendarListResponse
+  CalendarListResponse,
+  CalendarParticipant,
+  CreateParticipantData
 } from '@/types/calendar';
 
 class ApiService {
@@ -578,6 +580,44 @@ class ApiService {
       responseType: 'blob'
     });
     return response.data;
+  }
+
+  // ========== Participantes de Calendário ==========
+
+  // Listar participantes de um item do calendário
+  async listCalendarParticipants(calendarItemId: string): Promise<CalendarParticipant[]> {
+    const response = await this.api.get(`/calendar-items/${calendarItemId}/participants`);
+    return response.data as CalendarParticipant[];
+  }
+
+  // Adicionar participante a um item do calendário
+  async addCalendarParticipant(calendarItemId: string, data: CreateParticipantData): Promise<CalendarParticipant> {
+    const response = await this.api.post(`/calendar-items/${calendarItemId}/participants`, data);
+    return response.data as CalendarParticipant;
+  }
+
+  // Adicionar múltiplos participantes de uma vez (bulk)
+  async addCalendarParticipantsBulk(calendarItemId: string, participants: CreateParticipantData[]): Promise<{
+    message: string;
+    summary: {
+      total: number;
+      added: number;
+      duplicates: number;
+      errors: number;
+    };
+    results: {
+      success: CalendarParticipant[];
+      duplicates: any[];
+      errors: any[];
+    };
+  }> {
+    const response = await this.api.post(`/calendar-items/${calendarItemId}/participants/bulk`, { participants });
+    return response.data;
+  }
+
+  // Remover participante de um item do calendário
+  async removeCalendarParticipant(calendarItemId: string, participantId: string): Promise<void> {
+    await this.api.delete(`/calendar-items/${calendarItemId}/participants/${participantId}`);
   }
 
   // Criar membro

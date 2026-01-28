@@ -296,6 +296,22 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
           email,
           phone,
           whatsapp
+        ),
+        calendar_participants (
+          id,
+          member_id,
+          guest_name,
+          guest_email,
+          guest_phone,
+          guest_whatsapp,
+          created_at,
+          members (
+            id,
+            name,
+            email,
+            phone,
+            whatsapp
+          )
         )
       `)
       .eq('id', id)
@@ -337,14 +353,37 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Normalizar participantes
+    let normalizedParticipants: any[] = [];
+    if (item.calendar_participants) {
+      normalizedParticipants = Array.isArray(item.calendar_participants) 
+        ? item.calendar_participants.map(p => {
+            // Normalizar membro dentro de cada participante
+            let participantMember = null;
+            if (p.members) {
+              participantMember = Array.isArray(p.members) 
+                ? (p.members.length > 0 ? p.members[0] : null)
+                : p.members;
+            }
+            
+            const { members: _, ...participantWithoutMembers } = p;
+            return {
+              ...participantWithoutMembers,
+              member: participantMember
+            };
+          })
+        : [item.calendar_participants];
+    }
+
     // Criar objeto sem os campos no plural
-    const { congregations, groups, members, ...itemWithoutPlurals } = item;
+    const { congregations, groups, members, calendar_participants, ...itemWithoutPlurals } = item;
     
     const normalizedItem = {
       ...itemWithoutPlurals,
       congregation: normalizedCongregation,
       group: normalizedGroup,
-      responsible_member: normalizedMember
+      responsible_member: normalizedMember,
+      participants: normalizedParticipants
     };
 
     res.json(normalizedItem);
@@ -394,7 +433,8 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
       location,
       congregation_id,
       group_id,
-      responsible_member_id
+      responsible_member_id,
+      participants
     } = req.body;
 
     // Buscar church_id do usuário autenticado
@@ -472,6 +512,53 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
         error: 'Erro ao criar item do calendário',
         details: createError.message
       });
+    }
+
+    // Adicionar participantes se fornecidos
+    if (participants && Array.isArray(participants) && participants.length > 0) {
+      // Validar membros (se fornecidos) pertencem à igreja
+      const memberIds = participants
+        .filter((p: any) => p.member_id)
+        .map((p: any) => p.member_id);
+
+      if (memberIds.length > 0) {
+        const { data: validMembers, error: membersError } = await supabase
+          .from('members')
+          .select('id')
+          .in('id', memberIds)
+          .eq('church_id', church.id);
+
+        if (membersError || validMembers.length !== memberIds.length) {
+          // Se algum membro não for válido, remover o item criado
+          await supabase.from('calendar_items').delete().eq('id', item.id);
+          
+          return res.status(400).json({
+            error: 'Membros inválidos',
+            details: 'Um ou mais membros não pertencem à sua igreja'
+          });
+        }
+      }
+
+      // Preparar dados dos participantes
+      const participantsData = participants.map((p: any) => ({
+        calendar_item_id: item.id,
+        member_id: p.member_id || null,
+        guest_name: p.guest_name || null,
+        guest_email: p.guest_email || null,
+        guest_phone: p.guest_phone || null,
+        guest_whatsapp: p.guest_whatsapp || null
+      }));
+
+      // Inserir participantes
+      const { error: participantsError } = await supabase
+        .from('calendar_participants')
+        .insert(participantsData);
+
+      if (participantsError) {
+        console.error('Erro ao adicionar participantes:', participantsError);
+        // Não falhar a criação do item se participantes falharem
+        // Apenas logar o erro
+      }
     }
 
     // Log da operação de criação

@@ -1,18 +1,20 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { CalendarItem, CreateCalendarItemData, CalendarItemType } from '@/types/calendar';
+import { CalendarItem, CreateCalendarItemData, CalendarItemType, CreateParticipantData } from '@/types/calendar';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { apiService } from '@/services/api';
 import { Group } from '@/types';
 import { endOfYear, getDay, lastDayOfMonth } from 'date-fns';
+import { CalendarParticipantsManager } from './CalendarParticipantsManager';
+import { toast } from 'react-hot-toast';
 
 // Schema de validação
 const calendarItemSchema = z.object({
@@ -201,6 +203,9 @@ export function CalendarItemForm({
   const [groups, setGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [selectedResponsibleLabel, setSelectedResponsibleLabel] = useState<string>('');
+  const [isAddingGroupMembers, setIsAddingGroupMembers] = useState(false); // Loading state
+  const [tempParticipants, setTempParticipants] = useState<CreateParticipantData[]>([]); // Participantes temporários (modo criação)
+  const participantsManagerRef = useRef<any>(null); // Ref para acessar métodos do CalendarParticipantsManager
 
   const {
     register,
@@ -220,6 +225,7 @@ export function CalendarItemForm({
   const selectedCongregation = watch('congregation_id');
   const responsibleId = watch('responsible_member_id') ?? '';
   const isRecurring = watch('is_recurring');
+  const selectedGroupId = watch('group_id');
 
   // Determinar congregação para busca de membros
   // Se selectedCongregation é 'sede', passar null. Se é uma string (UUID), passar a string. Se undefined, não buscar ainda.
@@ -276,6 +282,87 @@ export function CalendarItemForm({
 
     return base;
   }, [memberOptionsData, responsibleId, selectedResponsibleLabel]);
+
+  // Função para adicionar membros do grupo selecionado como participantes
+  const handleAddGroupMembers = async () => {
+    if (!selectedGroupId) {
+      toast.error('Selecione um grupo primeiro');
+      return;
+    }
+
+    try {
+      setIsAddingGroupMembers(true);
+
+      // Buscar membros do grupo
+      const groupMembers = await apiService.getGroupMembers(selectedGroupId);
+      
+      // Filtrar apenas membros ativos
+      const activeMembers = groupMembers.filter((m: any) => m.active);
+
+      if (activeMembers.length === 0) {
+        toast('Este grupo não possui membros ativos', { icon: 'ℹ️' });
+        return;
+      }
+
+      // Preparar array de participantes
+      const participantsData = activeMembers.map((member: any) => ({
+        member_id: member.id,
+        // Dados temporários para exibição (não serão enviados ao backend)
+        _tempMemberName: member.name,
+        _tempMemberContact: member.whatsapp || member.phone || ''
+      }));
+
+      // Modo de criação (sem item.id): adicionar ao tempParticipants
+      if (!item?.id) {
+        // Filtrar duplicatas
+        const existingMemberIds = tempParticipants
+          .filter((p: CreateParticipantData) => p.member_id)
+          .map((p: CreateParticipantData) => p.member_id);
+        
+        const newParticipants = participantsData.filter(
+          (p: CreateParticipantData) => !existingMemberIds.includes(p.member_id)
+        );
+
+        if (newParticipants.length === 0) {
+          toast('Todos os membros do grupo já foram adicionados', { icon: 'ℹ️' });
+          return;
+        }
+
+        setTempParticipants([...tempParticipants, ...newParticipants]);
+        toast.success(`${newParticipants.length} ${newParticipants.length === 1 ? 'membro adicionado' : 'membros adicionados'} do grupo!`);
+        return;
+      }
+
+      // Modo de edição (com item.id): chamar endpoint bulk
+      const result = await apiService.addCalendarParticipantsBulk(item.id, participantsData);
+
+      // Notificar resultado baseado no summary
+      const { added, duplicates, errors } = result.summary;
+      
+      if (added > 0) {
+        toast.success(`${added} ${added === 1 ? 'membro adicionado' : 'membros adicionados'} do grupo!`);
+      }
+      
+      if (duplicates > 0) {
+        toast(`${duplicates} ${duplicates === 1 ? 'membro já estava' : 'membros já estavam'} na lista`, { icon: 'ℹ️' });
+      }
+      
+      if (errors > 0) {
+        toast.error(`Não foi possível adicionar ${errors} ${errors === 1 ? 'membro' : 'membros'}`);
+        console.error('Erros ao adicionar participantes:', result.results.errors);
+      }
+
+      // Atualizar lista de participantes no componente filho
+      if (participantsManagerRef.current?.loadParticipants) {
+        participantsManagerRef.current.loadParticipants();
+      }
+    } catch (error) {
+      console.error('Erro ao adicionar membros do grupo:', error);
+      toast.error('Não foi possível adicionar membros do grupo');
+    } finally {
+      setIsAddingGroupMembers(false);
+    }
+  };
 
   // Função auxiliar para converter data UTC para timezone local
   const formatDateForInput = (dateString: string, includeTime: boolean = true): string => {
@@ -434,6 +521,12 @@ export function CalendarItemForm({
         submitData.end_date = data.end_date ? new Date(data.end_date).toISOString() : undefined;
       }
 
+      // Adicionar participantes temporários se estivermos criando (modo create)
+      if (mode === 'create' && tempParticipants.length > 0) {
+        // Remover campos temporários antes de enviar ao backend
+        submitData.participants = tempParticipants.map(({ _tempMemberName, _tempMemberContact, ...rest }) => rest);
+      }
+
       await onSubmit(submitData);
     } catch (error) {
       // O erro será tratado pelo componente pai
@@ -500,18 +593,20 @@ export function CalendarItemForm({
         )}
       </div>
 
-      {/* Checkbox Evento Recorrente */}
-      <div className="flex items-center">
-        <input
-          id="is_recurring"
-          type="checkbox"
-          {...register('is_recurring')}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label htmlFor="is_recurring" className="ml-2 block text-sm text-gray-700">
-          Evento recorrente
-        </label>
-      </div>
+      {/* Checkbox Evento Recorrente - apenas no modo de criação */}
+      {mode === 'create' && (
+        <div className="flex items-center">
+          <input
+            id="is_recurring"
+            type="checkbox"
+            {...register('is_recurring')}
+            className="h-4 w-4 accent-primary focus:ring-primary border-gray-300 rounded cursor-pointer"
+          />
+          <label htmlFor="is_recurring" className="ml-2 block text-sm text-gray-700 cursor-pointer">
+            Evento recorrente
+          </label>
+        </div>
+      )}
 
       {/* Data/Hora - diferente para recorrentes e não recorrentes */}
       {!isRecurring ? (
@@ -615,7 +710,7 @@ export function CalendarItemForm({
               </div>
               <div>
                 <label htmlFor="recurrence_end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Data de Término da Recorrência (opcional)
+                  Término da Recorrência (opcional)
                 </label>
                 <Input
                   id="recurrence_end_date"
@@ -729,7 +824,7 @@ export function CalendarItemForm({
           {watch('recurrence_pattern') === 'monthly' && (
             <div>
               <label htmlFor="recurrence_end_date" className="block text-sm font-medium text-gray-700 mb-1">
-                Data de Término da Recorrência (opcional)
+                Término da Recorrência (opcional)
               </label>
               <Input
                 id="recurrence_end_date"
@@ -813,6 +908,20 @@ export function CalendarItemForm({
             placeholder="Digite para buscar"
           />
         </div>
+      </div>
+
+      {/* Participantes */}
+      <div className="border-t pt-4">
+        <CalendarParticipantsManager
+          ref={participantsManagerRef}
+          calendarItemId={item?.id}
+          congregationId={selectedCongregation}
+          showAddGroupButton={!!selectedGroupId}
+          onAddGroupMembers={handleAddGroupMembers}
+          isAddingGroupMembers={isAddingGroupMembers}
+          tempParticipants={tempParticipants}
+          onTempParticipantsChange={setTempParticipants}
+        />
       </div>
 
       {/* Botões */}

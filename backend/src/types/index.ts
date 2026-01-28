@@ -254,4 +254,34 @@ export interface CalendarItem {
     id: string;
     name: string;
   } | null;
+  // Participantes
+  participants?: CalendarParticipant[];
+}
+
+export interface CalendarParticipant {
+  id: string;
+  calendar_item_id: string;
+  member_id?: string | null;
+  guest_name?: string | null;
+  guest_email?: string | null;
+  guest_phone?: string | null;
+  guest_whatsapp?: string | null;
+  created_at: Date;
+  updated_at: Date;
+  // Relacionamento (via join)
+  member?: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+  } | null;
+}
+
+export interface CreateParticipantData {
+  member_id?: string;
+  guest_name?: string;
+  guest_email?: string;
+  guest_phone?: string;
+  guest_whatsapp?: string;
 } 
