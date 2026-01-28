@@ -277,21 +277,41 @@ export function CalendarItemForm({
     return base;
   }, [memberOptionsData, responsibleId, selectedResponsibleLabel]);
 
+  // Função auxiliar para converter data UTC para timezone local
+  const formatDateForInput = (dateString: string, includeTime: boolean = true): string => {
+    if (!dateString) return '';
+    
+    // Criar Date object (isso converte UTC para local automaticamente)
+    const date = new Date(dateString);
+    
+    // Extrair valores no timezone local
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    if (includeTime) {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    return `${year}-${month}-${day}`;
+  };
+
   // Preencher formulário quando item for fornecido (modo edição)
   useEffect(() => {
     if (mode === 'edit' && item) {
       if (item.is_recurring) {
         // Para eventos recorrentes: start_date é apenas data
-        const startDateOnly = item.start_date ? new Date(item.start_date).toISOString().slice(0, 10) : '';
         reset({
           title: item.title,
           type: item.type,
           description: item.description || '',
-          start_date: startDateOnly,
+          start_date: formatDateForInput(item.start_date, false),
           end_date: '',
           is_recurring: item.is_recurring,
           recurrence_pattern: (item.recurrence_pattern === 'weekly' || item.recurrence_pattern === 'monthly') ? item.recurrence_pattern : '',
-          recurrence_end_date: item.recurrence_end_date ? new Date(item.recurrence_end_date).toISOString().slice(0, 10) : '',
+          recurrence_end_date: item.recurrence_end_date ? formatDateForInput(item.recurrence_end_date, false) : '',
           recurrence_time: item.recurrence_time || '',
           recurrence_duration_minutes: item.recurrence_duration_minutes || '',
           recurrence_day_of_week: item.recurrence_day_of_week !== null && item.recurrence_day_of_week !== undefined ? item.recurrence_day_of_week : '',
@@ -308,8 +328,8 @@ export function CalendarItemForm({
           title: item.title,
           type: item.type,
           description: item.description || '',
-          start_date: item.start_date ? new Date(item.start_date).toISOString().slice(0, 16) : '',
-          end_date: item.end_date ? new Date(item.end_date).toISOString().slice(0, 16) : '',
+          start_date: formatDateForInput(item.start_date, true),
+          end_date: item.end_date ? formatDateForInput(item.end_date, true) : '',
           is_recurring: item.is_recurring,
           recurrence_pattern: '',
           recurrence_end_date: '',

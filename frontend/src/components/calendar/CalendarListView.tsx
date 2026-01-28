@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import { CalendarItem } from '@/types/calendar';
 import { format, startOfMonth, parseISO, getYear, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarItemCard } from './CalendarItemCard';
+import { ChevronLeft, ChevronRight, CalendarDays, ArrowUp } from 'lucide-react';
 
 interface CalendarListViewProps {
   items: CalendarItem[];
@@ -21,6 +22,78 @@ export function CalendarListView({
   onEditClick,
   onDeleteClick
 }: CalendarListViewProps) {
+  const itemsPerPage = 6;
+  
+  // Estado para controlar a página atual de cada mês
+  const [currentPages, setCurrentPages] = useState<Record<string, number>>({});
+  
+  // Refs para os containers dos meses
+  const monthRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Função para obter a página atual de um mês
+  const getCurrentPage = (monthKey: string) => {
+    return currentPages[monthKey] || 1;
+  };
+
+  // Função para mudar a página de um mês específico
+  const setMonthPage = (monthKey: string, page: number) => {
+    setCurrentPages(prev => ({
+      ...prev,
+      [monthKey]: page
+    }));
+  };
+
+  // Função para scroll ao topo
+  const scrollToTop = () => {
+    // Tentar encontrar o container de scroll (pode ser diferente em Next.js)
+    const scrollContainers = [
+      window,
+      document.documentElement,
+      document.body,
+      document.querySelector('main'),
+      document.querySelector('[role="main"]'),
+    ];
+    
+    // Tentar scroll suave em todos os containers possíveis
+    scrollContainers.forEach(container => {
+      if (container) {
+        try {
+          if (container === window) {
+            container.scrollTo({ top: 0, behavior: 'smooth' });
+          } else if ('scrollTo' in container && typeof container.scrollTo === 'function') {
+            container.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        } catch (e) {
+          // Ignorar erros silenciosamente
+        }
+      }
+    });
+  };
+
+  // Função para scroll ao mês atual
+  const scrollToCurrentMonth = () => {
+    const currentDate = new Date();
+    const currentMonthKey = format(currentDate, 'yyyy-MM');
+    
+    console.log('Procurando mês:', currentMonthKey);
+    console.log('Refs disponíveis:', Object.keys(monthRefs.current));
+    
+    const monthElement = monthRefs.current[currentMonthKey];
+    
+    if (monthElement) {
+      // Usar scrollIntoView para melhor compatibilidade
+      monthElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Ajustar um pouco para compensar o header
+      setTimeout(() => {
+        window.scrollBy({ top: -100, behavior: 'smooth' });
+      }, 100);
+    } else {
+      console.log('Mês atual não encontrado na lista do ano selecionado');
+      // Se o mês atual não existe no ano selecionado, scroll para o topo
+      scrollToTop();
+    }
+  };
+
   // Função para formatar descrição da recorrência
   const getRecurrenceDescription = (item: CalendarItem): string => {
     if (!item.is_recurring || !item.recurrence_pattern) return '';
@@ -120,55 +193,127 @@ export function CalendarListView({
   const currentMonthNum = getMonth(currentDate);
 
   return (
-    <div className="space-y-8">
-      {itemsByYearAndMonth.map(({ monthKey, monthName, monthDate, items: monthItems }) => {
+    <>
+      <div className="space-y-8">
+        {itemsByYearAndMonth.map(({ monthKey, monthName, monthDate, items: monthItems }, index) => {
         const monthYearNum = getYear(monthDate);
         const monthMonthNum = getMonth(monthDate);
         const isCurrentMonth = currentYearNum === monthYearNum && currentMonthNum === monthMonthNum;
         
+        // Paginação para este mês
+        const currentPage = getCurrentPage(monthKey);
+        const totalPages = Math.ceil(monthItems.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedItems = monthItems.slice(startIndex, endIndex);
+        
+        const isLastMonth = index === itemsByYearAndMonth.length - 1;
+        
         return (
           <div 
-            key={monthKey} 
-            className={`space-y-4 rounded-lg p-4 transition-colors ${
-              isCurrentMonth ? 'bg-white border border-gray-200' : ''
-            }`}
+            key={monthKey}
+            ref={(el) => {
+              monthRefs.current[monthKey] = el;
+            }}
+            className={`space-y-4 pb-8 ${!isLastMonth ? 'border-b border-gray-200' : ''}`}
           >
             {/* Cabeçalho do mês */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl font-bold text-gray-900 capitalize">
                 {monthName} {currentYear}
               </h2>
               <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
                 {monthItems.length} {monthItems.length === 1 ? 'item' : 'itens'}
               </span>
+              {isCurrentMonth && (
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-white">
+                  Mês Atual
+                </span>
+              )}
             </div>
 
           {/* Lista de itens do mês */}
-          {monthItems.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-              {monthItems.map((item) => {
-                // Criar uma versão do item com descrição de recorrência customizada
-                const itemWithRecurrence = item.is_recurring ? {
-                  ...item,
-                  recurrenceDescription: getRecurrenceDescription(item)
-                } : item;
+          {paginatedItems.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+                {paginatedItems.map((item) => {
+                  // Criar uma versão do item com descrição de recorrência customizada
+                  const itemWithRecurrence = item.is_recurring ? {
+                    ...item,
+                    recurrenceDescription: getRecurrenceDescription(item)
+                  } : item;
 
-                return (
-                  <CalendarItemCard
-                    key={item.id}
-                    item={itemWithRecurrence as CalendarItem & { recurrenceDescription?: string }}
-                    onClick={() => onItemClick(item)}
-                    onView={() => onItemClick(item)}
-                    onEdit={() => onEditClick(item)}
-                    onDelete={() => onDeleteClick(item)}
-                  />
-                );
-              })}
-            </div>
+                  return (
+                    <CalendarItemCard
+                      key={item.id}
+                      item={itemWithRecurrence as CalendarItem & { recurrenceDescription?: string }}
+                      onClick={() => onItemClick(item)}
+                      onView={() => onItemClick(item)}
+                      onEdit={() => onEditClick(item)}
+                      onDelete={() => onDeleteClick(item)}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Paginação */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    Mostrando {startIndex + 1} a {Math.min(endIndex, monthItems.length)} de {monthItems.length} {monthItems.length === 1 ? 'item' : 'itens'}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setMonthPage(monthKey, Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
+                    >
+                      <ChevronLeft size={18} className="text-gray-700" />
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setMonthPage(monthKey, Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
+                    >
+                      <ChevronRight size={18} className="text-gray-700" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           </div>
         );
       })}
-    </div>
+      </div>
+
+      {/* Botões flutuantes de navegação - sempre visíveis */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
+        {/* Botão: Ir para o mês atual */}
+        <button
+          onClick={scrollToCurrentMonth}
+          className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+        >
+          <CalendarDays size={20} className="text-gray-700" />
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+            Ir até o mês atual
+          </span>
+        </button>
+
+        {/* Botão: Voltar ao topo */}
+        <button
+          onClick={scrollToTop}
+          className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+        >
+          <ArrowUp size={20} className="text-gray-700" />
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+            Voltar ao topo
+          </span>
+        </button>
+      </div>
+    </>
   );
 }
