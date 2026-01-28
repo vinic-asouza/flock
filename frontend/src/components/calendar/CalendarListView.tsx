@@ -11,16 +11,12 @@ interface CalendarListViewProps {
   items: CalendarItem[];
   currentYear: number;
   onItemClick: (item: CalendarItem) => void;
-  onEditClick: (item: CalendarItem) => void;
-  onDeleteClick: (item: CalendarItem) => void;
 }
 
 export function CalendarListView({
   items,
   currentYear,
-  onItemClick,
-  onEditClick,
-  onDeleteClick
+  onItemClick
 }: CalendarListViewProps) {
   const itemsPerPage = 6;
   
@@ -63,7 +59,7 @@ export function CalendarListView({
           } else if ('scrollTo' in container && typeof container.scrollTo === 'function') {
             container.scrollTo({ top: 0, behavior: 'smooth' });
           }
-        } catch (e) {
+        } catch {
           // Ignorar erros silenciosamente
         }
       }
@@ -248,9 +244,6 @@ export function CalendarListView({
                       key={item.id}
                       item={itemWithRecurrence as CalendarItem & { recurrenceDescription?: string }}
                       onClick={() => onItemClick(item)}
-                      onView={() => onItemClick(item)}
-                      onEdit={() => onEditClick(item)}
-                      onDelete={() => onDeleteClick(item)}
                     />
                   );
                 })}

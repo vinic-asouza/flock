@@ -9,14 +9,10 @@ import { ptBR } from 'date-fns/locale';
 interface CalendarItemCardProps {
   item: CalendarItem & { recurrenceDescription?: string };
   onClick?: () => void;
-  onView?: () => void;
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
-export function CalendarItemCard({ item, onClick, onView, onEdit, onDelete }: CalendarItemCardProps) {
+export function CalendarItemCard({ item, onClick }: CalendarItemCardProps) {
   const startDate = new Date(item.start_date);
-  const endDate = item.end_date ? new Date(item.end_date) : null;
 
   const formatDate = (date: Date) => {
     return format(date, "dd/MM", { locale: ptBR });

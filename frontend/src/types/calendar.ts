@@ -99,7 +99,7 @@ export interface CreateCalendarItemData {
   participants?: CreateParticipantData[]; // Array de participantes (opcional)
 }
 
-export interface UpdateCalendarItemData extends Partial<CreateCalendarItemData> {}
+export type UpdateCalendarItemData = Partial<CreateCalendarItemData>;
 
 export interface CalendarFilters {
   type?: CalendarItemType[];

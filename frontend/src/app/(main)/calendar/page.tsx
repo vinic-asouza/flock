@@ -12,7 +12,7 @@ import { CalendarItem, CreateCalendarItemData, CalendarFilters as CalendarFilter
 import { apiService } from '@/services/api';
 import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths, startOfYear, endOfYear } from 'date-fns';
+import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export default function CalendarPage() {
@@ -71,10 +71,11 @@ export default function CalendarPage() {
       });
 
       setItems(response.data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar itens do calendário:', err);
-      setError(err.response?.data?.error || 'Erro ao carregar itens do calendário');
-      toast.error(err.response?.data?.error || 'Erro ao carregar itens do calendário');
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Erro ao carregar itens do calendário');
+      toast.error(error.response?.data?.error || 'Erro ao carregar itens do calendário');
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,7 @@ export default function CalendarPage() {
         congregation_id: filters.congregation_id
       });
       setBirthdayCount(response.count || 0);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar aniversariantes:', err);
       setBirthdayCount(0);
     } finally {
@@ -116,9 +117,10 @@ export default function CalendarPage() {
       setCreateModalOpen(false);
       setDefaultStartDate(undefined);
       await loadItems();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao criar item:', err);
-      toast.error(err.response?.data?.error || 'Erro ao criar item do calendário');
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao criar item do calendário');
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -135,9 +137,10 @@ export default function CalendarPage() {
       setEditModalOpen(false);
       setSelectedItem(null);
       await loadItems();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao atualizar item:', err);
-      toast.error(err.response?.data?.error || 'Erro ao atualizar item do calendário');
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao atualizar item do calendário');
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -154,9 +157,10 @@ export default function CalendarPage() {
       setDeleteModalOpen(false);
       setSelectedItem(null);
       await loadItems();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao deletar item:', err);
-      toast.error(err.response?.data?.error || 'Erro ao deletar item do calendário');
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Erro ao deletar item do calendário');
     } finally {
       setIsSubmitting(false);
     }
@@ -170,7 +174,7 @@ export default function CalendarPage() {
       setSelectedItem(fullItem);
       setParticipantsPage(1); // Reset para primeira página
       setViewModalOpen(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro ao carregar detalhes do item:', err);
       toast.error('Erro ao carregar detalhes do item');
     } finally {
@@ -278,14 +282,6 @@ export default function CalendarPage() {
               items={items}
               currentYear={currentYear}
               onItemClick={handleViewItem}
-              onEditClick={(item) => {
-                setSelectedItem(item);
-                setEditModalOpen(true);
-              }}
-              onDeleteClick={(item) => {
-                setSelectedItem(item);
-                setDeleteModalOpen(true);
-              }}
             />
 
             {/* Controles de navegação de ano */}

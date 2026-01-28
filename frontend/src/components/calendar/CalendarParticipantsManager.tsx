@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { CalendarParticipant, CreateParticipantData } from '@/types/calendar';
 import { apiService } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { useMemberOptions } from '@/hooks/useMemberOptions';
-import { Users, UserPlus, X, User, Mail, Phone, MessageCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemberOptions, MemberOption } from '@/hooks/useMemberOptions';
+import { Users, UserPlus, X, User, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 interface CalendarParticipantsManagerProps {
@@ -51,7 +51,6 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestWhatsapp, setGuestWhatsapp] = useState('');
-  const [memberSearch, setMemberSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
   // Buscar membros da congregação
@@ -86,7 +85,7 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
     return options;
   })();
 
-  const loadParticipants = async () => {
+  const loadParticipants = useCallback(async () => {
     if (!calendarItemId) return;
     
     try {
@@ -100,14 +99,14 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
     } finally {
       setLoading(false);
     }
-  };
+  }, [calendarItemId, onParticipantsChange]);
 
   // Carregar participantes quando o item existir
   useEffect(() => {
     if (calendarItemId) {
       loadParticipants();
     }
-  }, [calendarItemId]);
+  }, [calendarItemId, loadParticipants]);
 
   // Expor método loadParticipants via ref para ser chamado externamente
   useImperativeHandle(ref, () => ({
@@ -138,7 +137,6 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
     setGuestEmail('');
     setGuestPhone('');
     setGuestWhatsapp('');
-    setMemberSearch('');
   };
 
   const handleAddParticipant = async () => {
@@ -158,8 +156,8 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
           member_id: selectedMemberId,
           // Adicionar dados temporários para exibição
           _tempMemberName: selectedMemberName,
-          _tempMemberContact: memberOptionsData.find((m: any) => m.id === selectedMemberId)?.whatsapp || 
-                              memberOptionsData.find((m: any) => m.id === selectedMemberId)?.phone || ''
+          _tempMemberContact: memberOptionsData.find((m: MemberOption) => m.id === selectedMemberId)?.whatsapp || 
+                              memberOptionsData.find((m: MemberOption) => m.id === selectedMemberId)?.phone || ''
         }
       : {
           guest_name: guestName,
@@ -192,15 +190,17 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
     try {
       setLoading(true);
       // Remover campos temporários antes de enviar ao backend
-      const { _tempMemberName, _tempMemberContact, ...dataToSend } = data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { _tempMemberName: _, _tempMemberContact: __, ...dataToSend } = data;
       await apiService.addCalendarParticipant(calendarItemId, dataToSend);
       toast.success('Participante adicionado com sucesso');
       resetForm();
       // NÃO fechar o formulário, mantê-lo aberto para adicionar outro
       await loadParticipants();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao adicionar participante:', error);
-      toast.error(error.response?.data?.details || 'Erro ao adicionar participante');
+      const err = error as {response?: {data?: {details?: string}}};
+      toast.error(err.response?.data?.details || 'Erro ao adicionar participante');
     } finally {
       setLoading(false);
     }
@@ -368,7 +368,6 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
                   disabled={membersLoading}
                   searchable
                   onSearchChange={(term) => {
-                    setMemberSearch(term);
                     // Só atualiza a busca se houver termo (não limpa ao fechar o Select)
                     if (term) {
                       setMemberSearchDebounced(term);

@@ -357,7 +357,7 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
     let normalizedParticipants: any[] = [];
     if (item.calendar_participants) {
       normalizedParticipants = Array.isArray(item.calendar_participants) 
-        ? item.calendar_participants.map(p => {
+        ? item.calendar_participants.map((p: any) => {
             // Normalizar membro dentro de cada participante
             let participantMember = null;
             if (p.members) {

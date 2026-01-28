@@ -11,9 +11,9 @@ import { CalendarItem, CreateCalendarItemData, CalendarItemType, CreateParticipa
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { apiService } from '@/services/api';
-import { Group } from '@/types';
+import { Group, Member } from '@/types';
 import { endOfYear, getDay, lastDayOfMonth } from 'date-fns';
-import { CalendarParticipantsManager } from './CalendarParticipantsManager';
+import { CalendarParticipantsManager, CalendarParticipantsManagerRef } from './CalendarParticipantsManager';
 import { toast } from 'react-hot-toast';
 
 // Schema de validação
@@ -130,7 +130,7 @@ function calculateDefaultRecurrenceEndDate(
     const targetDayOfWeek = recurrenceDayOfWeek; // 0 = domingo, 6 = sábado
     
     // Começar do último dia do ano e ir voltando até encontrar o dia da semana correto
-    let lastOccurrence = new Date(yearEnd);
+    const lastOccurrence = new Date(yearEnd);
     while (getDay(lastOccurrence) !== targetDayOfWeek) {
       lastOccurrence.setDate(lastOccurrence.getDate() - 1);
     }
@@ -156,7 +156,7 @@ function calculateDefaultRecurrenceEndDate(
         const lastDay = lastDayOfMonth(december);
         
         // Encontrar a última ocorrência do dia da semana em dezembro
-        let lastOccurrence = new Date(lastDay);
+        const lastOccurrence = new Date(lastDay);
         while (getDay(lastOccurrence) !== targetDayOfWeek) {
           lastOccurrence.setDate(lastOccurrence.getDate() - 1);
         }
@@ -169,7 +169,7 @@ function calculateDefaultRecurrenceEndDate(
         const lastDay = lastDayOfMonth(december);
         
         // Tentar encontrar a ocorrência no mês de dezembro
-        let lastOccurrence = new Date(lastDay);
+        const lastOccurrence = new Date(lastDay);
         let found = false;
         
         // Ir voltando até encontrar o dia da semana correto
@@ -205,7 +205,7 @@ export function CalendarItemForm({
   const [selectedResponsibleLabel, setSelectedResponsibleLabel] = useState<string>('');
   const [isAddingGroupMembers, setIsAddingGroupMembers] = useState(false); // Loading state
   const [tempParticipants, setTempParticipants] = useState<CreateParticipantData[]>([]); // Participantes temporários (modo criação)
-  const participantsManagerRef = useRef<any>(null); // Ref para acessar métodos do CalendarParticipantsManager
+  const participantsManagerRef = useRef<CalendarParticipantsManagerRef>(null); // Ref para acessar métodos do CalendarParticipantsManager
 
   const {
     register,
@@ -297,7 +297,7 @@ export function CalendarItemForm({
       const groupMembers = await apiService.getGroupMembers(selectedGroupId);
       
       // Filtrar apenas membros ativos
-      const activeMembers = groupMembers.filter((m: any) => m.active);
+      const activeMembers = groupMembers.filter((m: Member) => m.active);
 
       if (activeMembers.length === 0) {
         toast('Este grupo não possui membros ativos', { icon: 'ℹ️' });
@@ -305,7 +305,7 @@ export function CalendarItemForm({
       }
 
       // Preparar array de participantes
-      const participantsData = activeMembers.map((member: any) => ({
+      const participantsData = activeMembers.map((member: Member) => ({
         member_id: member.id,
         // Dados temporários para exibição (não serão enviados ao backend)
         _tempMemberName: member.name,
@@ -524,7 +524,8 @@ export function CalendarItemForm({
       // Adicionar participantes temporários se estivermos criando (modo create)
       if (mode === 'create' && tempParticipants.length > 0) {
         // Remover campos temporários antes de enviar ao backend
-        submitData.participants = tempParticipants.map(({ _tempMemberName, _tempMemberContact, ...rest }) => rest);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        submitData.participants = tempParticipants.map(({ _tempMemberName: _, _tempMemberContact: __, ...rest }) => rest);
       }
 
       await onSubmit(submitData);

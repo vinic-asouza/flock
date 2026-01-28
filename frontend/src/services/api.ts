@@ -607,8 +607,8 @@ class ApiService {
     };
     results: {
       success: CalendarParticipant[];
-      duplicates: any[];
-      errors: any[];
+      duplicates: {member_id?: string; guest_name?: string; details?: string}[];
+      errors: {member_id?: string; guest_name?: string; details?: string}[];
     };
   }> {
     const response = await this.api.post(`/calendar-items/${calendarItemId}/participants/bulk`, { participants });

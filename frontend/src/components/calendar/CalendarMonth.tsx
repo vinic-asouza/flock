@@ -7,7 +7,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { ptBR } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Plus, Calendar, CalendarCheck, Users, Handshake, Cake, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { BirthdaysModal } from './BirthdaysModal';
+import { BirthdaysModal, Birthday } from './BirthdaysModal';
 import { apiService } from '@/services/api';
 import toast from 'react-hot-toast';
 
@@ -34,7 +34,7 @@ export function CalendarMonth({
 }: CalendarMonthProps) {
   const [viewDate, setViewDate] = useState(currentDate);
   const [birthdaysModalOpen, setBirthdaysModalOpen] = useState(false);
-  const [birthdays, setBirthdays] = useState<any[]>([]);
+  const [birthdays, setBirthdays] = useState<Birthday[]>([]);
   const [loadingBirthdaysList, setLoadingBirthdaysList] = useState(false);
 
   const monthStart = startOfMonth(viewDate);
@@ -167,7 +167,7 @@ export function CalendarMonth({
         congregation_id: congregationId
       });
       setBirthdays(response.data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao carregar aniversariantes:', error);
       toast.error('Erro ao carregar lista de aniversariantes');
       setBirthdays([]);
@@ -290,7 +290,7 @@ export function CalendarMonth({
         ))}
 
         {/* Dias do calendário */}
-        {calendarDays.map((day, dayIdx) => {
+        {calendarDays.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const dayItems = itemsByDate[dateKey] || [];
           const isCurrentMonth = isSameMonth(day, viewDate);
