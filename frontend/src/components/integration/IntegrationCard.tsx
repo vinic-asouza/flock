@@ -19,8 +19,24 @@ const statusBackground: Record<string, string> = {
 
 function calculateAge(birth?: string | null): number | null {
   if (!birth) return null;
-  const date = new Date(birth);
+
+  // Tentar extrair data no formato YYYY-MM-DD (ou ISO) de forma segura
+  const raw = birth.includes('T') ? birth.split('T')[0] : birth;
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  let date: Date;
+
+  if (match) {
+    const [, year, month, day] = match;
+    // Cria Date usando componentes locais para evitar problemas de timezone
+    date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+  } else {
+    // Fallback para outros formatos
+    date = new Date(birth);
+  }
+
   if (isNaN(date.getTime())) return null;
+
   const today = new Date();
   let age = today.getFullYear() - date.getFullYear();
   const monthDiff = today.getMonth() - date.getMonth();

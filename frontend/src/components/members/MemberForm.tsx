@@ -140,13 +140,29 @@ const formatCEP = (value: string): string => {
 //   return numbers.replace(/(\d{2})(\d{2})(\d{4})/, '$1/$2/$3');
 // };
 
-// Função para converter data ISO para DD/MM/AAAA
-const formatDateFromISO = (isoDate: string | null | undefined): string => {
-  if (!isoDate) return '';
+// Função para converter data ISO (YYYY-MM-DD ou ISO completa) para DD/MM/AAAA
+// Evita problemas de timezone ao NÃO usar diretamente new Date('YYYY-MM-DD')
+const formatDateFromISO = (value: string | null | undefined): string => {
+  if (!value) return '';
+
+  // Já está em formato DD/MM/AAAA
+  if (value.includes('/')) return value;
+
+  // Extrair apenas a parte da data (antes do T, se existir)
+  const datePart = value.includes('T') ? value.split('T')[0] : value;
+
+  // Conversão segura de YYYY-MM-DD -> DD/MM/AAAA sem usar Date()
+  const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+
+  // Fallback para formatos inesperados
   try {
-    const date = new Date(isoDate);
+    const date = new Date(value);
     if (isNaN(date.getTime())) return '';
-    return date.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
   } catch {
     return '';
   }

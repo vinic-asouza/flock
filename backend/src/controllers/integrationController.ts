@@ -4,6 +4,7 @@ import { AuthRequest, IntegrationMember, Member } from '../types';
 import { validateIntegrationMember } from '../validators/integrationMemberValidator';
 import { validateMember } from '../validators/memberValidator';
 import { logAudit } from '../utils/auditLogger';
+import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
 
 const DEFAULT_PAGE = 1;
@@ -521,7 +522,8 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       });
     }
 
-    const memberPayload: Partial<Member> = {
+    // Montar payload base do membro a partir do integrante + dados enviados
+    const baseMemberPayload: Partial<Member> = {
       ...req.body,
       name: integrationMember.name,
       birth: integrationMember.birth ?? req.body.birth,
@@ -536,7 +538,10 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       active: true
     };
 
-    const { church_id: _ignoredChurchId, ...payloadForValidation } = memberPayload;
+    // Normalizar datas (birth, baptism_date, admission_date, etc.) para evitar problemas de timezone
+    const normalizedMemberPayload = normalizeMemberDates(baseMemberPayload as unknown as Record<string, unknown>) as Partial<Member>;
+
+    const { church_id: _ignoredChurchId, ...payloadForValidation } = normalizedMemberPayload;
     const { error: validationError } = validateMember(payloadForValidation);
 
     if (validationError) {
@@ -548,7 +553,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
 
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .insert([memberPayload])
+      .insert([normalizedMemberPayload])
       .select('*')
       .single();
 

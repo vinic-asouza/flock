@@ -366,7 +366,23 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                         <tr key={index}>
                           <td className="px-3 py-2 text-sm text-gray-900 uppercase">{formatMemberName(member.name)}</td>
                           <td className="px-3 py-2 text-sm text-gray-500">
-                            {member.birth ? new Date(member.birth).toLocaleDateString('pt-BR') : '-'}
+                            {member.birth
+                              ? (() => {
+                                  const value = member.birth;
+                                  // Já em DD/MM/AAAA
+                                  if (value.includes('/')) return value;
+                                  const datePart = value.includes('T') ? value.split('T')[0] : value;
+                                  const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                                  if (match) {
+                                    const [, year, month, day] = match;
+                                    return `${day}/${month}/${year}`;
+                                  }
+                                  const d = new Date(value);
+                                  return isNaN(d.getTime())
+                                    ? '-'
+                                    : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+                                })()
+                              : '-'}
                           </td>
                           <td className="px-3 py-2 text-sm text-gray-500">{member.gender || '-'}</td>
                         </tr>

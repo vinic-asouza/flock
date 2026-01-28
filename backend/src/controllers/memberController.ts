@@ -439,13 +439,16 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       console.error('Erro ao buscar grupos do membro:', memberGroupsError);
     }
 
+    // Normalizar datas para evitar problemas de timezone (birth, baptism_date, admission_date, children.birth, etc.)
+    const normalizedMember = normalizeMemberDates(memberWithDetails as unknown as Record<string, unknown>);
+
     // Formatar a resposta para manter compatibilidade
-    // children já vem no memberWithDetails como JSONB
+    // children já vem no memberWithDetails como JSONB e foi normalizado acima
     const formattedMember = {
-      ...memberWithDetails,
-      role: memberWithDetails.roles,
-      congregation: memberWithDetails.congregations,
-      children: memberWithDetails.children || [],
+      ...normalizedMember,
+      role: (normalizedMember as any).roles,
+      congregation: (normalizedMember as any).congregations,
+      children: (normalizedMember as any).children || [],
       groups: memberGroups?.map((mg: any) => ({
         ...mg.groups,
         memberGroupId: mg.id,
@@ -1408,11 +1411,20 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
     console.log(`🎂 Total de membros ativos com data de nascimento: ${members.length}`);
     console.log(`🎂 Buscando aniversariantes do mês ${month}/${year}`);
 
-    // Filtrar membros que fazem aniversário no mês especificado
-    const birthdaysInMonth = members.filter(member => {
-      if (!member.birth) return false;
-      const birthDate = new Date(member.birth);
-      const birthMonth = birthDate.getMonth() + 1; // getMonth() retorna 0-11
+    // Função auxiliar para extrair mês de uma data "YYYY-MM-DD" (ou ISO)
+    const getMonthFromBirth = (birth: unknown): number | null => {
+      if (!birth) return null;
+      const raw = String(birth);
+      const datePart = raw.includes('T') ? raw.split('T')[0] : raw;
+      const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return null;
+      return parseInt(match[2], 10);
+    };
+
+    // Filtrar membros que fazem aniversário no mês especificado (sem usar Date() para evitar timezone)
+    const birthdaysInMonth = (members || []).filter(member => {
+      const birthMonth = getMonthFromBirth(member.birth);
+      if (!birthMonth) return false;
       if (birthMonth === month) {
         console.log(`🎂 Aniversariante encontrado: ${member.name} - ${member.birth}`);
       }
@@ -1515,29 +1527,50 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Filtrar e mapear membros que fazem aniversário no mês especificado
-    const birthdaysInMonth = members
-      .filter(member => {
-        if (!member.birth) return false;
-        const birthDate = new Date(member.birth);
-        return birthDate.getMonth() + 1 === month;
-      })
-      .map(member => {
-        const birthDate = new Date(member.birth);
-        return {
-          id: member.id,
-          name: member.name,
-          birth: member.birth,
-          birthDay: birthDate.getDate(),
-          birthMonth: birthDate.getMonth() + 1,
-          phone: member.phone,
-          whatsapp: member.whatsapp,
-          email: member.email,
+    // Função auxiliar para extrair dia e mês de uma data "YYYY-MM-DD" (ou ISO)
+    const getDayMonthFromBirth = (birth: unknown): { day: number; month: number } | null => {
+      if (!birth) return null;
+      const raw = String(birth);
+      const datePart = raw.includes('T') ? raw.split('T')[0] : raw;
+      const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return null;
+      const day = parseInt(match[3], 10);
+      const month = parseInt(match[2], 10);
+      return { day, month };
+    };
+
+    // Filtrar e mapear membros que fazem aniversário no mês especificado (sem usar Date() para evitar timezone)
+    const birthdaysInMonth = (members || [])
+      .reduce<Array<{
+        id: string;
+        name: string;
+        birth: string;
+        birthDay: number;
+        birthMonth: number;
+        phone?: string | null;
+        whatsapp?: string | null;
+        email?: string | null;
+        congregation?: any;
+      }>>((acc, member) => {
+        const dm = getDayMonthFromBirth(member.birth);
+        if (!dm || dm.month !== month) return acc;
+
+        acc.push({
+          id: member.id as string,
+          name: member.name as string,
+          birth: member.birth as string,
+          birthDay: dm.day,
+          birthMonth: dm.month,
+          phone: member.phone as string | null | undefined,
+          whatsapp: member.whatsapp as string | null | undefined,
+          email: member.email as string | null | undefined,
           congregation: Array.isArray(member.congregations) 
             ? member.congregations[0] 
             : member.congregations
-        };
-      })
+        });
+
+        return acc;
+      }, [])
       .sort((a, b) => a.birthDay - b.birthDay); // Ordenar por dia do mês
 
     res.json({

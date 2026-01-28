@@ -33,8 +33,24 @@ interface BirthdaysModalProps {
 
 function calcularIdade(birth: string): number | null {
   if (!birth) return null;
-  const birthDate = new Date(birth);
+
+  // Tentar extrair a data "YYYY-MM-DD" de forma segura
+  const raw = birth.includes('T') ? birth.split('T')[0] : birth;
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  let birthDate: Date;
+
+  if (match) {
+    const [, year, month, day] = match;
+    // Criar Date no timezone local a partir de componentes numéricos (evita interpretar como UTC)
+    birthDate = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+  } else {
+    // Fallback para outros formatos
+    birthDate = new Date(birth);
+  }
+
   if (isNaN(birthDate.getTime())) return null;
+
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
   const m = today.getMonth() - birthDate.getMonth();

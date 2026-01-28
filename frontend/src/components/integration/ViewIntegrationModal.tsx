@@ -384,8 +384,24 @@ function InfoSection({
 
 function calculateAge(birth?: string | null): number | null {
   if (!birth) return null;
-  const date = new Date(birth);
+
+  // Tentar extrair data no formato YYYY-MM-DD (ou ISO) de forma segura
+  const raw = birth.includes('T') ? birth.split('T')[0] : birth;
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  let date: Date;
+
+  if (match) {
+    const [, year, month, day] = match;
+    // Cria Date usando componentes locais para evitar problemas de timezone
+    date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+  } else {
+    // Fallback para outros formatos
+    date = new Date(birth);
+  }
+
   if (isNaN(date.getTime())) return null;
+
   const today = new Date();
   let age = today.getFullYear() - date.getFullYear();
   const diffMonth = today.getMonth() - date.getMonth();
@@ -397,9 +413,21 @@ function calculateAge(birth?: string | null): number | null {
 
 function formatDate(date?: string | null): string {
   if (!date) return '—';
+
+  // Se já vier em DD/MM/AAAA
+  if (date.includes('/')) return date;
+
+  const raw = date.includes('T') ? date.split('T')[0] : date;
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+
+  // Fallback para outros formatos
   const parsed = new Date(date);
   if (isNaN(parsed.getTime())) return '—';
-  return parsed.toLocaleDateString('pt-BR');
+  return parsed.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
 function formatPhone(phone?: string | null): string {

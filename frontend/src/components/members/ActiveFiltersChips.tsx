@@ -76,24 +76,75 @@ export function ActiveFiltersChips({
         return filters.ageFrom ? null : `Idade: até ${value}`; // Não mostrar se já há "de"
       case 'occupation':
         return `Ocupação: ${value}`;
-      case 'birthDateFrom':
-        return filters.birthDateTo ? 
-          `Nascimento: ${new Date(value).toLocaleDateString('pt-BR')} - ${new Date(filters.birthDateTo).toLocaleDateString('pt-BR')}` : 
-          `Nascimento: de ${new Date(value).toLocaleDateString('pt-BR')}`;
-      case 'birthDateTo':
-        return filters.birthDateFrom ? null : `Nascimento: até ${new Date(value).toLocaleDateString('pt-BR')}`;
-      case 'baptismDateFrom':
-        return filters.baptismDateTo ? 
-          `Batismo: ${new Date(value).toLocaleDateString('pt-BR')} - ${new Date(filters.baptismDateTo).toLocaleDateString('pt-BR')}` : 
-          `Batismo: de ${new Date(value).toLocaleDateString('pt-BR')}`;
-      case 'baptismDateTo':
-        return filters.baptismDateFrom ? null : `Batismo: até ${new Date(value).toLocaleDateString('pt-BR')}`;
-      case 'admissionDateFrom':
-        return filters.admissionDateTo ? 
-          `Admissão: ${new Date(value).toLocaleDateString('pt-BR')} - ${new Date(filters.admissionDateTo).toLocaleDateString('pt-BR')}` : 
-          `Admissão: de ${new Date(value).toLocaleDateString('pt-BR')}`;
-      case 'admissionDateTo':
-        return filters.admissionDateFrom ? null : `Admissão: até ${new Date(value).toLocaleDateString('pt-BR')}`;
+      case 'birthDateFrom': {
+        const format = (v: string) => {
+          if (!v) return '';
+          if (v.includes('/')) return v;
+          const part = v.includes('T') ? v.split('T')[0] : v;
+          const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+          const d = new Date(v);
+          return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        };
+        return filters.birthDateTo
+          ? `Nascimento: ${format(value)} - ${format(filters.birthDateTo)}`
+          : `Nascimento: de ${format(value)}`;
+      }
+      case 'birthDateTo': {
+        if (filters.birthDateFrom) return null;
+        const v = value;
+        if (!v) return null;
+        const part = v.includes('T') ? v.split('T')[0] : v;
+        const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const formatted = m ? `${m[3]}/${m[2]}/${m[1]}` : new Date(v).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        return `Nascimento: até ${formatted}`;
+      }
+      case 'baptismDateFrom': {
+        const format = (v: string) => {
+          if (!v) return '';
+          if (v.includes('/')) return v;
+          const part = v.includes('T') ? v.split('T')[0] : v;
+          const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+          const d = new Date(v);
+          return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        };
+        return filters.baptismDateTo
+          ? `Batismo: ${format(value)} - ${format(filters.baptismDateTo)}`
+          : `Batismo: de ${format(value)}`;
+      }
+      case 'baptismDateTo': {
+        if (filters.baptismDateFrom) return null;
+        const v = value;
+        if (!v) return null;
+        const part = v.includes('T') ? v.split('T')[0] : v;
+        const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const formatted = m ? `${m[3]}/${m[2]}/${m[1]}` : new Date(v).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        return `Batismo: até ${formatted}`;
+      }
+      case 'admissionDateFrom': {
+        const format = (v: string) => {
+          if (!v) return '';
+          if (v.includes('/')) return v;
+          const part = v.includes('T') ? v.split('T')[0] : v;
+          const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+          const d = new Date(v);
+          return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        };
+        return filters.admissionDateTo
+          ? `Admissão: ${format(value)} - ${format(filters.admissionDateTo)}`
+          : `Admissão: de ${format(value)}`;
+      }
+      case 'admissionDateTo': {
+        if (filters.admissionDateFrom) return null;
+        const v = value;
+        if (!v) return null;
+        const part = v.includes('T') ? v.split('T')[0] : v;
+        const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        const formatted = m ? `${m[3]}/${m[2]}/${m[1]}` : new Date(v).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+        return `Admissão: até ${formatted}`;
+      }
       default:
         return value;
     }

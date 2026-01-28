@@ -76,12 +76,30 @@ function calcularIdade(birth: string): number | null {
 
 function formatarData(data: string): string {
   if (!data) return '-';
+
   // Se a data já está em formato DD/MM/AAAA, retornar como está
   if (data.includes('/')) {
     return data;
   }
-  // Se está em formato ISO, converter para DD/MM/AAAA
-  return new Date(data).toLocaleDateString('pt-BR');
+
+  // Extrair apenas a parte da data (antes do T, se existir)
+  const datePart = data.includes('T') ? data.split('T')[0] : data;
+
+  // Conversão segura de YYYY-MM-DD -> DD/MM/AAAA sem usar Date()
+  const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+
+  // Fallback para formatos inesperados
+  try {
+    const dateObj = new Date(data);
+    if (isNaN(dateObj.getTime())) return '-';
+    return dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  } catch {
+    return '-';
+  }
 }
 
 function converterDataParaISO(data: string): string | null {
