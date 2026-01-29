@@ -334,7 +334,12 @@ export function CalendarItemForm({
       }
 
       // Modo de edição (com item.id): chamar endpoint bulk
-      const result = await apiService.addCalendarParticipantsBulk(item.id, participantsData);
+      // Remover campos temporários antes de enviar (mesmo tratamento do modo de criação)
+      const participantsDataClean = participantsData.map((participant: CreateParticipantData) => {
+        const { _tempMemberName, _tempMemberContact, ...rest } = participant;
+        return rest;
+      });
+      const result = await apiService.addCalendarParticipantsBulk(item.id, participantsDataClean);
 
       // Notificar resultado baseado no summary
       const { added, duplicates, errors } = result.summary;

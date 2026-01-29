@@ -94,37 +94,9 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       setIsLoading(true);
       setError(null);
       
-      // Separar grupos dos dados do membro
-      const { groups, ...memberData } = data;
-      
-      // Atualizar membro
-      await apiService.updateMember(memberId, memberData);
-      
-      // Gerenciar grupos: adicionar novos e remover desmarcados
-      if (member) {
-        const currentGroups = (member.groups || []).map((g) => g.id);
-        const newGroups = groups || [];
-        
-        // Adicionar novos grupos
-        const groupsToAdd = newGroups.filter(id => !currentGroups.includes(id));
-        for (const groupId of groupsToAdd) {
-          try {
-            await apiService.addMemberToGroup(groupId, memberId);
-          } catch (groupError) {
-            console.error('Erro ao adicionar membro ao grupo:', groupError);
-          }
-        }
-        
-        // Remover grupos desmarcados
-        const groupsToRemove = currentGroups.filter(id => !newGroups.includes(id));
-        for (const groupId of groupsToRemove) {
-          try {
-            await apiService.removeMemberFromGroup(groupId, memberId);
-          } catch (groupError) {
-            console.error('Erro ao remover membro do grupo:', groupError);
-          }
-        }
-      }
+      // ✅ TRANSAÇÃO: Backend agora processa membro + grupos atomicamente
+      // Enviar dados completos incluindo grupos
+      await apiService.updateMember(memberId, data);
       
       // Buscar os dados atualizados do membro para garantir que temos todos os dados
       const updatedMember = await apiService.getMember(memberId);

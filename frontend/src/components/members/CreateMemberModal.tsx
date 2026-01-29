@@ -20,24 +20,9 @@ export function CreateMemberModal({ isOpen, onClose, onSuccess }: CreateMemberMo
     setError(null);
     
     try {
-      // Separar grupos dos dados do membro
-      const { groups, ...memberData } = data;
-      
-      // Criar membro
-      const response = await apiService.createMember(memberData);
-      
-      // Vincular grupos após criar membro
-      if (groups && groups.length > 0) {
-        try {
-          for (const groupId of groups) {
-            await apiService.addMemberToGroup(groupId, response.id);
-          }
-        } catch (groupError) {
-          console.error('Erro ao vincular grupos:', groupError);
-          // Não falhar o processo se houver erro ao vincular grupos
-          // Mas podemos mostrar uma mensagem de aviso se necessário
-        }
-      }
+      // ✅ TRANSAÇÃO: Backend agora processa membro + grupos atomicamente
+      // Enviar dados completos incluindo grupos
+      const response = await apiService.createMember(data);
       
       // Passar os dados do membro criado (incluindo o ID retornado pela API)
       onSuccess(response);

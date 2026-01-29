@@ -5,6 +5,8 @@ import { validateMember } from '../validators/memberValidator';
 import { logAudit } from '../utils/auditLogger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
+import { debug, error as logError } from '../utils/logger';
+import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -227,7 +229,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       .range(offset, offset + limit - 1);
 
     if (membersError) {
-      console.error('Erro detalhado:', membersError);
+      logError('Erro ao buscar membros:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
@@ -347,16 +349,40 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar membros:', error);
+    logError('Erro ao listar membros:', error);
+    
+    // Mensagens de erro mais específicas
+    let errorMessage = 'Erro ao buscar membros';
+    if (error instanceof Error) {
+      if (error.message.includes('timeout') || error.message.includes('ECONNRESET')) {
+        errorMessage = 'Erro de conexão com o banco de dados. Tente novamente.';
+      } else if (error.message.includes('validation')) {
+        errorMessage = 'Erro de validação nos parâmetros de busca.';
+      } else {
+        errorMessage = `Erro ao processar requisição: ${error.message}`;
+      }
+    }
+    
     res.status(500).json({
       error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      details: errorMessage
     });
   }
 };
 
 /**
- * Busca um membro específico
+ * Busca um membro específico por ID
+ * 
+ * Retorna dados completos do membro incluindo:
+ * - Informações pessoais
+ * - Cargo (role)
+ * - Congregação
+ * - Grupos associados
+ * - Filhos (children)
+ * 
+ * @param req - Request com member ID nos params
+ * @param res - Response com dados completos do membro
+ * @returns JSON com objeto Member completo
  */
 export const getMember = async (req: AuthRequest, res: Response) => {
   try {
@@ -408,7 +434,7 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (memberError) {
-      console.error('Erro detalhado:', memberError);
+      logError('Erro ao buscar membro:', memberError);
       return res.status(404).json({
         error: 'Membro não encontrado',
         details: 'Não foi possível encontrar o membro solicitado'
@@ -436,7 +462,7 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       .eq('member_id', id);
 
     if (memberGroupsError) {
-      console.error('Erro ao buscar grupos do membro:', memberGroupsError);
+      logError('Erro ao buscar grupos do membro:', memberGroupsError);
     }
 
     // Normalizar datas para evitar problemas de timezone (birth, baptism_date, admission_date, children.birth, etc.)
@@ -461,7 +487,7 @@ export const getMember = async (req: AuthRequest, res: Response) => {
     res.json(formattedMember);
 
   } catch (error) {
-    console.error('Erro ao buscar membro:', error);
+    logError('Erro ao buscar membro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -470,9 +496,25 @@ export const getMember = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Cria um novo membro
+ * Cria um novo membro com suporte a transação para grupos
+ * 
+ * Processo:
+ * 1. Valida dados do membro
+ * 2. Verifica limite do plano
+ * 3. Verifica duplicidade de nome
+ * 4. Valida email único (se fornecido)
+ * 5. Valida grupos (se fornecidos)
+ * 6. Cria membro
+ * 7. Associa grupos (transação: se falhar, faz rollback)
+ * 8. Registra auditoria
+ * 
+ * @param req - Request com dados do membro no body (incluindo groups opcional)
+ * @param res - Response com membro criado
+ * @returns JSON com objeto Member criado (status 201) ou erro
  */
 export const createMember = async (req: AuthRequest, res: Response) => {
+  let createdMemberId: string | null = null; // Para rollback se necessário
+  
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -508,32 +550,55 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Normalizar datas antes de criar o membro (evita problemas de timezone)
-    const normalizedData = normalizeMemberDates(req.body);
+    // Separar grupos do payload (se fornecidos)
+    const { groups, ...dataWithoutGroups } = req.body as any;
+    const groupIds = Array.isArray(groups) ? groups : [];
 
-    // Verificar duplicidade por nome (lowercase)
+    // Normalizar datas antes de criar o membro (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(dataWithoutGroups);
+
+    // Verificar duplicidade por nome (lowercase) - OTIMIZADO
     if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
       const normalizedName = normalizedData.name.trim().toLowerCase();
       
-      // Busca membros existentes com o mesmo nome (lowercase)
-      const { data: existingMembers, error: checkError } = await supabase
+      // Query otimizada - busca direto no banco com ilike (case-insensitive)
+      const { data: duplicate, error: checkError } = await supabase
         .from('members')
         .select('id, name')
-        .eq('church_id', church.id);
+        .eq('church_id', church.id)
+        .ilike('name', normalizedName)
+        .limit(1);
       
-      if (!checkError && existingMembers) {
-        for (const existingMember of existingMembers) {
-          if (existingMember.name) {
-            const existingNormalizedName = existingMember.name.trim().toLowerCase();
-            if (existingNormalizedName === normalizedName) {
-              return res.status(400).json({
-                error: 'Membro já cadastrado',
-                details: 'Já existe um membro cadastrado com este nome completo.'
-              });
-            }
-          }
-        }
+      if (checkError) {
+        logError('Erro ao verificar duplicidade:', checkError);
       }
+      
+      if (duplicate && duplicate.length > 0) {
+        return res.status(400).json({
+          error: 'Membro já cadastrado',
+          details: 'Já existe um membro cadastrado com este nome completo.'
+        });
+      }
+    }
+
+    // Verificar email duplicado (se fornecido)
+    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, church.id);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        error: emailValidation.errorMessage || 'Email já cadastrado',
+        details: emailValidation.duplicateMemberName 
+          ? `Este email já está sendo usado pelo membro: ${emailValidation.duplicateMemberName}`
+          : 'Este email já está cadastrado'
+      });
+    }
+
+    // Validar que os grupos existem e pertencem à igreja (se fornecidos)
+    const groupsValidation = await validateGroups(groupIds, church.id);
+    if (!groupsValidation.isValid) {
+      return res.status(400).json({
+        error: 'Erro ao validar grupos',
+        details: groupsValidation.errorMessage || 'Um ou mais grupos são inválidos'
+      });
     }
 
     const memberData: Partial<Member> = {
@@ -546,7 +611,11 @@ export const createMember = async (req: AuthRequest, res: Response) => {
         : []
     };
 
-    // Cria o novo membro
+    // ====================
+    // INÍCIO DA TRANSAÇÃO LÓGICA
+    // ====================
+
+    // PASSO 1: Cria o novo membro
     const { data: member, error: memberError } = await supabase
       .from('members')
       .insert([memberData])
@@ -560,26 +629,77 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    createdMemberId = member.id; // Armazenar para rollback se necessário
+
+    // PASSO 2: Associar membro aos grupos (se fornecidos)
+    if (groupIds.length > 0) {
+      const memberGroupsData = groupIds.map(groupId => ({
+        member_id: member.id,
+        group_id: groupId
+      }));
+
+      const { error: memberGroupsError } = await supabase
+        .from('member_groups')
+        .insert(memberGroupsData);
+
+      if (memberGroupsError) {
+        // ❌ ROLLBACK: Deletar o membro criado
+        logError('Erro ao associar grupos, fazendo rollback...', memberGroupsError);
+        
+        await supabase
+          .from('members')
+          .delete()
+          .eq('id', member.id);
+
+        return res.status(400).json({
+          error: 'Erro ao associar membro aos grupos',
+          details: memberGroupsError.message,
+          rollback: 'Membro não foi criado devido a erro na associação de grupos'
+        });
+      }
+    }
+
+    // ====================
+    // FIM DA TRANSAÇÃO LÓGICA - SUCESSO!
+    // ====================
+
     // Log da operação de criação
-    console.log('🔍 Tentando criar log de auditoria:', {
+    debug('Criando log de auditoria:', {
       userId: req.user?.id,
       memberId: member.id,
-      churchId: church.id
+      churchId: church.id,
+      groupsCount: groupIds.length
     });
     
     await logAudit(req, {
       entity: 'member',
       entityId: member.id,
       action: 'create',
-      changesAfter: member
+      changesAfter: { ...member, groups: groupIds }
     });
     
-    console.log('✅ Log de auditoria criado');
+    debug(`Membro criado com sucesso e associado a ${groupIds.length} grupo(s)`);
 
     res.status(201).json(member);
 
   } catch (error) {
-    console.error('Erro ao criar membro:', error);
+    // ❌ ROLLBACK: Se houver erro inesperado e o membro foi criado, deletar
+    if (createdMemberId) {
+      logError('Erro inesperado, fazendo rollback do membro criado...', error);
+      
+      try {
+        await supabase
+          .from('members')
+          .delete()
+          .eq('id', createdMemberId);
+        
+        debug('Rollback concluído - membro deletado');
+      } catch (rollbackError) {
+        logError('Erro ao fazer rollback:', rollbackError);
+      }
+    }
+
+    logError('Erro ao criar membro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -588,9 +708,28 @@ export const createMember = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Atualiza um membro existente
+ * Atualiza um membro existente com suporte a transação para grupos
+ * 
+ * Processo:
+ * 1. Valida que membro existe e pertence à igreja
+ * 2. Valida email único (se fornecido e diferente do atual)
+ * 3. Valida grupos (se fornecidos)
+ * 4. Atualiza membro
+ * 5. Se inativado, remove de eventos futuros de calendário
+ * 6. Gerencia grupos (adiciona novos, remove antigos) - transação: se falhar, faz rollback
+ * 7. Registra auditoria
+ * 
+ * @param req - Request com member ID nos params e dados atualizados no body (incluindo groups opcional)
+ * @param res - Response com membro atualizado
+ * @returns JSON com objeto Member atualizado ou erro
  */
 export const updateMember = async (req: AuthRequest, res: Response) => {
+  let memberUpdated = false;
+  let previousMemberData: any = null;
+  let previousGroups: string[] = [];
+  let groupsAdded: string[] = [];
+  let groupsRemoved: string[] = [];
+  
   try {
     if (!req.user) {
       return res.status(401).json({
@@ -630,10 +769,52 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Normalizar datas antes de atualizar o membro (evita problemas de timezone)
-    const normalizedData = normalizeMemberDates(req.body);
+    previousMemberData = { ...existingMember }; // Backup para rollback
 
-    // Atualiza o membro (children já vem no body como JSONB)
+    // Buscar grupos atuais do membro (para rollback se necessário)
+    const { data: currentMemberGroups, error: currentGroupsError } = await supabase
+      .from('member_groups')
+      .select('group_id')
+      .eq('member_id', id);
+
+    if (currentGroupsError) {
+      logError('Erro ao buscar grupos atuais:', currentGroupsError);
+    }
+
+    previousGroups = currentMemberGroups ? currentMemberGroups.map(mg => mg.group_id) : [];
+
+    // Separar grupos do payload (se fornecidos)
+    const { groups, ...dataWithoutGroups } = req.body as any;
+    const newGroupIds = Array.isArray(groups) ? groups : [];
+
+    // Normalizar datas antes de atualizar o membro (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(dataWithoutGroups);
+
+    // Verificar email duplicado no update (se fornecido e diferente do atual)
+    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, church.id, id);
+    if (!emailValidation.isValid) {
+      return res.status(400).json({
+        error: emailValidation.errorMessage || 'Email já cadastrado',
+        details: emailValidation.duplicateMemberName 
+          ? `Este email já está sendo usado pelo membro: ${emailValidation.duplicateMemberName}`
+          : 'Este email já está cadastrado'
+      });
+    }
+
+    // Validar que os novos grupos existem e pertencem à igreja (se fornecidos)
+    const groupsValidation = await validateGroups(newGroupIds, church.id);
+    if (!groupsValidation.isValid) {
+      return res.status(400).json({
+        error: 'Erro ao validar grupos',
+        details: groupsValidation.errorMessage || 'Um ou mais grupos são inválidos'
+      });
+    }
+
+    // ====================
+    // INÍCIO DA TRANSAÇÃO LÓGICA
+    // ====================
+
+    // PASSO 1: Atualiza o membro
     const updateData = {
       ...normalizedData,
       // Garantir que children seja um array JSON válido
@@ -657,19 +838,177 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    memberUpdated = true; // Marcador para rollback
+
+    // PASSO 1.5: Se o membro foi inativado, remover de eventos futuros de calendário
+    if (existingMember.active === true && member.active === false) {
+      debug(`Membro ${member.name} foi inativado. Removendo de eventos futuros...`);
+      
+      // Buscar participações futuras do membro em eventos
+      const now = new Date().toISOString();
+      
+      const { data: futureParticipations, error: participationsError } = await supabase
+        .from('calendar_participants')
+        .select(`
+          id,
+          calendar_item_id,
+          calendar_items!inner (
+            start_date
+          )
+        `)
+        .eq('member_id', id)
+        .gte('calendar_items.start_date', now);
+
+      if (participationsError) {
+        logError('Erro ao buscar participações futuras:', participationsError);
+        // Não falhar a operação, apenas logar o erro
+      } else if (futureParticipations && futureParticipations.length > 0) {
+        const participationIds = futureParticipations.map(p => p.id);
+        
+        const { error: removeParticipationsError } = await supabase
+          .from('calendar_participants')
+          .delete()
+          .in('id', participationIds);
+
+        if (removeParticipationsError) {
+          logError('Erro ao remover participações futuras:', removeParticipationsError);
+          // Não falhar a operação, apenas logar o erro
+        } else {
+          debug(`${futureParticipations.length} participação(ões) futura(s) removida(s)`);
+        }
+      } else {
+        debug('Nenhuma participação futura encontrada');
+      }
+    }
+
+    // PASSO 2: Gerenciar grupos (adicionar novos e remover antigos)
+    // Calcular diferenças
+    groupsAdded = newGroupIds.filter(gid => !previousGroups.includes(gid));
+    groupsRemoved = previousGroups.filter(gid => !newGroupIds.includes(gid));
+
+    // Remover grupos antigos
+    if (groupsRemoved.length > 0) {
+      const { error: removeError } = await supabase
+        .from('member_groups')
+        .delete()
+        .eq('member_id', id)
+        .in('group_id', groupsRemoved);
+
+      if (removeError) {
+        // ❌ ROLLBACK: Reverter atualização do membro
+        logError('Erro ao remover grupos, fazendo rollback...', removeError);
+        
+        await supabase
+          .from('members')
+          .update(previousMemberData)
+          .eq('id', id);
+
+        return res.status(400).json({
+          error: 'Erro ao remover membro dos grupos',
+          details: removeError.message,
+          rollback: 'Alterações do membro foram revertidas'
+        });
+      }
+    }
+
+    // Adicionar novos grupos
+    if (groupsAdded.length > 0) {
+      const memberGroupsData = groupsAdded.map(groupId => ({
+        member_id: id,
+        group_id: groupId
+      }));
+
+      const { error: addError } = await supabase
+        .from('member_groups')
+        .insert(memberGroupsData);
+
+      if (addError) {
+        // ❌ ROLLBACK: Reverter tudo (membro + grupos removidos)
+        logError('Erro ao adicionar grupos, fazendo rollback completo...', addError);
+        
+        // Reverter membro
+        await supabase
+          .from('members')
+          .update(previousMemberData)
+          .eq('id', id);
+
+        // Re-adicionar grupos que foram removidos
+        if (groupsRemoved.length > 0) {
+          const reAddGroupsData = groupsRemoved.map(groupId => ({
+            member_id: id,
+            group_id: groupId
+          }));
+          
+          await supabase
+            .from('member_groups')
+            .insert(reAddGroupsData);
+        }
+
+        return res.status(400).json({
+          error: 'Erro ao adicionar membro aos grupos',
+          details: addError.message,
+          rollback: 'Todas as alterações foram revertidas'
+        });
+      }
+    }
+
+    // ====================
+    // FIM DA TRANSAÇÃO LÓGICA - SUCESSO!
+    // ====================
+
     // Log da operação de atualização
     await logAudit(req, {
       entity: 'member',
       entityId: member.id,
       action: 'update',
       changesBefore: existingMember,
-      changesAfter: member
+      changesAfter: { ...member, groups: newGroupIds }
     });
+
+    debug(`Membro atualizado com sucesso. Grupos adicionados: ${groupsAdded.length}, removidos: ${groupsRemoved.length}`);
 
     res.json(member);
 
   } catch (error) {
-    console.error('Erro ao atualizar membro:', error);
+    // ❌ ROLLBACK: Se houver erro inesperado, reverter tudo
+    if (memberUpdated && previousMemberData) {
+      logError('Erro inesperado, fazendo rollback completo...', error);
+      
+      try {
+        // Reverter membro
+        await supabase
+          .from('members')
+          .update(previousMemberData)
+          .eq('id', req.params.id);
+
+        // Reverter grupos adicionados
+        if (groupsAdded.length > 0) {
+          await supabase
+            .from('member_groups')
+            .delete()
+            .eq('member_id', req.params.id)
+            .in('group_id', groupsAdded);
+        }
+
+        // Re-adicionar grupos removidos
+        if (groupsRemoved.length > 0) {
+          const reAddGroupsData = groupsRemoved.map(groupId => ({
+            member_id: req.params.id,
+            group_id: groupId
+          }));
+          
+          await supabase
+            .from('member_groups')
+            .insert(reAddGroupsData);
+        }
+
+        debug('Rollback completo concluído');
+      } catch (rollbackError) {
+        logError('Erro ao fazer rollback:', rollbackError);
+      }
+    }
+
+    logError('Erro ao atualizar membro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -747,7 +1086,7 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao remover membro:', error);
+    logError('Erro ao remover membro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -821,7 +1160,7 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
       .select();
 
     if (insertError) {
-      console.error('Erro ao inserir membros:', insertError);
+      logError('Erro ao inserir membros:', insertError);
       return res.status(500).json({
         error: 'Erro ao criar membros',
         details: insertError.message
@@ -835,7 +1174,7 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao criar membros em lote:', error);
+    logError('Erro ao criar membros em lote:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -909,7 +1248,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     const { data: allMembers, error: membersError } = await query;
 
     if (membersError) {
-      console.error('Erro detalhado:', membersError);
+      logError('Erro ao buscar membros:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
@@ -1155,7 +1494,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     } = await integrationQuery;
 
     if (integrationError) {
-      console.error('Erro ao buscar integrantes de integração:', integrationError);
+      logError('Erro ao buscar integrantes de integração:', integrationError);
       return res.status(500).json({
         error: 'Erro ao buscar dados de integração',
         details: integrationError.message
@@ -1332,7 +1671,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao gerar relatório:', error);
+    logError('Erro ao gerar relatório:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -1401,15 +1740,15 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
     const { data: members, error: membersError } = await query;
 
     if (membersError) {
-      console.error('Erro ao buscar membros:', membersError);
+      logError('Erro ao buscar membros:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
       });
     }
 
-    console.log(`🎂 Total de membros ativos com data de nascimento: ${members.length}`);
-    console.log(`🎂 Buscando aniversariantes do mês ${month}/${year}`);
+    debug(`Total de membros ativos com data de nascimento: ${members.length}`);
+    debug(`Buscando aniversariantes do mês ${month}/${year}`);
 
     // Função auxiliar para extrair mês de uma data "YYYY-MM-DD" (ou ISO)
     const getMonthFromBirth = (birth: unknown): number | null => {
@@ -1426,12 +1765,12 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
       const birthMonth = getMonthFromBirth(member.birth);
       if (!birthMonth) return false;
       if (birthMonth === month) {
-        console.log(`🎂 Aniversariante encontrado: ${member.name} - ${member.birth}`);
+        debug(`Aniversariante encontrado: ${member.name} - ${member.birth}`);
       }
       return birthMonth === month;
     });
 
-    console.log(`🎂 Aniversariantes no mês ${month}: ${birthdaysInMonth.length}`);
+    debug(`Aniversariantes no mês ${month}: ${birthdaysInMonth.length}`);
 
     res.json({
       count: birthdaysInMonth.length,
@@ -1440,7 +1779,7 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar aniversariantes:', error);
+    logError('Erro ao buscar aniversariantes:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -1520,7 +1859,7 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
     const { data: members, error: membersError } = await query;
 
     if (membersError) {
-      console.error('Erro ao buscar membros:', membersError);
+      logError('Erro ao buscar membros:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
@@ -1581,7 +1920,7 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar lista de aniversariantes:', error);
+    logError('Erro ao buscar lista de aniversariantes:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

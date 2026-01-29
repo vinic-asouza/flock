@@ -12,18 +12,47 @@ import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
 import { apiService } from '@/services/api';
 import { Group } from '@/types';
+import { validatePhone, validateCEP, validateCPFOrCNPJ, fetchCEPData } from '@/utils/validations';
 
 // Schema de validação
 const memberSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido').optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
-  whatsapp: z.string().min(10, 'WhatsApp deve ter pelo menos 10 dígitos').optional().or(z.literal('')),
-  birth: z.string().min(1, 'Data de nascimento é obrigatória'),
+  phone: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validatePhone(val), {
+      message: 'Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX'
+    }),
+  whatsapp: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validatePhone(val), {
+      message: 'WhatsApp inválido. Use o formato (XX) 9XXXX-XXXX'
+    }),
+  birth: z.string()
+    .min(1, 'Data de nascimento é obrigatória')
+    .refine((val) => {
+      if (!val) return false;
+      const date = formatDateToISO(val);
+      if (!date) return false;
+      const birthDate = new Date(date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // Fim do dia de hoje
+      return birthDate <= today;
+    }, {
+      message: 'Data de nascimento não pode ser no futuro'
+    }),
   gender: z.enum(['Masculino', 'Feminino']),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro']),
   nationality: z.string().optional().or(z.literal('')),
   nationality_other: z.string().optional().or(z.literal('')),
+  document: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validateCPFOrCNPJ(val), {
+      message: 'CPF ou CNPJ inválido'
+    }),
   spouse: z.string().optional().or(z.literal('')),
   occupation: z.string().optional().or(z.literal('')),
   occupation_other: z.string().optional().or(z.literal('')),
@@ -32,7 +61,12 @@ const memberSchema = z.object({
   neighborhood: z.string().optional().or(z.literal('')),
   city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().min(1, 'Estado é obrigatório'),
-  cep: z.string().optional().or(z.literal('')),
+  cep: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validateCEP(val), {
+      message: 'CEP inválido. Deve conter 8 dígitos'
+    }),
   baptism_date: z.string().optional().or(z.literal('')),
   admission: z.string().min(1, 'Tipo de recebimento é obrigatório'),
   admission_date: z.string().min(1, 'Data de recebimento é obrigatória'),
@@ -203,6 +237,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   const [nationalityOtherError, setNationalityOtherError] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
+  const [loadingCEP, setLoadingCEP] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
   const [childrenBirthDisplays, setChildrenBirthDisplays] = useState<Record<number, string>>({});
   const [isInfantMember, setIsInfantMember] = useState(false);
@@ -225,6 +260,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       active: true,
       gender: 'Masculino',
       marital_status: 'Solteiro',
+      congregation_id: '', // Sede por padrão - necessário para habilitar grupos
     } : {
       // Para modo edit, deixar vazio e usar reset
     },
@@ -438,11 +474,45 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     }
   };
 
-  const handleCEPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const formatted = formatCEP(value);
     setCepDisplay(formatted);
-    setValue('cep', value.replace(/\D/g, ''));
+    const cleanCEP = value.replace(/\D/g, '');
+    setValue('cep', cleanCEP);
+
+    // Consultar CEP quando tiver 8 dígitos
+    if (cleanCEP.length === 8 && validateCEP(cleanCEP)) {
+      setLoadingCEP(true);
+      try {
+        const cepData = await fetchCEPData(cleanCEP);
+        if (cepData) {
+          // Preencher campos automaticamente
+          if (cepData.logradouro) {
+            setValue('address', cepData.logradouro);
+          }
+          if (cepData.bairro) {
+            setValue('neighborhood', cepData.bairro);
+          }
+          if (cepData.localidade) {
+            setValue('city', cepData.localidade);
+          }
+          if (cepData.uf) {
+            setValue('state', cepData.uf);
+            // Buscar cidades do estado
+            const state = states.find(s => s.sigla === cepData.uf);
+            if (state) {
+              fetchCities(state.id.toString());
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao consultar CEP:', error);
+        // Não mostrar erro ao usuário, apenas logar
+      } finally {
+        setLoadingCEP(false);
+      }
+    }
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'birth' | 'admission_date') => {
@@ -942,7 +1012,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             onChange={handleCEPChange}
             maxLength={9}
             error={errors.cep?.message}
-            isLoading={isLoading}
+            isLoading={isLoading || loadingCEP}
+            helperText={loadingCEP ? 'Consultando CEP...' : 'Digite o CEP para preencher automaticamente'}
           />
         </div>
       </div>
@@ -1059,7 +1130,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             ) : availableGroups.length === 0 ? (
               <div className="flex items-center justify-center py-8">
                 <p className="text-sm text-gray-500">
-                  {selectedCongregationId !== undefined ? 'Nenhum grupo disponível para esta congregação' : 'Selecione uma congregação para ver os grupos disponíveis'}
+                  Nenhum grupo disponível para esta congregação
                 </p>
               </div>
             ) : (
@@ -1075,7 +1146,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                           ? 'border-primary bg-primary/5 shadow-sm' 
                           : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                         }
-                        ${isLoading || selectedCongregationId === undefined ? 'opacity-50 cursor-not-allowed' : ''}
+                        ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
                       `}
                     >
                       <input
@@ -1088,7 +1159,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                             setSelectedGroups(selectedGroups.filter(id => id !== group.id));
                           }
                         }}
-                        disabled={isLoading || selectedCongregationId === undefined}
+                        disabled={isLoading}
                         className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">

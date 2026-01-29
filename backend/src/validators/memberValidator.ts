@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { validateCPFOrCNPJ, validatePhone, validateCEP } from '../utils/validations';
 import { Member } from '../types';
 
 const memberSchema = Joi.object({
@@ -17,9 +18,36 @@ const memberSchema = Joi.object({
       Joi.date()
     )
     .required()
+    .custom((value, helpers) => {
+      let date: Date;
+      
+      if (typeof value === 'string') {
+        date = new Date(value);
+      } else {
+        date = value as Date;
+      }
+      
+      if (isNaN(date.getTime())) {
+        return helpers.error('date.base', {
+          message: 'Data de nascimento inválida'
+        });
+      }
+      
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // Fim do dia de hoje
+      
+      if (date > today) {
+        return helpers.error('any.custom', {
+          message: 'Data de nascimento não pode ser no futuro'
+        });
+      }
+      
+      return value;
+    })
     .messages({
       'date.base': 'Data de nascimento inválida',
-      'any.required': 'Data de nascimento é obrigatória'
+      'any.required': 'Data de nascimento é obrigatória',
+      'any.custom': 'Data de nascimento não pode ser no futuro'
     }),
 
   gender: Joi.string()
@@ -39,15 +67,25 @@ const memberSchema = Joi.object({
     }),
 
   nationality: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Nacionalidade é obrigatória',
-      'any.required': 'Nacionalidade é obrigatória'
-    }),
+    .optional()
+    .allow(null, ''),
 
   document: Joi.string()
     .optional()
-    .allow(null, ''),
+    .allow(null, '')
+    .custom((value, helpers) => {
+      if (!value || value.trim() === '') {
+        return value; // Campo opcional, pode estar vazio
+      }
+      
+      if (!validateCPFOrCNPJ(value)) {
+        return helpers.error('any.custom', {
+          message: 'CPF ou CNPJ inválido'
+        });
+      }
+      
+      return value;
+    }),
 
   spouse: Joi.string()
     .optional()
@@ -65,13 +103,20 @@ const memberSchema = Joi.object({
     .allow(null, ''),
 
   cep: Joi.string()
-    .length(8)
-    .pattern(/^[0-9]+$/)
     .optional()
     .allow(null, '')
-    .messages({
-      'string.length': 'CEP deve ter 8 dígitos',
-      'string.pattern.base': 'CEP deve conter apenas números'
+    .custom((value, helpers) => {
+      if (!value || value.trim() === '') {
+        return value; // Campo opcional, pode estar vazio
+      }
+      
+      if (!validateCEP(value)) {
+        return helpers.error('any.custom', {
+          message: 'CEP inválido. Deve conter 8 dígitos'
+        });
+      }
+      
+      return value;
     }),
 
   neighborhood: Joi.string()
@@ -96,11 +141,37 @@ const memberSchema = Joi.object({
 
   phone: Joi.string()
     .optional()
-    .allow(null, ''),
+    .allow(null, '')
+    .custom((value, helpers) => {
+      if (!value || value.trim() === '') {
+        return value; // Campo opcional, pode estar vazio
+      }
+      
+      if (!validatePhone(value)) {
+        return helpers.error('any.custom', {
+          message: 'Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX'
+        });
+      }
+      
+      return value;
+    }),
 
   whatsapp: Joi.string()
     .optional()
-    .allow(null, ''),
+    .allow(null, '')
+    .custom((value, helpers) => {
+      if (!value || value.trim() === '') {
+        return value; // Campo opcional, pode estar vazio
+      }
+      
+      if (!validatePhone(value)) {
+        return helpers.error('any.custom', {
+          message: 'WhatsApp inválido. Use o formato (XX) 9XXXX-XXXX'
+        });
+      }
+      
+      return value;
+    }),
 
   email: Joi.string()
     .email()
