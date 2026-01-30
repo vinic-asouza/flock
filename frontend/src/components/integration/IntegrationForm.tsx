@@ -7,6 +7,8 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
+import { validatePhone } from '@/utils/validations';
+import { formatPhone } from '@/utils';
 import {
   IntegrationMember,
   IntegrationMemberPayload,
@@ -16,23 +18,79 @@ import {
   IntegrationStatus
 } from '@/types';
 
+// Função auxiliar para converter data DD/MM/YYYY para ISO
+const formatDateToISO = (formattedDate: string): string | null => {
+  if (!formattedDate) return null;
+  // Se já estiver no formato ISO (YYYY-MM-DD), retornar como está
+  if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+    return formattedDate;
+  }
+  // Se estiver no formato DD/MM/YYYY
+  const parts = formattedDate.split('/');
+  if (parts.length !== 3) return null;
+  const [day, month, year] = parts;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+};
+
 const integrationSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  birth: z.string().optional(),
+  birth: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => {
+      if (!val || val.trim() === '') return true; // Campo opcional
+      const date = formatDateToISO(val);
+      if (!date) return false;
+      const birthDate = new Date(date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // Fim do dia de hoje
+      return birthDate <= today;
+    }, {
+      message: 'Data de nascimento não pode ser no futuro'
+    }),
   gender: z.union([z.literal(''), z.enum(['masculino', 'feminino'])]).optional(),
   marital_status: z.union([
     z.literal(''),
     z.enum(['solteiro', 'casado', 'divorciado', 'viuvo', 'outro'])
   ]).optional(),
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
+  phone: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validatePhone(val), {
+      message: 'Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX'
+    }),
+  whatsapp: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validatePhone(val), {
+      message: 'WhatsApp inválido. Use o formato (XX) 9XXXX-XXXX'
+    }),
   expected_admission_type: z.union([
     z.literal(''),
     z.enum(['batismo', 'transferencia', 'profissao de fe', 'outro'])
   ]).optional(),
-  expected_congregation_id: z.union([z.literal(''), z.string().uuid()]).optional(),
+  expected_congregation_id: z.union([z.literal(''), z.string().uuid()])
+    .optional()
+    .refine((val, ctx) => {
+      if (!val || val === '') return true; // String vazia é válida (representa 'Sede')
+      // Validar que é UUID válido
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(val)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'ID da congregação inválido'
+        });
+        return false;
+      }
+      return true;
+    }, {
+      message: 'Congregação prevista inválida'
+    }),
   mentor_id: z.union([z.literal(''), z.string().uuid()]).optional(),
-  notes: z.string().optional(),
+  notes: z.string()
+    .optional()
+    .or(z.literal(''))
+    .max(5000, 'Observações não podem ter mais de 5000 caracteres'),
   status: z.union([
     z.literal(''),
     z.enum(['em_progresso', 'integrado', 'descartado'])
@@ -79,15 +137,6 @@ const statusOptions: { value: '' | IntegrationStatus; label: string }[] = [
   { value: 'descartado', label: 'Descartado' }
 ];
 
-// Função para formatar telefone
-const formatPhone = (value: string): string => {
-  const numbers = value.replace(/\D/g, '');
-  if (numbers.length <= 10) {
-    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-  } else {
-    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  }
-};
 
 export function IntegrationForm({
   initialData = null,
@@ -159,10 +208,10 @@ export function IntegrationForm({
       }
       // Inicializar displays formatados
       if (initialData.phone) {
-        setPhoneDisplay(formatPhone(initialData.phone));
+        setPhoneDisplay(formatPhone(initialData.phone) || '');
       }
       if (initialData.whatsapp) {
-        setWhatsappDisplay(formatPhone(initialData.whatsapp));
+        setWhatsappDisplay(formatPhone(initialData.whatsapp) || '');
       }
     } else {
       // Limpar displays quando não há initialData

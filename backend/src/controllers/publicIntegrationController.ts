@@ -2,10 +2,17 @@ import { Response } from 'express';
 import supabase from '../services/supabase';
 import { PublicIntegrationRequest, IntegrationMember } from '../types';
 import { validateIntegrationMember } from '../validators/integrationMemberValidator';
+import { error as logError } from '../utils/logger';
 
 /**
  * Valida um link de integração pública (sem criar integrante)
- * Usado para verificar se o link é válido antes de exibir o formulário
+ * 
+ * Usado para verificar se o link é válido antes de exibir o formulário público.
+ * O middleware já validou o link e adicionou ao request.
+ * 
+ * @param req - Request com integrationLink e churchId já validados pelo middleware
+ * @param res - Response com informações do link e igreja
+ * @returns JSON com valid (true), church_name, expires_at, max_uses, current_uses, remaining_uses
  */
 export const validateIntegrationLink = async (
   req: PublicIntegrationRequest,
@@ -42,16 +49,27 @@ export const validateIntegrationLink = async (
     });
 
   } catch (error) {
-    console.error('Erro ao validar link de integração:', error);
+    logError('Erro ao validar link de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao validar link',
+      details: error instanceof Error ? error.message : 'Não foi possível validar o link de integração. Verifique se o link está correto.'
     });
   }
 };
 
 /**
  * Cria um novo integrante através de link público de integração
+ * 
+ * Processo:
+ * 1. Valida dados do integrante
+ * 2. Valida limite de usos do link (ANTES de criar)
+ * 3. Normaliza datas
+ * 4. Cria integrante
+ * 5. Incrementa contador de usos do link
+ * 
+ * @param req - Request com integrationLink e churchId já validados pelo middleware, e dados do integrante no body
+ * @param res - Response com integrante criado
+ * @returns JSON com mensagem de sucesso, integrationMember e church_name (status 201) ou erro
  */
 export const createIntegrationMemberViaPublicLink = async (
   req: PublicIntegrationRequest,
@@ -71,9 +89,22 @@ export const createIntegrationMemberViaPublicLink = async (
       });
     }
 
+    // ✅ Validar limite de usos ANTES de criar o integrante
+    if (integrationLink.max_uses !== null && integrationLink.max_uses > 0) {
+      if (integrationLink.current_uses >= integrationLink.max_uses) {
+        return res.status(403).json({
+          error: 'Limite de usos atingido',
+          details: 'Este link de integração atingiu o número máximo de usos permitidos'
+        });
+      }
+    }
+
+    // Normalizar datas antes de criar o integrante (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(req.body as unknown as Record<string, unknown>);
+
     // Preparar dados do integrante
     const integrationMemberData: Partial<IntegrationMember> = {
-      ...req.body,
+      ...normalizedData,
       church_id: churchId,
       status: 'em_progresso',
       // Campos não permitidos no formulário público devem ser null
@@ -90,7 +121,7 @@ export const createIntegrationMemberViaPublicLink = async (
       .single();
 
     if (memberError) {
-      console.error('Erro ao criar integrante via link público:', memberError);
+      logError('Erro ao criar integrante via link público:', memberError);
       return res.status(400).json({
         error: 'Erro ao criar integrante',
         details: memberError.message
@@ -106,7 +137,7 @@ export const createIntegrationMemberViaPublicLink = async (
       .eq('id', integrationLink.id);
 
     if (updateError) {
-      console.error('Erro ao atualizar contador de usos:', updateError);
+      logError('Erro ao atualizar contador de usos:', updateError);
       // Não falhar a requisição se apenas o contador falhar
     }
 
@@ -124,10 +155,10 @@ export const createIntegrationMemberViaPublicLink = async (
     });
 
   } catch (error) {
-    console.error('Erro ao criar integrante via link público:', error);
+    logError('Erro ao criar integrante via link público:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao realizar cadastro',
+      details: error instanceof Error ? error.message : 'Não foi possível completar seu cadastro. Verifique os dados e tente novamente.'
     });
   }
 };

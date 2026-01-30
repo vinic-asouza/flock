@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import supabase from '../services/supabase';
 import { AuthRequest, PublicIntegrationLink, CreateIntegrationLinkData } from '../types';
 import { logAudit } from '../utils/auditLogger';
+import { debug, error as logError } from '../utils/logger';
 
 /**
  * Gera um token único e seguro para o link de integração
@@ -18,6 +19,15 @@ const generateSecureToken = (): string => {
 
 /**
  * Lista todos os links de integração da igreja do usuário
+ * 
+ * Retorna links com:
+ * - URL completa
+ * - Status (ativo, expirado, limite atingido)
+ * - Contadores de uso
+ * 
+ * @param req - Request autenticado
+ * @param res - Response com lista de links
+ * @returns JSON com data (array de links) e count (total)
  */
 export const listIntegrationLinks = async (req: AuthRequest, res: Response) => {
   try {
@@ -50,7 +60,7 @@ export const listIntegrationLinks = async (req: AuthRequest, res: Response) => {
       .order('created_at', { ascending: false });
 
     if (linksError) {
-      console.error('Erro ao buscar links:', linksError);
+      logError('Erro ao buscar links:', linksError);
       return res.status(500).json({
         error: 'Erro ao buscar links de integração',
         details: linksError.message
@@ -77,16 +87,20 @@ export const listIntegrationLinks = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao listar links de integração:', error);
+    logError('Erro ao listar links de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao carregar links de integração',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar a lista de links. Tente novamente.'
     });
   }
 };
 
 /**
- * Busca um link de integração específico
+ * Busca um link de integração específico por ID
+ * 
+ * @param req - Request com link ID nos params
+ * @param res - Response com dados do link
+ * @returns JSON com objeto PublicIntegrationLink completo
  */
 export const getIntegrationLink = async (req: AuthRequest, res: Response) => {
   try {
@@ -138,16 +152,27 @@ export const getIntegrationLink = async (req: AuthRequest, res: Response) => {
     res.json(linkWithUrl);
 
   } catch (error) {
-    console.error('Erro ao buscar link de integração:', error);
+    logError('Erro ao buscar link de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao carregar link de integração',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar os dados do link. Tente novamente.'
     });
   }
 };
 
 /**
  * Cria um novo link de integração pública
+ * 
+ * Processo:
+ * 1. Valida data de expiração (deve ser no futuro)
+ * 2. Valida max_uses (se fornecido, deve ser > 0)
+ * 3. Gera token único e seguro
+ * 4. Cria link
+ * 5. Registra auditoria
+ * 
+ * @param req - Request com dados do link no body (expires_at, max_uses, notes)
+ * @param res - Response com link criado incluindo URL completa
+ * @returns JSON com objeto PublicIntegrationLink criado (status 201) ou erro
  */
 export const createIntegrationLink = async (
   req: AuthRequest,
@@ -248,7 +273,7 @@ export const createIntegrationLink = async (
       .single();
 
     if (linkError) {
-      console.error('Erro ao criar link:', linkError);
+      logError('Erro ao criar link:', linkError);
       return res.status(400).json({
         error: 'Erro ao criar link de integração',
         details: linkError.message
@@ -272,16 +297,26 @@ export const createIntegrationLink = async (
     res.status(201).json(linkWithUrl);
 
   } catch (error) {
-    console.error('Erro ao criar link de integração:', error);
+    logError('Erro ao criar link de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao gerar link de integração',
+      details: error instanceof Error ? error.message : 'Não foi possível criar o link. Verifique os dados e tente novamente.'
     });
   }
 };
 
 /**
  * Atualiza um link de integração existente
+ * 
+ * Permite atualizar:
+ * - Data de expiração
+ * - Número máximo de usos
+ * - Status (ativo/inativo)
+ * - Notas
+ * 
+ * @param req - Request com link ID nos params e dados atualizados no body
+ * @param res - Response com link atualizado
+ * @returns JSON com objeto PublicIntegrationLink atualizado ou erro
  */
 export const updateIntegrationLink = async (req: AuthRequest, res: Response) => {
   try {
@@ -361,7 +396,7 @@ export const updateIntegrationLink = async (req: AuthRequest, res: Response) => 
       .single();
 
     if (updateError) {
-      console.error('Erro ao atualizar link:', updateError);
+      logError('Erro ao atualizar link:', updateError);
       return res.status(400).json({
         error: 'Erro ao atualizar link de integração',
         details: updateError.message
@@ -386,16 +421,22 @@ export const updateIntegrationLink = async (req: AuthRequest, res: Response) => 
     res.json(linkWithUrl);
 
   } catch (error) {
-    console.error('Erro ao atualizar link de integração:', error);
+    logError('Erro ao atualizar link de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao atualizar link de integração',
+      details: error instanceof Error ? error.message : 'Não foi possível atualizar o link. Tente novamente.'
     });
   }
 };
 
 /**
  * Desativa um link de integração (soft delete)
+ * 
+ * Define is_active = false, mas mantém o link no banco de dados
+ * 
+ * @param req - Request com link ID nos params
+ * @param res - Response com mensagem de sucesso
+ * @returns JSON com mensagem de confirmação ou erro
  */
 export const deactivateIntegrationLink = async (req: AuthRequest, res: Response) => {
   try {
@@ -447,7 +488,7 @@ export const deactivateIntegrationLink = async (req: AuthRequest, res: Response)
       .single();
 
     if (updateError) {
-      console.error('Erro ao desativar link:', updateError);
+      logError('Erro ao desativar link:', updateError);
       return res.status(400).json({
         error: 'Erro ao desativar link de integração',
         details: updateError.message
@@ -467,16 +508,20 @@ export const deactivateIntegrationLink = async (req: AuthRequest, res: Response)
     });
 
   } catch (error) {
-    console.error('Erro ao desativar link de integração:', error);
+    logError('Erro ao desativar link de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao desativar link',
+      details: error instanceof Error ? error.message : 'Não foi possível desativar o link. Tente novamente.'
     });
   }
 };
 
 /**
  * Remove permanentemente um link de integração
+ * 
+ * @param req - Request com link ID nos params
+ * @param res - Response com mensagem de sucesso
+ * @returns JSON com mensagem de confirmação ou erro
  */
 export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => {
   try {
@@ -526,7 +571,7 @@ export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => 
       .eq('church_id', church.id);
 
     if (deleteError) {
-      console.error('Erro ao excluir link:', deleteError);
+      logError('Erro ao excluir link:', deleteError);
       return res.status(400).json({
         error: 'Erro ao excluir link de integração',
         details: deleteError.message
@@ -546,10 +591,10 @@ export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => 
     });
 
   } catch (error) {
-    console.error('Erro ao excluir link de integração:', error);
+    logError('Erro ao excluir link de integração:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao excluir link',
+      details: error instanceof Error ? error.message : 'Não foi possível excluir o link. Tente novamente.'
     });
   }
 };

@@ -8,6 +8,7 @@ import apiService from '@/services/api';
 import { IntegrationMember } from '@/types';
 import { DeleteIntegrationModal } from './DeleteIntegrationModal';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { formatPhone } from '@/utils';
 
 interface ViewIntegrationModalProps {
   isOpen: boolean;
@@ -430,15 +431,4 @@ function formatDate(date?: string | null): string {
   return parsed.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
-function formatPhone(phone?: string | null): string {
-  if (!phone) return '—';
-  const numbers = phone.replace(/\D/g, '');
-  if (numbers.length === 10) {
-    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-  }
-  if (numbers.length === 11) {
-    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  }
-  return phone;
-}
 

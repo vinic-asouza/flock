@@ -6,6 +6,13 @@ import { validateMember } from '../validators/memberValidator';
 import { logAudit } from '../utils/auditLogger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
+import { 
+  validateIntegrationMemberData,
+  validateCongregation,
+  validateMentorAndCongregation,
+  validateIntegrationMemberNameUniqueness
+} from '../utils/integrationValidations';
+import { debug, error as logError } from '../utils/logger';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 10;
@@ -77,6 +84,19 @@ const mapAdmissionTypeToMember = (admission?: string | null): string | undefined
   }
 };
 
+/**
+ * Lista todos os integrantes da igreja com paginação e filtros
+ * 
+ * Suporta:
+ * - Paginação (page, limit)
+ * - Busca geral (nome, telefone, WhatsApp)
+ * - Filtros por status, congregação prevista, mentor
+ * - Ordenação dinâmica por qualquer campo
+ * 
+ * @param req - Request com query parameters para filtros e paginação
+ * @param res - Response com lista paginada de integrantes
+ * @returns JSON com data (integrantes), pagination (metadados), filters (filtros aplicados) e sorting (ordenação)
+ */
 export const listIntegrationMembers = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -182,14 +202,26 @@ export const listIntegrationMembers = async (req: AuthRequest, res: Response) =>
       }
     });
   } catch (error) {
-    console.error('Erro ao listar integrantes:', error);
+    logError('Erro ao listar integrantes:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao buscar lista de integrantes',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar a lista de integrantes. Tente novamente.'
     });
   }
 };
 
+/**
+ * Busca um integrante específico por ID
+ * 
+ * Retorna dados completos do integrante incluindo:
+ * - Informações pessoais
+ * - Congregação prevista
+ * - Mentor/Responsável
+ * 
+ * @param req - Request com integration member ID nos params
+ * @param res - Response com dados completos do integrante
+ * @returns JSON com objeto IntegrationMember completo
+ */
 export const getIntegrationMember = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -230,14 +262,30 @@ export const getIntegrationMember = async (req: AuthRequest, res: Response) => {
       mentor: data.mentor || null
     });
   } catch (error) {
-    console.error('Erro ao buscar integrante:', error);
+    logError('Erro ao buscar integrante:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao carregar dados do integrante',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar os dados do integrante. Tente novamente.'
     });
   }
 };
 
+/**
+ * Cria um novo integrante
+ * 
+ * Processo:
+ * 1. Valida dados do integrante
+ * 2. Valida congregação prevista
+ * 3. Valida mentor e associação com congregação
+ * 4. Verifica duplicidade de nome
+ * 5. Normaliza datas
+ * 6. Cria integrante
+ * 7. Registra auditoria
+ * 
+ * @param req - Request com dados do integrante no body
+ * @param res - Response com integrante criado
+ * @returns JSON com objeto IntegrationMember criado (status 201) ou erro
+ */
 export const createIntegrationMember = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -265,8 +313,26 @@ export const createIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
+    // Validar todos os dados do integrante (congregação, mentor, duplicidade de nome)
+    const dataValidation = await validateIntegrationMemberData(value, church.id);
+    if (!dataValidation.isValid) {
+      const errorTitle = dataValidation.field === 'name' 
+        ? 'Nome já cadastrado'
+        : dataValidation.field === 'mentor_id'
+        ? 'Mentor inválido'
+        : 'Congregação inválida';
+      
+      return res.status(400).json({
+        error: errorTitle,
+        details: dataValidation.errorMessage || 'Dados inválidos'
+      });
+    }
+
+    // Normalizar datas antes de criar o integrante (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(value as unknown as Record<string, unknown>);
+
     const payload: Partial<IntegrationMember> = {
-      ...value,
+      ...normalizedData,
       church_id: church.id,
       status: value.status ?? 'em_progresso',
       expected_congregation_id: value.expected_congregation_id || null,
@@ -300,14 +366,30 @@ export const createIntegrationMember = async (req: AuthRequest, res: Response) =
       mentor: data.mentor || null
     });
   } catch (error) {
-    console.error('Erro ao criar integrante:', error);
+    logError('Erro ao criar integrante:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao cadastrar integrante',
+      details: error instanceof Error ? error.message : 'Não foi possível cadastrar o integrante. Verifique os dados e tente novamente.'
     });
   }
 };
 
+/**
+ * Atualiza um integrante existente
+ * 
+ * Processo:
+ * 1. Valida que integrante existe e pertence à igreja
+ * 2. Valida congregação prevista (se fornecida)
+ * 3. Valida mentor e associação com congregação (se fornecido)
+ * 4. Verifica duplicidade de nome (se nome foi alterado)
+ * 5. Normaliza datas
+ * 6. Atualiza integrante
+ * 7. Registra auditoria
+ * 
+ * @param req - Request com integration member ID nos params e dados atualizados no body
+ * @param res - Response com integrante atualizado
+ * @returns JSON com objeto IntegrationMember atualizado ou erro
+ */
 export const updateIntegrationMember = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -351,8 +433,32 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
+    // Validar todos os dados do integrante (congregação, mentor, duplicidade de nome)
+    // Só verifica duplicidade se o nome foi alterado
+    const shouldCheckName = value.name && value.name.trim() !== existing.name.trim();
+    const dataValidation = await validateIntegrationMemberData(
+      value, 
+      church.id, 
+      shouldCheckName ? id : undefined
+    );
+    if (!dataValidation.isValid) {
+      const errorTitle = dataValidation.field === 'name' 
+        ? 'Nome já cadastrado'
+        : dataValidation.field === 'mentor_id'
+        ? 'Mentor inválido'
+        : 'Congregação inválida';
+      
+      return res.status(400).json({
+        error: errorTitle,
+        details: dataValidation.errorMessage || 'Dados inválidos'
+      });
+    }
+
+    // Normalizar datas antes de atualizar o integrante (evita problemas de timezone)
+    const normalizedData = normalizeMemberDates(value as unknown as Record<string, unknown>);
+
     const updatePayload: Partial<IntegrationMember> = {
-      ...value,
+      ...normalizedData,
       expected_congregation_id: value.expected_congregation_id || null,
       mentor_id: value.mentor_id || null,
       notes: value.notes ?? null
@@ -387,14 +493,21 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       mentor: data.mentor || null
     });
   } catch (error) {
-    console.error('Erro ao atualizar integrante:', error);
+    logError('Erro ao atualizar integrante:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao atualizar integrante',
+      details: error instanceof Error ? error.message : 'Não foi possível atualizar os dados do integrante. Tente novamente.'
     });
   }
 };
 
+/**
+ * Remove permanentemente um integrante
+ * 
+ * @param req - Request com integration member ID nos params
+ * @param res - Response com mensagem de sucesso
+ * @returns JSON com mensagem de confirmação ou erro
+ */
 export const deleteIntegrationMember = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -453,14 +566,31 @@ export const deleteIntegrationMember = async (req: AuthRequest, res: Response) =
       message: 'Integrante descartado com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao descartar integrante:', error);
+    logError('Erro ao descartar integrante:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao remover integrante',
+      details: error instanceof Error ? error.message : 'Não foi possível remover o integrante. Tente novamente.'
     });
   }
 };
 
+/**
+ * Converte um integrante em membro da igreja
+ * 
+ * Processo:
+ * 1. Valida que integrante existe e está em status válido
+ * 2. Verifica limite de membros do plano
+ * 3. Mapeia dados do integrante para membro
+ * 4. Normaliza datas
+ * 5. Valida dados do membro
+ * 6. Cria membro (TRANSAÇÃO: se falhar ao atualizar status, faz rollback)
+ * 7. Atualiza status do integrante para 'integrado'
+ * 8. Registra auditoria
+ * 
+ * @param req - Request com integration member ID nos params e dados do membro no body
+ * @param res - Response com membro criado e integrante atualizado
+ * @returns JSON com objeto contendo member e integrationMember (status 201) ou erro
+ */
 export const convertIntegrationMember = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -551,6 +681,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       });
     }
 
+    // ✅ TRANSAÇÃO: Criar membro primeiro
     const { data: member, error: memberError } = await supabase
       .from('members')
       .insert([normalizedMemberPayload])
@@ -564,6 +695,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       });
     }
 
+    // ✅ TRANSAÇÃO: Atualizar status do integrante (se falhar, fazer rollback)
     const { data: updatedIntegrationMember, error: updateError } = await supabase
       .from('integration_members')
       .update({ status: 'integrado' })
@@ -573,9 +705,22 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       .single();
 
     if (updateError || !updatedIntegrationMember) {
+      // ✅ ROLLBACK: Se falhar ao atualizar status, deletar o membro criado
+      logError('Erro ao atualizar status do integrante, fazendo rollback do membro criado...', updateError);
+      const { error: rollbackError } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', member.id);
+
+      if (rollbackError) {
+        logError('Erro ao fazer rollback do membro criado:', rollbackError);
+      } else {
+        debug('Rollback concluído - membro deletado');
+      }
+
       return res.status(500).json({
         error: 'Erro ao atualizar integrante',
-        details: updateError?.message ?? 'Não foi possível atualizar o status do integrante'
+        details: updateError?.message ?? 'Não foi possível atualizar o status do integrante. O membro não foi criado.'
       });
     }
 
@@ -602,10 +747,10 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       integrationMember: updatedIntegrationMember
     });
   } catch (error) {
-    console.error('Erro ao integrar integrante:', error);
+    logError('Erro ao integrar integrante:', error);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao converter integrante em membro',
+      details: error instanceof Error ? error.message : 'Não foi possível converter o integrante em membro. Verifique os dados e tente novamente.'
     });
   }
 };

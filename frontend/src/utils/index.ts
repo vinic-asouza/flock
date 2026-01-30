@@ -35,7 +35,21 @@ export function formatCNPJ(cnpj: string): string {
 /**
  * Formata um telefone com máscara
  */
-export function formatPhone(phone: string): string {
+/**
+ * Formata telefone brasileiro para exibição
+ * @param phone - Telefone com ou sem formatação (aceita null/undefined)
+ * @returns Telefone formatado no padrão (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX, ou '—' se vazio
+ */
+export function formatPhone(phone?: string | null): string {
+  if (!phone) return '—';
+  const numbers = phone.replace(/\D/g, '');
+  if (numbers.length === 10) {
+    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  }
+  if (numbers.length === 11) {
+    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  }
+  return phone; // Retorna original se não tiver formato válido
   const cleaned = phone.replace(/\D/g, '');
   if (cleaned.length === 11) {
     return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');

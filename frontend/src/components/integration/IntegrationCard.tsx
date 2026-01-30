@@ -2,6 +2,7 @@ import { IntegrationMember } from '@/types';
 import { IntegrationStatusBadge } from './IntegrationStatusBadge';
 import { Edit, UserPlus, Trash2, MessageCircle, Eye, Phone } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { formatPhone } from '@/utils';
 
 interface IntegrationCardProps {
   member: IntegrationMember;
@@ -53,15 +54,6 @@ const admissionLabels: Record<string, string> = {
   outro: 'Outro'
 };
 
-// Função para formatar telefone
-const formatPhone = (value: string): string => {
-  const numbers = value.replace(/\D/g, '');
-  if (numbers.length <= 10) {
-    return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-  } else {
-    return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  }
-};
 
 export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }: IntegrationCardProps) {
   const age = calculateAge(member.birth);
