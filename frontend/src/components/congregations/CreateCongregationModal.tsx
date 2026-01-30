@@ -24,9 +24,10 @@ export function CreateCongregationModal({ isOpen, onClose, onSuccess }: CreateCo
       onSuccess(response);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error 
-        ? (err as { response?: { data?: { error?: string } } }).response?.data?.error || err.message 
-        : 'Erro ao criar congregação';
+      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
+      const errorMessage = errorResponse.response?.data?.details 
+        || errorResponse.response?.data?.error 
+        || (err instanceof Error ? err.message : 'Erro ao criar congregação');
       setError(errorMessage);
     } finally {
       setIsLoading(false);

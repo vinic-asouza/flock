@@ -9,17 +9,51 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { useIbgeData } from '@/hooks/useIbgeData';
 
-// Schema de validação
-const congregationSchema = z.object({
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
-  city: z.string().min(2, 'Cidade é obrigatória'),
-  state: z.string().min(2, 'Estado é obrigatório'),
-  leader: z.string().optional().or(z.literal('')),
-  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos').optional().or(z.literal('')),
+// Regex para validar telefone brasileiro
+const phoneRegex = /^[\d\s\(\)\-]{10,15}$/;
+
+// Função para criar schema de validação (permite acesso às cidades do estado)
+const createCongregationSchema = (cities: Array<{ nome: string }> = []) => z.object({
+  name: z.string()
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(100, 'Nome não pode ter mais de 100 caracteres'),
+  address: z.string()
+    .min(5, 'Endereço deve ter pelo menos 5 caracteres')
+    .max(255, 'Endereço não pode ter mais de 255 caracteres'),
+  city: z.string()
+    .min(2, 'Cidade é obrigatória')
+    .max(100, 'Cidade não pode ter mais de 100 caracteres')
+    .refine((val, ctx) => {
+      if (!val || val.trim() === '') return false;
+      // Se temos lista de cidades, validar que a cidade pertence ao estado
+      if (cities.length > 0) {
+        return cities.some(city => city.nome === val);
+      }
+      return true; // Se não temos cidades carregadas ainda, aceitar
+    }, {
+      message: 'A cidade selecionada não pertence ao estado escolhido'
+    }),
+  state: z.string()
+    .length(2, 'Estado deve ser uma sigla de 2 caracteres (ex: SP, RJ)'),
+  leader: z.string()
+    .optional()
+    .or(z.literal(''))
+    .max(100, 'Nome do líder não pode ter mais de 100 caracteres'),
+  phone: z.string()
+    .optional()
+    .or(z.literal(''))
+    .max(20, 'Telefone não pode ter mais de 20 caracteres')
+    .refine((val) => {
+      if (!val || val.trim() === '') return true; // Opcional
+      // Remover formatação para validar apenas números
+      const numbersOnly = val.replace(/\D/g, '');
+      return numbersOnly.length >= 10 && numbersOnly.length <= 11 && phoneRegex.test(val);
+    }, {
+      message: 'Telefone inválido. Deve conter 10 ou 11 dígitos (com ou sem formatação)'
+    }),
 });
 
-type CongregationFormData = z.infer<typeof congregationSchema>;
+type CongregationFormData = z.infer<ReturnType<typeof createCongregationSchema>>;
 
 interface Congregation {
   id: string;
@@ -56,7 +90,9 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
-  // const [formReady, setFormReady] = useState(false);
+
+  // Criar schema dinamicamente com acesso às cidades do estado selecionado
+  const dynamicSchema = useMemo(() => createCongregationSchema(cities || []), [cities]);
 
   const {
     register,
@@ -66,7 +102,8 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
     watch,
     reset,
   } = useForm<CongregationFormData>({
-    resolver: zodResolver(congregationSchema),
+    resolver: zodResolver(dynamicSchema),
+    mode: 'onChange', // Validar enquanto o usuário digita
     defaultValues: mode === 'create' ? {} : {
       // Para modo edit, deixar vazio e usar reset
     },
@@ -150,6 +187,8 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
             placeholder="Digite o nome da congregação"
             error={errors.name?.message}
             isLoading={isLoading}
+            disabled={isLoading}
+            maxLength={100}
             {...register('name')}
           />
 
@@ -158,6 +197,8 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
             placeholder="Nome do líder da congregação"
             error={errors.leader?.message}
             isLoading={isLoading}
+            disabled={isLoading}
+            maxLength={100}
             {...register('leader')}
           />
         </div>
@@ -175,6 +216,8 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
             placeholder="Rua, número, bairro"
             error={errors.address?.message}
             isLoading={isLoading}
+            disabled={isLoading}
+            maxLength={255}
             {...register('address')}
           />
 
@@ -222,8 +265,9 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
             placeholder="(11) 99999-9999"
             value={phoneDisplay}
             onChange={handlePhoneChange}
-            maxLength={15}
+            maxLength={20}
             isLoading={isLoading}
+            disabled={isLoading}
             error={errors.phone?.message}
           />
         </div>

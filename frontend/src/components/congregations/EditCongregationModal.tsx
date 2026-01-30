@@ -47,7 +47,10 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       const data = await apiService.getCongregation(congregationId);
       setCongregation(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados da congregação';
+      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
+      const errorMessage = errorResponse.response?.data?.details 
+        || errorResponse.response?.data?.error 
+        || (err instanceof Error ? err.message : 'Erro ao carregar dados da congregação');
       setError(errorMessage);
     } finally {
       setIsLoadingCongregation(false);
@@ -68,7 +71,10 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       onSuccess(updatedCongregation);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar congregação';
+      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
+      const errorMessage = errorResponse.response?.data?.details 
+        || errorResponse.response?.data?.error 
+        || (err instanceof Error ? err.message : 'Erro ao atualizar congregação');
       setError(errorMessage);
     } finally {
       setIsLoading(false);

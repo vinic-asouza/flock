@@ -31,7 +31,10 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
       onSuccess(congregationId);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir congregação';
+      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
+      const errorMessage = errorResponse.response?.data?.details 
+        || errorResponse.response?.data?.error 
+        || (err instanceof Error ? err.message : 'Erro ao excluir congregação');
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -101,10 +104,14 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
               </p>
             </div>
           ) : (
-            <p className="text-sm text-gray-500 mb-6">
-              Tem certeza que deseja excluir a congregação <strong>{congregationName}</strong>? 
-              Esta ação não pode ser desfeita.
-            </p>
+            <div className="space-y-2 mb-6">
+              <p className="text-sm text-gray-500">
+                Tem certeza que deseja excluir a congregação <strong className="font-semibold text-gray-900">{congregationName}</strong>?
+              </p>
+              <p className="text-xs text-gray-400">
+                Esta ação não pode ser desfeita. Todos os dados relacionados serão atualizados automaticamente.
+              </p>
+            </div>
           )}
 
           <div className="flex justify-end space-x-3 mt-6">

@@ -94,7 +94,7 @@ CREATE TABLE public.congregations (
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT congregations_pkey PRIMARY KEY (id),
-  CONSTRAINT congregations_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id)
+  CONSTRAINT congregations_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id) ON DELETE CASCADE
 );
 CREATE TABLE public.groups (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -130,7 +130,7 @@ CREATE TABLE public.integration_members (
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT integration_members_pkey PRIMARY KEY (id),
   CONSTRAINT integration_members_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
-  CONSTRAINT integration_members_expected_congregation_id_fkey FOREIGN KEY (expected_congregation_id) REFERENCES public.congregations(id),
+  CONSTRAINT integration_members_expected_congregation_id_fkey FOREIGN KEY (expected_congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
   CONSTRAINT integration_members_mentor_id_fkey FOREIGN KEY (mentor_id) REFERENCES public.members(id)
 );
 CREATE TABLE public.member_groups (
@@ -174,7 +174,7 @@ CREATE TABLE public.members (
   children jsonb DEFAULT '[]'::jsonb,
   CONSTRAINT members_pkey PRIMARY KEY (id),
   CONSTRAINT members_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
-  CONSTRAINT members_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id),
+  CONSTRAINT members_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
   CONSTRAINT members_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id)
 );
 CREATE TABLE public.pending_subscriptions (
@@ -230,7 +230,7 @@ CREATE TABLE public.public_registration_links (
   CONSTRAINT public_registration_links_pkey PRIMARY KEY (id),
   CONSTRAINT public_registration_links_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
   CONSTRAINT public_registration_links_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
-  CONSTRAINT public_registration_links_default_congregation_id_fkey FOREIGN KEY (default_congregation_id) REFERENCES public.congregations(id),
+  CONSTRAINT public_registration_links_default_congregation_id_fkey FOREIGN KEY (default_congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
   CONSTRAINT public_registration_links_default_role_id_fkey FOREIGN KEY (default_role_id) REFERENCES public.roles(id)
 );
 CREATE TABLE public.roles (
