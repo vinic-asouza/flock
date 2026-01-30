@@ -9,9 +9,25 @@ import {
 import { logAudit } from '../utils/auditLogger';
 import { expandRecurringItem } from '../utils/recurrenceExpander';
 import { startOfYear, endOfYear, startOfMonth, endOfMonth } from 'date-fns';
+import { 
+  validateCongregation, 
+  validateGroup, 
+  validateResponsibleMember, 
+  validateParticipants 
+} from '../utils/calendarValidations';
+import { logError } from '../utils/logger';
 
 /**
  * Lista todos os itens do calendário da igreja com filtros
+ * 
+ * @param req - Request contendo query params: type, congregation_id, group_id, start_date, end_date, page, limit
+ * @param res - Response com array de itens do calendário e informações de paginação
+ * 
+ * @remarks
+ * - Expande itens recorrentes para o intervalo de datas especificado
+ * - Filtra apenas itens ativos (status = 'active')
+ * - Suporta filtros por tipo, congregação, grupo e intervalo de datas
+ * - Aplica paginação após a expansão dos itens recorrentes
  */
 export const listCalendarItems = async (req: AuthRequest, res: Response) => {
   try {
@@ -236,16 +252,23 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar itens do calendário:', error);
+    logError('Erro ao buscar itens do calendário:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao buscar itens do calendário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
 /**
- * Busca um item específico do calendário
+ * Busca um item específico do calendário por ID
+ * 
+ * @param req - Request contendo o ID do item nos params
+ * @param res - Response com os dados completos do item, incluindo relacionamentos e participantes
+ * 
+ * @remarks
+ * - Retorna dados completos incluindo congregação, grupo, responsável e participantes
+ * - Valida que o item pertence à igreja do usuário autenticado
  */
 export const getCalendarItem = async (req: AuthRequest, res: Response) => {
   try {
@@ -388,16 +411,26 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
 
     res.json(normalizedItem);
   } catch (error) {
-    console.error('Erro ao buscar item do calendário:', error);
+    logError('Erro ao buscar item do calendário:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao buscar item do calendário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
 /**
  * Cria um novo item do calendário
+ * 
+ * @param req - Request contendo os dados do item no body
+ * @param res - Response com o item criado e seus relacionamentos
+ * 
+ * @remarks
+ * - Valida pertencimento de congregação, grupo e responsável à igreja
+ * - Suporta criação de participantes junto com o item
+ * - Para eventos recorrentes, start_date é apenas data (YYYY-MM-DD)
+ * - Para eventos não recorrentes, start_date é datetime completo
+ * - Se a criação de participantes falhar, o item é removido para manter consistência
  */
 export const createCalendarItem = async (req: AuthRequest, res: Response) => {
   try {
@@ -451,14 +484,46 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Validar congregação
+    const congregationValidation = await validateCongregation(congregation_id, church.id);
+    if (!congregationValidation.isValid) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: congregationValidation.errorMessage
+      });
+    }
+
+    // Validar grupo
+    const groupValidation = await validateGroup(group_id, congregation_id, church.id);
+    if (!groupValidation.isValid) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: groupValidation.errorMessage
+      });
+    }
+
+    // Validar responsável
+    const responsibleValidation = await validateResponsibleMember(responsible_member_id, congregation_id, church.id);
+    if (!responsibleValidation.isValid) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: responsibleValidation.errorMessage
+      });
+    }
+
     // Para eventos recorrentes, start_date é apenas data (YYYY-MM-DD)
     // Para não recorrentes, start_date é datetime completo
+    // NOTA: O PostgreSQL armazena TIMESTAMP WITH TIME ZONE em UTC
+    // O Supabase/PostgreSQL faz a conversão automática de timezone
     let startDateValue: Date;
     if (is_recurring) {
       // Se for recorrente, start_date deve ser apenas data, vamos adicionar meia-noite
+      // Usar UTC para evitar problemas de timezone
       const dateOnly = start_date.includes('T') ? start_date.split('T')[0] : start_date;
-      startDateValue = new Date(`${dateOnly}T00:00:00`);
+      startDateValue = new Date(`${dateOnly}T00:00:00Z`);
     } else {
+      // Para não recorrentes, manter o datetime como recebido
+      // O PostgreSQL converterá automaticamente para UTC
       startDateValue = new Date(start_date);
     }
 
@@ -516,25 +581,20 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
 
     // Adicionar participantes se fornecidos
     if (participants && Array.isArray(participants) && participants.length > 0) {
-      // Validar membros (se fornecidos) pertencem à igreja
+      // Validar membros (se fornecidos) pertencem à igreja e à congregação
       const memberIds = participants
         .filter((p: any) => p.member_id)
         .map((p: any) => p.member_id);
 
       if (memberIds.length > 0) {
-        const { data: validMembers, error: membersError } = await supabase
-          .from('members')
-          .select('id')
-          .in('id', memberIds)
-          .eq('church_id', church.id);
-
-        if (membersError || validMembers.length !== memberIds.length) {
+        const participantsValidation = await validateParticipants(memberIds, congregation_id, church.id);
+        if (!participantsValidation.isValid) {
           // Se algum membro não for válido, remover o item criado
           await supabase.from('calendar_items').delete().eq('id', item.id);
           
           return res.status(400).json({
             error: 'Membros inválidos',
-            details: 'Um ou mais membros não pertencem à sua igreja'
+            details: participantsValidation.errorMessage
           });
         }
       }
@@ -555,9 +615,14 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
         .insert(participantsData);
 
       if (participantsError) {
-        console.error('Erro ao adicionar participantes:', participantsError);
-        // Não falhar a criação do item se participantes falharem
-        // Apenas logar o erro
+        logError('Erro ao adicionar participantes:', participantsError);
+        // Se a inserção de participantes falhar, remover o item criado para manter consistência
+        await supabase.from('calendar_items').delete().eq('id', item.id);
+        
+        return res.status(500).json({
+          error: 'Erro ao adicionar participantes',
+          details: 'O item do calendário foi criado, mas não foi possível adicionar os participantes. O item foi removido para manter a consistência dos dados.'
+        });
       }
     }
 
@@ -571,16 +636,25 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(item);
   } catch (error) {
-    console.error('Erro ao criar item do calendário:', error);
+    logError('Erro ao criar item do calendário:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao criar item do calendário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
 /**
- * Atualiza um item do calendário
+ * Atualiza um item do calendário existente
+ * 
+ * @param req - Request contendo o ID do item nos params e dados para atualização no body
+ * @param res - Response com o item atualizado e seus relacionamentos
+ * 
+ * @remarks
+ * - Valida pertencimento de congregação, grupo e responsável à igreja
+ * - Permite atualização parcial (apenas campos fornecidos são atualizados)
+ * - Se mudar de recorrente para não recorrente, limpa campos de recorrência
+ * - Status sempre permanece 'active', não pode ser alterado
  */
 export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
   try {
@@ -630,6 +704,44 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Determinar valores finais para validação (usar valores do body se fornecidos, senão usar valores existentes)
+    const finalCongregationId = req.body.congregation_id !== undefined ? req.body.congregation_id : existingItem.congregation_id;
+    const finalGroupId = req.body.group_id !== undefined ? req.body.group_id : existingItem.group_id;
+    const finalResponsibleId = req.body.responsible_member_id !== undefined ? req.body.responsible_member_id : existingItem.responsible_member_id;
+
+    // Validar congregação (se estiver sendo atualizada)
+    if (req.body.congregation_id !== undefined) {
+      const congregationValidation = await validateCongregation(finalCongregationId, church.id);
+      if (!congregationValidation.isValid) {
+        return res.status(400).json({
+          error: 'Dados inválidos',
+          details: congregationValidation.errorMessage
+        });
+      }
+    }
+
+    // Validar grupo (se estiver sendo atualizado)
+    if (req.body.group_id !== undefined) {
+      const groupValidation = await validateGroup(finalGroupId, finalCongregationId, church.id);
+      if (!groupValidation.isValid) {
+        return res.status(400).json({
+          error: 'Dados inválidos',
+          details: groupValidation.errorMessage
+        });
+      }
+    }
+
+    // Validar responsável (se estiver sendo atualizado)
+    if (req.body.responsible_member_id !== undefined) {
+      const responsibleValidation = await validateResponsibleMember(finalResponsibleId, finalCongregationId, church.id);
+      if (!responsibleValidation.isValid) {
+        return res.status(400).json({
+          error: 'Dados inválidos',
+          details: responsibleValidation.errorMessage
+        });
+      }
+    }
+
     // Preparar dados para atualização
     const updateData: Partial<CalendarItem> = {};
 
@@ -638,12 +750,16 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
     if (req.body.description !== undefined) updateData.description = req.body.description;
     
     // Tratar start_date baseado em is_recurring
+    // NOTA: O PostgreSQL armazena TIMESTAMP WITH TIME ZONE em UTC
+    // O Supabase/PostgreSQL faz a conversão automática de timezone
     if (req.body.start_date !== undefined) {
       if (req.body.is_recurring !== undefined ? req.body.is_recurring : existingItem.is_recurring) {
-        // Se for recorrente, start_date é apenas data
+        // Se for recorrente, start_date é apenas data, usar UTC para evitar problemas de timezone
         const dateOnly = req.body.start_date.includes('T') ? req.body.start_date.split('T')[0] : req.body.start_date;
-        updateData.start_date = new Date(`${dateOnly}T00:00:00`);
+        updateData.start_date = new Date(`${dateOnly}T00:00:00Z`);
       } else {
+        // Para não recorrentes, manter o datetime como recebido
+        // O PostgreSQL converterá automaticamente para UTC
         updateData.start_date = new Date(req.body.start_date);
       }
     }
@@ -747,16 +863,24 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
 
     res.json(updatedItem);
   } catch (error) {
-    console.error('Erro ao atualizar item do calendário:', error);
+    logError('Erro ao atualizar item do calendário:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao atualizar item do calendário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
 /**
  * Deleta um item do calendário
+ * 
+ * @param req - Request contendo o ID do item nos params
+ * @param res - Response 204 (No Content) em caso de sucesso
+ * 
+ * @remarks
+ * - Valida que o item pertence à igreja do usuário autenticado
+ * - Participantes são removidos automaticamente via ON DELETE CASCADE
+ * - Registra a operação no audit log
  */
 export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
   try {
@@ -822,16 +946,24 @@ export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
 
     res.status(204).send();
   } catch (error) {
-    console.error('Erro ao deletar item do calendário:', error);
+    logError('Erro ao deletar item do calendário:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao deletar item do calendário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
 /**
  * Exporta calendário mensal em PDF
+ * 
+ * @param req - Request contendo query params: month, year, congregation_id, group_id
+ * @param res - Response com dados do calendário (PDF ainda não implementado)
+ * 
+ * @remarks
+ * - Por enquanto retorna JSON com os dados
+ * - A implementação do PDF será feita posteriormente usando pdfkit ou puppeteer
+ * - Filtra apenas itens ativos do mês/ano especificado
  */
 export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
   try {
@@ -923,16 +1055,24 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Erro ao exportar calendário PDF:', error);
+    logError('Erro ao exportar calendário PDF:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao exportar calendário PDF',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
 /**
  * Lista grupos que têm itens de calendário vinculados
+ * 
+ * @param req - Request do usuário autenticado
+ * @param res - Response com array de grupos que possuem itens de calendário ativos
+ * 
+ * @remarks
+ * - Retorna apenas grupos que têm pelo menos um item de calendário ativo vinculado
+ * - Útil para filtros e seleção de grupos no frontend
+ * - Ordena por tipo e nome
  */
 export const listGroupsWithCalendarItems = async (req: AuthRequest, res: Response) => {
   try {
@@ -1007,10 +1147,10 @@ export const listGroupsWithCalendarItems = async (req: AuthRequest, res: Respons
 
     res.json(groups || []);
   } catch (error) {
-    console.error('Erro ao buscar grupos com itens de calendário:', error);
+    logError('Erro ao buscar grupos com itens de calendário:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao buscar grupos com itens de calendário',
+      details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };

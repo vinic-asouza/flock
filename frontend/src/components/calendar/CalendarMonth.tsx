@@ -168,7 +168,6 @@ export function CalendarMonth({
       });
       setBirthdays(response.data || []);
     } catch (error: unknown) {
-      console.error('Erro ao carregar aniversariantes:', error);
       toast.error('Erro ao carregar lista de aniversariantes');
       setBirthdays([]);
     } finally {

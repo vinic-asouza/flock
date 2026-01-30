@@ -105,7 +105,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
       const available = allMembers.filter((m) => !currentMemberIds.includes(m.id));
       setAvailableMembers(available.map((m) => ({ id: m.id, name: m.name })));
     } catch (err) {
-      console.error('Erro ao carregar membros disponíveis:', err);
+      // Erro silencioso - não bloquear a interface
       setAvailableMembers([]);
     } finally {
       setLoadingMembers(false);
@@ -120,48 +120,20 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
 
     try {
       setLoadingFullMembers(true);
-      // Criar um mapa com os dados de membersList (incluindo addedAt)
-      const membersListMap = new Map(
-        group.membersList.map((m) => [m.id, { addedAt: m.addedAt }])
-      );
+      // ✅ OTIMIZADO: Usar endpoint getGroupMembers que retorna todos os membros de uma vez
+      // em vez de buscar individualmente (N+1 problem)
+      const members = await apiService.getGroupMembers(groupId);
       
-      // Buscar dados completos dos membros usando a API de membros
-      const memberIds = group.membersList.map((m) => m.id);
-      const allMembers: Array<Member & { addedAt?: string }> = [];
-
-      // Buscar membros em lotes (máximo 100 por requisição)
-      for (let i = 0; i < memberIds.length; i += 100) {
-        const batchIds = memberIds.slice(i, i + 100);
-        // Buscar cada membro individualmente ou usar busca por IDs
-        // Por enquanto, vamos buscar individualmente
-        const batchPromises = batchIds.map(async (memberId: string) => {
-          try {
-            const member = await apiService.getMember(memberId);
-            // Preservar o addedAt do membersList
-            const memberListData = membersListMap.get(memberId);
-            return {
-              ...member,
-              addedAt: memberListData?.addedAt
-            } as Member & { addedAt?: string };
-          } catch {
-            return null;
-          }
-        });
-        const batchResults = await Promise.all(batchPromises);
-        const validMembers = batchResults.filter((m): m is Member & { addedAt?: string } => m !== null);
-        allMembers.push(...validMembers);
-      }
-
       // Ordenar por addedAt (mais recente primeiro) - ordem decrescente
-      allMembers.sort((a, b) => {
+      const sortedMembers = members.sort((a, b) => {
         const dateA = a.addedAt ? new Date(a.addedAt).getTime() : 0;
         const dateB = b.addedAt ? new Date(b.addedAt).getTime() : 0;
         return dateB - dateA; // Decrescente: mais recente primeiro
       });
 
-      setFullMembersData(allMembers);
+      setFullMembersData(sortedMembers as Array<Member & { addedAt?: string }>);
     } catch (err) {
-      console.error('Erro ao carregar dados completos dos membros:', err);
+      // Erro silencioso - não bloquear a interface
       setFullMembersData([]);
     } finally {
       setLoadingFullMembers(false);
@@ -187,7 +159,11 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
 
   const handleRemoveMember = async (memberId: string) => {
     if (!groupId) return;
-    const confirmed = window.confirm('Tem certeza que deseja remover este membro do grupo?');
+    const member = fullMembersData.find(m => m.id === memberId);
+    const memberName = member?.name || 'este membro';
+    const confirmed = window.confirm(
+      `Tem certeza que deseja remover ${memberName} do grupo?\n\nEsta ação não poderá ser desfeita.`
+    );
     if (!confirmed) return;
     try {
       await apiService.removeMemberFromGroup(groupId, memberId);

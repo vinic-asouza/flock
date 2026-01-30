@@ -72,7 +72,6 @@ export default function CalendarPage() {
 
       setItems(response.data);
     } catch (err: unknown) {
-      console.error('Erro ao carregar itens do calendário:', err);
       const error = err as { response?: { data?: { error?: string } } };
       setError(error.response?.data?.error || 'Erro ao carregar itens do calendário');
       toast.error(error.response?.data?.error || 'Erro ao carregar itens do calendário');
@@ -98,7 +97,6 @@ export default function CalendarPage() {
       });
       setBirthdayCount(response.count || 0);
     } catch (err: unknown) {
-      console.error('Erro ao carregar aniversariantes:', err);
       setBirthdayCount(0);
     } finally {
       setLoadingBirthdays(false);
@@ -118,7 +116,6 @@ export default function CalendarPage() {
       setDefaultStartDate(undefined);
       await loadItems();
     } catch (err: unknown) {
-      console.error('Erro ao criar item:', err);
       const error = err as { response?: { data?: { error?: string } } };
       toast.error(error.response?.data?.error || 'Erro ao criar item do calendário');
       throw err;
@@ -138,7 +135,6 @@ export default function CalendarPage() {
       setSelectedItem(null);
       await loadItems();
     } catch (err: unknown) {
-      console.error('Erro ao atualizar item:', err);
       const error = err as { response?: { data?: { error?: string } } };
       toast.error(error.response?.data?.error || 'Erro ao atualizar item do calendário');
       throw err;
@@ -158,7 +154,6 @@ export default function CalendarPage() {
       setSelectedItem(null);
       await loadItems();
     } catch (err: unknown) {
-      console.error('Erro ao deletar item:', err);
       const error = err as { response?: { data?: { error?: string } } };
       toast.error(error.response?.data?.error || 'Erro ao deletar item do calendário');
     } finally {
@@ -175,7 +170,6 @@ export default function CalendarPage() {
       setParticipantsPage(1); // Reset para primeira página
       setViewModalOpen(true);
     } catch (err: unknown) {
-      console.error('Erro ao carregar detalhes do item:', err);
       toast.error('Erro ao carregar detalhes do item');
     } finally {
       setLoadingItemDetails(false);

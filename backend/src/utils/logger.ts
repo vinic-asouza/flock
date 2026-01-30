@@ -36,3 +36,8 @@ export function error(...args: unknown[]): void {
 export function warn(...args: unknown[]): void {
   console.warn('[WARN]', ...args);
 }
+
+/**
+ * Alias para error (mantém compatibilidade com código existente)
+ */
+export const logError = error;

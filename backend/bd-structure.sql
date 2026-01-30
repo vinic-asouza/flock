@@ -40,10 +40,10 @@ CREATE TABLE public.calendar_items (
   recurrence_day_of_month integer CHECK (recurrence_day_of_month >= 1 AND recurrence_day_of_month <= 31),
   recurrence_week_of_month integer CHECK (recurrence_week_of_month >= '-1'::integer AND recurrence_week_of_month <= 4),
   CONSTRAINT calendar_items_pkey PRIMARY KEY (id),
-  CONSTRAINT calendar_items_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
-  CONSTRAINT calendar_items_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id),
-  CONSTRAINT calendar_items_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id),
-  CONSTRAINT calendar_items_responsible_member_id_fkey FOREIGN KEY (responsible_member_id) REFERENCES public.members(id),
+  CONSTRAINT calendar_items_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id) ON DELETE CASCADE,
+  CONSTRAINT calendar_items_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
+  CONSTRAINT calendar_items_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE SET NULL,
+  CONSTRAINT calendar_items_responsible_member_id_fkey FOREIGN KEY (responsible_member_id) REFERENCES public.members(id) ON DELETE SET NULL,
   CONSTRAINT calendar_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.calendar_participants (
@@ -57,8 +57,8 @@ CREATE TABLE public.calendar_participants (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT calendar_participants_pkey PRIMARY KEY (id),
-  CONSTRAINT calendar_participants_calendar_item_id_fkey FOREIGN KEY (calendar_item_id) REFERENCES public.calendar_items(id),
-  CONSTRAINT calendar_participants_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id)
+  CONSTRAINT calendar_participants_calendar_item_id_fkey FOREIGN KEY (calendar_item_id) REFERENCES public.calendar_items(id) ON DELETE CASCADE,
+  CONSTRAINT calendar_participants_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL
 );
 CREATE TABLE public.churches (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -108,9 +108,9 @@ CREATE TABLE public.groups (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT groups_pkey PRIMARY KEY (id),
-  CONSTRAINT groups_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
-  CONSTRAINT groups_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id),
-  CONSTRAINT groups_responsible_id_fkey FOREIGN KEY (responsible_id) REFERENCES public.members(id)
+  CONSTRAINT groups_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id) ON DELETE CASCADE,
+  CONSTRAINT groups_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
+  CONSTRAINT groups_responsible_id_fkey FOREIGN KEY (responsible_id) REFERENCES public.members(id) ON DELETE SET NULL
 );
 CREATE TABLE public.integration_members (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -139,8 +139,8 @@ CREATE TABLE public.member_groups (
   group_id uuid NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT member_groups_pkey PRIMARY KEY (id),
-  CONSTRAINT member_groups_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id),
-  CONSTRAINT member_groups_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id)
+  CONSTRAINT member_groups_member_id_fkey FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE CASCADE,
+  CONSTRAINT member_groups_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.groups(id) ON DELETE CASCADE
 );
 CREATE TABLE public.members (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

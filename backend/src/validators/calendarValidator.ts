@@ -5,15 +5,19 @@ const statusTypes = ['active', 'cancelled', 'postponed'];
 const recurrencePatterns = ['weekly', 'monthly'];
 
 export const createCalendarItemSchema = Joi.object({
-  title: Joi.string().required().messages({
+  title: Joi.string().required().min(2).max(100).messages({
     'string.empty': 'O título é obrigatório',
-    'any.required': 'O título é obrigatório'
+    'any.required': 'O título é obrigatório',
+    'string.min': 'O título deve ter pelo menos 2 caracteres',
+    'string.max': 'O título não pode ter mais de 100 caracteres'
   }),
   type: Joi.string().valid(...calendarItemTypes).required().messages({
     'any.only': `O tipo deve ser um dos seguintes: ${calendarItemTypes.join(', ')}`,
     'any.required': 'O tipo é obrigatório'
   }),
-  description: Joi.string().allow('').optional(),
+  description: Joi.string().allow('').optional().max(5000).messages({
+    'string.max': 'A descrição não pode ter mais de 5000 caracteres'
+  }),
   start_date: Joi.alternatives().conditional('is_recurring', {
     is: true,
     then: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).required().messages({
@@ -41,7 +45,9 @@ export const createCalendarItemSchema = Joi.object({
   }),
   recurrence_end_date: Joi.date().iso().when('is_recurring', {
     is: true,
-    then: Joi.optional().allow(null),
+    then: Joi.optional().allow(null).greater(Joi.ref('start_date')).messages({
+      'date.greater': 'A data de término da recorrência deve ser posterior à data de início'
+    }),
     otherwise: Joi.optional().allow(null)
   }),
   recurrence_time: Joi.string().pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).when('is_recurring', {
@@ -86,7 +92,9 @@ export const createCalendarItemSchema = Joi.object({
     }),
     otherwise: Joi.optional().allow(null)
   }),
-  location: Joi.string().allow('').optional(),
+  location: Joi.string().allow('').optional().max(255).messages({
+    'string.max': 'O local não pode ter mais de 255 caracteres'
+  }),
   congregation_id: Joi.string().uuid().allow(null, '').optional().messages({
     'string.guid': 'O ID da congregação deve ser um UUID válido'
   }),
@@ -138,14 +146,14 @@ export const createCalendarItemSchema = Joi.object({
     // Deve ter OU day_of_month OU (week_of_month + day_of_week)
     if (!hasDayOfMonth && !(hasWeekOfMonth && hasDayOfWeek)) {
       return helpers.error('any.custom', {
-        message: 'Para recorrência mensal, informe o dia do mês (1-31) OU a semana do mês + dia da semana'
+        message: 'Para recorrência mensal, é necessário informar: (1) o dia do mês (1-31) OU (2) a semana do mês + dia da semana'
       });
     }
     
     // Não pode ter ambos
     if (hasDayOfMonth && (hasWeekOfMonth || hasDayOfWeek)) {
       return helpers.error('any.custom', {
-        message: 'Para recorrência mensal, use apenas dia do mês OU semana do mês + dia da semana, não ambos'
+        message: 'Para recorrência mensal, escolha apenas uma opção: dia do mês OU (semana do mês + dia da semana). Não é possível usar ambas as opções simultaneamente.'
       });
     }
   }
@@ -154,11 +162,15 @@ export const createCalendarItemSchema = Joi.object({
 });
 
 export const updateCalendarItemSchema = Joi.object({
-  title: Joi.string().optional().messages({
-    'string.empty': 'O título não pode estar vazio'
+  title: Joi.string().optional().min(2).max(100).messages({
+    'string.empty': 'O título não pode estar vazio',
+    'string.min': 'O título deve ter pelo menos 2 caracteres',
+    'string.max': 'O título não pode ter mais de 100 caracteres'
   }),
   type: Joi.string().valid(...calendarItemTypes).optional(),
-  description: Joi.string().allow('').optional(),
+  description: Joi.string().allow('').optional().max(5000).messages({
+    'string.max': 'A descrição não pode ter mais de 5000 caracteres'
+  }),
   start_date: Joi.alternatives().conditional('is_recurring', {
     is: true,
     then: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).optional().messages({
@@ -173,7 +185,13 @@ export const updateCalendarItemSchema = Joi.object({
   }),
   is_recurring: Joi.boolean().optional(),
   recurrence_pattern: Joi.string().valid(...recurrencePatterns).optional().allow(null),
-  recurrence_end_date: Joi.date().iso().optional().allow(null),
+  recurrence_end_date: Joi.date().iso().optional().allow(null).when('start_date', {
+    is: Joi.exist(),
+    then: Joi.date().iso().greater(Joi.ref('start_date')).messages({
+      'date.greater': 'A data de término da recorrência deve ser posterior à data de início'
+    }),
+    otherwise: Joi.optional().allow(null)
+  }),
   recurrence_time: Joi.string().pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().allow(null).messages({
     'string.pattern.base': 'O horário deve estar no formato HH:mm'
   }),
@@ -181,7 +199,9 @@ export const updateCalendarItemSchema = Joi.object({
   recurrence_day_of_week: Joi.number().integer().min(0).max(6).optional().allow(null),
   recurrence_day_of_month: Joi.number().integer().min(1).max(31).optional().allow(null),
   recurrence_week_of_month: Joi.number().integer().min(-1).max(4).optional().allow(null),
-  location: Joi.string().allow('').optional(),
+  location: Joi.string().allow('').optional().max(255).messages({
+    'string.max': 'O local não pode ter mais de 255 caracteres'
+  }),
   congregation_id: Joi.string().uuid().allow(null, '').optional(),
   // Status não é mais aceito no body, sempre será 'active' no backend
   group_id: Joi.string().uuid().allow(null, '').optional(),

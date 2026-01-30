@@ -29,7 +29,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
         const data = await apiService.listGroupsWithCalendarItems();
         setGroups(data || []);
       } catch (err) {
-        console.error('Erro ao carregar grupos:', err);
+        // Erro silencioso - grupos são opcionais para filtros
         setGroups([]);
       } finally {
         setLoadingGroups(false);

@@ -3,9 +3,20 @@ import supabase from '../services/supabase';
 import { AuthRequest, Group } from '../types';
 import { createGroupSchema, updateGroupSchema } from '../validators/groupValidator';
 import { logAudit } from '../utils/auditLogger';
+import { validateResponsibleAndCongregation, validateGroupCongregation, validateMemberForGroup } from '../utils/groupValidations';
+import { debug, error as logError } from '../utils/logger';
 
 /**
  * Lista todos os grupos da igreja com filtros
+ * 
+ * Suporta:
+ * - Filtro por congregação (query param congregation_id)
+ * - Ordenação por tipo e nome
+ * - Contagem de membros por grupo
+ * 
+ * @param req - Request com query parameter congregation_id (opcional)
+ * @param res - Response com lista de grupos incluindo contagem de membros
+ * @returns JSON com array de grupos
  */
 export const listGroups = async (req: AuthRequest, res: Response) => {
   try {
@@ -80,7 +91,7 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
           .eq('group_id', group.id);
 
         if (countError) {
-          console.error(`Erro ao contar membros para o grupo ${group.name}:`, countError);
+          logError(`Erro ao contar membros para o grupo ${group.name}:`, countError);
           return { ...group, memberCount: 0 };
         }
 
@@ -93,16 +104,26 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
 
     res.json(groupsWithMemberCount);
   } catch (error) {
-    console.error('Erro ao buscar grupos:', error);
+    logError('Erro ao buscar grupos:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao carregar lista de grupos',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar a lista de grupos. Tente novamente.'
     });
   }
 };
 
 /**
- * Busca um grupo específico
+ * Busca um grupo específico com informações relacionadas
+ * 
+ * Retorna dados completos do grupo incluindo:
+ * - Informações básicas
+ * - Congregação
+ * - Responsável
+ * - Lista de membros vinculados
+ * 
+ * @param req - Request com group ID nos params
+ * @param res - Response com dados completos do grupo
+ * @returns JSON com objeto GroupWithMembers completo
  */
 export const getGroup = async (req: AuthRequest, res: Response) => {
   try {
@@ -188,7 +209,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
       .eq('group_id', id);
 
     if (memberGroupsError) {
-      console.error('Erro ao buscar membros do grupo:', memberGroupsError);
+      logError('Erro ao buscar membros do grupo:', memberGroupsError);
     }
 
     // Separar responsável dos membros vinculados
@@ -204,16 +225,28 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
       })) || []
     });
   } catch (error) {
-    console.error('Erro ao buscar grupo:', error);
+    logError('Erro ao buscar grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao carregar dados do grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar os dados do grupo. Tente novamente.'
     });
   }
 };
 
 /**
  * Cria um novo grupo
+ * 
+ * Processo:
+ * 1. Valida dados do grupo
+ * 2. Valida congregação (se fornecida)
+ * 3. Valida responsável e associação com congregação (se fornecido)
+ * 4. Verifica duplicidade de nome+tipo+congregação (apenas grupos ativos)
+ * 5. Cria grupo
+ * 6. Registra auditoria
+ * 
+ * @param req - Request com dados do grupo no body
+ * @param res - Response com grupo criado
+ * @returns JSON com objeto Group criado (status 201) ou erro
  */
 export const createGroup = async (req: AuthRequest, res: Response) => {
   try {
@@ -248,13 +281,37 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se já existe um grupo com o mesmo nome e tipo na mesma congregação
+    // Validar congregação (se fornecida)
+    const congregationValidation = await validateGroupCongregation(congregation_id, church.id);
+    if (!congregationValidation.isValid) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: congregationValidation.errorMessage || 'A congregação não é válida'
+      });
+    }
+
+    // Validar responsável e sua associação com a congregação (se fornecido)
+    const responsibleValidation = await validateResponsibleAndCongregation(
+      responsible_id,
+      congregation_id,
+      church.id
+    );
+    if (!responsibleValidation.isValid) {
+      return res.status(400).json({
+        error: 'Responsável inválido',
+        details: responsibleValidation.errorMessage || 'O responsável selecionado não é válido'
+      });
+    }
+
+    // Verificar se já existe um grupo ATIVO com o mesmo nome e tipo na mesma congregação
+    // Grupos inativos não bloqueiam a criação de novos grupos
     let duplicateQuery = supabase
       .from('groups')
       .select('id')
       .eq('church_id', church.id)
       .eq('name', name)
-      .eq('type', type);
+      .eq('type', type)
+      .eq('status', true); // Apenas grupos ativos
 
     if (congregation_id) {
       duplicateQuery = duplicateQuery.eq('congregation_id', congregation_id);
@@ -305,16 +362,28 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(group);
   } catch (error) {
-    console.error('Erro ao criar grupo:', error);
+    logError('Erro ao criar grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao cadastrar grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível cadastrar o grupo. Verifique os dados e tente novamente.'
     });
   }
 };
 
 /**
- * Atualiza um grupo
+ * Atualiza um grupo existente
+ * 
+ * Processo:
+ * 1. Valida que grupo existe e pertence à igreja
+ * 2. Valida congregação (se fornecida)
+ * 3. Valida responsável e associação com congregação (se fornecido)
+ * 4. Verifica duplicidade de nome+tipo+congregação (apenas grupos ativos)
+ * 5. Atualiza grupo
+ * 6. Registra auditoria
+ * 
+ * @param req - Request com group ID nos params e dados atualizados no body
+ * @param res - Response com grupo atualizado
+ * @returns JSON com objeto Group atualizado ou erro
  */
 export const updateGroup = async (req: AuthRequest, res: Response) => {
   try {
@@ -371,12 +440,14 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       const finalType = type || existingGroup.type;
       const finalCongregationId = congregation_id !== undefined ? congregation_id : existingGroup.congregation_id;
 
+      // Verificar duplicidade considerando apenas grupos ativos (exceto o próprio grupo sendo editado)
       let duplicateQuery = supabase
         .from('groups')
         .select('id')
         .eq('church_id', church.id)
         .eq('name', finalName)
         .eq('type', finalType)
+        .eq('status', true) // Apenas grupos ativos
         .neq('id', id);
 
       if (finalCongregationId) {
@@ -434,16 +505,22 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
 
     res.json(group);
   } catch (error) {
-    console.error('Erro ao atualizar grupo:', error);
+    logError('Erro ao atualizar grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao atualizar grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível atualizar os dados do grupo. Tente novamente.'
     });
   }
 };
 
 /**
- * Deleta um grupo
+ * Remove permanentemente um grupo
+ * 
+ * O CASCADE nas foreign keys remove automaticamente os registros em member_groups.
+ * 
+ * @param req - Request com group ID nos params
+ * @param res - Response com status 204 (sem conteúdo)
+ * @returns Status 204 ou erro
  */
 export const deleteGroup = async (req: AuthRequest, res: Response) => {
   try {
@@ -515,16 +592,23 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
 
     res.status(204).send();
   } catch (error) {
-    console.error('Erro ao deletar grupo:', error);
+    logError('Erro ao deletar grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao remover grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível remover o grupo. Tente novamente.'
     });
   }
 };
 
 /**
- * Lista membros de um grupo
+ * Lista todos os membros vinculados a um grupo
+ * 
+ * Retorna membros ordenados por data de adição (mais recente primeiro)
+ * com informações completas incluindo congregação e cargo.
+ * 
+ * @param req - Request com group ID nos params
+ * @param res - Response com lista de membros
+ * @returns JSON com array de membros incluindo addedAt
  */
 export const getGroupMembers = async (req: AuthRequest, res: Response) => {
   try {
@@ -609,16 +693,27 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
       })) || []
     );
   } catch (error) {
-    console.error('Erro ao buscar membros do grupo:', error);
+    logError('Erro ao buscar membros do grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao carregar membros do grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar os membros do grupo. Tente novamente.'
     });
   }
 };
 
 /**
  * Adiciona um membro a um grupo
+ * 
+ * Processo:
+ * 1. Valida que grupo e membro pertencem à igreja
+ * 2. Valida que membro pertence à congregação do grupo (ou grupo é da Sede)
+ * 3. Verifica se membro já está no grupo
+ * 4. Adiciona membro ao grupo
+ * 5. Registra auditoria
+ * 
+ * @param req - Request com group ID nos params e member_id no body
+ * @param res - Response com member_group criado (status 201) ou erro
+ * @returns JSON com objeto MemberGroup criado ou erro
  */
 export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
   try {
@@ -668,18 +763,12 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se o membro pertence à igreja
-    const { data: member } = await supabase
-      .from('members')
-      .select('id, congregation_id')
-      .eq('id', member_id)
-      .eq('church_id', church.id)
-      .single();
-
-    if (!member) {
-      return res.status(404).json({
-        error: 'Membro não encontrado',
-        details: 'Não foi possível encontrar o membro solicitado'
+    // Validar se o membro pode ser adicionado ao grupo (pertence à igreja e congregação)
+    const memberValidation = await validateMemberForGroup(member_id, id, church.id);
+    if (!memberValidation.isValid) {
+      return res.status(400).json({
+        error: 'Membro inválido',
+        details: memberValidation.errorMessage || 'O membro não pode ser adicionado a este grupo'
       });
     }
 
@@ -715,18 +804,54 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Buscar dados do membro para auditoria
+    const { data: member } = await supabase
+      .from('members')
+      .select('id, name')
+      .eq('id', member_id)
+      .single();
+
+    // Buscar dados do grupo para auditoria
+    const { data: groupForAudit } = await supabase
+      .from('groups')
+      .select('id, name')
+      .eq('id', id)
+      .single();
+
+    // Log da operação de adicionar membro
+    await logAudit(req, {
+      entity: 'member_group',
+      entityId: memberGroup.id,
+      action: 'create',
+      changesAfter: {
+        member_id,
+        group_id: id,
+        member_name: member?.name || 'N/A',
+        group_name: groupForAudit?.name || 'N/A'
+      }
+    });
+
     res.status(201).json(memberGroup);
   } catch (error) {
-    console.error('Erro ao adicionar membro ao grupo:', error);
+    logError('Erro ao adicionar membro ao grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao adicionar membro ao grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível adicionar o membro ao grupo. Tente novamente.'
     });
   }
 };
 
 /**
  * Remove um membro de um grupo
+ * 
+ * Processo:
+ * 1. Valida que grupo pertence à igreja
+ * 2. Remove membro do grupo
+ * 3. Registra auditoria
+ * 
+ * @param req - Request com group ID e memberId nos params
+ * @param res - Response com status 204 (sem conteúdo)
+ * @returns Status 204 ou erro
  */
 export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => {
   try {
@@ -768,6 +893,24 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
       });
     }
 
+    // Buscar dados do membro e grupo para auditoria antes de remover
+    const { data: memberGroupForAudit } = await supabase
+      .from('member_groups')
+      .select(`
+        id,
+        members (
+          id,
+          name
+        ),
+        groups (
+          id,
+          name
+        )
+      `)
+      .eq('member_id', member_id)
+      .eq('group_id', id)
+      .single();
+
     // Remover membro do grupo
     const { error: removeError } = await supabase
       .from('member_groups')
@@ -782,12 +925,27 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
       });
     }
 
+    // Log da operação de remover membro
+    if (memberGroupForAudit) {
+      await logAudit(req, {
+        entity: 'member_group',
+        entityId: (memberGroupForAudit as any).id,
+        action: 'delete',
+        changesBefore: {
+          member_id,
+          group_id: id,
+          member_name: (memberGroupForAudit as any).members?.name || 'N/A',
+          group_name: (memberGroupForAudit as any).groups?.name || 'N/A'
+        }
+      });
+    }
+
     res.status(204).send();
   } catch (error) {
-    console.error('Erro ao remover membro do grupo:', error);
+    logError('Erro ao remover membro do grupo:', error);
     return res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
+      error: 'Erro ao remover membro do grupo',
+      details: error instanceof Error ? error.message : 'Não foi possível remover o membro do grupo. Tente novamente.'
     });
   }
 };

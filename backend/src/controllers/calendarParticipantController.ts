@@ -2,8 +2,21 @@ import { Response } from 'express';
 import { AuthRequest, CreateParticipantData } from '../types';
 import supabase from '../services/supabase';
 import { addParticipantSchema } from '../validators/calendarParticipantValidator';
+import { logError } from '../utils/logger';
+import { logAudit } from '../utils/auditLogger';
 
-// Adicionar participante a um item do calendário
+/**
+ * Adiciona um participante (membro ou convidado) a um item do calendário
+ * 
+ * @param req - Request contendo calendarItemId nos params e dados do participante no body
+ * @param res - Response com o participante criado
+ * 
+ * @remarks
+ * - Valida que o item pertence à igreja do usuário
+ * - Se for membro, valida pertencimento à igreja e verifica duplicatas
+ * - Se for convidado, apenas valida que tem nome
+ * - Registra a operação no audit log
+ */
 export const addParticipant = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -107,24 +120,48 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (createError) {
-      console.error('Erro ao criar participante:', createError);
+      logError('Erro ao criar participante:', createError);
       return res.status(500).json({
         error: 'Erro ao adicionar participante',
         details: 'Não foi possível adicionar o participante ao item do calendário'
       });
     }
 
+    // Log da operação de criação
+    await logAudit(req, {
+      entity: 'calendar_item' as any,
+      entityId: calendarItemId,
+      action: 'update',
+      changesAfter: {
+        participant_added: {
+          id: participant.id,
+          member_id: participant.member_id,
+          guest_name: participant.guest_name
+        }
+      }
+    });
+
     res.status(201).json(participant);
   } catch (err) {
-    console.error('Erro ao adicionar participante:', err);
+    logError('Erro ao adicionar participante:', err);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: err instanceof Error ? err.message : 'Erro desconhecido'
+      error: 'Erro ao adicionar participante',
+      details: err instanceof Error ? err.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
-// Listar participantes de um item do calendário
+/**
+ * Lista todos os participantes de um item do calendário
+ * 
+ * @param req - Request contendo calendarItemId nos params
+ * @param res - Response com array de participantes (membros e convidados)
+ * 
+ * @remarks
+ * - Valida que o item pertence à igreja do usuário
+ * - Retorna participantes ordenados por data de criação (mais antigos primeiro)
+ * - Inclui dados completos do membro se for participante membro
+ */
 export const listParticipants = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -166,6 +203,7 @@ export const listParticipants = async (req: AuthRequest, res: Response) => {
     }
 
     // Buscar participantes
+    // Ordenação: por data de criação (mais antigos primeiro) para manter ordem cronológica
     const { data: participants, error: listError } = await supabase
       .from('calendar_participants')
       .select(`
@@ -176,7 +214,7 @@ export const listParticipants = async (req: AuthRequest, res: Response) => {
       .order('created_at', { ascending: true });
 
     if (listError) {
-      console.error('Erro ao buscar participantes:', listError);
+      logError('Erro ao buscar participantes:', listError);
       return res.status(500).json({
         error: 'Erro ao buscar participantes',
         details: 'Não foi possível buscar a lista de participantes'
@@ -185,15 +223,24 @@ export const listParticipants = async (req: AuthRequest, res: Response) => {
 
     res.json(participants || []);
   } catch (err) {
-    console.error('Erro ao listar participantes:', err);
+    logError('Erro ao listar participantes:', err);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: err instanceof Error ? err.message : 'Erro desconhecido'
+      error: 'Erro ao listar participantes',
+      details: err instanceof Error ? err.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
-// Remover participante de um item do calendário
+/**
+ * Remove um participante de um item do calendário
+ * 
+ * @param req - Request contendo calendarItemId e participantId nos params
+ * @param res - Response com mensagem de sucesso
+ * 
+ * @remarks
+ * - Valida que o item e o participante pertencem à igreja do usuário
+ * - Registra a operação no audit log
+ */
 export const removeParticipant = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -256,24 +303,47 @@ export const removeParticipant = async (req: AuthRequest, res: Response) => {
       .eq('id', participantId);
 
     if (deleteError) {
-      console.error('Erro ao remover participante:', deleteError);
+      logError('Erro ao remover participante:', deleteError);
       return res.status(500).json({
         error: 'Erro ao remover participante',
         details: 'Não foi possível remover o participante do item do calendário'
       });
     }
 
+    // Log da operação de remoção
+    await logAudit(req, {
+      entity: 'calendar_item' as any,
+      entityId: calendarItemId,
+      action: 'update',
+      changesBefore: {
+        participant_removed: {
+          id: participantId
+        }
+      }
+    });
+
     res.json({ message: 'Participante removido com sucesso' });
   } catch (err) {
-    console.error('Erro ao remover participante:', err);
+    logError('Erro ao remover participante:', err);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: err instanceof Error ? err.message : 'Erro desconhecido'
+      error: 'Erro ao remover participante',
+      details: err instanceof Error ? err.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };
 
-// Adicionar múltiplos participantes de uma vez (bulk)
+/**
+ * Adiciona múltiplos participantes de uma vez (bulk)
+ * 
+ * @param req - Request contendo calendarItemId nos params e array de participantes no body
+ * @param res - Response com resumo da operação (adicionados, duplicatas, erros)
+ * 
+ * @remarks
+ * - Processa cada participante individualmente
+ * - Retorna resumo com sucessos, duplicatas e erros
+ * - Valida cada participante antes de adicionar
+ * - Registra a operação no audit log se houver sucessos
+ */
 export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -425,6 +495,25 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Log da operação de adição em lote
+    if (results.success.length > 0) {
+      await logAudit(req, {
+        entity: 'calendar_item' as any,
+        entityId: calendarItemId,
+        action: 'update',
+        changesAfter: {
+          participants_added_bulk: {
+            count: results.success.length,
+            participants: results.success.map((p: any) => ({
+              id: p.id,
+              member_id: p.member_id,
+              guest_name: p.guest_name
+            }))
+          }
+        }
+      });
+    }
+
     // Retornar resultados
     res.json({
       message: `Processados ${participants.length} participantes`,
@@ -441,10 +530,10 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (err) {
-    console.error('Erro ao adicionar participantes em lote:', err);
+    logError('Erro ao adicionar participantes em lote:', err);
     res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: err instanceof Error ? err.message : 'Erro desconhecido'
+      error: 'Erro ao adicionar participantes em lote',
+      details: err instanceof Error ? err.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
 };

@@ -94,7 +94,6 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       setParticipants(data);
       onParticipantsChange?.(data);
     } catch (error) {
-      console.error('Erro ao carregar participantes:', error);
       toast.error('Erro ao carregar participantes');
     } finally {
       setLoading(false);
@@ -198,7 +197,6 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       // NÃO fechar o formulário, mantê-lo aberto para adicionar outro
       await loadParticipants();
     } catch (error: unknown) {
-      console.error('Erro ao adicionar participante:', error);
       const err = error as {response?: {data?: {details?: string}}};
       toast.error(err.response?.data?.details || 'Erro ao adicionar participante');
     } finally {
@@ -207,6 +205,28 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
   };
 
   const handleRemoveParticipant = async (participantId: string, index?: number) => {
+    // Determinar nome do participante para mensagem de confirmação
+    let participantName = 'este participante';
+    
+    if (!calendarItemId && index !== undefined) {
+      // Modo criação: buscar do tempParticipants
+      const participant = tempParticipants[index];
+      if (participant) {
+        participantName = participant._tempMemberName || participant.guest_name || 'este participante';
+      }
+    } else if (calendarItemId) {
+      // Modo edição: buscar dos participants
+      const participant = participants.find(p => p.id === participantId);
+      if (participant) {
+        participantName = getParticipantName(participant);
+      }
+    }
+
+    // Confirmação antes de remover
+    if (!confirm(`Tem certeza que deseja remover ${participantName} da lista de participantes?`)) {
+      return;
+    }
+
     // Modo de criação (sem calendarItemId): remover do tempParticipants
     if (!calendarItemId && index !== undefined && onTempParticipantsChange) {
       const updated = tempParticipants.filter((_, i) => i !== index);
@@ -224,7 +244,6 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       toast.success('Participante removido');
       await loadParticipants();
     } catch (error) {
-      console.error('Erro ao remover participante:', error);
       toast.error('Erro ao remover participante');
     } finally {
       setLoading(false);
@@ -408,8 +427,14 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
                 <Input
                   type="email"
                   value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 255) {
+                      setGuestEmail(value);
+                    }
+                  }}
                   placeholder="email@exemplo.com"
+                  maxLength={255}
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">

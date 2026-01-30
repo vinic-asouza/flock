@@ -71,9 +71,6 @@ export function CalendarListView({
     const currentDate = new Date();
     const currentMonthKey = format(currentDate, 'yyyy-MM');
     
-    console.log('Procurando mês:', currentMonthKey);
-    console.log('Refs disponíveis:', Object.keys(monthRefs.current));
-    
     const monthElement = monthRefs.current[currentMonthKey];
     
     if (monthElement) {
@@ -84,7 +81,6 @@ export function CalendarListView({
         window.scrollBy({ top: -100, behavior: 'smooth' });
       }, 100);
     } else {
-      console.log('Mês atual não encontrado na lista do ano selecionado');
       // Se o mês atual não existe no ano selecionado, scroll para o topo
       scrollToTop();
     }

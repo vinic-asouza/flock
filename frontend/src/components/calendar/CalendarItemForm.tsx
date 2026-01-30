@@ -16,11 +16,16 @@ import { endOfYear, getDay, lastDayOfMonth } from 'date-fns';
 import { CalendarParticipantsManager, CalendarParticipantsManagerRef } from './CalendarParticipantsManager';
 import { toast } from 'react-hot-toast';
 
-// Schema de validação
-const calendarItemSchema = z.object({
-  title: z.string().min(2, 'Título deve ter pelo menos 2 caracteres'),
+// Função para criar schema de validação (permite acesso às congregações)
+const createCalendarItemSchema = (congregations: Array<{ id: string; name: string }> = []) => z.object({
+  title: z.string()
+    .min(2, 'Título deve ter pelo menos 2 caracteres')
+    .max(100, 'Título não pode ter mais de 100 caracteres'),
   type: z.enum(['Programação', 'Evento', 'Encontro', 'Reunião'] as const),
-  description: z.string().optional().or(z.literal('')),
+  description: z.string()
+    .optional()
+    .or(z.literal(''))
+    .max(5000, 'A descrição não pode ter mais de 5000 caracteres'),
   start_date: z.string().min(1, 'Data de início é obrigatória'),
   end_date: z.string().optional().or(z.literal('')),
   is_recurring: z.boolean(),
@@ -31,8 +36,25 @@ const calendarItemSchema = z.object({
   recurrence_day_of_week: z.number().optional().or(z.literal('')),
   recurrence_day_of_month: z.number().optional().or(z.literal('')),
   recurrence_week_of_month: z.number().optional().or(z.literal('')),
-  location: z.string().optional().or(z.literal('')),
-  congregation_id: z.string().optional().or(z.literal('')).or(z.literal('sede')).nullable(),
+  location: z.string()
+    .optional()
+    .or(z.literal(''))
+    .max(255, 'O local não pode ter mais de 255 caracteres'),
+  congregation_id: z.string()
+    .optional()
+    .or(z.literal(''))
+    .or(z.literal('sede'))
+    .nullable()
+    .refine((val) => {
+      if (val === 'sede' || !val) return true; // 'sede' or null/empty is always valid
+      // Check if it's a valid UUID format
+      const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
+      if (!isUuid) return false;
+      // Check if the congregation exists in the available list
+      return congregations.some(cong => cong.id === val);
+    }, {
+      message: 'Congregação inválida ou não encontrada'
+    }),
   group_id: z.string().uuid().optional().or(z.literal('')).nullable(),
   responsible_member_id: z.string().uuid().optional().or(z.literal('')).nullable(),
 }).refine((data) => {
@@ -90,9 +112,18 @@ const calendarItemSchema = z.object({
 }, {
   message: 'Para recorrência mensal, informe o dia do mês (1-31) OU a semana do mês + dia da semana',
   path: ['recurrence_day_of_month']
+}).refine((data) => {
+  // Se é recorrente e tem recurrence_end_date, deve ser posterior a start_date
+  if (data.is_recurring && data.recurrence_end_date && data.start_date) {
+    return new Date(data.recurrence_end_date) >= new Date(data.start_date);
+  }
+  return true;
+}, {
+  message: 'A data de término da recorrência deve ser posterior à data de início',
+  path: ['recurrence_end_date']
 });
 
-type CalendarItemFormData = z.infer<typeof calendarItemSchema>;
+type CalendarItemFormData = z.infer<ReturnType<typeof createCalendarItemSchema>>;
 
 interface CalendarItemFormProps {
   item?: CalendarItem | null;
@@ -207,6 +238,9 @@ export function CalendarItemForm({
   const [tempParticipants, setTempParticipants] = useState<CreateParticipantData[]>([]); // Participantes temporários (modo criação)
   const participantsManagerRef = useRef<CalendarParticipantsManagerRef>(null); // Ref para acessar métodos do CalendarParticipantsManager
 
+  // Criar schema dinamicamente com acesso às congregações
+  const calendarItemSchema = useMemo(() => createCalendarItemSchema(congregations || []), [congregations]);
+
   const {
     register,
     handleSubmit,
@@ -250,7 +284,7 @@ export function CalendarItemForm({
         const data = await apiService.listGroups(selectedCongregation || undefined);
         setGroups(data);
       } catch (err) {
-        console.error('Erro ao carregar grupos:', err);
+        toast.error('Erro ao carregar grupos');
         setGroups([]);
       } finally {
         setLoadingGroups(false);
@@ -354,7 +388,6 @@ export function CalendarItemForm({
       
       if (errors > 0) {
         toast.error(`Não foi possível adicionar ${errors} ${errors === 1 ? 'membro' : 'membros'}`);
-        console.error('Erros ao adicionar participantes:', result.results.errors);
       }
 
       // Atualizar lista de participantes no componente filho
@@ -362,7 +395,6 @@ export function CalendarItemForm({
         participantsManagerRef.current.loadParticipants();
       }
     } catch (error) {
-      console.error('Erro ao adicionar membros do grupo:', error);
       toast.error('Não foi possível adicionar membros do grupo');
     } finally {
       setIsAddingGroupMembers(false);
@@ -567,6 +599,7 @@ export function CalendarItemForm({
             {...register('title')}
             placeholder="Ex: Culto Dominical"
             error={errors.title?.message}
+            disabled={isLoading}
           />
         </div>
         <div>
@@ -578,6 +611,7 @@ export function CalendarItemForm({
             onChange={(value) => setValue('type', value as CalendarItemType)}
             options={CALENDAR_ITEM_TYPES.map(type => ({ value: type, label: type }))}
             error={errors.type?.message}
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -591,8 +625,9 @@ export function CalendarItemForm({
           id="description"
           {...register('description')}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           placeholder="Descrição detalhada do evento..."
+          disabled={isLoading}
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
@@ -606,7 +641,8 @@ export function CalendarItemForm({
             id="is_recurring"
             type="checkbox"
             {...register('is_recurring')}
-            className="h-4 w-4 accent-primary focus:ring-primary border-gray-300 rounded cursor-pointer"
+            className="h-4 w-4 accent-primary focus:ring-primary border-gray-300 rounded cursor-pointer disabled:cursor-not-allowed"
+            disabled={isLoading}
           />
           <label htmlFor="is_recurring" className="ml-2 block text-sm text-gray-700 cursor-pointer">
             Evento recorrente
@@ -627,6 +663,7 @@ export function CalendarItemForm({
               type="datetime-local"
               {...register('start_date')}
               error={errors.start_date?.message}
+              disabled={isLoading}
             />
           </div>
           <div>
@@ -638,6 +675,7 @@ export function CalendarItemForm({
               type="datetime-local"
               {...register('end_date')}
               error={errors.end_date?.message}
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -648,12 +686,13 @@ export function CalendarItemForm({
             <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
               Data de Início da Recorrência <span className="text-red-500">*</span>
             </label>
-            <Input
-              id="start_date"
-              type="date"
-              {...register('start_date')}
-              error={errors.start_date?.message}
-            />
+              <Input
+                id="start_date"
+                type="date"
+                {...register('start_date')}
+                error={errors.start_date?.message}
+                disabled={isLoading}
+              />
           </div>
           <div>
             <label htmlFor="recurrence_time" className="block text-sm font-medium text-gray-700 mb-1">
@@ -664,6 +703,7 @@ export function CalendarItemForm({
               type="time"
               {...register('recurrence_time')}
               error={errors.recurrence_time?.message}
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -689,6 +729,7 @@ export function CalendarItemForm({
               }}
               options={RECURRENCE_PATTERNS}
               error={errors.recurrence_pattern?.message}
+              disabled={isLoading}
             />
           </div>
 
@@ -712,6 +753,7 @@ export function CalendarItemForm({
                     { value: '6', label: 'Sábado' }
                   ]}
                   error={errors.recurrence_day_of_week?.message}
+                  disabled={isLoading}
                 />
               </div>
               <div>
@@ -723,6 +765,7 @@ export function CalendarItemForm({
                   type="date"
                   {...register('recurrence_end_date')}
                   error={errors.recurrence_end_date?.message}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -746,7 +789,8 @@ export function CalendarItemForm({
                           setValue('recurrence_week_of_month', '');
                           setValue('recurrence_day_of_week', '');
                         }}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 disabled:cursor-not-allowed"
+                        disabled={isLoading}
                       />
                       <span className="ml-2 text-sm text-gray-700">Dia fixo do mês</span>
                     </label>
@@ -757,12 +801,15 @@ export function CalendarItemForm({
                         value="week"
                         checked={(watch('recurrence_week_of_month') !== '' && watch('recurrence_week_of_month') !== null && watch('recurrence_week_of_month') !== undefined) || 
                                  (watch('recurrence_day_of_week') !== '' && watch('recurrence_day_of_week') !== null && watch('recurrence_day_of_week') !== undefined)}
+                        disabled={isLoading}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 disabled:cursor-not-allowed"
                         onChange={() => {
                           setValue('recurrence_day_of_month', '');
                           setValue('recurrence_week_of_month', 1);
                           setValue('recurrence_day_of_week', 0);
                         }}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 disabled:cursor-not-allowed"
+                        disabled={isLoading}
                       />
                       <span className="ml-2 text-sm text-gray-700">Semana do mês</span>
                     </label>
@@ -781,6 +828,7 @@ export function CalendarItemForm({
                       max="31"
                       {...register('recurrence_day_of_month', { valueAsNumber: true })}
                       error={errors.recurrence_day_of_month?.message}
+                      disabled={isLoading}
                     />
                   </div>
                 ) : (
@@ -800,6 +848,7 @@ export function CalendarItemForm({
                           { value: '-1', label: 'Última' }
                         ]}
                         error={errors.recurrence_week_of_month?.message}
+                        disabled={isLoading}
                       />
                     </div>
                     <div>
@@ -819,6 +868,7 @@ export function CalendarItemForm({
                           { value: '6', label: 'Sábado' }
                         ]}
                         error={errors.recurrence_day_of_week?.message}
+                        disabled={isLoading}
                       />
                     </div>
                   </div>
@@ -854,6 +904,7 @@ export function CalendarItemForm({
             {...register('location')}
             placeholder="Ex: Templo Principal..."
             error={errors.location?.message}
+            disabled={isLoading}
           />
         </div>
         <div>
