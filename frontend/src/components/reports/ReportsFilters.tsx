@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Search, Calendar, MapPin, Briefcase } from 'lucide-react';
 import { ReportFilters } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
+import toast from 'react-hot-toast';
+import { debounce } from '@/utils';
 
 interface ReportsFiltersProps {
   filters: ReportFilters;
@@ -19,6 +21,65 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
   const [localFilters, setLocalFilters] = useState<ReportFilters>(filters);
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [loading, setLoading] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+
+  // Função de validação de filtros
+  const validateFilters = useCallback((filters: ReportFilters): string | null => {
+    // Validar ranges de datas
+    const validateDateRange = (from: string | undefined, to: string | undefined, fieldName: string): string | null => {
+      if (from && to) {
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+        
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+          return `${fieldName}: datas inválidas`;
+        }
+        
+        if (fromDate > toDate) {
+          return `${fieldName}: data inicial deve ser anterior à data final`;
+        }
+      }
+      return null;
+    };
+
+    // Validar ranges de datas
+    const birthError = validateDateRange(filters.birth_date_from, filters.birth_date_to, 'Data de nascimento');
+    if (birthError) return birthError;
+
+    const baptismError = validateDateRange(filters.baptism_date_from, filters.baptism_date_to, 'Data de batismo');
+    if (baptismError) return baptismError;
+
+    const admissionError = validateDateRange(filters.admission_date_from, filters.admission_date_to, 'Data de admissão');
+    if (admissionError) return admissionError;
+
+    // Validar faixa etária
+    if (filters.age_from !== undefined && filters.age_to !== undefined) {
+      if (filters.age_from < 0 || filters.age_from > 150) {
+        return 'Idade mínima deve estar entre 0 e 150 anos';
+      }
+      if (filters.age_to < 0 || filters.age_to > 150) {
+        return 'Idade máxima deve estar entre 0 e 150 anos';
+      }
+      if (filters.age_from > filters.age_to) {
+        return 'Idade mínima deve ser menor ou igual à idade máxima';
+      }
+    }
+
+    return null;
+  }, []);
+
+  // Debounce para busca geral (500ms)
+  const debouncedApply = useCallback(
+    debounce((filtersToApply: ReportFilters) => {
+      const validationError = validateFilters(filtersToApply);
+      if (!validationError) {
+        onApply(filtersToApply);
+      } else {
+        toast.error(validationError);
+      }
+    }, 500),
+    [onApply, validateFilters]
+  );
 
   // Carregar dados para os selects
   useEffect(() => {
@@ -36,7 +97,8 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
           })),
         ]);
       } catch (error) {
-        console.error('Erro ao carregar dados dos filtros:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados dos filtros';
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -46,14 +108,31 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
   }, []);
 
   const handleFilterChange = (key: keyof ReportFilters, value: string | boolean | number | undefined) => {
-    setLocalFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...localFilters,
       [key]: value === '' ? undefined : value,
-    }));
+    };
+    setLocalFilters(newFilters);
+
+    // Se for busca geral, aplicar debounce automático
+    if (key === 'search') {
+      debouncedApply(newFilters);
+    }
   };
 
-  const handleApply = () => {
-    onApply(localFilters);
+  const handleApply = async () => {
+    const validationError = validateFilters(localFilters);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+    
+    setIsApplying(true);
+    try {
+      await onApply(localFilters);
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   const handleClear = () => {
@@ -84,6 +163,9 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.search || ''}
             onChange={(e) => handleFilterChange('search', e.target.value)}
             icon={<Search size={16} />}
+            disabled={loading || isApplying}
+            isLoading={isApplying}
+            maxLength={255}
           />
         </div>
 
@@ -101,7 +183,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
               { value: 'true', label: 'Ativo' },
               { value: 'false', label: 'Inativo' },
             ]}
-            disabled={loading}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -111,7 +193,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.congregation_id || ''}
             onChange={(value) => handleFilterChange('congregation_id', value)}
             options={congregations}
-            disabled={loading}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -126,6 +208,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
               { value: 'Masculino', label: 'Masculino' },
               { value: 'Feminino', label: 'Feminino' },
             ]}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -142,6 +225,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
               { value: 'Viúvo(a)', label: 'Viúvo(a)' },
               { value: 'União Estável', label: 'União Estável' },
             ]}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -152,6 +236,8 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.occupation || ''}
             onChange={(e) => handleFilterChange('occupation', e.target.value)}
             icon={<Briefcase size={16} />}
+            disabled={loading || isApplying}
+            maxLength={100}
           />
         </div>
 
@@ -163,6 +249,8 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.city || ''}
             onChange={(e) => handleFilterChange('city', e.target.value)}
             icon={<MapPin size={16} />}
+            disabled={loading || isApplying}
+            maxLength={100}
           />
         </div>
 
@@ -173,6 +261,8 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.state || ''}
             onChange={(e) => handleFilterChange('state', e.target.value)}
             icon={<MapPin size={16} />}
+            disabled={loading || isApplying}
+            maxLength={2}
           />
         </div>
 
@@ -182,6 +272,8 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             placeholder="Digite a nacionalidade"
             value={localFilters.nationality || ''}
             onChange={(e) => handleFilterChange('nationality', e.target.value)}
+            disabled={loading || isApplying}
+            maxLength={50}
           />
         </div>
 
@@ -193,6 +285,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             placeholder="0"
             value={localFilters.age_from?.toString() || ''}
             onChange={(e) => handleFilterChange('age_from', e.target.value ? parseInt(e.target.value) : undefined)}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -203,6 +296,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             placeholder="100"
             value={localFilters.age_to?.toString() || ''}
             onChange={(e) => handleFilterChange('age_to', e.target.value ? parseInt(e.target.value) : undefined)}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -214,6 +308,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.birth_date_from || ''}
             onChange={(e) => handleFilterChange('birth_date_from', e.target.value)}
             icon={<Calendar size={16} />}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -224,6 +319,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.birth_date_to || ''}
             onChange={(e) => handleFilterChange('birth_date_to', e.target.value)}
             icon={<Calendar size={16} />}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -234,6 +330,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.baptism_date_from || ''}
             onChange={(e) => handleFilterChange('baptism_date_from', e.target.value)}
             icon={<Calendar size={16} />}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -244,6 +341,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.baptism_date_to || ''}
             onChange={(e) => handleFilterChange('baptism_date_to', e.target.value)}
             icon={<Calendar size={16} />}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -254,6 +352,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.admission_date_from || ''}
             onChange={(e) => handleFilterChange('admission_date_from', e.target.value)}
             icon={<Calendar size={16} />}
+            disabled={loading || isApplying}
           />
         </div>
 
@@ -264,6 +363,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
             value={localFilters.admission_date_to || ''}
             onChange={(e) => handleFilterChange('admission_date_to', e.target.value)}
             icon={<Calendar size={16} />}
+            disabled={loading || isApplying}
           />
         </div>
       </div>
@@ -273,13 +373,14 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
         <Button
           variant="secondary"
           onClick={handleClear}
-          disabled={loading}
+          disabled={loading || isApplying}
         >
           Limpar Filtros
         </Button>
         <Button
           onClick={handleApply}
-          disabled={loading}
+          disabled={loading || isApplying}
+          isLoading={isApplying}
         >
           Aplicar Filtros
         </Button>

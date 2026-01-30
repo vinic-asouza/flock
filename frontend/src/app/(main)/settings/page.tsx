@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Church, Shield, FileText, CreditCard } from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ChurchManagement } from '@/components/settings/ChurchManagement';
 import { AccountManagement } from '@/components/settings/AccountManagement';
 import AuditLogs from '@/components/settings/AuditLogs';
@@ -50,12 +51,10 @@ function SettingsPageContent() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
-                <p className="mt-2 text-sm text-gray-500">
-                    Gerencie as configurações da sua igreja e personalização do sistema.
-                </p>
-            </div>
+            <PageHeader
+                title="Configurações"
+                subtitle="Gerencie as configurações da sua igreja e personalização do sistema."
+            />
 
             {/* Navegação horizontal compacta */}
             <nav className="flex flex-wrap gap-2 mb-6">
@@ -95,12 +94,10 @@ export default function SettingsPage() {
     return (
         <Suspense fallback={
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>
-                    <p className="mt-2 text-sm text-gray-500">
-                        Carregando...
-                    </p>
-                </div>
+                <PageHeader
+                    title="Configurações"
+                    subtitle="Carregando..."
+                />
             </div>
         }>
             <SettingsPageContent />

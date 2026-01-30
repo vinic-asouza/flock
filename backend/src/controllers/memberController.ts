@@ -2,11 +2,13 @@ import { Response } from 'express';
 import supabase from '../services/supabase';
 import { AuthRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
+import { reportFiltersSchema } from '../validators/reportValidator';
 import { logAudit } from '../utils/auditLogger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
 import { debug, error as logError } from '../utils/logger';
 import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
+import { calculateAge } from '../utils/ageCalculator';
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -1184,6 +1186,15 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
 
 /**
  * Gera relatórios agregados dos membros
+ * 
+ * @param req - Request com query parameters para filtros
+ * @param res - Response com dados agregados de relatórios
+ * 
+ * @remarks
+ * - Valida todos os filtros usando Joi
+ * - Processa dados em lotes para melhor performance
+ * - Valida que congregation_id pertence à igreja do usuário
+ * - Registra operação no audit log
  */
 export const getMemberReports = async (req: AuthRequest, res: Response) => {
   try {
@@ -1194,8 +1205,21 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Parâmetros de filtro
-    const congregation_id = req.query.congregation_id as string || '';
+    // Validar filtros usando Joi
+    const { error: validationError, value: validatedFilters } = reportFiltersSchema.validate(req.query, {
+      allowUnknown: false,
+      stripUnknown: true
+    });
+
+    if (validationError) {
+      return res.status(400).json({
+        error: 'Filtros inválidos',
+        details: validationError.details[0]?.message || 'Erro na validação dos filtros'
+      });
+    }
+
+    // Parâmetros de filtro (já validados)
+    const congregation_id = (validatedFilters.congregation_id as string) || '';
 
     // Primeiro busca a igreja do usuário
     const { data: church, error: churchError } = await supabase
@@ -1244,19 +1268,113 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Busca os membros filtrados
-    const { data: allMembers, error: membersError } = await query;
+    // Buscar contagem total primeiro (mais eficiente)
+    let countQuery = supabase
+      .from('members')
+      .select('*', { count: 'exact', head: true })
+      .eq('church_id', church.id);
 
-    if (membersError) {
-      logError('Erro ao buscar membros:', membersError);
+    // Aplicar filtro de congregação na contagem
+    if (congregation_id) {
+      if (congregation_id === 'sede') {
+        countQuery = countQuery.is('congregation_id', null);
+      } else {
+        countQuery = countQuery.eq('congregation_id', congregation_id);
+      }
+    }
+
+    const { count: totalCount, error: countError } = await countQuery;
+    
+    if (countError) {
+      logError('Erro ao contar membros:', countError);
       return res.status(500).json({
-        error: 'Erro ao buscar membros',
-        details: membersError.message
+        error: 'Erro ao contar membros',
+        details: countError.message
       });
     }
 
+    const totalMembers = totalCount || 0;
+
+    // Processar membros em lotes para evitar problemas de memória
+    // Para igrejas grandes (>5000 membros), processar em chunks de 1000
+    // Para igrejas menores, buscar todos de uma vez (mais eficiente)
+    const CHUNK_SIZE = 1000;
+    const allMembers: any[] = [];
+
+    if (totalMembers > 5000) {
+      // Processar em lotes para igrejas grandes
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        // Recriar query base para cada chunk (Supabase queries são imutáveis)
+        let chunkQuery = supabase
+          .from('members')
+          .select(`
+            *,
+            roles (
+              id,
+              name,
+              description
+            ),
+            congregations (
+              id,
+              name,
+              address,
+              city,
+              state,
+              leader,
+              phone
+            )
+          `)
+          .eq('church_id', church.id)
+          .range(offset, offset + CHUNK_SIZE - 1);
+
+        // Reaplicar filtro de congregação
+        if (congregation_id) {
+          if (congregation_id === 'sede') {
+            chunkQuery = chunkQuery.is('congregation_id', null);
+          } else {
+            chunkQuery = chunkQuery.eq('congregation_id', congregation_id);
+          }
+        }
+
+        const { data: chunk, error: chunkError } = await chunkQuery;
+
+        if (chunkError) {
+          logError('Erro ao buscar chunk de membros:', chunkError);
+          return res.status(500).json({
+            error: 'Erro ao buscar membros',
+            details: chunkError.message
+          });
+        }
+
+        if (chunk && chunk.length > 0) {
+          allMembers.push(...chunk);
+          offset += CHUNK_SIZE;
+          hasMore = chunk.length === CHUNK_SIZE;
+        } else {
+          hasMore = false;
+        }
+      }
+    } else {
+      // Para igrejas menores, buscar todos de uma vez (mais eficiente)
+      const { data: membersData, error: membersError } = await query;
+
+      if (membersError) {
+        logError('Erro ao buscar membros:', membersError);
+        return res.status(500).json({
+          error: 'Erro ao buscar membros',
+          details: membersError.message
+        });
+      }
+
+      if (membersData) {
+        allMembers.push(...membersData);
+      }
+    }
+
     // Calcula estatísticas gerais
-    const totalMembers = allMembers.length;
     const activeMembers = allMembers.filter(m => m.active).length;
     const inactiveMembers = totalMembers - activeMembers;
 
@@ -1264,18 +1382,26 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     const activeMembersOnly = allMembers.filter(m => m.active);
 
     // Estatísticas por gênero (apenas membros ativos)
+    // Ordenado alfabeticamente por chave para consistência
     const genderStats = activeMembersOnly.reduce((acc, member) => {
       const gender = member.gender || 'Não informado';
       acc[gender] = (acc[gender] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+    const genderStatsSorted = Object.fromEntries(
+      Object.entries(genderStats).sort(([a], [b]) => a.localeCompare(b))
+    );
 
     // Estatísticas por estado civil (apenas membros ativos)
+    // Ordenado alfabeticamente por chave para consistência
     const maritalStats = activeMembersOnly.reduce((acc, member) => {
       const status = member.marital_status || 'Não informado';
       acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+    const maritalStatsSorted = Object.fromEntries(
+      Object.entries(maritalStats).sort(([a], [b]) => a.localeCompare(b))
+    );
 
     // Estatísticas por cargo (apenas membros ativos)
     const roleStats = activeMembersOnly.reduce((acc, member) => {
@@ -1304,18 +1430,26 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
 
 
     // Estatísticas por cidade (apenas membros ativos)
+    // Ordenado alfabeticamente por chave para consistência
     const cityStats = activeMembersOnly.reduce((acc, member) => {
       const city = member.city || 'Não informado';
       acc[city] = (acc[city] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+    const cityStatsSorted = Object.fromEntries(
+      Object.entries(cityStats).sort(([a], [b]) => a.localeCompare(b))
+    );
 
     // Estatísticas por estado (apenas membros ativos)
+    // Ordenado alfabeticamente por chave para consistência
     const stateStats = activeMembersOnly.reduce((acc, member) => {
       const state = member.state || 'Não informado';
       acc[state] = (acc[state] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
+    const stateStatsSorted = Object.fromEntries(
+      Object.entries(stateStats).sort(([a], [b]) => a.localeCompare(b))
+    );
 
     // Análise de faixa etária (apenas membros ativos)
     const ageRanges = {
@@ -1328,16 +1462,13 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       '65+': 0
     };
 
-    const today = new Date();
+    // Usar função utilitária para cálculo correto de idade (considera timezone)
+    const { calculateAge } = require('../utils/ageCalculator');
+    
     activeMembersOnly.forEach(member => {
-      if (member.birth) {
-        const birthDate = new Date(member.birth);
-        const age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) 
-          ? age - 1 
-          : age;
-
+      const actualAge = calculateAge(member.birth);
+      
+      if (actualAge !== null) {
         if (actualAge <= 12) ageRanges['0-12']++;
         else if (actualAge <= 17) ageRanges['13-17']++;
         else if (actualAge <= 25) ageRanges['18-25']++;
@@ -1633,11 +1764,11 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         activePercentage: totalMembers > 0 ? Math.round((activeMembers / totalMembers) * 100) : 0
       },
       demographics: {
-        gender: genderStats,
-        maritalStatus: maritalStats,
+        gender: genderStatsSorted,
+        maritalStatus: maritalStatsSorted,
         ageRanges,
-        cities: cityStats,
-        states: stateStats
+        cities: cityStatsSorted,
+        states: stateStatsSorted
       },
       churchStructure: {
         roles: roleStats,
@@ -1668,6 +1799,21 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         congregation_id: congregation_id || null
       },
       generatedAt: new Date().toISOString()
+    });
+
+    // Log da operação de geração de relatório
+    await logAudit(req, {
+      entity: 'member',
+      entityId: null,
+      action: 'import', // Usar 'import' como ação genérica para relatórios
+      changesAfter: {
+        filters: validatedFilters,
+        summary: {
+          totalMembers,
+          activeMembers,
+          inactiveMembers
+        }
+      }
     });
 
   } catch (error) {

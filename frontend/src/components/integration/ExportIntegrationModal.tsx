@@ -72,7 +72,7 @@ export function ExportIntegrationModal({ isOpen, onClose, onExport }: ExportInte
       await onExport(selectedFields);
       onClose();
     } catch (error) {
-      console.error('Erro ao exportar integrantes:', error);
+      // Erro já tratado pelo toast
     } finally {
       setExporting(false);
     }

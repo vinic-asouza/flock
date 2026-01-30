@@ -64,7 +64,6 @@ export function useMemberOptions({
       setOptions(mappedOptions);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return;
-      console.error('Erro ao carregar membros para seleção:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar membros';
       setError(errorMessage);
     } finally {

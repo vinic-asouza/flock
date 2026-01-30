@@ -17,7 +17,7 @@ export function useViewMode(initialMode: ViewMode = 'list') {
         setViewMode(savedMode);
       }
     } catch (error) {
-      console.warn('Erro ao carregar preferência de visualização:', error);
+      // Silenciar erro - não crítico, apenas preferência de UI
     } finally {
       setIsLoaded(true);
     }
@@ -29,7 +29,7 @@ export function useViewMode(initialMode: ViewMode = 'list') {
     try {
       localStorage.setItem(STORAGE_KEY, mode);
     } catch (error) {
-      console.warn('Erro ao salvar preferência de visualização:', error);
+      // Silenciar erro - não crítico, apenas preferência de UI
     }
   };
 

@@ -1,11 +1,65 @@
 // Utilitários gerais da aplicação
 
 /**
- * Formata uma data para o formato brasileiro
+ * Formata uma data para o formato brasileiro (dd/MM/yyyy)
+ * @param date - Data em formato string ISO, Date object, ou null/undefined
+ * @returns Data formatada ou string vazia se inválida
  */
-export function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('pt-BR');
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return '';
+  
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('pt-BR');
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Calcula a idade a partir de uma data de nascimento
+ * Usa lógica robusta que evita problemas de timezone
+ * @param birth - Data de nascimento em formato ISO (YYYY-MM-DD) ou Date
+ * @returns Idade em anos ou null se data inválida
+ */
+export function calculateAge(birth: string | Date | null | undefined): number | null {
+  if (!birth) return null;
+
+  try {
+    let date: Date;
+
+    if (typeof birth === 'string') {
+      // Tentar extrair data no formato YYYY-MM-DD (ou ISO) de forma segura
+      const raw = birth.includes('T') ? birth.split('T')[0] : birth;
+      const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+      if (match) {
+        const [, year, month, day] = match;
+        // Cria Date usando componentes locais para evitar problemas de timezone
+        date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      } else {
+        // Fallback para outros formatos
+        date = new Date(birth);
+      }
+    } else {
+      date = birth;
+    }
+
+    if (isNaN(date.getTime())) return null;
+
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const monthDiff = today.getMonth() - date.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+      age--;
+    }
+    
+    return age;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -33,9 +87,6 @@ export function formatCNPJ(cnpj: string): string {
 }
 
 /**
- * Formata um telefone com máscara
- */
-/**
  * Formata telefone brasileiro para exibição
  * @param phone - Telefone com ou sem formatação (aceita null/undefined)
  * @returns Telefone formatado no padrão (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX, ou '—' se vazio
@@ -50,14 +101,6 @@ export function formatPhone(phone?: string | null): string {
     return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
   }
   return phone; // Retorna original se não tiver formato válido
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.length === 11) {
-    return cleaned.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-  }
-  if (cleaned.length === 10) {
-    return cleaned.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-  }
-  return phone;
 }
 
 /**

@@ -7,6 +7,7 @@ import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { Select } from '@/components/ui/Select';
 import { Input } from '@/components/ui/Input';
 import { apiService } from '@/services/api';
+import toast from 'react-hot-toast';
 
 interface SelectOption {
   value: string;
@@ -139,17 +140,12 @@ export function MemberModalWithSelect({
         params.congregation_id = selectedCongregationId;
       }
 
-      console.log('MemberModalWithSelect - Parâmetros da API:', {
-        viewMode,
-        selectedCongregationId,
-        params
-      });
-
       const response = await apiService.listMembers(params);
       setMembers(response.data || []);
       setPagination(response.pagination || null);
     } catch (error) {
-      console.error('Erro ao buscar membros:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar membros';
+      toast.error(errorMessage);
       setMembers([]);
       setPagination(null);
     } finally {
@@ -216,10 +212,10 @@ export function MemberModalWithSelect({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      console.log('PDF exportado com sucesso!');
+      toast.success('PDF exportado com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar PDF';
+      toast.error(errorMessage);
     }
   };
 

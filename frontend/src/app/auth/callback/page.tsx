@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -24,15 +25,6 @@ export default function AuthCallbackPage() {
         const type = params.get('type');
         const messageParam = params.get('message');
 
-        // Debug: Log dos parâmetros encontrados
-        console.log('🔍 Parâmetros do callback:', {
-          hash: window.location.hash,
-          accessToken: accessToken ? '✅ Presente' : '❌ Ausente',
-          refreshToken: refreshToken ? '✅ Presente' : '❌ Ausente',
-          error,
-          errorDescription
-        });
-
         // Caso especial: fluxo de mudança de email do Supabase
         // Primeiro clique confirma posse do email antigo e pode vir apenas com #message e type=email_change
         if (!accessToken && !refreshToken && type === 'email_change' && messageParam) {
@@ -52,12 +44,10 @@ export default function AuthCallbackPage() {
         if (!accessToken || !refreshToken) {
           setStatus('error');
           setMessage(messageParam || 'Token de confirmação inválido ou expirado');
-          console.error('❌ Tokens ausentes:', { accessToken: !!accessToken, refreshToken: !!refreshToken });
           return;
         }
 
         // Processar confirmação com o backend
-        console.log('🚀 Enviando tokens para o backend...');
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/callback`, {
           method: 'POST',
           headers: {
@@ -70,21 +60,22 @@ export default function AuthCallbackPage() {
         });
 
         const data = await response.json();
-        console.log('📡 Resposta do backend:', { status: response.status, data });
 
         if (response.ok) {
           setStatus('success');
           setMessage('Email confirmado com sucesso! Agora você pode fazer login no sistema.');
-          console.log('✅ Confirmação bem-sucedida!');
+          toast.success('Email confirmado com sucesso!');
         } else {
           setStatus('error');
-          setMessage(data.details || data.error || 'Erro ao confirmar email');
-          console.error('❌ Erro do backend:', data);
+          const errorMessage = data.details || data.error || 'Erro ao confirmar email';
+          setMessage(errorMessage);
+          toast.error(errorMessage);
         }
       } catch (error) {
-        console.error('Erro no callback:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erro interno. Tente novamente.';
         setStatus('error');
-        setMessage('Erro interno. Tente novamente.');
+        setMessage(errorMessage);
+        toast.error(errorMessage);
       }
     };
 

@@ -164,7 +164,7 @@ class ApiService {
       await this.api.post('/auth/logout');
     } catch (error) {
       // Mesmo com erro, o servidor limpa os cookies automaticamente
-      console.warn('Erro ao fazer logout no servidor:', error);
+      // Silenciar erro - não crítico, o servidor limpa os cookies automaticamente
     }
   }
 

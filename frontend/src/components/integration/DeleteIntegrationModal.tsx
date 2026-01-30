@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import apiService from '@/services/api';
 
 interface DeleteIntegrationModalProps {
@@ -51,43 +50,21 @@ export function DeleteIntegrationModal({
 
   const defaultMessage = message || `Tem certeza de que deseja descartar o integrante ${memberName ? `"${memberName}"` : ''}? Essa ação não poderá ser desfeita.`;
 
-  const handleClose = () => {
-    if (!isLoading) {
-      setError(null);
-      onClose();
-    }
-  };
-
   return (
-    <Modal
+    <ConfirmDeleteModal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
+      onConfirm={handleDelete}
       title={title}
+      message={defaultMessage}
+      isLoading={isLoading}
+      error={error}
+      variant="danger"
+      confirmLabel={buttonLabel}
+      cancelLabel="Cancelar"
+      showIcon={true}
       size="md"
-      closeOnOverlayClick={!isLoading}
-      closeOnEscape={!isLoading}
-    >
-      <div className="p-6 space-y-4">
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-sm">
-            {error}
-          </div>
-        )}
-
-        <p className="text-sm text-gray-600">
-          {defaultMessage}
-        </p>
-
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={handleClose} disabled={isLoading}>
-            Cancelar
-          </Button>
-          <Button type="button" variant="danger" onClick={handleDelete} disabled={isLoading} isLoading={isLoading}>
-            {buttonLabel}
-          </Button>
-        </div>
-      </div>
-    </Modal>
+    />
   );
 }
 

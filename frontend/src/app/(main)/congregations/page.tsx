@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus } from 'lucide-react';
 import { CongregationList } from '@/components/congregations/CongregationList';
 import { CreateCongregationModal } from '@/components/congregations/CreateCongregationModal';
@@ -48,19 +49,19 @@ export default function CongregationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Congregações</h1>
-          <p className="text-sm text-gray-600">Organize as congregações e acompanhe suas informações.</p>
-        </div>
-        <Button
-          onClick={() => setCreateModalOpen(true)}
-          className="inline-flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Adicionar Congregação
-        </Button>
-      </div>
+      <PageHeader
+        title="Congregações"
+        subtitle="Organize as congregações e acompanhe suas informações."
+        actions={
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            className="inline-flex items-center gap-2"
+          >
+            <Plus size={18} />
+            Adicionar Congregação
+          </Button>
+        }
+      />
 
       <CongregationList 
         onEdit={handleEditCongregation}

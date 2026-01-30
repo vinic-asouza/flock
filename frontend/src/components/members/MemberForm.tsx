@@ -397,7 +397,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           });
         }
       } catch (error) {
-        console.error('Erro ao carregar grupos:', error);
+        // Silenciar erro - não crítico, apenas para carregar grupos
         setAvailableGroups([]);
       } finally {
         setLoadingGroups(false);
@@ -507,8 +507,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           }
         }
       } catch (error) {
-        console.error('Erro ao consultar CEP:', error);
-        // Não mostrar erro ao usuário, apenas logar
+        // Silenciar erro - não crítico, CEP é opcional
       } finally {
         setLoadingCEP(false);
       }

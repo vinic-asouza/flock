@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
+import toast from 'react-hot-toast';
 import { 
   FileText, 
   UserPlus, 
@@ -19,7 +20,8 @@ import {
   ChevronDown,
   ChevronUp,
   UserCheck,
-  UserX
+  UserX,
+  AlertCircle
 } from 'lucide-react';
 
 interface AuditLog {
@@ -88,13 +90,6 @@ export default function AuditLogs() {
       setLoading(true);
       setError(null);
       
-      console.log('🔍 Buscando logs com parâmetros:', {
-        page,
-        limit: pagination.limit,
-        entity: 'member',
-        action: filters.action || undefined,
-      });
-      
       // Para ativação/inativação, buscar logs de 'update' e filtrar no frontend
       const apiAction = (filters.action === 'activate' || filters.action === 'deactivate') 
         ? 'update' 
@@ -117,8 +112,6 @@ export default function AuditLogs() {
         },
       };
 
-      console.log('📊 Resposta da API:', typedResponse);
-
       let filteredLogs = typedResponse.data;
       
       // Filtrar ativação/inativação no frontend
@@ -135,8 +128,8 @@ export default function AuditLogs() {
         total: filteredLogs.length
       });
     } catch (err: unknown) {
-      console.error('❌ Erro ao buscar logs:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar logs';
+      toast.error(errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -514,11 +507,25 @@ export default function AuditLogs() {
         {/* Lista de Logs */}
         {error ? (
           <div className="text-center py-8">
-            <div className="text-red-600 mb-2">Erro ao carregar logs</div>
-            <div className="text-sm text-gray-500 mb-4">{error}</div>
-            <Button onClick={() => fetchLogs()} variant="secondary">
-              Tentar novamente
-            </Button>
+            <div className="flex flex-col items-center gap-3">
+              <AlertCircle className="w-12 h-12 text-red-500" />
+              <div className="text-red-600 font-medium mb-1">Erro ao carregar logs</div>
+              <div className="text-sm text-gray-500 mb-4 max-w-md">{error}</div>
+              <Button 
+                onClick={() => fetchLogs(pagination.page)} 
+                variant="secondary"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Carregando...
+                  </>
+                ) : (
+                  'Tentar novamente'
+                )}
+              </Button>
+            </div>
           </div>
         ) : logs.length === 0 ? (
           <div className="text-center py-8">

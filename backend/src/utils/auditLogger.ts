@@ -1,8 +1,9 @@
 import supabase from '../services/supabase';
 import { Request } from 'express';
+import { logError } from './logger';
 
 interface AuditLogData {
-  entity: 'member' | 'role' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'calendar_item';
+  entity: 'member' | 'role' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'calendar_item' | 'account' | 'church';
   entityId: string | null;
   action: 'create' | 'update' | 'delete' | 'convert' | 'import' | 'deactivate';
   changesBefore?: any;
@@ -22,7 +23,7 @@ interface AuthRequest extends Request {
 export const logAudit = async (req: AuthRequest, data: AuditLogData) => {
   try {
     if (!req.user?.id) {
-      console.warn('Audit log: usuário não autenticado');
+      logError('Audit log: usuário não autenticado');
       return;
     }
 
@@ -41,11 +42,19 @@ export const logAudit = async (req: AuthRequest, data: AuditLogData) => {
     }
 
     if (!churchId) {
-      console.warn('Audit log: church_id não encontrado');
+      logError('Audit log: church_id não encontrado');
       return;
     }
 
-    // Inserir log (sem IP e User-Agent por enquanto)
+    // Capturar IP e User-Agent do request
+    const ipAddress = req.ip || 
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+      req.socket.remoteAddress || 
+      null;
+    
+    const userAgent = req.headers['user-agent'] || null;
+
+    // Inserir log com IP e User-Agent
     const { error } = await supabase
       .from('audit_logs')
       .insert({
@@ -55,13 +64,15 @@ export const logAudit = async (req: AuthRequest, data: AuditLogData) => {
         entity_id: data.entityId,
         action: data.action,
         changes_before: data.changesBefore || null,
-        changes_after: data.changesAfter || null
+        changes_after: data.changesAfter || null,
+        ip: ipAddress,
+        user_agent: userAgent
       });
 
     if (error) {
-      console.error('Erro ao inserir audit log:', error);
+      logError('Erro ao inserir audit log:', error);
     }
   } catch (error) {
-    console.error('Erro no audit logger:', error);
+    logError('Erro no audit logger:', error);
   }
 };

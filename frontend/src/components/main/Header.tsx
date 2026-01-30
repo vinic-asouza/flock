@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '@/services/api';
+import toast from 'react-hot-toast';
 
 interface MemberLimitInfo {
   currentCount: number;
@@ -30,8 +31,8 @@ export function Header() {
         const data = await apiService.getMemberLimit();
         setMemberLimit(data);
       } catch (error) {
-        console.error('Erro ao carregar limite de membros:', error);
-        // Em caso de erro, não mostrar o alerta
+        // Erro silencioso - não mostrar toast para não poluir a interface
+        // Apenas não mostrar o alerta de limite
         setMemberLimit(null);
       }
     } else {

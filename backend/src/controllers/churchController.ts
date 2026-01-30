@@ -3,6 +3,8 @@ import supabase from '../services/supabase';
 import { validateChurchUpdate } from '../validators/churchValidator';
 import { AuthRequest } from '../types';
 import { checkMemberLimit } from '../utils/planLimits';
+import { logAudit } from '../utils/auditLogger';
+import { logError } from '../utils/logger';
 
 /**
  * Buscar dados da igreja do usuário autenticado
@@ -74,11 +76,25 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Buscar igreja existente para auditoria (antes de atualizar)
+    const { data: existingChurch, error: existingError } = await supabase
+      .from('churches')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (existingError || !existingChurch) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível encontrar a igreja associada ao usuário'
+      });
+    }
+
     const { cnpj, ...updateData } = req.body;
 
     // Se o CNPJ foi fornecido, verificar se já existe para outra igreja
     if (cnpj) {
-      const { data: existingChurch, error: cnpjCheckError } = await supabase
+      const { data: existingChurchWithCNPJ, error: cnpjCheckError } = await supabase
         .from('churches')
         .select('id, user_id')
         .eq('cnpj', cnpj)
@@ -92,7 +108,7 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
         });
       }
 
-      if (existingChurch) {
+      if (existingChurchWithCNPJ) {
         return res.status(400).json({
           error: 'CNPJ já cadastrado',
           details: 'Já existe uma igreja cadastrada com este CNPJ'
@@ -118,13 +134,22 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Registrar auditoria
+    await logAudit(req, {
+      entity: 'church',
+      entityId: updatedChurch.id,
+      action: 'update',
+      changesBefore: existingChurch,
+      changesAfter: updatedChurch
+    });
+
     res.json({
       message: 'Igreja atualizada com sucesso',
       church: updatedChurch
     });
 
   } catch (error) {
-    console.error('Erro ao atualizar igreja:', error);
+    logError('Erro ao atualizar igreja:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -173,7 +198,7 @@ export const getMemberLimit = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao obter limite de membros:', error);
+    logError('Erro ao obter limite de membros:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'

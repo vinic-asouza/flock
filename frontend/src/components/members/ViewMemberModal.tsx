@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Loader, Mail, MessageCircle, User, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
 import apiService from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { calculateAge } from '@/utils';
 
 interface Member {
   id: string;
@@ -61,18 +62,6 @@ interface ViewMemberModalProps {
   onDeletePermanently: () => void;
 }
 
-function calcularIdade(birth: string): number | null {
-  if (!birth) return null;
-  const birthDate = new Date(birth);
-  if (isNaN(birthDate.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
-}
 
 function formatarData(data: string): string {
   if (!data) return '-';
@@ -189,7 +178,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
     }
   };
 
-  const idade = member ? calcularIdade(member.birth) : null;
+  const idade = member ? calculateAge(member.birth) : null;
 
   return (
     <Modal
@@ -310,7 +299,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                         <div className="mt-1 space-y-3">
                           {member.children.map((child, index) => {
                             const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
-                            const childAge = birthISO ? calcularIdade(birthISO) : null;
+                            const childAge = birthISO ? calculateAge(birthISO) : null;
                             return (
                               <div key={index} className="space-y-1">
                                 <p className="text-gray-900">{child.name}</p>

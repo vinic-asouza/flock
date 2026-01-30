@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
+import toast from 'react-hot-toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -151,7 +152,7 @@ export function PaymentManagement() {
       }));
     } catch (error) {
       // Ignorar erros de localStorage (pode estar desabilitado)
-      console.warn('Não foi possível salvar cache de sincronização:', error);
+      // Não mostrar erro ao usuário, apenas logar silenciosamente
     }
   };
 
@@ -230,12 +231,8 @@ export function PaymentManagement() {
         }
       } catch (err: unknown) {
         // Não mostrar erro na sincronização automática, apenas logar
-        const errorMessage = err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-          : err instanceof Error
-          ? err.message
-          : undefined;
-        console.log('Sincronização automática:', errorMessage);
+        // Sincronização automática falhou silenciosamente
+        // Não mostrar erro ao usuário para não poluir a interface
       } finally {
         setIsSyncing(false);
       }
@@ -268,15 +265,13 @@ export function PaymentManagement() {
       window.open(url, '_blank', 'noopener,noreferrer');
       setIsLoadingPortal(false);
     } catch (err: unknown) {
-      console.error('Erro ao criar sessão do portal:', err);
       const errorMessage = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
           (err as { message?: string }).message
         : undefined;
-      setError(
-        errorMessage ||
-        'Erro ao acessar o portal de pagamento. Tente novamente.'
-      );
+      const finalMessage = errorMessage || 'Erro ao acessar o portal de pagamento. Tente novamente.';
+      toast.error(finalMessage);
+      setError(finalMessage);
       setIsLoadingPortal(false);
     }
   };
@@ -328,7 +323,7 @@ export function PaymentManagement() {
         setCachedSyncResult();
       }
     } catch (err: unknown) {
-      console.error('Erro ao sincronizar assinatura:', err);
+      // Erro já tratado pelo toast
       const errorMessage = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
           (err as { message?: string }).message
@@ -382,15 +377,13 @@ export function PaymentManagement() {
         setIsLoadingPortal(false);
         return;
       } catch (err: unknown) {
-        console.error('Erro ao criar sessão do portal:', err);
         const errorMessage = err && typeof err === 'object' && 'response' in err
           ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
             (err as { message?: string }).message
           : undefined;
-        setError(
-          errorMessage ||
-          'Erro ao acessar o portal de pagamento. Tente novamente.'
-        );
+        const finalMessage = errorMessage || 'Erro ao acessar o portal de pagamento. Tente novamente.';
+        toast.error(finalMessage);
+        setError(finalMessage);
         setIsLoadingPortal(false);
         return;
       }
@@ -450,18 +443,16 @@ export function PaymentManagement() {
       // Remover mensagem de sucesso após 5 segundos
       setTimeout(() => {
         setSuccessMessage(null);
-      }, 5000);
+        }, 5000);
     } catch (err: unknown) {
-      console.error('Erro ao trocar plano:', err);
       const errorMessage = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string; details?: string } }; message?: string }).response?.data?.error ||
           (err as { response?: { data?: { details?: string } } }).response?.data?.details ||
           (err as { message?: string }).message
         : undefined;
-      setError(
-        errorMessage ||
-        'Erro ao trocar plano. Tente novamente.'
-      );
+      const finalMessage = errorMessage || 'Erro ao trocar plano. Tente novamente.';
+      toast.error(finalMessage);
+      setError(finalMessage);
       setShowConfirmModal(false);
       setShowChangePlanModal(true);
     } finally {
@@ -689,8 +680,9 @@ export function PaymentManagement() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={handleManageSubscription}
-                disabled={isLoadingPortal}
+                disabled={isLoadingPortal || isSyncing || isChangingPlan}
                 className="flex-1"
+                isLoading={isLoadingPortal}
               >
                 {isLoadingPortal ? (
                   <>
@@ -708,9 +700,10 @@ export function PaymentManagement() {
               {!subscriptionEndDate && (
                 <Button
                   onClick={() => setShowChangePlanModal(true)}
-                  disabled={isChangingPlan || subscriptionStatus !== 'active'}
+                  disabled={isChangingPlan || subscriptionStatus !== 'active' || isLoadingPortal || isSyncing}
                   variant="secondary"
                   className="flex-1"
+                  isLoading={isChangingPlan}
                 >
                   <ArrowUpDown className="w-5 h-5 mr-2" />
                   Trocar de Plano
@@ -718,9 +711,10 @@ export function PaymentManagement() {
               )}
               <Button
                 onClick={() => handleSyncSubscription(false)}
-                disabled={isSyncing}
+                disabled={isSyncing || isLoadingPortal || isChangingPlan}
                 variant="secondary"
                 className="flex-1"
+                isLoading={isSyncing}
               >
                 {isSyncing ? (
                   <>
@@ -729,7 +723,7 @@ export function PaymentManagement() {
                   </>
                 ) : (
                   <>
-                    <Loader className="w-5 h-5 mr-2" />
+                    <RefreshCw className="w-5 h-5 mr-2" />
                     Sincronizar Assinatura
                   </>
                 )}

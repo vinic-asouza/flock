@@ -102,8 +102,8 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err: unknown) {
-      console.error('Erro ao exportar integrante:', err);
-      alert('Erro ao exportar PDF. Tente novamente.');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar PDF. Tente novamente.';
+      alert(errorMessage);
     } finally {
       setExporting(false);
     }

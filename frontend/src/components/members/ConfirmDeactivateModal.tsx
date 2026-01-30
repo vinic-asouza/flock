@@ -28,7 +28,7 @@ export function ConfirmDeactivateModal({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Erro ao confirmar inativação:', error);
+      // Erro já tratado pelo toast
     } finally {
       setIsDeactivating(false);
     }

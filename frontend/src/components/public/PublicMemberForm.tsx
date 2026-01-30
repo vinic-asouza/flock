@@ -171,7 +171,7 @@ export function PublicMemberForm({
         const response = await apiService.listGroups(congregationParam);
         setAvailableGroups(response);
       } catch (error) {
-        console.error('Erro ao carregar grupos:', error);
+        // Silenciar erro - não crítico, apenas para carregar grupos
         setAvailableGroups([]);
       } finally {
         setLoadingGroups(false);

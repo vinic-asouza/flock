@@ -185,7 +185,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
         setCopiedLinkId(null);
       }, 2000);
     } catch (err) {
-      console.error('Erro ao copiar link:', err);
+      // Erro já tratado pelo toast
     }
   };
 

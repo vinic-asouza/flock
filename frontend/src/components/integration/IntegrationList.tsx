@@ -2,7 +2,7 @@
 
 import { IntegrationMember } from '@/types';
 import { IntegrationCard } from './IntegrationCard';
-import { Pagination } from '@/components/commom/Pagination';
+import { Pagination } from '@/components/common/Pagination';
 import { useIntegration } from '@/context/IntegrationContext';
 import { Button } from '@/components/ui/Button';
 import { Download } from 'lucide-react';

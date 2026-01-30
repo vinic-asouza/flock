@@ -96,7 +96,7 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
       await onExport(selectedFields, delimiter, includeHeaders);
       onClose();
     } catch (error) {
-      console.error('Erro ao exportar:', error);
+      // Erro já tratado pelo toast no componente pai
     } finally {
       setExporting(false);
     }

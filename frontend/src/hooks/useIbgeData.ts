@@ -46,7 +46,6 @@ export function useIbgeData(): UseIbgeDataReturn {
         setStates(data);
       } catch (error) {
         setErrorStates(error instanceof Error ? error.message : 'Erro desconhecido');
-        console.error('Erro ao buscar estados:', error);
       } finally {
         setLoadingStates(false);
       }
@@ -77,7 +76,6 @@ export function useIbgeData(): UseIbgeDataReturn {
       setCities(data);
     } catch (error) {
       setErrorCities(error instanceof Error ? error.message : 'Erro desconhecido');
-      console.error('Erro ao buscar cidades:', error);
     } finally {
       setLoadingCities(false);
     }

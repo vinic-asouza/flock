@@ -96,26 +96,34 @@ export const validateChurch = (data: ChurchRegistrationData) => {
 const churchUpdateSchema = Joi.object({
   name: Joi.string()
     .optional()
+    .max(255)
     .messages({
-      'string.base': 'Nome da igreja deve ser uma string'
+      'string.base': 'Nome da igreja deve ser uma string',
+      'string.max': 'Nome da igreja não pode ter mais de 255 caracteres'
     }),
 
   denomination: Joi.string()
     .optional()
+    .max(100)
     .messages({
-      'string.base': 'Denominação deve ser uma string'
+      'string.base': 'Denominação deve ser uma string',
+      'string.max': 'Denominação não pode ter mais de 100 caracteres'
     }),
 
   address: Joi.string()
     .optional()
+    .max(255)
     .messages({
-      'string.base': 'Endereço deve ser uma string'
+      'string.base': 'Endereço deve ser uma string',
+      'string.max': 'Endereço não pode ter mais de 255 caracteres'
     }),
 
   city: Joi.string()
     .optional()
+    .max(100)
     .messages({
-      'string.base': 'Cidade deve ser uma string'
+      'string.base': 'Cidade deve ser uma string',
+      'string.max': 'Cidade não pode ter mais de 100 caracteres'
     }),
 
   state: Joi.string()
@@ -131,21 +139,42 @@ const churchUpdateSchema = Joi.object({
   email_church: Joi.string()
     .email()
     .optional()
-    .allow('')
+    .allow('', null)
+    .custom((value, helpers) => {
+      // Se o campo foi fornecido e não está vazio, deve ser um email válido
+      if (value && value.trim() !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+          return helpers.error('string.email');
+        }
+      }
+      return value;
+    })
     .messages({
       'string.email': 'Email da igreja inválido'
     }),
 
   phone_church: Joi.string()
     .optional()
-    .allow('')
-    .pattern(/^[0-9]+$/)
-    .min(10)
-    .max(11)
+    .allow('', null)
+    .custom((value, helpers) => {
+      // Se o campo foi fornecido e não está vazio, deve ser um telefone válido
+      if (value && value.trim() !== '') {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length < 10 || cleaned.length > 11) {
+          return helpers.error('any.custom', {
+            message: 'Telefone da igreja deve ter entre 10 e 11 dígitos'
+          });
+        }
+        if (!/^[0-9]+$/.test(cleaned)) {
+          return helpers.error('string.pattern.base');
+        }
+      }
+      return value;
+    })
     .messages({
       'string.pattern.base': 'Telefone da igreja deve conter apenas números',
-      'string.min': 'Telefone da igreja deve ter pelo menos 10 dígitos',
-      'string.max': 'Telefone da igreja deve ter no máximo 11 dígitos'
+      'any.custom': 'Telefone da igreja deve ter entre 10 e 11 dígitos'
     })
 });
 

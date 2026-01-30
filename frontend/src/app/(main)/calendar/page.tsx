@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarItemForm } from '@/components/calendar/CalendarItemForm';
 import { CalendarMonth } from '@/components/calendar/CalendarMonth';
@@ -213,20 +214,20 @@ export default function CalendarPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Calendário</h1>
-          <p className="text-sm text-gray-600">Gerencie programações, eventos, encontros e reuniões</p>
-        </div>
-        <Button
-          variant="primary"
-          onClick={() => handleCreateQuick()}
-          className="flex items-center gap-2"
-        >
+      <PageHeader
+        title="Calendário"
+        subtitle="Gerencie programações, eventos, encontros e reuniões"
+        actions={
+          <Button
+            variant="primary"
+            onClick={() => handleCreateQuick()}
+            className="flex items-center gap-2"
+          >
           <Plus size={20} />
           Novo Item
         </Button>
-      </div>
+        }
+      />
 
       {/* Filtros Horizontais */}
       <div className="mb-6">

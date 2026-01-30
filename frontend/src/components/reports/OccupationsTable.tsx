@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { Briefcase, Users, Eye } from 'lucide-react';
 import { TopOccupation, Member } from '@/types';
 import { MemberModalWithSelect } from './MemberModalWithSelect';
@@ -88,7 +89,8 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
 
       setAllOccupations(occupationsArray);
     } catch (error) {
-      console.error('Erro ao buscar todas as ocupações:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar todas as ocupações';
+      toast.error(errorMessage);
       // Em caso de erro, usar as top 10 que já temos
       setAllOccupations(data);
     } finally {

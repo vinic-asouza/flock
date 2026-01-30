@@ -8,8 +8,11 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import apiService from '@/services/api';
 import { formatPhone } from '@/utils';
+import { validatePhone } from '@/utils/validations';
 import { Edit, Key, Trash2, Mail, Phone, ExternalLink, RefreshCw } from 'lucide-react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
+import { z } from 'zod';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
@@ -43,6 +46,53 @@ interface DeleteAccountData {
   password: string;
   confirmation: string;
 }
+
+// Schemas de validação Zod
+const changeEmailSchema = z.object({
+  newEmail: z.string()
+    .email('Email inválido')
+    .min(1, 'Email é obrigatório'),
+  password: z.string()
+    .min(1, 'Senha é obrigatória')
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string()
+    .min(1, 'Senha atual é obrigatória'),
+  newPassword: z.string()
+    .min(8, 'Nova senha deve ter pelo menos 8 caracteres')
+    .regex(/[A-Z]/, 'Nova senha deve conter pelo menos uma letra maiúscula')
+    .regex(/[a-z]/, 'Nova senha deve conter pelo menos uma letra minúscula')
+    .regex(/[0-9]/, 'Nova senha deve conter pelo menos um número'),
+  confirmPassword: z.string()
+    .min(1, 'Confirmação de senha é obrigatória')
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword']
+});
+
+const changePhoneSchema = z.object({
+  newPhone: z.string()
+    .refine((val) => {
+      if (!val || val.trim() === '') return false;
+      const cleaned = val.replace(/\D/g, '');
+      return validatePhone(cleaned);
+    }, {
+      message: 'Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX'
+    }),
+  password: z.string()
+    .min(1, 'Senha é obrigatória')
+});
+
+const deleteAccountSchema = z.object({
+  password: z.string()
+    .min(1, 'Senha é obrigatória'),
+  confirmation: z.string()
+    .min(1, 'Confirmação é obrigatória')
+    .refine((val) => val === 'EXCLUIR CONTA', {
+      message: 'Confirmação deve ser exatamente "EXCLUIR CONTA"'
+    })
+});
 
 export function AccountManagement() {
   const { logout, user, refreshChurch } = useAuth();
@@ -116,16 +166,15 @@ export function AccountManagement() {
       
       // Mensagem de sucesso genérica - o componente será re-renderizado e hasActivePaidPlan() será atualizado
       setSuccess('Assinatura sincronizada com sucesso! Se você cancelou sua assinatura, os campos de exclusão aparecerão automaticamente.');
+      toast.success('Assinatura sincronizada com sucesso!');
     } catch (err: unknown) {
-      console.error('Erro ao sincronizar assinatura:', err);
       const errorMessage = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
           (err as { message?: string }).message
         : undefined;
-      setDeleteError(
-        errorMessage ||
-        'Erro ao sincronizar assinatura. Tente novamente.'
-      );
+      const finalMessage = errorMessage || 'Erro ao sincronizar assinatura. Tente novamente.';
+      toast.error(finalMessage);
+      setDeleteError(finalMessage);
     } finally {
       setIsSyncing(false);
     }
@@ -152,15 +201,13 @@ export function AccountManagement() {
       // Abrir portal do Stripe em nova guia
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err: unknown) {
-      console.error('Erro ao criar sessão do portal:', err);
       const errorMessage = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
           (err as { message?: string }).message
         : undefined;
-      setDeleteError(
-        errorMessage ||
-        'Erro ao acessar o portal de pagamento. Tente novamente.'
-      );
+      const finalMessage = errorMessage || 'Erro ao acessar o portal de pagamento. Tente novamente.';
+      toast.error(finalMessage);
+      setDeleteError(finalMessage);
     }
   };
 
@@ -175,11 +222,11 @@ export function AccountManagement() {
         const data = await apiService.getAccountData();
         setAccountData(data as unknown as AccountData);
       } catch (error: unknown) {
-        console.error('Erro ao carregar dados da conta:', error);
         const errorObj = error as { details?: string | string[]; message?: string };
         const errorMessage = errorObj.details 
           ? (Array.isArray(errorObj.details) ? errorObj.details.join(', ') : errorObj.details)
           : (errorObj.message || 'Erro ao carregar dados da conta');
+        toast.error(errorMessage);
         setError(errorMessage);
       } finally {
         setIsLoading(false);
@@ -195,18 +242,31 @@ export function AccountManagement() {
       setEmailError(null);
       setSuccess(null);
 
+      // Validar dados com Zod
+      const validationResult = changeEmailSchema.safeParse(emailData);
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        const firstError = errors[0];
+        const errorMessage = firstError.message;
+        setEmailError(errorMessage);
+        toast.error(errorMessage);
+        setIsSaving(false);
+        return;
+      }
+
       await apiService.changeEmail(emailData);
       
       setSuccess('Email alterado com sucesso! Verifique sua caixa de entrada para confirmar o novo email.');
+      toast.success('Email alterado com sucesso! Verifique sua caixa de entrada.');
       setShowEmailModal(false);
       setEmailData({ newEmail: '', password: '' });
       
     } catch (error: unknown) {
-      console.error('Erro ao alterar email:', error);
       const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
       const errorMessage = errorObj.response?.data?.details 
         ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
         : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar email');
+      toast.error(errorMessage);
       setEmailError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -219,8 +279,15 @@ export function AccountManagement() {
       setPasswordError(null);
       setSuccess(null);
 
-      if (passwordData.newPassword !== passwordData.confirmPassword) {
-        setPasswordError('As senhas não coincidem');
+      // Validar dados com Zod
+      const validationResult = changePasswordSchema.safeParse(passwordData);
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        const firstError = errors[0];
+        const errorMessage = firstError.message;
+        setPasswordError(errorMessage);
+        toast.error(errorMessage);
+        setIsSaving(false);
         return;
       }
 
@@ -230,15 +297,16 @@ export function AccountManagement() {
       });
       
       setSuccess('Senha alterada com sucesso!');
+      toast.success('Senha alterada com sucesso!');
       setShowPasswordModal(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       
     } catch (error: unknown) {
-      console.error('Erro ao alterar senha:', error);
       const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
       const errorMessage = errorObj.response?.data?.details 
         ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
         : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar senha');
+      toast.error(errorMessage);
       setPasswordError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -282,18 +350,31 @@ export function AccountManagement() {
       setPhoneError(null);
       setSuccess(null);
 
+      // Validar dados com Zod
+      const validationResult = changePhoneSchema.safeParse(phoneData);
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        const firstError = errors[0];
+        const errorMessage = firstError.message;
+        setPhoneError(errorMessage);
+        toast.error(errorMessage);
+        setIsSaving(false);
+        return;
+      }
+
       await apiService.changePhone(phoneData);
       
       setSuccess('Telefone alterado com sucesso!');
+      toast.success('Telefone alterado com sucesso!');
       setShowPhoneModal(false);
       setPhoneData({ newPhone: '', password: '' });
       
     } catch (error: unknown) {
-      console.error('Erro ao alterar telefone:', error);
       const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
       const errorMessage = errorObj.response?.data?.details 
         ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
         : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar telefone');
+      toast.error(errorMessage);
       setPhoneError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -306,14 +387,22 @@ export function AccountManagement() {
       setDeleteError(null);
       setSuccess(null);
 
-      if (deleteData.confirmation !== 'EXCLUIR CONTA') {
-        setDeleteError('Confirmação deve ser exatamente "EXCLUIR CONTA"');
+      // Validar dados com Zod
+      const validationResult = deleteAccountSchema.safeParse(deleteData);
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        const firstError = errors[0];
+        const errorMessage = firstError.message;
+        setDeleteError(errorMessage);
+        toast.error(errorMessage);
+        setIsSaving(false);
         return;
       }
 
       await apiService.deleteAccount(deleteData);
       
       setSuccess('Conta excluída com sucesso! Você será redirecionado...');
+      toast.success('Conta excluída com sucesso!');
       
       // Fazer logout e redirecionar
       setTimeout(async () => {
@@ -322,11 +411,11 @@ export function AccountManagement() {
       }, 2000);
       
     } catch (error: unknown) {
-      console.error('Erro ao excluir conta:', error);
       const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
       const errorMessage = errorObj.response?.data?.details 
         ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
         : (errorObj.response?.data?.error || errorObj.message || 'Erro ao excluir conta');
+      toast.error(errorMessage);
       setDeleteError(errorMessage);
     } finally {
       setIsSaving(false);

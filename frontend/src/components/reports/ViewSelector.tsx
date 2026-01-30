@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Building, Home, Users } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
@@ -31,7 +32,8 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
           }))
         );
       } catch (error) {
-        console.error('Erro ao carregar congregações:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar congregações';
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }

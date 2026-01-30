@@ -2,6 +2,8 @@
 
 import { Edit, Trash2, MapPin, Phone, User } from 'lucide-react';
 import { Congregation } from '@/types/congregation';
+import { formatDate } from '@/utils';
+import { InfoRow } from '@/components/ui/InfoRow';
 
 interface CongregationCardProps {
   congregation: Congregation;
@@ -10,14 +12,6 @@ interface CongregationCardProps {
 }
 
 export function CongregationCard({ congregation, onEdit, onDelete }: CongregationCardProps) {
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('pt-BR');
-    } catch {
-      return 'Data inválida';
-    }
-  };
 
   return (
     <div className="flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full">
@@ -35,31 +29,32 @@ export function CongregationCard({ congregation, onEdit, onDelete }: Congregatio
         </div>
         
         {/* Linha 2: Endereço */}
-        <div className="flex items-start gap-2 mb-2">
-          <MapPin size={14} className="text-gray-400 mt-0.5 flex-shrink-0" />
-          <span className="text-sm text-gray-600 line-clamp-2">
-            {congregation.address}, {congregation.city} - {congregation.state}
-          </span>
-        </div>
+        <InfoRow
+          icon={MapPin}
+          value={`${congregation.address}, ${congregation.city} - ${congregation.state}`}
+          className="mb-2"
+          iconClassName="mt-0.5"
+          valueClassName="line-clamp-2"
+        />
         
         {/* Linha 3: Líder */}
         {congregation.leader && (
-          <div className="flex items-center gap-2 mb-2">
-            <User size={14} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-600 truncate">
-              Líder: {congregation.leader}
-            </span>
-          </div>
+          <InfoRow
+            icon={User}
+            label="Líder"
+            value={congregation.leader}
+            className="mb-2"
+            truncate
+          />
         )}
         
         {/* Linha 4: Telefone */}
         {congregation.phone && (
-          <div className="flex items-center gap-2 mb-4">
-            <Phone size={14} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-600">
-              {congregation.phone}
-            </span>
-          </div>
+          <InfoRow
+            icon={Phone}
+            value={congregation.phone}
+            className="mb-4"
+          />
         )}
       </div>
       

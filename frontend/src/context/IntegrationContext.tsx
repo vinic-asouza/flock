@@ -76,7 +76,6 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
       setIntegrationMembers(response.data);
       setPagination(response.pagination);
     } catch (err: unknown) {
-      console.error('Erro ao carregar integrantes:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar integrantes';
       setError(errorMessage);
     } finally {

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { MemberCard } from './MemberCard';
 import { MemberCardGrid } from './MemberCardGrid';
 import { ViewMode } from './ViewModeSelector';
-import { Pagination } from '../commom/Pagination';
+import { Pagination } from '../common/Pagination';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useMembers } from '@/context/MembersContext';
 import { Download, RefreshCcw, FileSpreadsheet } from 'lucide-react';

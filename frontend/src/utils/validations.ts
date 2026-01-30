@@ -169,7 +169,7 @@ export async function fetchCEPData(cep: string): Promise<{
     
     return data;
   } catch (error) {
-    console.error('Erro ao consultar CEP:', error);
+    // Silenciar erro - não crítico, CEP é opcional
     return null;
   }
 }

@@ -183,7 +183,7 @@ export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModal
         setCopiedLinkId(null);
       }, 2000);
     } catch (err) {
-      console.error('Erro ao copiar link:', err);
+      // Erro já tratado pelo toast
     }
   };
 

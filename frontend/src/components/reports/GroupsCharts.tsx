@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import toast from 'react-hot-toast';
 import { apiService } from '@/services/api';
 import { Group, GroupType } from '@/types';
 import { UserCog, Settings } from 'lucide-react';
@@ -48,8 +49,8 @@ export function GroupsCharts({ loading = false, viewMode = 'all', selectedCongre
         const activeGroups = (data || []).filter((group: Group) => group.status === true);
         setGroups(activeGroups);
       } catch (err) {
-        console.error('Erro ao carregar grupos:', err);
         const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar grupos';
+        toast.error(errorMessage);
         setError(errorMessage);
         setGroups([]);
       } finally {

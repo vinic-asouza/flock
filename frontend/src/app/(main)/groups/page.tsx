@@ -21,6 +21,8 @@ type GroupFormData = {
 import { apiService } from '@/services/api';
 import { Plus, Loader2, Trash2 } from 'lucide-react';
 import { useFiltersData } from '@/hooks/useFiltersData';
+import { PageHeader } from '@/components/ui/PageHeader';
+import toast from 'react-hot-toast';
 
 export default function GroupsPage() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -67,11 +69,12 @@ export default function GroupsPage() {
     try {
       setIsSubmitting(true);
       await apiService.createGroup(data as GroupPayload);
+      toast.success('Grupo criado com sucesso!');
       setCreateModalOpen(false);
       await loadGroups();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao criar grupo';
-      alert(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -83,12 +86,13 @@ export default function GroupsPage() {
     try {
       setIsSubmitting(true);
       await apiService.updateGroup(selectedGroupId, data as Partial<GroupPayload>);
+      toast.success('Grupo atualizado com sucesso!');
       setEditModalOpen(false);
       setSelectedGroupId('');
       await loadGroups();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar grupo';
-      alert(errorMessage);
+      toast.error(errorMessage);
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -100,13 +104,14 @@ export default function GroupsPage() {
     try {
       setIsSubmitting(true);
       await apiService.deleteGroup(selectedGroupId);
+      toast.success('Grupo excluído com sucesso!');
       setDeleteModalOpen(false);
       setSelectedGroupId('');
       setSelectedGroupName('');
       await loadGroups();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir grupo';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -133,18 +138,16 @@ export default function GroupsPage() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Grupos</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Gerencie os grupos da sua igreja
-          </p>
-        </div>
-        <Button onClick={() => setCreateModalOpen(true)}>
-          <Plus size={18} className="mr-2" />
-          Criar Grupo
-        </Button>
-      </div>
+      <PageHeader
+        title="Grupos"
+        subtitle="Gerencie os grupos da sua igreja"
+        actions={
+          <Button onClick={() => setCreateModalOpen(true)}>
+            <Plus size={18} className="mr-2" />
+            Criar Grupo
+          </Button>
+        }
+      />
 
       {/* Seletor de Congregação */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">

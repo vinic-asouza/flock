@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               userEmail = accountData.email || '';
             } catch (error) {
               // Silenciar erro - não crítico durante inicialização
-              console.warn('Erro ao buscar dados da conta:', error);
+              // Não logar erro para não poluir o console
             }
             
             // Criar sessão mock para compatibilidade
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const accountData = await apiService.getAccountData();
         userEmail = accountData.email || data.email;
       } catch (error) {
-        console.warn('Erro ao buscar dados da conta após login:', error);
+        // Silenciar erro - não crítico, usar email do login como fallback
       }
       
       // Criar sessão mock para compatibilidade (tokens estão em cookies)
@@ -176,24 +176,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async (): Promise<void> => {
     try {
-      console.log('Iniciando logout...');
       setIsOperationLoading(true);
       
       // Chamar logout no servidor e limpar dados locais
       await apiService.logout();
       
-      console.log('Logout no servidor concluído, limpando estado local...');
       setUser(null);
       setSession(null);
       setIsOperationLoading(false);
-      
-      console.log('Logout concluído com sucesso');
     } catch (error) {
-      console.error('Erro durante logout:', error);
       setIsOperationLoading(false);
       
       // Mesmo com erro, limpar os dados locais
-      console.log('Limpando estado local mesmo com erro...');
       setUser(null);
       setSession(null);
     }

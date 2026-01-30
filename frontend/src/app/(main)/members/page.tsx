@@ -19,12 +19,14 @@ import { ExportMembersCSVModal } from '@/components/members/ExportMembersCSVModa
 import { MemberImportModal } from '@/components/members/MemberImportModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus, Upload, Link as LinkIcon } from 'lucide-react';
 import { RegistrationLinksModal } from '@/components/members/RegistrationLinksModal';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useViewMode } from '@/hooks/useViewMode';
 import { apiService } from '@/services/api';
 import { Member } from '@/types';
+import toast from 'react-hot-toast';
 
 export type MemberFilters = {
   search: string;
@@ -113,9 +115,9 @@ function MembersPageContent() {
         canAdd: limitData.canAdd,
       });
     } catch (error) {
-      console.error('Erro ao carregar limite de membros:', error);
       // Em caso de erro, não definir memberLimit para evitar mostrar botões incorretamente
       // O estado permanece como estava (null ou último valor válido)
+      // Silenciar erro - não crítico, apenas para controle de UI
     }
   }, []);
 
@@ -272,13 +274,8 @@ function MembersPageContent() {
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('memberUpdated'));
       }, 100);
-
-      // Mostrar feedback de sucesso
-      console.log(`Membro ${selectedMemberName} foi inativado com sucesso`);
       
     } catch (error) {
-      console.error('Erro ao inativar membro:', error);
-      // Você pode adicionar um toast de erro aqui
       throw error; // Re-throw para o modal lidar com o erro
     }
   }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
@@ -332,13 +329,8 @@ function MembersPageContent() {
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('memberUpdated'));
       }, 100);
-
-      // Mostrar feedback de sucesso
-      console.log(`Membro ${selectedMemberName} foi reativado com sucesso`);
       
     } catch (error) {
-      console.error('Erro ao reativar membro:', error);
-      // Você pode adicionar um toast de erro aqui
       throw error; // Re-throw para o modal lidar com o erro
     }
   }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
@@ -427,10 +419,10 @@ function MembersPageContent() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      console.log('PDF exportado com sucesso!');
+      toast.success('PDF exportado com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar PDF. Tente novamente.';
+      toast.error(errorMessage);
     }
   }, [filters, sorting]);
 
@@ -478,10 +470,10 @@ function MembersPageContent() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      console.log('CSV exportado com sucesso!');
+      toast.success('CSV exportado com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar CSV:', error);
-      alert('Erro ao exportar CSV. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar CSV. Tente novamente.';
+      toast.error(errorMessage);
     }
   }, [filters, sorting]);
 
@@ -492,12 +484,11 @@ function MembersPageContent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Membros</h1>
-          <p className="text-sm text-gray-600">Visualize, cadastre e gerencie os membros da igreja.</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Membros"
+        subtitle="Visualize, cadastre e gerencie os membros da igreja."
+        actions={
+          <div className="flex items-center gap-3">
           {/* Mostrar botões apenas se:
               - Não houver limite definido (memberLimit === null) OU
               - Puder adicionar (canAdd === true) OU  
@@ -534,8 +525,9 @@ function MembersPageContent() {
               Limite de membros atingido ({memberLimit.currentCount} de {memberLimit.limit})
             </div>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
       <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={false} />
       <MemberFiltersBar
         filters={filters}

@@ -18,7 +18,6 @@ export function useFiltersData() {
 
         setCongregations(congregationsData);
       } catch (err) {
-        console.error('❌ Erro ao carregar dados dos filtros:', err);
         setError('Erro ao carregar dados dos filtros');
       } finally {
         setLoading(false);

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { LinkIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { IntegrationList } from '@/components/integration/IntegrationList';
 import { CreateIntegrationModal } from '@/components/integration/CreateIntegrationModal';
 import { EditIntegrationModal } from '@/components/integration/EditIntegrationModal';
@@ -137,8 +138,8 @@ function IntegrationPageContent() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erro ao exportar lista de integrantes:', error);
-      alert('Erro ao exportar lista. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar lista. Tente novamente.';
+      alert(errorMessage);
     } finally {
       setExportingList(false);
     }
@@ -150,12 +151,11 @@ function IntegrationPageContent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Integração</h1>
-          <p className="text-sm text-gray-600">Gerencie integrantes em processo de integração e converta-os em membros.</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Integração"
+        subtitle="Gerencie integrantes em processo de integração e converta-os em membros."
+        actions={
+          <div className="flex items-center gap-3">
           <Button 
             onClick={() => setIntegrationLinksModalOpen(true)} 
             variant="secondary"
@@ -168,8 +168,9 @@ function IntegrationPageContent() {
             <Plus size={18} />
             Novo integrante
           </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={loading} />
 

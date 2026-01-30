@@ -1,8 +1,10 @@
 import { IntegrationMember } from '@/types';
 import { IntegrationStatusBadge } from './IntegrationStatusBadge';
-import { Edit, UserPlus, Trash2, MessageCircle, Eye, Phone } from 'lucide-react';
+import { Edit, UserPlus, Trash2, Eye } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
-import { formatPhone } from '@/utils';
+import { calculateAge } from '@/utils';
+import { CardHeader } from '@/components/ui/CardHeader';
+import { ContactLinks } from '@/components/ui/ContactLinks';
 
 interface IntegrationCardProps {
   member: IntegrationMember;
@@ -18,34 +20,6 @@ const statusBackground: Record<string, string> = {
   descartado: 'bg-gray-100'
 };
 
-function calculateAge(birth?: string | null): number | null {
-  if (!birth) return null;
-
-  // Tentar extrair data no formato YYYY-MM-DD (ou ISO) de forma segura
-  const raw = birth.includes('T') ? birth.split('T')[0] : birth;
-  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
-  let date: Date;
-
-  if (match) {
-    const [, year, month, day] = match;
-    // Cria Date usando componentes locais para evitar problemas de timezone
-    date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
-  } else {
-    // Fallback para outros formatos
-    date = new Date(birth);
-  }
-
-  if (isNaN(date.getTime())) return null;
-
-  const today = new Date();
-  let age = today.getFullYear() - date.getFullYear();
-  const monthDiff = today.getMonth() - date.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
-    age--;
-  }
-  return age;
-}
 
 const admissionLabels: Record<string, string> = {
   batismo: 'Batismo',
@@ -70,23 +44,26 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
         }`}
     >
       <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span
-            className="font-semibold text-gray-900 text-base truncate max-w-xs md:max-w-sm uppercase"
-            title={member.name}
-          >
-            {formatMemberName(member.name)}
-          </span>
-          <IntegrationStatusBadge status={member.status} />
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-            {member.expected_congregation?.name || 'Sede'}
-          </span>
-          {admissionLabel && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-              {admissionLabel}
-            </span>
-          )}
-        </div>
+        <CardHeader
+          title={formatMemberName(member.name)}
+          titleClassName="text-base"
+          badges={[
+            <IntegrationStatusBadge key="status" status={member.status} />,
+            <span key="congregation" className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+              {member.expected_congregation?.name || 'Sede'}
+            </span>,
+            ...(admissionLabel
+              ? [
+                  <span
+                    key="admission"
+                    className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700"
+                  >
+                    {admissionLabel}
+                  </span>,
+                ]
+              : []),
+          ]}
+        />
 
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
           <div className="flex items-center gap-1">
@@ -97,22 +74,11 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
             <span>{member.gender === 'masculino' ? 'Masculino' : member.gender === 'feminino' ? 'Feminino' : member.gender}</span>
           )}
 
-          {member.whatsapp ? (
-            <a
-              href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-gray-600 hover:text-green-600 transition-colors"
-            >
-              <MessageCircle size={16} />
-              {formatPhone(member.whatsapp)}
-            </a>
-          ) : member.phone ? (
-            <div className="flex items-center gap-1 text-gray-600">
-              <Phone size={16} className="text-gray-400" />
-              <span>{formatPhone(member.phone)}</span>
-            </div>
-          ) : null}
+          <ContactLinks
+            whatsapp={member.whatsapp}
+            email={member.email}
+            phone={member.phone}
+          />
         </div>
       </div>
 

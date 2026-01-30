@@ -55,7 +55,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
         })),
       ]);
     } catch (err) {
-      console.error('Erro ao carregar congregações:', err);
+      // Silenciar erro - não crítico, apenas para carregar congregações
     } finally {
       setLoadingCongregations(false);
     }
@@ -81,7 +81,6 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
       await validateImport(file, congregationId);
       setStep('validation');
     } catch (err) {
-      console.error('Erro ao validar:', err);
       // O erro já foi definido pelo hook
     }
   };
@@ -95,7 +94,6 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
       await importMembers(file, congregationId, true);
       setStep('result');
     } catch (err) {
-      console.error('Erro ao importar:', err);
       // O erro já foi definido pelo hook
       setStep('validation'); // Voltar para validação em caso de erro
     }

@@ -5,6 +5,7 @@ import { X, Users, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-r
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { apiService } from '@/services/api';
+import toast from 'react-hot-toast';
 
 interface MembersModalProps {
   isOpen: boolean;
@@ -111,7 +112,8 @@ export function MembersModal({
       setMembers(response.data || []);
       setPagination(response.pagination || null);
     } catch (error) {
-      console.error('Erro ao buscar membros:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar membros';
+      toast.error(errorMessage);
       setMembers([]);
       setPagination(null);
     } finally {
@@ -155,10 +157,10 @@ export function MembersModal({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      console.log('PDF exportado com sucesso!');
+      toast.success('PDF exportado com sucesso!');
     } catch (error) {
-      console.error('Erro ao exportar PDF:', error);
-      alert('Erro ao exportar PDF. Tente novamente.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar PDF';
+      toast.error(errorMessage);
     }
   };
 

@@ -28,7 +28,7 @@ export function ConfirmReactivateModal({
       await onConfirm();
       onClose();
     } catch (error) {
-      console.error('Erro ao confirmar reativação:', error);
+      // Erro já tratado pelo toast
     } finally {
       setIsReactivating(false);
     }

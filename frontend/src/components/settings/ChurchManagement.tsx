@@ -8,7 +8,10 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/context/AuthContext';
 import { Church } from '@/types';
 import { DENOMINATIONS, formatPhone } from '@/utils';
+import { validateCNPJ, validatePhone } from '@/utils/validations';
 import { Building2, MapPin, Mail, Phone, FileText, CreditCard } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { z } from 'zod';
 
 interface ChurchFormData {
   name: string;
@@ -63,6 +66,51 @@ const planNames: Record<string, string> = {
   '800': 'Plano 800 Membros',
 };
 
+// Schema de validação Zod para dados da igreja
+const churchSchema = z.object({
+  name: z.string()
+    .min(2, 'Nome deve ter pelo menos 2 caracteres')
+    .max(255, 'Nome não pode ter mais de 255 caracteres'),
+  denomination: z.string()
+    .min(1, 'Denominação é obrigatória')
+    .max(100, 'Denominação não pode ter mais de 100 caracteres'),
+  address: z.string()
+    .min(5, 'Endereço deve ter pelo menos 5 caracteres')
+    .max(255, 'Endereço não pode ter mais de 255 caracteres'),
+  city: z.string()
+    .min(2, 'Cidade é obrigatória')
+    .max(100, 'Cidade não pode ter mais de 100 caracteres'),
+  state: z.string()
+    .length(2, 'Estado deve ser uma sigla de 2 caracteres'),
+  cnpj: z.string()
+    .refine((val) => {
+      if (!val || val.trim() === '') return true; // CNPJ é opcional
+      const cleaned = val.replace(/\D/g, '');
+      return cleaned.length === 14 && validateCNPJ(cleaned);
+    }, {
+      message: 'CNPJ inválido. Verifique os dígitos verificadores.'
+    }),
+  email_church: z.string()
+    .email('Email inválido')
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || val.length <= 255, {
+      message: 'Email não pode ter mais de 255 caracteres'
+    }),
+  phone_church: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => {
+      if (!val || val.trim() === '') return true; // Telefone é opcional
+      const cleaned = val.replace(/\D/g, '');
+      return validatePhone(cleaned);
+    }, {
+      message: 'Telefone inválido. Use o formato (XX) XXXX-XXXX ou (XX) 9XXXX-XXXX'
+    })
+});
+
+type ChurchFormData = z.infer<typeof churchSchema>;
+
 export function ChurchManagement() {
   const { user, updateChurch } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -103,8 +151,9 @@ export function ChurchManagement() {
           });
         }
       } catch (error) {
-        console.error('Erro ao carregar dados da igreja:', error);
-        setError('Erro ao carregar dados da igreja');
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados da igreja';
+        toast.error(errorMessage);
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -125,6 +174,18 @@ export function ChurchManagement() {
       setIsSaving(true);
       setError(null);
       setSuccess(null);
+
+      // Validar dados com Zod
+      const validationResult = churchSchema.safeParse(formData);
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors;
+        const firstError = errors[0];
+        const errorMessage = firstError.message;
+        setError(errorMessage);
+        toast.error(errorMessage);
+        setIsSaving(false);
+        return;
+      }
 
       // Filtrar apenas campos que foram alterados
       const changedFields: Partial<ChurchFormData> = {};
@@ -149,11 +210,11 @@ export function ChurchManagement() {
       setIsEditing(false);
       
     } catch (error: unknown) {
-      console.error('Erro ao salvar dados da igreja:', error);
       const errorObj = error as { details?: string | string[]; message?: string };
       const errorMessage = errorObj.details 
         ? (Array.isArray(errorObj.details) ? errorObj.details.join(', ') : errorObj.details)
         : (errorObj.message || 'Erro ao salvar dados');
+      toast.error(errorMessage);
       setError(errorMessage);
     } finally {
       setIsSaving(false);
@@ -386,6 +447,7 @@ export function ChurchManagement() {
                   value={formData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   placeholder="Endereço completo"
+                  maxLength={255}
                 />
               </div>
 
@@ -399,6 +461,7 @@ export function ChurchManagement() {
                     value={formData.city}
                     onChange={(e) => handleInputChange('city', e.target.value)}
                     placeholder="Cidade"
+                    maxLength={100}
                   />
                 </div>
                 
@@ -425,6 +488,15 @@ export function ChurchManagement() {
                   onChange={(e) => handleCNPJChange(e.target.value)}
                   placeholder="00.000.000/0000-00"
                   maxLength={18}
+                  onBlur={() => {
+                    // Validar CNPJ quando o campo perder o foco
+                    if (formData.cnpj) {
+                      const cleanedCNPJ = formData.cnpj.replace(/\D/g, '');
+                      if (cleanedCNPJ.length === 14 && !validateCNPJ(cleanedCNPJ)) {
+                        toast.error('CNPJ inválido. Verifique os dígitos verificadores.');
+                      }
+                    }
+                  }}
                 />
               </div>
 
@@ -439,6 +511,7 @@ export function ChurchManagement() {
                     value={formData.email_church}
                     onChange={(e) => handleInputChange('email_church', e.target.value)}
                     placeholder="contato@igreja.com"
+                    maxLength={255}
                   />
                 </div>
                 

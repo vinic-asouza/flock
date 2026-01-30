@@ -20,7 +20,6 @@ export function useReports() {
       setData(reportsData);
       setLastUpdated(new Date().toLocaleString('pt-BR'));
     } catch (err: unknown) {
-      console.error('Erro ao carregar relatórios:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar relatórios';
       setError(errorMessage);
     } finally {

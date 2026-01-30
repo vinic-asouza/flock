@@ -166,7 +166,6 @@ export default function RegisterPage() {
           setStates(statesFallback.map((sigla, index) => ({ id: index, sigla, nome: sigla })));
         }
       } catch (error) {
-        console.error('Erro ao carregar estados:', error);
         // Fallback para lista estática
         setStates(statesFallback.map((sigla, index) => ({ id: index, sigla, nome: sigla })));
       } finally {
@@ -196,7 +195,6 @@ export default function RegisterPage() {
           }
         }
       } catch (error) {
-        console.error('Erro ao carregar cidades:', error);
         setCities([]);
       } finally {
         setIsLoadingCities(false);

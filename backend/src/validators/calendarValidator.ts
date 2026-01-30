@@ -35,7 +35,7 @@ export const createCalendarItemSchema = Joi.object({
       'date.base': 'A data de fim deve ser uma data válida',
       'date.greater': 'A data de fim deve ser posterior à data de início'
     }),
-    otherwise: Joi.optional().allow(null)
+    otherwise: Joi.date().iso().optional().allow(null)
   }),
   is_recurring: Joi.boolean().optional().default(false),
   recurrence_pattern: Joi.string().valid(...recurrencePatterns).when('is_recurring', {
@@ -45,10 +45,10 @@ export const createCalendarItemSchema = Joi.object({
   }),
   recurrence_end_date: Joi.date().iso().when('is_recurring', {
     is: true,
-    then: Joi.optional().allow(null).greater(Joi.ref('start_date')).messages({
+    then: Joi.date().iso().greater(Joi.ref('start_date')).optional().allow(null).messages({
       'date.greater': 'A data de término da recorrência deve ser posterior à data de início'
     }),
-    otherwise: Joi.optional().allow(null)
+    otherwise: Joi.date().iso().optional().allow(null)
   }),
   recurrence_time: Joi.string().pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).when('is_recurring', {
     is: true,
@@ -187,10 +187,10 @@ export const updateCalendarItemSchema = Joi.object({
   recurrence_pattern: Joi.string().valid(...recurrencePatterns).optional().allow(null),
   recurrence_end_date: Joi.date().iso().optional().allow(null).when('start_date', {
     is: Joi.exist(),
-    then: Joi.date().iso().greater(Joi.ref('start_date')).messages({
+    then: Joi.date().iso().greater(Joi.ref('start_date')).optional().allow(null).messages({
       'date.greater': 'A data de término da recorrência deve ser posterior à data de início'
     }),
-    otherwise: Joi.optional().allow(null)
+    otherwise: Joi.date().iso().optional().allow(null)
   }),
   recurrence_time: Joi.string().pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().allow(null).messages({
     'string.pattern.base': 'O horário deve estar no formato HH:mm'

@@ -44,7 +44,6 @@ export default function CheckoutPage() {
         }));
         setPlanOptions(plans);
       } catch (err) {
-        console.error('Erro ao carregar planos:', err);
         // Fallback para planos padrão em caso de erro
         setPlanOptions([
           { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },
@@ -118,8 +117,6 @@ export default function CheckoutPage() {
       // Redirecionar para checkout do Stripe
       window.location.href = url;
     } catch (err: unknown) {
-      console.error('Erro ao processar:', err);
-      
       let errorMessage = 'Erro ao processar sua solicitação. Tente novamente.';
       let errorDetails = '';
       

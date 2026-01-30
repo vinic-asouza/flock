@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Sidebar } from '@/components/main/Sidebar';
 import { Header } from '@/components/main/Header';
+import toast from 'react-hot-toast';
 
 // Componentes que serão criados
 import { SummaryCards } from '@/components/reports/SummaryCards';
@@ -52,8 +53,6 @@ export default function HomePage() {
       setReportsData(data);
       setLastUpdated(new Date().toLocaleString('pt-BR'));
     } catch (err: unknown) {
-      console.error('Erro ao carregar relatórios:', err);
-      
       // Verificar se o erro é relacionado a autenticação
       const errorWithStatus = err as Error & { status?: number };
       if (errorWithStatus.status === 401) {
@@ -63,6 +62,7 @@ export default function HomePage() {
       }
       
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar relatórios';
+      toast.error(errorMessage);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -140,9 +140,10 @@ export default function HomePage() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      toast.success('PDF exportado com sucesso!');
     } catch (err: unknown) {
-      console.error('Erro ao exportar PDF:', err);
       const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar PDF';
+      toast.error(errorMessage);
       setError(errorMessage);
     } finally {
       setExporting(false);

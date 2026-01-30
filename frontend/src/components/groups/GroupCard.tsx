@@ -2,6 +2,8 @@
 
 import { Eye, Users, User, MapPin } from 'lucide-react';
 import { Group } from '@/types';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { InfoRow } from '@/components/ui/InfoRow';
 
 interface GroupCardProps {
   group: Group;
@@ -59,30 +61,27 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(group.type)}`}>
               {group.type}
             </span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              group.status ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
-            }`}>
-              {group.status ? 'Ativo' : 'Inativo'}
-            </span>
+            <StatusBadge variant={group.status ? 'active' : 'inactive'} size="sm" />
           </div>
         </div>
         
         {/* Linha 2: Tipo e Congregação */}
-        <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
-          <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-          <span className="truncate">
-            {group.congregations?.name || 'Sede'}
-          </span>
-        </div>
+        <InfoRow
+          icon={MapPin}
+          value={group.congregations?.name || 'Sede'}
+          className="mb-2"
+          truncate
+        />
         
         {/* Linha 3: Responsável */}
         {group.members?.name && (
-          <div className="flex items-center gap-2 mb-2 text-sm text-gray-600">
-            <User size={14} className="text-gray-400 flex-shrink-0" />
-            <span className="truncate">
-              Responsável: {group.members.name}
-            </span>
-          </div>
+          <InfoRow
+            icon={User}
+            label="Responsável"
+            value={group.members.name}
+            className="mb-2"
+            truncate
+          />
         )}
         
         {/* Linha 4: Descrição */}
@@ -93,12 +92,11 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
         )}
         
         {/* Linha 5: Contador de membros */}
-        <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
-          <Users size={14} className="text-gray-400 flex-shrink-0" />
-          <span>
-            {group.memberCount || 0} membro{(group.memberCount || 0) !== 1 ? 's' : ''}
-          </span>
-        </div>
+        <InfoRow
+          icon={Users}
+          value={`${group.memberCount || 0} membro${(group.memberCount || 0) !== 1 ? 's' : ''}`}
+          className="mb-3"
+        />
       </div>
     </div>
   );

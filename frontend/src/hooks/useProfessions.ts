@@ -114,7 +114,6 @@ export function useProfessions() {
         setProfessions(professionsList);
       } catch (err) {
         setError('Erro ao carregar lista de profissões');
-        console.error('Erro ao carregar profissões:', err);
       } finally {
         setLoading(false);
       }

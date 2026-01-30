@@ -161,8 +161,17 @@ export const changeEmail = async (req: AuthRequest, res: Response) => {
       });
     } catch (emailError) {
       // Logar erro mas não quebrar o fluxo de alteração de email
-      console.error('Erro ao enviar email de notificação de alteração de email:', emailError);
+      logError('Erro ao enviar email de notificação de alteração de email:', emailError);
     }
+
+    // Registrar auditoria
+    await logAudit(req, {
+      entity: 'account',
+      entityId: req.user.id,
+      action: 'update',
+      changesBefore: { email: oldEmail },
+      changesAfter: { email: newEmail }
+    });
 
     res.json({
       message: 'Email alterado com sucesso',
@@ -170,7 +179,7 @@ export const changeEmail = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao alterar email:', error);
+    logError('Erro ao alterar email:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -247,8 +256,17 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       });
     } catch (emailError) {
       // Logar erro mas não quebrar o fluxo de alteração de senha
-      console.error('Erro ao enviar email de confirmação de alteração de senha:', emailError);
+      logError('Erro ao enviar email de confirmação de alteração de senha:', emailError);
     }
+
+    // Registrar auditoria (sem incluir a senha por segurança)
+    await logAudit(req, {
+      entity: 'account',
+      entityId: req.user.id,
+      action: 'update',
+      changesBefore: { password: '***' },
+      changesAfter: { password: '***' }
+    });
 
     res.json({
       message: 'Senha alterada com sucesso',
@@ -256,7 +274,7 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao alterar senha:', error);
+    logError('Erro ao alterar senha:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -317,7 +335,7 @@ export const changePhone = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao alterar telefone:', error);
+    logError('Erro ao alterar telefone:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -361,6 +379,39 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Verificar se há assinatura ativa antes de permitir exclusão
+    const { data: church, error: churchError } = await supabase
+      .from('churches')
+      .select('id, subscription_status, plan_type, subscription_end_date')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (!churchError && church) {
+      const hasActivePaidPlan = () => {
+        const subscriptionStatus = church.subscription_status;
+        const planType = church.plan_type;
+        const subscriptionEndDate = church.subscription_end_date;
+        
+        // Se subscription_end_date está preenchido, significa que a assinatura foi cancelada
+        // e está apenas aguardando o término do período pago - permitir exclusão
+        if (subscriptionEndDate) {
+          return false;
+        }
+        
+        // Verificar se tem assinatura ativa e não é plano gratuito
+        const isActive = subscriptionStatus === 'active' && planType && planType !== '100' && planType !== null;
+        
+        return isActive;
+      };
+
+      if (hasActivePaidPlan()) {
+        return res.status(400).json({
+          error: 'Não é possível excluir a conta',
+          details: 'Você possui uma assinatura paga ativa. Por favor, cancele sua assinatura primeiro através do portal de pagamento antes de excluir a conta.'
+        });
+      }
+    }
+
     // Salvar informações do usuário antes de excluir (para enviar email)
     const userEmail = req.user.email!;
     const userName = userEmail.split('@')[0] || 'Usuário';
@@ -380,6 +431,20 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
         error: 'Erro ao excluir conta',
         details: deleteError.message
       });
+    }
+
+    // Registrar auditoria ANTES de excluir (para garantir que o log seja criado)
+    try {
+      await logAudit(req, {
+        entity: 'account',
+        entityId: req.user.id,
+        action: 'delete',
+        changesBefore: { email: userEmail },
+        changesAfter: null
+      });
+    } catch (auditError) {
+      // Logar erro mas não quebrar o fluxo de exclusão
+      logError('Erro ao registrar auditoria de exclusão de conta:', auditError);
     }
 
     // Enviar email de confirmação de exclusão (não bloquear o fluxo se der erro)
@@ -404,7 +469,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
       });
     } catch (emailError) {
       // Logar erro mas não quebrar o fluxo de exclusão
-      console.error('Erro ao enviar email de confirmação de exclusão de conta:', emailError);
+      logError('Erro ao enviar email de confirmação de exclusão de conta:', emailError);
     }
 
     res.json({
@@ -413,7 +478,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao excluir conta:', error);
+    logError('Erro ao excluir conta:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -460,7 +525,7 @@ export const resendConfirmation = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao reenviar confirmação:', error);
+    logError('Erro ao reenviar confirmação:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
@@ -553,7 +618,7 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar logs de auditoria:', error);
+    logError('Erro ao buscar logs de auditoria:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
