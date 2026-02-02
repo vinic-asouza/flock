@@ -49,7 +49,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
     const baptismError = validateDateRange(filters.baptism_date_from, filters.baptism_date_to, 'Data de batismo');
     if (baptismError) return baptismError;
 
-    const admissionError = validateDateRange(filters.admission_date_from, filters.admission_date_to, 'Data de admissão');
+    const admissionError = validateDateRange(filters.admission_date_from, filters.admission_date_to, 'Data de recebimento');
     if (admissionError) return admissionError;
 
     // Validar faixa etária
@@ -347,7 +347,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
 
         <div>
           <Input
-            label="Data de Admissão (De)"
+            label="Data de Recebimento (De)"
             type="date"
             value={localFilters.admission_date_from || ''}
             onChange={(e) => handleFilterChange('admission_date_from', e.target.value)}
@@ -358,7 +358,7 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
 
         <div>
           <Input
-            label="Data de Admissão (Até)"
+            label="Data de Recebimento (Até)"
             type="date"
             value={localFilters.admission_date_to || ''}
             onChange={(e) => handleFilterChange('admission_date_to', e.target.value)}

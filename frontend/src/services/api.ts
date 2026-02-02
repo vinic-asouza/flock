@@ -259,7 +259,7 @@ class ApiService {
     if (params.baptism_date_from) queryParams.append('baptism_date_from', params.baptism_date_from);
     if (params.baptism_date_to) queryParams.append('baptism_date_to', params.baptism_date_to);
     
-    // Filtros de data de admissão
+    // Filtros de data de recebimento
     if (params.admission_date_from) queryParams.append('admission_date_from', params.admission_date_from);
     if (params.admission_date_to) queryParams.append('admission_date_to', params.admission_date_to);
     

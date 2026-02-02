@@ -1,11 +1,11 @@
 'use client';
 
-import { IntegrationMember } from '@/types';
+import { IntegrationMember, IntegrationFilters } from '@/types';
 import { IntegrationCard } from './IntegrationCard';
 import { Pagination } from '@/components/common/Pagination';
 import { useIntegration } from '@/context/IntegrationContext';
 import { Button } from '@/components/ui/Button';
-import { Download } from 'lucide-react';
+import { Download, RefreshCcw } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface IntegrationListProps {
@@ -16,6 +16,8 @@ interface IntegrationListProps {
   onPageChange: (page: number) => void;
   onExport: () => void;
   isExporting?: boolean;
+  filters?: IntegrationFilters;
+  currentPage?: number;
 }
 
 export function IntegrationList({
@@ -25,9 +27,17 @@ export function IntegrationList({
   onView,
   onPageChange,
   onExport,
-  isExporting = false
+  isExporting = false,
+  filters,
+  currentPage
 }: IntegrationListProps) {
-  const { integrationMembers, pagination, loading, error } = useIntegration();
+  const { integrationMembers, pagination, loading, error, loadIntegrationMembers } = useIntegration();
+
+  const handleRefresh = () => {
+    if (filters && currentPage) {
+      loadIntegrationMembers(filters, currentPage);
+    }
+  };
 
   if (loading) {
     return (
@@ -81,25 +91,35 @@ export function IntegrationList({
         {typeof pagination?.total === 'number' && (
           <div className="text-gray-500 text-sm">{pagination.total} integrantes encontrados</div>
         )}
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onExport}
-          disabled={isExporting}
-          className="inline-flex items-center gap-2"
-        >
-          {isExporting ? (
-            <>
-              <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              Exportando...
-            </>
-          ) : (
-            <>
-              <Download size={16} />
-              Exportar lista
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
+            Atualizar
+          </button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onExport}
+            disabled={isExporting}
+            className="inline-flex items-center gap-2"
+          >
+            {isExporting ? (
+              <>
+                <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                Exportando...
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                Exportar lista
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2">

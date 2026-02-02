@@ -1536,7 +1536,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       
       const admissionYear = new Date(member.admission_date).getFullYear();
       
-      // Adiciona o membro ao ano da admissão (seja batismo ou outro tipo)
+      // Adiciona o membro ao ano do recebimento (seja batismo ou outro tipo)
       if (!acc[admissionYear]) acc[admissionYear] = [];
       acc[admissionYear].push(member);
       
@@ -1547,7 +1547,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     const membersByMonth = formattedMembers.reduce((acc, member) => {
       if (!member.admission_date) return acc;
       
-      // Adiciona o membro ao mês da admissão (seja batismo ou outro tipo)
+      // Adiciona o membro ao mês do recebimento (seja batismo ou outro tipo)
       const admissionDate = new Date(member.admission_date);
       const year = admissionDate.getFullYear();
       const month = String(admissionDate.getMonth() + 1).padStart(2, '0');

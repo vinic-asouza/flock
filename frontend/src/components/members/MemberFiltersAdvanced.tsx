@@ -470,31 +470,10 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
           />
         </div>
       </div>
-      {/* Data de Batismo */}
+      {/* Data de Recebimento */}
       <div className="flex gap-2 items-end">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data de Batismo (de)</label>
-          <input
-            type="date"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-            value={filters.baptismDateFrom}
-            onChange={e => onChange({ baptismDateFrom: e.target.value })}
-          />
-        </div>
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data de Batismo (até)</label>
-          <input
-            type="date"
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
-            value={filters.baptismDateTo}
-            onChange={e => onChange({ baptismDateTo: e.target.value })}
-          />
-        </div>
-      </div>
-      {/* Data de Admissão */}
-      <div className="flex gap-2 items-end">
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data de Admissão (de)</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Data de Recebimento (de)</label>
           <input
             type="date"
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"
@@ -503,7 +482,7 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Data de Admissão (até)</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Data de Recebimento (até)</label>
           <input
             type="date"
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm focus:outline-none hover:border-gray-300 transition-colors"

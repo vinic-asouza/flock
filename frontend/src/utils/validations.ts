@@ -173,3 +173,58 @@ export async function fetchCEPData(cep: string): Promise<{
     return null;
   }
 }
+
+/**
+ * Valida se a data está no formato exato DD/MM/YYYY
+ * @param dateString - Data no formato DD/MM/YYYY
+ * @returns true se válido, false caso contrário
+ */
+export function validateDateFormat(dateString: string): boolean {
+  if (!dateString || typeof dateString !== 'string') {
+    return false;
+  }
+
+  // Deve ter exatamente 10 caracteres (DD/MM/YYYY)
+  if (dateString.length !== 10) {
+    return false;
+  }
+
+  // Deve seguir o padrão DD/MM/YYYY
+  const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+  const match = dateString.match(datePattern);
+  
+  if (!match) {
+    return false;
+  }
+
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+
+  // Validar ranges
+  if (month < 1 || month > 12) {
+    return false;
+  }
+
+  if (day < 1 || day > 31) {
+    return false;
+  }
+
+  // Validar ano (deve ser entre 1900 e ano atual + 1)
+  const currentYear = new Date().getFullYear();
+  if (year < 1900 || year > currentYear + 1) {
+    return false;
+  }
+
+  // Validar se a data existe (ex: 31/02/2024 não existe)
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return false;
+  }
+
+  return true;
+}

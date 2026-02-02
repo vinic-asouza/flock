@@ -26,7 +26,7 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: 'phone', label: 'Telefone', category: 'contact' },
   { id: 'whatsapp', label: 'WhatsApp', category: 'contact' },
 
-  { id: 'expected_admission_type', label: 'Tipo de Admissão Previsto', category: 'integration' },
+  { id: 'expected_admission_type', label: 'Tipo de Recebimento Previsto', category: 'integration' },
   { id: 'expected_congregation', label: 'Congregação Prevista', category: 'integration' },
   { id: 'mentor', label: 'Responsável/Discipulador', category: 'integration' },
   { id: 'mentor_contact', label: 'Contato do Responsável', category: 'integration' },

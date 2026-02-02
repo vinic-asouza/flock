@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Edit, Trash2, UserPlus, X, Users, Info, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
+import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
 import { GroupWithMembers } from '@/types';
 import { Member } from '@/types/reports';
 import { apiService } from '@/services/api';
@@ -23,7 +23,6 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
   const [group, setGroup] = useState<GroupWithMembers | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'info' | 'members'>('info');
   const [addingMember, setAddingMember] = useState(false);
   const [availableMembers, setAvailableMembers] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedMemberId, setSelectedMemberId] = useState('');
@@ -49,12 +48,12 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group, groupId]);
 
-  // Resetar página quando mudar de tab ou grupo
+  // Resetar página quando mudar de grupo
   useEffect(() => {
-    if (activeTab === 'members' && groupId) {
+    if (groupId) {
       setMembersPage(1);
     }
-  }, [activeTab, groupId]);
+  }, [groupId]);
 
   const loadGroup = async () => {
     if (!groupId) return;
@@ -125,7 +124,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
       const members = await apiService.getGroupMembers(groupId);
       
       // Ordenar por addedAt (mais recente primeiro) - ordem decrescente
-      const sortedMembers = members.sort((a, b) => {
+      const sortedMembers = members.sort((a: Member & { addedAt?: string }, b: Member & { addedAt?: string }) => {
         const dateA = a.addedAt ? new Date(a.addedAt).getTime() : 0;
         const dateB = b.addedAt ? new Date(b.addedAt).getTime() : 0;
         return dateB - dateA; // Decrescente: mais recente primeiro
@@ -180,7 +179,6 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
     if (!loading) {
       setGroup(null);
       setError(null);
-      setActiveTab('info');
       setSelectedMemberId('');
       setMembersPage(1);
       setFullMembersData([]);
@@ -235,105 +233,82 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
             <Button onClick={loadGroup} className="mt-4">Tentar novamente</Button>
           </div>
         ) : group ? (
-          <div className="flex flex-col h-full max-h-[calc(90vh-120px)]">
-            {/* Tabs */}
-            <div className="flex border-b border-gray-200">
-              <button
-                onClick={() => setActiveTab('info')}
-                className={`px-6 py-3 text-sm font-medium transition-colors ${
-                  activeTab === 'info'
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Info size={16} className="inline mr-2" />
-                Informações
-              </button>
-              <button
-                onClick={() => setActiveTab('members')}
-                className={`px-6 py-3 text-sm font-medium transition-colors ${
-                  activeTab === 'members'
-                    ? 'border-b-2 border-primary text-primary'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <Users size={16} className="inline mr-2" />
-                Membros ({group.membersList?.length || 0})
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === 'info' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Tipo</label>
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(group.type)}`}>
-                        {group.type}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                        group.status ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
-                      }`}>
-                        {group.status ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Congregação</label>
-                      <p className="text-gray-900">{group.congregations?.name || 'Sede'}</p>
-                    </div>
-                    {group.responsible && (
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-500 mb-2">Responsável</label>
-                        <div className="space-y-2">
-                          <p className="text-gray-900 font-medium">{group.responsible.name || '-'}</p>
-                          {(group.responsible.email || group.responsible.phone || group.responsible.whatsapp) && (
-                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                              {group.responsible.email && (
-                                <a
-                                  href={`mailto:${group.responsible.email}`}
-                                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                                >
-                                  <Mail size={14} className="text-gray-400" />
-                                  {group.responsible.email}
-                                </a>
-                              )}
-                              {group.responsible.phone && (
-                                <a
-                                  href={`tel:${group.responsible.phone.replace(/\D/g, '')}`}
-                                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
-                                >
-                                  <Phone size={14} className="text-gray-400" />
-                                  {group.responsible.phone}
-                                </a>
-                              )}
-                              {group.responsible.whatsapp && (
-                                <a
-                                  href={`https://wa.me/${group.responsible.whatsapp.replace(/\D/g, '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1.5 hover:text-green-600 transition-colors"
-                                >
-                                  <MessageCircle size={14} className="text-gray-400" />
-                                  {group.responsible.whatsapp}
-                                </a>
-                              )}
-                            </div>
+          <div className="flex h-full max-h-[calc(90vh-120px)] gap-6 p-6">
+            {/* Coluna Esquerda - Informações (30%) */}
+            <div className="w-[30%] flex-shrink-0 border-r border-gray-200 pr-6 overflow-y-auto">
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Tipo</label>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(group.type)}`}>
+                    {group.type}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
+                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                    group.status ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
+                  }`}>
+                    {group.status ? 'Ativo' : 'Inativo'}
+                  </span>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Congregação</label>
+                  <p className="text-gray-900">{group.congregations?.name || 'Sede'}</p>
+                </div>
+                
+                {group.responsible && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-2">Responsável</label>
+                    <div className="space-y-2">
+                      <p className="text-gray-900 font-medium">{group.responsible.name || '-'}</p>
+                      {(group.responsible.email || group.responsible.phone || group.responsible.whatsapp) && (
+                        <div className="flex flex-col gap-2 text-sm text-gray-600">
+                          {group.responsible.email && (
+                            <a
+                              href={`mailto:${group.responsible.email}`}
+                              className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                            >
+                              <Mail size={14} className="text-gray-400" />
+                              {group.responsible.email}
+                            </a>
+                          )}
+                          {group.responsible.phone && (
+                            <a
+                              href={`tel:${group.responsible.phone.replace(/\D/g, '')}`}
+                              className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                            >
+                              <Phone size={14} className="text-gray-400" />
+                              {group.responsible.phone}
+                            </a>
+                          )}
+                          {group.responsible.whatsapp && (
+                            <a
+                              href={`https://wa.me/${group.responsible.whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 hover:text-green-600 transition-colors"
+                            >
+                              <MessageCircle size={14} className="text-gray-400" />
+                              {group.responsible.whatsapp}
+                            </a>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                  {group.description && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Descrição</label>
-                      <p className="text-gray-900 whitespace-pre-wrap">{group.description}</p>
+                      )}
                     </div>
-                  )}
-                  <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  </div>
+                )}
+                
+                {group.description && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">Descrição</label>
+                    <p className="text-gray-900 whitespace-pre-wrap text-sm">{group.description}</p>
+                  </div>
+                )}
+                
+                <div className="pt-4 border-t border-gray-200">
+                  <div className="flex flex-col gap-2">
                     {onEdit && (
                       <Button
                         variant="secondary"
@@ -341,6 +316,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                           handleClose();
                           onEdit(group.id);
                         }}
+                        className="w-full"
                       >
                         <Edit size={16} className="mr-2" />
                         Editar
@@ -353,6 +329,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                           handleClose();
                           onDelete(group.id, group.name);
                         }}
+                        className="w-full"
                       >
                         <Trash2 size={16} className="mr-2" />
                         Excluir
@@ -360,122 +337,129 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                     )}
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
 
-              {activeTab === 'members' && (
-                <div className="space-y-4 flex flex-col min-h-0">
-                  {/* Adicionar membro */}
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex-shrink-0">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Adicionar Membro</label>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <Select
-                          value={selectedMemberId}
-                          onChange={setSelectedMemberId}
-                          options={[
-                            { value: '', label: 'Selecione um membro' },
-                            ...availableMembers.map(m => ({
-                              value: m.id,
-                              label: m.name
-                            }))
-                          ]}
-                          disabled={loadingMembers || addingMember}
-                          searchable={true}
-                          placeholder={loadingMembers ? 'Carregando...' : 'Buscar membro'}
-                        />
-                      </div>
-                      <Button
-                        onClick={handleAddMember}
-                        disabled={!selectedMemberId || addingMember}
-                        isLoading={addingMember}
-                      >
-                        <UserPlus size={16} className="mr-2" />
-                        Adicionar
-                      </Button>
+            {/* Coluna Direita - Membros (70%) */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Membros ({group.membersList?.length || 0})
+                </h3>
+              </div>
+              
+              <div className="space-y-4 flex flex-col flex-1 min-h-0">
+                {/* Adicionar membro */}
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex-shrink-0">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Adicionar Membro</label>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Select
+                        value={selectedMemberId}
+                        onChange={setSelectedMemberId}
+                        options={[
+                          { value: '', label: 'Selecione um membro' },
+                          ...availableMembers.map(m => ({
+                            value: m.id,
+                            label: m.name
+                          }))
+                        ]}
+                        disabled={loadingMembers || addingMember}
+                        searchable={true}
+                        placeholder={loadingMembers ? 'Carregando...' : 'Buscar membro'}
+                      />
                     </div>
-                  </div>
-
-                  {/* Lista de membros */}
-                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    {loadingFullMembers ? (
-                      <div className="flex items-center justify-center flex-1">
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Loader2 size={20} className="animate-spin" />
-                          Carregando membros...
-                        </div>
-                      </div>
-                    ) : paginatedMembers.length > 0 ? (
-                      <>
-                        <div className="flex-1 overflow-y-auto min-h-0">
-                          <div className="space-y-3">
-                            {paginatedMembers.map((member) => (
-                              <div key={member.id} className="relative group">
-                                <MemberCardCompact 
-                                  member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
-                                />
-                                <button
-                                  onClick={() => handleRemoveMember(member.id)}
-                                  className="absolute top-3 right-3 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
-                                  title="Remover do grupo"
-                                >
-                                  <X size={18} />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Paginação */}
-                        {totalPages > 1 && (
-                          <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm text-gray-600">
-                                Mostrando {((membersPage - 1) * membersPerPage) + 1} a {Math.min(membersPage * membersPerPage, totalMembers)} de {totalMembers} membro(s)
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={() => setMembersPage(prev => Math.max(1, prev - 1))}
-                                  disabled={membersPage === 1}
-                                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
-                                  title="Página anterior"
-                                >
-                                  <ChevronLeft size={16} className="text-gray-600" />
-                                </button>
-                                <div className="flex items-center gap-1 px-2">
-                                  <span className="text-sm text-gray-700 font-medium">
-                                    {membersPage}
-                                  </span>
-                                  <span className="text-sm text-gray-400">
-                                    de
-                                  </span>
-                                  <span className="text-sm text-gray-700 font-medium">
-                                    {totalPages}
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={() => setMembersPage(prev => Math.min(totalPages, prev + 1))}
-                                  disabled={membersPage === totalPages}
-                                  className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
-                                  title="Próxima página"
-                                >
-                                  <ChevronRight size={16} className="text-gray-600" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center flex-1 text-gray-500">
-                        <div className="text-center">
-                          <Users size={48} className="mx-auto mb-2 text-gray-300" />
-                          <p>Nenhum membro vinculado a este grupo</p>
-                        </div>
-                      </div>
-                    )}
+                    <Button
+                      onClick={handleAddMember}
+                      disabled={!selectedMemberId || addingMember}
+                      isLoading={addingMember}
+                    >
+                      <UserPlus size={16} className="mr-2" />
+                      Adicionar
+                    </Button>
                   </div>
                 </div>
-              )}
+
+                {/* Lista de membros */}
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                  {loadingFullMembers ? (
+                    <div className="flex items-center justify-center flex-1">
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <Loader2 size={20} className="animate-spin" />
+                        Carregando membros...
+                      </div>
+                    </div>
+                  ) : paginatedMembers.length > 0 ? (
+                    <>
+                      <div className="flex-1 overflow-y-auto min-h-0">
+                        <div className="space-y-3">
+                          {paginatedMembers.map((member) => (
+                            <div key={member.id} className="relative group">
+                              <MemberCardCompact 
+                                member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
+                              />
+                              <button
+                                onClick={() => handleRemoveMember(member.id)}
+                                className="absolute top-3 right-3 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                title="Remover do grupo"
+                              >
+                                <X size={18} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Paginação */}
+                      {totalPages > 1 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-600">
+                              Mostrando {((membersPage - 1) * membersPerPage) + 1} a {Math.min(membersPage * membersPerPage, totalMembers)} de {totalMembers} membro(s)
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setMembersPage(prev => Math.max(1, prev - 1))}
+                                disabled={membersPage === 1}
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                                title="Página anterior"
+                              >
+                                <ChevronLeft size={16} className="text-gray-600" />
+                              </button>
+                              <div className="flex items-center gap-1 px-2">
+                                <span className="text-sm text-gray-700 font-medium">
+                                  {membersPage}
+                                </span>
+                                <span className="text-sm text-gray-400">
+                                  de
+                                </span>
+                                <span className="text-sm text-gray-700 font-medium">
+                                  {totalPages}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => setMembersPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={membersPage === totalPages}
+                                className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                                title="Próxima página"
+                              >
+                                <ChevronRight size={16} className="text-gray-600" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center flex-1 text-gray-500">
+                      <div className="text-center">
+                        <Users size={48} className="mx-auto mb-2 text-gray-300" />
+                        <p>Nenhum membro vinculado a este grupo</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ) : null}

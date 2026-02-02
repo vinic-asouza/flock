@@ -88,14 +88,14 @@ export const reportFiltersSchema = Joi.object({
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
     .optional()
     .messages({
-      'string.pattern.base': 'Data de admissão (de) deve estar no formato YYYY-MM-DD'
+      'string.pattern.base': 'Data de recebimento (de) deve estar no formato YYYY-MM-DD'
     }),
 
   admission_date_to: Joi.string()
     .pattern(/^\d{4}-\d{2}-\d{2}$/)
     .optional()
     .messages({
-      'string.pattern.base': 'Data de admissão (até) deve estar no formato YYYY-MM-DD'
+      'string.pattern.base': 'Data de recebimento (até) deve estar no formato YYYY-MM-DD'
     }),
 
   // Filtros por faixa etária
@@ -155,7 +155,7 @@ export const reportFiltersSchema = Joi.object({
   // Validar ranges de datas
   validateDateRange(value.birth_date_from, value.birth_date_to, 'Data de nascimento');
   validateDateRange(value.baptism_date_from, value.baptism_date_to, 'Data de batismo');
-  validateDateRange(value.admission_date_from, value.admission_date_to, 'Data de admissão');
+  validateDateRange(value.admission_date_from, value.admission_date_to, 'Data de recebimento');
 
   // Validação: age_from deve ser menor que age_to
   if (value.age_from !== undefined && value.age_to !== undefined) {

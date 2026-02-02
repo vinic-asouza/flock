@@ -411,12 +411,12 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                       <p className="text-gray-900">{formatarData(member.baptism_date || '')}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-500">Data de Admissão</span>
+                      <span className="text-sm font-medium text-gray-500">Data de Recebimento</span>
                       <p className="text-gray-900">{formatarData(member.admission_date || '')}</p>
                     </div>
                     {member.admission && (
                       <div>
-                        <span className="text-sm font-medium text-gray-500">Tipo de Admissão</span>
+                        <span className="text-sm font-medium text-gray-500">Tipo de Recebimento</span>
                         <p className="text-gray-900">{member.admission}</p>
                       </div>
                     )}

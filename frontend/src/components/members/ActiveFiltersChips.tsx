@@ -37,7 +37,7 @@ export function ActiveFiltersChips({
       name: 'Nome',
       birth: 'Idade',
       baptism_date: 'Data de Batismo',
-      admission_date: 'Data de Admissão',
+      admission_date: 'Data de Recebimento',
       created_at: 'Data de Cadastro'
     };
     
@@ -133,8 +133,8 @@ export function ActiveFiltersChips({
           return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
         };
         return filters.admissionDateTo
-          ? `Admissão: ${format(value)} - ${format(filters.admissionDateTo)}`
-          : `Admissão: de ${format(value)}`;
+          ? `Recebimento: ${format(value)} - ${format(filters.admissionDateTo)}`
+          : `Recebimento: de ${format(value)}`;
       }
       case 'admissionDateTo': {
         if (filters.admissionDateFrom) return null;
@@ -143,7 +143,7 @@ export function ActiveFiltersChips({
         const part = v.includes('T') ? v.split('T')[0] : v;
         const m = part.match(/^(\d{4})-(\d{2})-(\d{2})$/);
         const formatted = m ? `${m[3]}/${m[2]}/${m[1]}` : new Date(v).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
-        return `Admissão: até ${formatted}`;
+        return `Recebimento: até ${formatted}`;
       }
       default:
         return value;

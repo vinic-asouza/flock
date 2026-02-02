@@ -652,18 +652,22 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       });
     }
 
-    // Montar payload base do membro a partir do integrante + dados enviados
+    // Separar grupos do payload (se fornecidos)
+    const { groups, ...dataWithoutGroups } = req.body as any;
+    const groupIds = Array.isArray(groups) ? groups : [];
+
+    // Montar payload base do membro a partir do integrante + dados enviados (sem grupos)
     const baseMemberPayload: Partial<Member> = {
-      ...req.body,
+      ...dataWithoutGroups,
       name: integrationMember.name,
-      birth: integrationMember.birth ?? req.body.birth,
-      gender: req.body.gender ?? mapGenderToMember(integrationMember.gender),
-      marital_status: req.body.marital_status ?? mapMaritalStatusToMember(integrationMember.marital_status),
-      phone: req.body.phone ?? integrationMember.phone,
-      whatsapp: req.body.whatsapp ?? integrationMember.whatsapp,
-      admission: req.body.admission ?? mapAdmissionTypeToMember(integrationMember.expected_admission_type),
-      congregation_id: req.body.congregation_id ?? integrationMember.expected_congregation_id,
-      role_id: req.body.role_id ?? null,
+      birth: integrationMember.birth ?? dataWithoutGroups.birth,
+      gender: dataWithoutGroups.gender ?? mapGenderToMember(integrationMember.gender),
+      marital_status: dataWithoutGroups.marital_status ?? mapMaritalStatusToMember(integrationMember.marital_status),
+      phone: dataWithoutGroups.phone ?? integrationMember.phone,
+      whatsapp: dataWithoutGroups.whatsapp ?? integrationMember.whatsapp,
+      admission: dataWithoutGroups.admission ?? mapAdmissionTypeToMember(integrationMember.expected_admission_type),
+      congregation_id: dataWithoutGroups.congregation_id ?? integrationMember.expected_congregation_id,
+      role_id: dataWithoutGroups.role_id ?? null,
       church_id: church.id,
       active: true
     };
@@ -693,6 +697,33 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
         error: 'Erro ao integrar integrante',
         details: memberError?.message ?? 'Erro desconhecido ao criar membro'
       });
+    }
+
+    // ✅ TRANSAÇÃO: Associar membro aos grupos (se fornecidos)
+    if (groupIds.length > 0) {
+      const memberGroupsData = groupIds.map(groupId => ({
+        member_id: member.id,
+        group_id: groupId
+      }));
+
+      const { error: memberGroupsError } = await supabase
+        .from('member_groups')
+        .insert(memberGroupsData);
+
+      if (memberGroupsError) {
+        // ❌ ROLLBACK: Deletar o membro criado
+        logError('Erro ao associar grupos, fazendo rollback...', memberGroupsError);
+        
+        await supabase
+          .from('members')
+          .delete()
+          .eq('id', member.id);
+
+        return res.status(400).json({
+          error: 'Erro ao integrar integrante',
+          details: memberGroupsError.message
+        });
+      }
     }
 
     // ✅ TRANSAÇÃO: Atualizar status do integrante (se falhar, fazer rollback)

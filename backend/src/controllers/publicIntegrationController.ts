@@ -3,6 +3,7 @@ import supabase from '../services/supabase';
 import { PublicIntegrationRequest, IntegrationMember } from '../types';
 import { validateIntegrationMember } from '../validators/integrationMemberValidator';
 import { error as logError } from '../utils/logger';
+import { normalizeMemberDates } from '../utils/dateNormalizer';
 
 /**
  * Valida um link de integração pública (sem criar integrante)
@@ -90,7 +91,7 @@ export const createIntegrationMemberViaPublicLink = async (
     }
 
     // ✅ Validar limite de usos ANTES de criar o integrante
-    if (integrationLink.max_uses !== null && integrationLink.max_uses > 0) {
+    if (integrationLink.max_uses !== null && integrationLink.max_uses !== undefined && integrationLink.max_uses > 0) {
       if (integrationLink.current_uses >= integrationLink.max_uses) {
         return res.status(403).json({
           error: 'Limite de usos atingido',
@@ -107,8 +108,8 @@ export const createIntegrationMemberViaPublicLink = async (
       ...normalizedData,
       church_id: churchId,
       status: 'em_progresso',
-      // Campos não permitidos no formulário público devem ser null
-      expected_admission_type: null,
+      // Campos não permitidos no formulário público devem ser undefined
+      expected_admission_type: undefined,
       mentor_id: null,
       notes: null
     };

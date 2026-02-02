@@ -119,19 +119,25 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'baptism': 'baptism_date',
   'data de batismo': 'baptism_date',
   
-  // Tipo de admissão
+  // Tipo de recebimento (mantém mapeamento para compatibilidade com imports antigos)
   'tipo_admissao': 'admission',
   'tipo admissão': 'admission',
+  'tipo_recebimento': 'admission',
+  'tipo recebimento': 'admission',
   'admission': 'admission',
   'admissao': 'admission',
   'admissão': 'admission',
   'tipo de admissão': 'admission',
+  'tipo de recebimento': 'admission',
   
-  // Data de admissão
+  // Data de recebimento (mantém mapeamento para compatibilidade com imports antigos)
   'data_admissao': 'admission_date',
   'data admissão': 'admission_date',
+  'data_recebimento': 'admission_date',
+  'data recebimento': 'admission_date',
   'admission_date': 'admission_date',
   'data de admissão': 'admission_date',
+  'data de recebimento': 'admission_date',
   
   // Profissão
   'profissao': 'occupation',

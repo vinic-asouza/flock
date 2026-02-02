@@ -18,6 +18,67 @@ export function formatDate(date: string | Date | null | undefined): string {
 }
 
 /**
+ * Converte data do formato DD/MM/YYYY para ISO (YYYY-MM-DD)
+ * Valida se o formato está correto antes de converter
+ * @param formattedDate - Data no formato DD/MM/YYYY
+ * @returns Data no formato ISO (YYYY-MM-DD) ou null se inválida
+ */
+export function formatDateToISO(formattedDate: string): string | null {
+  if (!formattedDate || typeof formattedDate !== 'string') {
+    return null;
+  }
+
+  // Se já estiver no formato ISO (YYYY-MM-DD), retornar como está
+  if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
+    return formattedDate;
+  }
+
+  // Validar formato DD/MM/YYYY exato (10 caracteres)
+  if (formattedDate.length !== 10) {
+    return null;
+  }
+
+  const datePattern = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+  const match = formattedDate.match(datePattern);
+  
+  if (!match) {
+    return null;
+  }
+
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+
+  // Validar ranges básicos
+  if (month < 1 || month > 12) {
+    return null;
+  }
+
+  if (day < 1 || day > 31) {
+    return null;
+  }
+
+  // Validar ano (deve ser entre 1900 e ano atual + 1)
+  const currentYear = new Date().getFullYear();
+  if (year < 1900 || year > currentYear + 1) {
+    return null;
+  }
+
+  // Validar se a data existe (ex: 31/02/2024 não existe)
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  // Converter para ISO
+  return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+}
+
+/**
  * Calcula a idade a partir de uma data de nascimento
  * Usa lógica robusta que evita problemas de timezone
  * @param birth - Data de nascimento em formato ISO (YYYY-MM-DD) ou Date

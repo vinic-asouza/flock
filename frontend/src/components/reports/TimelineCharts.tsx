@@ -38,12 +38,12 @@ export function TimelineCharts({
 
   // Função para determinar tipo de entrada do membro
   const getMemberEntryType = (member: Member) => {
-    // Se o tipo de admissão é "Batismo" ou "Batismo Infantil", considera batismo
+    // Se o tipo de recebimento é "Batismo" ou "Batismo Infantil", considera batismo
     if (member.admission === 'Batismo' || member.admission === 'Batismo Infantil') {
       return 'baptism';
     }
     
-    // Caso contrário, considera admissão
+    // Caso contrário, considera recebimento
     return 'admission';
   };
 
@@ -227,7 +227,7 @@ export function TimelineCharts({
       membersList = data.membersByMonth?.[yearMonthKey] || [];
     }
 
-    // Ordenar por data de admissão (mais recente primeiro)
+    // Ordenar por data de recebimento (mais recente primeiro)
     return membersList.sort((a, b) => {
       const dateA = a.admission_date ? new Date(a.admission_date).getTime() : 0;
       const dateB = b.admission_date ? new Date(b.admission_date).getTime() : 0;

@@ -32,28 +32,21 @@ const groupSchema = z.object({
     'Região'
   ] as const),
   description: z.string()
+    .max(5000, 'A descrição não pode ter mais de 5000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .max(5000, 'A descrição não pode ter mais de 5000 caracteres'),
+    .or(z.literal('')),
   congregation_id: z.string()
     .optional()
     .or(z.literal(''))
     .or(z.literal('sede'))
     .nullable()
-    .refine((val, ctx) => {
+    .refine((val) => {
       if (!val || val === '' || val === 'sede') return true; // String vazia ou 'sede' é válida
       // Validar que é UUID válido
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'ID da congregação inválido'
-        });
-        return false;
-      }
-      return true;
+      return uuidRegex.test(val);
     }, {
-      message: 'Congregação inválida'
+      message: 'ID da congregação inválido'
     }),
   responsible_id: z.string().uuid().optional().or(z.literal('')).nullable(),
   status: z.boolean(),

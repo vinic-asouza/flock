@@ -206,8 +206,8 @@ const memberSchema = Joi.object({
   admission: Joi.string()
     .required()
     .messages({
-      'string.empty': 'Tipo de admissão é obrigatório',
-      'any.required': 'Tipo de admissão é obrigatório'
+      'string.empty': 'Tipo de recebimento é obrigatório',
+      'any.required': 'Tipo de recebimento é obrigatório'
     }),
 
   father_name: Joi.string()
@@ -221,14 +221,14 @@ const memberSchema = Joi.object({
   admission_date: Joi.alternatives()
     .try(
       Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).messages({
-        'string.pattern.base': 'Data de admissão deve estar no formato YYYY-MM-DD'
+        'string.pattern.base': 'Data de recebimento deve estar no formato YYYY-MM-DD'
       }),
       Joi.date()
     )
     .required()
     .messages({
-      'date.base': 'Data de admissão inválida',
-      'any.required': 'Data de admissão é obrigatória'
+      'date.base': 'Data de recebimento inválida',
+      'any.required': 'Data de recebimento é obrigatória'
     }),
 
   congregation_id: Joi.string()

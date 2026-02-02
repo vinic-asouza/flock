@@ -7,8 +7,8 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
-import { validatePhone } from '@/utils/validations';
-import { formatPhone } from '@/utils';
+import { validatePhone, validateDateFormat } from '@/utils/validations';
+import { formatPhone, formatDateToISO } from '@/utils';
 import {
   IntegrationMember,
   IntegrationMemberPayload,
@@ -18,19 +18,7 @@ import {
   IntegrationStatus
 } from '@/types';
 
-// Função auxiliar para converter data DD/MM/YYYY para ISO
-const formatDateToISO = (formattedDate: string): string | null => {
-  if (!formattedDate) return null;
-  // Se já estiver no formato ISO (YYYY-MM-DD), retornar como está
-  if (/^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
-    return formattedDate;
-  }
-  // Se estiver no formato DD/MM/YYYY
-  const parts = formattedDate.split('/');
-  if (parts.length !== 3) return null;
-  const [day, month, year] = parts;
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-};
+// formatDateToISO agora é importado de @/utils
 
 const integrationSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -39,14 +27,25 @@ const integrationSchema = z.object({
     .or(z.literal(''))
     .refine((val) => {
       if (!val || val.trim() === '') return true; // Campo opcional
+      // Se estiver no formato ISO (YYYY-MM-DD) do input type="date", aceitar
+      if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+        const birthDate = new Date(val);
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+        return !isNaN(birthDate.getTime()) && birthDate <= today;
+      }
+      // Se estiver no formato DD/MM/YYYY, validar formato
+      if (!validateDateFormat(val)) {
+        return false;
+      }
       const date = formatDateToISO(val);
       if (!date) return false;
       const birthDate = new Date(date);
       const today = new Date();
-      today.setHours(23, 59, 59, 999); // Fim do dia de hoje
+      today.setHours(23, 59, 59, 999);
       return birthDate <= today;
     }, {
-      message: 'Data de nascimento não pode ser no futuro'
+      message: 'Data de nascimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001) e não pode ser no futuro'
     }),
   gender: z.union([z.literal(''), z.enum(['masculino', 'feminino'])]).optional(),
   marital_status: z.union([
@@ -69,28 +68,12 @@ const integrationSchema = z.object({
     z.literal(''),
     z.enum(['batismo', 'transferencia', 'profissao de fe', 'outro'])
   ]).optional(),
-  expected_congregation_id: z.union([z.literal(''), z.string().uuid()])
-    .optional()
-    .refine((val, ctx) => {
-      if (!val || val === '') return true; // String vazia é válida (representa 'Sede')
-      // Validar que é UUID válido
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(val)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'ID da congregação inválido'
-        });
-        return false;
-      }
-      return true;
-    }, {
-      message: 'Congregação prevista inválida'
-    }),
+  expected_congregation_id: z.union([z.literal(''), z.string().uuid()]).optional(),
   mentor_id: z.union([z.literal(''), z.string().uuid()]).optional(),
   notes: z.string()
+    .max(5000, 'Observações não podem ter mais de 5000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .max(5000, 'Observações não podem ter mais de 5000 caracteres'),
+    .or(z.literal('')),
   status: z.union([
     z.literal(''),
     z.enum(['em_progresso', 'integrado', 'descartado'])
@@ -359,7 +342,7 @@ export function IntegrationForm({
           options={admissionTypeOptions.map(option => ({ value: option.value, label: option.label }))}
           value={watch('expected_admission_type') ?? ''}
           onChange={(value) => setValue('expected_admission_type', value as IntegrationFormData['expected_admission_type'])}
-          label="Tipo de admissão previsto"
+          label="Tipo de recebimento previsto"
           placeholder="Selecione"
           disabled={isLoading}
         />

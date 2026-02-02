@@ -103,7 +103,7 @@ const integrationMemberSchema = Joi.object<Partial<IntegrationMember>>({
     .optional()
     .allow(null, '')
     .messages({
-      'any.only': 'Tipo de admissão deve ser batismo, transferencia, profissao de fe ou outro'
+      'any.only': 'Tipo de recebimento deve ser batismo, transferencia, profissao de fe ou outro'
     }),
 
   expected_congregation_id: Joi.string()

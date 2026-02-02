@@ -12,7 +12,8 @@ import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
 import { apiService } from '@/services/api';
 import { Group } from '@/types';
-import { validatePhone, validateCEP, validateCPFOrCNPJ, fetchCEPData } from '@/utils/validations';
+import { validatePhone, validateCEP, validateCPFOrCNPJ, fetchCEPData, validateDateFormat } from '@/utils/validations';
+import { formatDateToISO } from '@/utils';
 
 // Schema de validação
 const memberSchema = z.object({
@@ -34,6 +35,10 @@ const memberSchema = z.object({
     .min(1, 'Data de nascimento é obrigatória')
     .refine((val) => {
       if (!val) return false;
+      // Validar formato exato DD/MM/YYYY
+      if (!validateDateFormat(val)) {
+        return false;
+      }
       const date = formatDateToISO(val);
       if (!date) return false;
       const birthDate = new Date(date);
@@ -41,7 +46,7 @@ const memberSchema = z.object({
       today.setHours(23, 59, 59, 999); // Fim do dia de hoje
       return birthDate <= today;
     }, {
-      message: 'Data de nascimento não pode ser no futuro'
+      message: 'Data de nascimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001)'
     }),
   gender: z.enum(['Masculino', 'Feminino']),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro']),
@@ -67,15 +72,40 @@ const memberSchema = z.object({
     .refine((val) => !val || val.trim() === '' || validateCEP(val), {
       message: 'CEP inválido. Deve conter 8 dígitos'
     }),
-  baptism_date: z.string().optional().or(z.literal('')),
+  baptism_date: z.string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || val.trim() === '' || validateDateFormat(val), {
+      message: 'Data de batismo deve estar no formato DD/MM/YYYY (ex: 05/01/2001)'
+    }),
   admission: z.string().min(1, 'Tipo de recebimento é obrigatório'),
-  admission_date: z.string().min(1, 'Data de recebimento é obrigatória'),
+  admission_date: z.string()
+    .min(1, 'Data de recebimento é obrigatória')
+    .refine((val) => {
+      if (!val) return false;
+      if (!validateDateFormat(val)) {
+        return false;
+      }
+      const date = formatDateToISO(val);
+      if (!date) return false;
+      const admissionDate = new Date(date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      return admissionDate <= today;
+    }, {
+      message: 'Data de recebimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001) e não pode ser no futuro'
+    }),
   congregation_id: z.string().optional().or(z.literal('')).nullable(),
   father_name: z.string().optional().or(z.literal('')),
   mother_name: z.string().optional().or(z.literal('')),
   children: z.array(z.object({
     name: z.string().min(1, 'Nome do filho é obrigatório'),
-    birth: z.string().optional().or(z.literal('')),
+    birth: z.string()
+      .optional()
+      .or(z.literal(''))
+      .refine((val) => !val || val.trim() === '' || validateDateFormat(val), {
+        message: 'Data de nascimento do filho deve estar no formato DD/MM/YYYY (ex: 05/01/2001)'
+      }),
     dependent: z.boolean().optional(),
   })).optional(),
   active: z.boolean(),
@@ -202,14 +232,7 @@ const formatDateFromISO = (value: string | null | undefined): string => {
   }
 };
 
-// Função para converter DD/MM/AAAA para ISO
-const formatDateToISO = (formattedDate: string): string | null => {
-  if (!formattedDate) return null;
-  const parts = formattedDate.split('/');
-  if (parts.length !== 3) return null;
-  const [day, month, year] = parts;
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-};
+// formatDateToISO agora é importado de @/utils
 
 // Função para calcular idade
 const calcularIdade = (birth: string): number | null => {
@@ -229,6 +252,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const { congregations, loading: filtersLoading } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
   const { professions, loading: professionsLoading } = useProfessions();
+  
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
@@ -252,6 +276,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     handleSubmit,
     formState: { errors },
     setValue,
+    setError,
+    clearErrors,
     watch,
     reset,
   } = useForm<MemberFormData>({
@@ -518,23 +544,44 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     const value = e.target.value;
     const numbers = value.replace(/\D/g, '');
 
+    // Limitar a 8 dígitos (DDMMYYYY)
+    const limitedNumbers = numbers.slice(0, 8);
+
     // Aplicar máscara DD/MM/AAAA
     let formatted = '';
-    if (numbers.length <= 2) {
-      formatted = numbers;
-    } else if (numbers.length <= 4) {
-      formatted = `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    if (limitedNumbers.length <= 2) {
+      formatted = limitedNumbers;
+    } else if (limitedNumbers.length <= 4) {
+      formatted = `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2)}`;
     } else {
-      formatted = `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+      formatted = `${limitedNumbers.slice(0, 2)}/${limitedNumbers.slice(2, 4)}/${limitedNumbers.slice(4, 8)}`;
     }
 
     // Atualizar display e valor do formulário
     if (field === 'birth') {
       setBirthDisplay(formatted);
       setValue('birth', formatted);
+      // Validar formato quando completo (10 caracteres)
+      if (formatted.length === 10 && !validateDateFormat(formatted)) {
+        setError('birth', {
+          type: 'manual',
+          message: 'Data de nascimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001)'
+        });
+      } else if (formatted.length === 10) {
+        clearErrors('birth');
+      }
     } else if (field === 'admission_date') {
       setAdmissionDateDisplay(formatted);
       setValue('admission_date', formatted);
+      // Validar formato quando completo (10 caracteres)
+      if (formatted.length === 10 && !validateDateFormat(formatted)) {
+        setError('admission_date', {
+          type: 'manual',
+          message: 'Data de recebimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001)'
+        });
+      } else if (formatted.length === 10) {
+        clearErrors('admission_date');
+      }
     }
   };
 

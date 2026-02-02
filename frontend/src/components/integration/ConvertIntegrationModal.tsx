@@ -60,6 +60,7 @@ export function ConvertIntegrationModal({
 }: ConvertIntegrationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
   const initialMemberData = useMemo(() => {
     if (!integrationMember) return null;
@@ -107,6 +108,7 @@ export function ConvertIntegrationModal({
     try {
       setIsLoading(true);
       setError(null);
+      setHasSubmittedOnce(true);
 
       const result = await apiService.convertIntegrationMember(integrationMember.id, formData);
       onSuccess(result);
@@ -114,6 +116,7 @@ export function ConvertIntegrationModal({
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao converter integrante em membro';
       setError(errorMessage);
+      // Não resetar o formulário - os dados devem permanecer
     } finally {
       setIsLoading(false);
     }
@@ -122,6 +125,7 @@ export function ConvertIntegrationModal({
   const handleClose = () => {
     if (!isLoading) {
       setError(null);
+      setHasSubmittedOnce(false);
       onClose();
     }
   };
@@ -152,8 +156,9 @@ export function ConvertIntegrationModal({
           )}
 
           <MemberForm
+            key={integrationMember?.id || 'new'}
             mode="create"
-            member={initialMemberData}
+            member={hasSubmittedOnce ? undefined : initialMemberData}
             onSubmit={handleSubmit}
             onCancel={handleClose}
             isLoading={isLoading}

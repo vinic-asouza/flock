@@ -207,6 +207,8 @@ function IntegrationPageContent() {
         onPageChange={handlePageChange}
         onExport={() => setExportModalOpen(true)}
         isExporting={exportingList}
+        filters={filters}
+        currentPage={currentPage}
       />
 
       <CreateIntegrationModal

@@ -229,8 +229,8 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
     const churchInfo = [
       { label: 'Congregação', value: member.congregation?.name || 'Sede' },
       { label: 'Data de Batismo', value: formatDate(member.baptism_date) },
-      { label: 'Data de Admissão', value: formatDate(member.admission_date) },
-      { label: 'Tipo de Admissão', value: member.admission || '-' },
+      { label: 'Data de Recebimento', value: formatDate(member.admission_date) },
+      { label: 'Tipo de Recebimento', value: member.admission || '-' },
     ];
 
     doc.fontSize(11).font('Helvetica');
@@ -567,7 +567,7 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
 
     const processInfo = [
       {
-        label: 'Tipo de Admissão Previsto',
+        label: 'Tipo de Recebimento Previsto',
         value: integrationMember.expected_admission_type
           ? integrationAdmissionLabels[integrationMember.expected_admission_type] ?? integrationMember.expected_admission_type
           : '-'
@@ -761,7 +761,7 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
       marital_status: 'Estado Civil',
       phone: 'Telefone',
       whatsapp: 'WhatsApp',
-      expected_admission_type: 'Admissão Prevista',
+      expected_admission_type: 'Recebimento Previsto',
       expected_congregation: 'Congregação Prevista',
       mentor: 'Responsável',
       mentor_contact: 'Contato do Responsável',
@@ -1861,8 +1861,8 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       active: 'Status',
       congregation: 'Congregação',
       baptism_date: 'Batismo',
-      admission: 'Admissão',
-      admission_date: 'Data Admissão',
+      admission: 'Recebimento',
+      admission_date: 'Data Recebimento',
       address: 'Endereço',
       complement: 'Complemento',
       neighborhood: 'Bairro',
@@ -2321,8 +2321,8 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       congregation: 'Congregação',
       role: 'Cargo',
       baptism_date: 'Data de Batismo',
-      admission: 'Tipo de Admissão',
-      admission_date: 'Data de Admissão',
+      admission: 'Tipo de Recebimento',
+      admission_date: 'Data de Recebimento',
       address: 'Endereço',
       complement: 'Complemento',
       neighborhood: 'Bairro',

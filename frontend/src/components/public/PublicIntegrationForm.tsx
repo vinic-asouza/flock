@@ -156,7 +156,7 @@ export function PublicIntegrationForm({
         />
 
         <Input
-          label="Data de nascimento (opcional)"
+          label="Data de nascimento"
           type="date"
           {...register('birth')}
           error={errors.birth?.message}
@@ -167,7 +167,7 @@ export function PublicIntegrationForm({
           options={genderOptions.map(option => ({ value: option.value, label: option.label }))}
           value={watch('gender') ?? ''}
           onChange={(value) => setValue('gender', value as IntegrationFormData['gender'])}
-          label="Gênero (opcional)"
+          label="Gênero"
           placeholder="Selecione"
           disabled={isLoading}
         />
@@ -176,13 +176,13 @@ export function PublicIntegrationForm({
           options={maritalStatusOptions.map(option => ({ value: option.value, label: option.label }))}
           value={watch('marital_status') ?? ''}
           onChange={(value) => setValue('marital_status', value as IntegrationFormData['marital_status'])}
-          label="Estado civil (opcional)"
+          label="Estado civil"
           placeholder="Selecione"
           disabled={isLoading}
         />
 
         <Input
-          label="Telefone (opcional)"
+          label="Telefone"
           placeholder="(00) 00000-0000"
           value={phoneDisplay}
           onChange={(e) => handlePhoneChange(e, 'phone')}
@@ -192,7 +192,7 @@ export function PublicIntegrationForm({
         />
 
         <Input
-          label="WhatsApp (opcional)"
+          label="WhatsApp"
           placeholder="(00) 00000-0000"
           value={whatsappDisplay}
           onChange={(e) => handlePhoneChange(e, 'whatsapp')}
@@ -205,7 +205,7 @@ export function PublicIntegrationForm({
           options={congregationOptions}
           value={watch('expected_congregation_id') ?? ''}
           onChange={(value) => setValue('expected_congregation_id', value as IntegrationFormData['expected_congregation_id'])}
-          label="Congregação prevista (opcional)"
+          label="Congregação prevista"
           placeholder="Selecione"
           disabled={isLoading || loadingFilters}
           helperText={loadingFilters ? 'Carregando congregações...' : undefined}

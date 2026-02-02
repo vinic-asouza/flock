@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,7 +23,7 @@ const createCongregationSchema = (cities: Array<{ nome: string }> = []) => z.obj
   city: z.string()
     .min(2, 'Cidade é obrigatória')
     .max(100, 'Cidade não pode ter mais de 100 caracteres')
-    .refine((val, ctx) => {
+    .refine((val: string) => {
       if (!val || val.trim() === '') return false;
       // Se temos lista de cidades, validar que a cidade pertence ao estado
       if (cities.length > 0) {
@@ -36,14 +36,14 @@ const createCongregationSchema = (cities: Array<{ nome: string }> = []) => z.obj
   state: z.string()
     .length(2, 'Estado deve ser uma sigla de 2 caracteres (ex: SP, RJ)'),
   leader: z.string()
+    .max(100, 'Nome do líder não pode ter mais de 100 caracteres')
     .optional()
-    .or(z.literal(''))
-    .max(100, 'Nome do líder não pode ter mais de 100 caracteres'),
+    .or(z.literal('')),
   phone: z.string()
+    .max(20, 'Telefone não pode ter mais de 20 caracteres')
     .optional()
     .or(z.literal(''))
-    .max(20, 'Telefone não pode ter mais de 20 caracteres')
-    .refine((val) => {
+    .refine((val: string | undefined) => {
       if (!val || val.trim() === '') return true; // Opcional
       // Remover formatação para validar apenas números
       const numbersOnly = val.replace(/\D/g, '');
@@ -268,7 +268,7 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
             maxLength={20}
             isLoading={isLoading}
             disabled={isLoading}
-            error={errors.phone?.message}
+            error={errors.phone?.message as string | undefined}
           />
         </div>
       </div>

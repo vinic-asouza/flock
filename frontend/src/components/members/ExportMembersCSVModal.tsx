@@ -38,8 +38,8 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: 'active', label: 'Status', category: 'ecclesiastical' },
   { id: 'congregation', label: 'Congregação', category: 'ecclesiastical' },
   { id: 'baptism_date', label: 'Data de Batismo', category: 'ecclesiastical' },
-  { id: 'admission', label: 'Tipo de Admissão', category: 'ecclesiastical' },
-  { id: 'admission_date', label: 'Data de Admissão', category: 'ecclesiastical' },
+  { id: 'admission', label: 'Tipo de Recebimento', category: 'ecclesiastical' },
+  { id: 'admission_date', label: 'Data de Recebimento', category: 'ecclesiastical' },
   
   // Filhos
   { id: 'children', label: 'Filhos', category: 'personal' },

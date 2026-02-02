@@ -243,7 +243,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
                 title="Processo de Integração"
                 icon={<Clipboard size={20} />}
                 items={[
-                  { label: 'Tipo de admissão previsto', value: member.expected_admission_type ? (admissionLabels[member.expected_admission_type] || member.expected_admission_type) : '—' },
+                  { label: 'Tipo de recebimento previsto', value: member.expected_admission_type ? (admissionLabels[member.expected_admission_type] || member.expected_admission_type) : '—' },
                   { label: 'Congregação prevista', value: member.expected_congregation?.name || 'Sede' },
                   { label: 'Responsável/Discipulador', value: member.mentor?.name || '—' },
                   { label: 'Contato do responsável', value: member.mentor?.phone || member.mentor?.whatsapp || '—' }

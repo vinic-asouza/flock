@@ -178,7 +178,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                     </ol>
                     <div className="mt-3 p-3 bg-blue-100 rounded-md">
                       <p className="text-xs text-blue-900">
-                        <strong>💡 Dica:</strong> Campos obrigatórios são: <strong>Nome</strong>, <strong>Data de Nascimento</strong>, <strong>Gênero</strong>, <strong>Estado Civil</strong>, <strong>Endereço</strong>, <strong>Cidade</strong>, <strong>Estado</strong>, <strong>Tipo de Admissão</strong> e <strong>Data de Admissão</strong>. Os demais campos são opcionais e podem ser deixados em branco.
+                        <strong>💡 Dica:</strong> Campos obrigatórios são: <strong>Nome</strong>, <strong>Data de Nascimento</strong>, <strong>Gênero</strong>, <strong>Estado Civil</strong>, <strong>Endereço</strong>, <strong>Cidade</strong>, <strong>Estado</strong>, <strong>Tipo de Recebimento</strong> e <strong>Data de Recebimento</strong>. Os demais campos são opcionais e podem ser deixados em branco.
                       </p>
                     </div>
                   </div>
