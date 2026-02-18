@@ -16,6 +16,23 @@ import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+/**
+ * Interpreta a data para exibição no fuso local.
+ * Evita que datas em UTC (ex: 2026-02-28T00:00:00.000Z) apareçam como dia anterior.
+ */
+function parseCalendarDateForDisplay(dateStr: string, timeStr?: string | null): Date {
+  const [y, mo, d] = dateStr.slice(0, 10).split('-').map(Number);
+  const local = new Date(y, mo - 1, d);
+  if (timeStr) {
+    const [hh, mm] = timeStr.split(':').map(Number);
+    local.setHours(hh, mm, 0, 0);
+  } else if (dateStr.length > 10 && dateStr.includes('T')) {
+    const utc = new Date(dateStr);
+    local.setHours(utc.getUTCHours(), utc.getUTCMinutes(), 0, 0);
+  }
+  return local;
+}
+
 export default function CalendarPage() {
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +114,7 @@ export default function CalendarPage() {
         congregation_id: filters.congregation_id
       });
       setBirthdayCount(response.count || 0);
-    } catch (err: unknown) {
+    } catch {
       setBirthdayCount(0);
     } finally {
       setLoadingBirthdays(false);
@@ -170,7 +187,7 @@ export default function CalendarPage() {
       setSelectedItem(fullItem);
       setParticipantsPage(1); // Reset para primeira página
       setViewModalOpen(true);
-    } catch (err: unknown) {
+    } catch {
       toast.error('Erro ao carregar detalhes do item');
     } finally {
       setLoadingItemDetails(false);
@@ -230,7 +247,7 @@ export default function CalendarPage() {
       />
 
       {/* Filtros Horizontais */}
-      <div className="mb-6">
+      <div className="mt-8 mb-6">
         <CalendarFiltersHorizontal
           filters={filters}
           onFiltersChange={setFilters}
@@ -384,10 +401,10 @@ export default function CalendarPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-gray-500 mb-1">Data e Hora de Início</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {format(new Date(selectedItem.start_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                      {format(parseCalendarDateForDisplay(selectedItem.start_date, selectedItem.recurrence_time ?? undefined), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {format(new Date(selectedItem.start_date), "'às' HH:mm", { locale: ptBR })}
+                      {format(parseCalendarDateForDisplay(selectedItem.start_date, selectedItem.recurrence_time ?? undefined), "'às' HH:mm", { locale: ptBR })}
                     </p>
                   </div>
                 </div>
@@ -401,10 +418,10 @@ export default function CalendarPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-gray-500 mb-1">Data e Hora de Fim</p>
                       <p className="text-sm font-medium text-gray-900">
-                        {format(new Date(selectedItem.end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        {format(parseCalendarDateForDisplay(selectedItem.end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                       </p>
                       <p className="text-sm text-gray-600">
-                        {format(new Date(selectedItem.end_date), "'às' HH:mm", { locale: ptBR })}
+                        {format(parseCalendarDateForDisplay(selectedItem.end_date), "'às' HH:mm", { locale: ptBR })}
                       </p>
                     </div>
                   </div>

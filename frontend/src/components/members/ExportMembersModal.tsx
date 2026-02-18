@@ -91,7 +91,7 @@ export function ExportMembersModal({ isOpen, onClose, onExport }: ExportMembersM
       setExporting(true);
       await onExport(selectedFields);
       onClose();
-    } catch (error) {
+    } catch {
       // Erro já tratado pelo toast no componente pai
     } finally {
       setExporting(false);

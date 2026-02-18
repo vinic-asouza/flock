@@ -167,7 +167,7 @@ export function CalendarMonth({
         congregation_id: congregationId
       });
       setBirthdays(response.data || []);
-    } catch (error: unknown) {
+    } catch {
       toast.error('Erro ao carregar lista de aniversariantes');
       setBirthdays([]);
     } finally {

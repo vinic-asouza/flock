@@ -71,7 +71,7 @@ export function ExportIntegrationModal({ isOpen, onClose, onExport }: ExportInte
       setExporting(true);
       await onExport(selectedFields);
       onClose();
-    } catch (error) {
+    } catch {
       // Erro já tratado pelo toast
     } finally {
       setExporting(false);

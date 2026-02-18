@@ -184,7 +184,7 @@ export function RegistrationLinksModal({ isOpen, onClose }: RegistrationLinksMod
       setTimeout(() => {
         setCopiedLinkId(null);
       }, 2000);
-    } catch (err) {
+    } catch {
       // Erro já tratado pelo toast
     }
   };

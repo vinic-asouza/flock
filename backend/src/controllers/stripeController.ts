@@ -5,7 +5,7 @@ import supabase, { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { formatErrorResponse, getFriendlyErrorMessage } from '../utils/errorMessages';
 import { PLAN_CONFIG, getPlanConfig, getAllPlans, getPlanName, getPlanPrice } from '../config/plans';
-import { logger, logStripeEvent, logStripeOperation, logSubscriptionChange, logPaymentFlow } from '../utils/logger';
+import { error, warn, debug, info } from '../utils/logger';
 import { sendEmail } from '../services/emailService';
 import { getPaymentSuccessTemplate, getPaymentFailedTemplate, getSubscriptionCanceledTemplate, getRenewalSuccessTemplate, getPlanChangedTemplate, getSubscriptionReactivatedTemplate } from '../templates/stripeEmailTemplates';
 
@@ -28,7 +28,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     // Obter price_id do plano
     const priceId = STRIPE_PRICE_IDS[plan as keyof typeof STRIPE_PRICE_IDS];
     if (!priceId) {
-      logger.error(`Price ID não configurado para o plano: ${plan}`, undefined, {
+      error(`Price ID não configurado para o plano: ${plan}`, {
         userId: req.user?.id,
         planType: plan,
       });
@@ -344,7 +344,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
     req.headers['x-real-ip'] as string;
 
   if (!isValidStripeIP(clientIP)) {
-    logger.warn('Webhook recebido de IP não autorizado', {
+    warn('Webhook recebido de IP não autorizado', {
       clientIP,
       endpoint: '/stripe/webhook',
     });
@@ -364,7 +364,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
 
   // Verificar se evento já foi processado (idempotência)
   if (await isEventProcessed(event.id)) {
-    logger.debug(`Evento ${event.id} (${event.type}) já foi processado, ignorando`, {
+    debug(`Evento ${event.id} (${event.type}) já foi processado, ignorando`, {
       stripeEventId: event.id,
       stripeEventType: event.type,
     });
@@ -406,7 +406,7 @@ export const handleWebhook = async (req: Request, res: Response) => {
       }
 
       default:
-        logger.warn(`Evento não tratado: ${event.type}`, {
+        warn(`Evento não tratado: ${event.type}`, {
           stripeEventId: event.id,
           stripeEventType: event.type,
         });
@@ -414,16 +414,19 @@ export const handleWebhook = async (req: Request, res: Response) => {
 
     // Marcar evento como processado após sucesso
     await markEventAsProcessed(event.id, event.type);
-    logStripeEvent(event.type, event.id, {
+    // Log de evento Stripe processado
+    debug(`Evento Stripe processado: ${event.type}`, {
+      stripeEventId: event.id,
       processed: true,
     });
 
     res.json({ received: true });
   } catch (error: any) {
     console.error('❌ Erro ao processar webhook:', error);
-    logger.error('Erro ao processar webhook', error as Error, {
+    error('Erro ao processar webhook', {
       stripeEventId: event?.id,
       stripeEventType: event?.type,
+      error: error as Error,
     });
     res.status(500).json({ error: 'Erro ao processar webhook' });
   }
@@ -617,7 +620,7 @@ async function handleCheckoutCompleted(session: any) {
             : null,
         });
     } else {
-      logger.warn('Não foi possível vincular assinatura: email não encontrado', {
+      warn('Não foi possível vincular assinatura: email não encontrado', {
         customerEmail,
         stripeSubscriptionId: subscription.id,
       });

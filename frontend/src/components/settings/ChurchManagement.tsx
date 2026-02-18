@@ -13,17 +13,6 @@ import { Building2, MapPin, Mail, Phone, FileText, CreditCard } from 'lucide-rea
 import toast from 'react-hot-toast';
 import { z } from 'zod';
 
-interface ChurchFormData {
-  name: string;
-  denomination: string;
-  address: string;
-  city: string;
-  state: string;
-  cnpj: string;
-  email_church: string;
-  phone_church: string;
-}
-
 const states = [
   { value: 'AC', label: 'Acre' },
   { value: 'AL', label: 'Alagoas' },

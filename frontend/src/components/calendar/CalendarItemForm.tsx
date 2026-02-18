@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { Alert } from '@/components/ui/Alert';
 import { CalendarItem, CreateCalendarItemData, CalendarItemType, CreateParticipantData } from '@/types/calendar';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
@@ -23,9 +24,9 @@ const createCalendarItemSchema = (congregations: Array<{ id: string; name: strin
     .max(100, 'Título não pode ter mais de 100 caracteres'),
   type: z.enum(['Programação', 'Evento', 'Encontro', 'Reunião'] as const),
   description: z.string()
+    .max(5000, 'A descrição não pode ter mais de 5000 caracteres')
     .optional()
-    .or(z.literal(''))
-    .max(5000, 'A descrição não pode ter mais de 5000 caracteres'),
+    .or(z.literal('')),
   start_date: z.string().min(1, 'Data de início é obrigatória'),
   end_date: z.string().optional().or(z.literal('')),
   is_recurring: z.boolean(),
@@ -37,15 +38,15 @@ const createCalendarItemSchema = (congregations: Array<{ id: string; name: strin
   recurrence_day_of_month: z.number().optional().or(z.literal('')),
   recurrence_week_of_month: z.number().optional().or(z.literal('')),
   location: z.string()
+    .max(255, 'O local não pode ter mais de 255 caracteres')
     .optional()
-    .or(z.literal(''))
-    .max(255, 'O local não pode ter mais de 255 caracteres'),
+    .or(z.literal('')),
   congregation_id: z.string()
     .optional()
     .or(z.literal(''))
     .or(z.literal('sede'))
     .nullable()
-    .refine((val) => {
+    .refine((val: string | null | undefined) => {
       if (val === 'sede' || !val) return true; // 'sede' or null/empty is always valid
       // Check if it's a valid UUID format
       const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
@@ -111,6 +112,19 @@ const createCalendarItemSchema = (congregations: Array<{ id: string; name: strin
   return true;
 }, {
   message: 'Para recorrência mensal, informe o dia do mês (1-31) OU a semana do mês + dia da semana',
+  path: ['recurrence_day_of_month']
+}).refine((data) => {
+  // Se é monthly com dia fixo, dia do mês deve estar entre 1 e 31
+  if (data.is_recurring && data.recurrence_pattern === 'monthly') {
+    const d = data.recurrence_day_of_month;
+    if (d !== '' && d !== null && d !== undefined) {
+      const n = typeof d === 'number' ? d : Number(d);
+      if (Number.isNaN(n) || n < 1 || n > 31) return false;
+    }
+  }
+  return true;
+}, {
+  message: 'Dia do mês deve ser entre 1 e 31',
   path: ['recurrence_day_of_month']
 }).refine((data) => {
   // Se é recorrente e tem recurrence_end_date, deve ser posterior a start_date
@@ -248,6 +262,8 @@ export function CalendarItemForm({
     setValue,
     watch,
     reset,
+    setError,
+    clearErrors,
   } = useForm<CalendarItemFormData>({
     resolver: zodResolver(calendarItemSchema),
     defaultValues: mode === 'create' ? {
@@ -260,6 +276,12 @@ export function CalendarItemForm({
   const responsibleId = watch('responsible_member_id') ?? '';
   const isRecurring = watch('is_recurring');
   const selectedGroupId = watch('group_id');
+  const recurrenceDayOfMonth = watch('recurrence_day_of_month');
+  const isMonthlyDayFixed =
+    typeof recurrenceDayOfMonth === 'number' &&
+    !Number.isNaN(recurrenceDayOfMonth) &&
+    recurrenceDayOfMonth >= 1 &&
+    recurrenceDayOfMonth <= 31;
 
   // Determinar congregação para busca de membros
   // Se selectedCongregation é 'sede', passar null. Se é uma string (UUID), passar a string. Se undefined, não buscar ainda.
@@ -283,7 +305,7 @@ export function CalendarItemForm({
         setLoadingGroups(true);
         const data = await apiService.listGroups(selectedCongregation || undefined);
         setGroups(data);
-      } catch (err) {
+      } catch {
         toast.error('Erro ao carregar grupos');
         setGroups([]);
       } finally {
@@ -371,6 +393,8 @@ export function CalendarItemForm({
       // Remover campos temporários antes de enviar (mesmo tratamento do modo de criação)
       const participantsDataClean = participantsData.map((participant: CreateParticipantData) => {
         const { _tempMemberName, _tempMemberContact, ...rest } = participant;
+        void _tempMemberName;
+        void _tempMemberContact;
         return rest;
       });
       const result = await apiService.addCalendarParticipantsBulk(item.id, participantsDataClean);
@@ -394,31 +418,31 @@ export function CalendarItemForm({
       if (participantsManagerRef.current?.loadParticipants) {
         participantsManagerRef.current.loadParticipants();
       }
-    } catch (error) {
+    } catch {
       toast.error('Não foi possível adicionar membros do grupo');
     } finally {
       setIsAddingGroupMembers(false);
     }
   };
 
-  // Função auxiliar para converter data UTC para timezone local
+  // Função auxiliar para converter data para input (evita dia a menos por UTC)
   const formatDateForInput = (dateString: string, includeTime: boolean = true): string => {
     if (!dateString) return '';
-    
-    // Criar Date object (isso converte UTC para local automaticamente)
+    const dateOnly = dateString.slice(0, 10);
+    if (!includeTime) {
+      // Para campo só data (ex: Data de Início da Recorrência): usar a parte da data como está,
+      // para não interpretar UTC e exibir dia anterior no fuso local
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return dateOnly;
+    }
     const date = new Date(dateString);
-    
-    // Extrair valores no timezone local
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    
     if (includeTime) {
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
-    
     return `${year}-${month}-${day}`;
   };
 
@@ -436,7 +460,7 @@ export function CalendarItemForm({
           is_recurring: item.is_recurring,
           recurrence_pattern: (item.recurrence_pattern === 'weekly' || item.recurrence_pattern === 'monthly') ? item.recurrence_pattern : '',
           recurrence_end_date: item.recurrence_end_date ? formatDateForInput(item.recurrence_end_date, false) : '',
-          recurrence_time: item.recurrence_time || '',
+          recurrence_time: item.recurrence_time ? item.recurrence_time.slice(0, 5) : '',
           recurrence_duration_minutes: item.recurrence_duration_minutes || '',
           recurrence_day_of_week: item.recurrence_day_of_week !== null && item.recurrence_day_of_week !== undefined ? item.recurrence_day_of_week : '',
           recurrence_day_of_month: item.recurrence_day_of_month !== null && item.recurrence_day_of_month !== undefined ? item.recurrence_day_of_month : '',
@@ -541,7 +565,7 @@ export function CalendarItemForm({
           submitData.recurrence_end_date = new Date(data.recurrence_end_date).toISOString();
         }
         
-        submitData.recurrence_time = data.recurrence_time || undefined;
+        submitData.recurrence_time = data.recurrence_time ? data.recurrence_time.slice(0, 5) : undefined;
         // Duração removida - não utilizada no momento
         submitData.recurrence_day_of_week = data.recurrence_day_of_week !== '' && data.recurrence_day_of_week !== null && data.recurrence_day_of_week !== undefined 
           ? Number(data.recurrence_day_of_week) 
@@ -565,9 +589,14 @@ export function CalendarItemForm({
         submitData.participants = tempParticipants.map(({ _tempMemberName: _, _tempMemberContact: __, ...rest }) => rest);
       }
 
+      clearErrors();
       await onSubmit(submitData);
-    } catch (error) {
-      // O erro será tratado pelo componente pai
+    } catch (error: unknown) {
+      // Tratar erro mantendo dados do formulário
+      const errorMessage = (error as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Erro ao salvar item do calendário';
+      setError('root', { 
+        message: errorMessage
+      });
       throw error;
     }
   };
@@ -588,6 +617,15 @@ export function CalendarItemForm({
 
   return (
     <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
+      {/* Mensagem de erro geral */}
+      {errors.root && (
+        <Alert
+          variant="error"
+          message={errors.root.message || 'Erro ao processar formulário'}
+          onClose={() => clearErrors('root')}
+        />
+      )}
+
       {/* Título e Tipo - lado a lado */}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -722,10 +760,16 @@ export function CalendarItemForm({
               value={watch('recurrence_pattern') || ''}
               onChange={(value) => {
                 setValue('recurrence_pattern', value as 'weekly' | 'monthly' || '');
-                // Limpar campos específicos ao mudar o padrão
-                setValue('recurrence_day_of_week', '');
-                setValue('recurrence_day_of_month', '');
-                setValue('recurrence_week_of_month', '');
+                if (value === 'monthly') {
+                  // Padrão: "Dia fixo do mês" com dia 1, para exibir o campo de dia
+                  setValue('recurrence_day_of_month', 1);
+                  setValue('recurrence_week_of_month', '');
+                  setValue('recurrence_day_of_week', '');
+                } else {
+                  setValue('recurrence_day_of_week', '');
+                  setValue('recurrence_day_of_month', '');
+                  setValue('recurrence_week_of_month', '');
+                }
               }}
               options={RECURRENCE_PATTERNS}
               error={errors.recurrence_pattern?.message}
@@ -783,7 +827,7 @@ export function CalendarItemForm({
                         type="radio"
                         name="monthly_type"
                         value="day"
-                        checked={watch('recurrence_day_of_month') !== '' && watch('recurrence_day_of_month') !== null && watch('recurrence_day_of_month') !== undefined}
+                        checked={isMonthlyDayFixed}
                         onChange={() => {
                           setValue('recurrence_day_of_month', 1);
                           setValue('recurrence_week_of_month', '');
@@ -799,77 +843,81 @@ export function CalendarItemForm({
                         type="radio"
                         name="monthly_type"
                         value="week"
-                        checked={(watch('recurrence_week_of_month') !== '' && watch('recurrence_week_of_month') !== null && watch('recurrence_week_of_month') !== undefined) || 
-                                 (watch('recurrence_day_of_week') !== '' && watch('recurrence_day_of_week') !== null && watch('recurrence_day_of_week') !== undefined)}
+                        checked={!isMonthlyDayFixed}
                         disabled={isLoading}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 disabled:cursor-not-allowed"
                         onChange={() => {
-                          setValue('recurrence_day_of_month', '');
+                          setValue('recurrence_day_of_month', undefined as unknown as number);
                           setValue('recurrence_week_of_month', 1);
                           setValue('recurrence_day_of_week', 0);
                         }}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 disabled:cursor-not-allowed"
-                        disabled={isLoading}
                       />
                       <span className="ml-2 text-sm text-gray-700">Semana do mês</span>
                     </label>
                   </div>
                 </div>
 
-                {watch('recurrence_day_of_month') !== '' && watch('recurrence_day_of_month') !== null && watch('recurrence_day_of_month') !== undefined ? (
+                {/* Dia fixo do mês: campo para informar o dia (1-31) em que o item se repete */}
+                {isMonthlyDayFixed ? (
                   <div>
                     <label htmlFor="recurrence_day_of_month" className="block text-sm font-medium text-gray-700 mb-1">
-                      Dia do Mês <span className="text-red-500">*</span>
+                      Dia do mês <span className="text-red-500">*</span>
                     </label>
+                    <p className="text-xs text-gray-500 mb-1">Informe o dia do mês (1 a 31) em que o item irá se repetir.</p>
                     <Input
                       id="recurrence_day_of_month"
                       type="number"
-                      min="1"
-                      max="31"
+                      min={1}
+                      max={31}
+                      placeholder="Ex.: 15"
                       {...register('recurrence_day_of_month', { valueAsNumber: true })}
                       error={errors.recurrence_day_of_month?.message}
                       disabled={isLoading}
                     />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="recurrence_week_of_month" className="block text-sm font-medium text-gray-700 mb-1">
-                        Semana do Mês <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={watch('recurrence_week_of_month')?.toString() || ''}
-                        onChange={(value) => setValue('recurrence_week_of_month', value ? Number(value) : '')}
-                        options={[
-                          { value: '1', label: 'Primeira' },
-                          { value: '2', label: 'Segunda' },
-                          { value: '3', label: 'Terceira' },
-                          { value: '4', label: 'Quarta' },
-                          { value: '-1', label: 'Última' }
-                        ]}
-                        error={errors.recurrence_week_of_month?.message}
-                        disabled={isLoading}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="recurrence_day_of_week_monthly" className="block text-sm font-medium text-gray-700 mb-1">
-                        Dia da Semana <span className="text-red-500">*</span>
-                      </label>
-                      <Select
-                        value={watch('recurrence_day_of_week')?.toString() || ''}
-                        onChange={(value) => setValue('recurrence_day_of_week', value ? Number(value) : '')}
-                        options={[
-                          { value: '0', label: 'Domingo' },
-                          { value: '1', label: 'Segunda-feira' },
-                          { value: '2', label: 'Terça-feira' },
-                          { value: '3', label: 'Quarta-feira' },
-                          { value: '4', label: 'Quinta-feira' },
-                          { value: '5', label: 'Sexta-feira' },
-                          { value: '6', label: 'Sábado' }
-                        ]}
-                        error={errors.recurrence_day_of_week?.message}
-                        disabled={isLoading}
-                      />
+                  /* Semana do mês: dia da semana + ordem (Primeira, Segunda, Terceira ou Última) — ex.: todo terceiro sábado */
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-500">Ex.: evento repete todo terceiro sábado do mês.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="recurrence_week_of_month" className="block text-sm font-medium text-gray-700 mb-1">
+                          Ordem no mês <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          value={watch('recurrence_week_of_month')?.toString() || ''}
+                          onChange={(value) => setValue('recurrence_week_of_month', value ? Number(value) : '')}
+                          options={[
+                            { value: '1', label: 'Primeira' },
+                            { value: '2', label: 'Segunda' },
+                            { value: '3', label: 'Terceira' },
+                            { value: '4', label: 'Quarta' },
+                            { value: '-1', label: 'Última' }
+                          ]}
+                          error={errors.recurrence_week_of_month?.message}
+                          disabled={isLoading}
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="recurrence_day_of_week_monthly" className="block text-sm font-medium text-gray-700 mb-1">
+                          Dia da semana <span className="text-red-500">*</span>
+                        </label>
+                        <Select
+                          value={watch('recurrence_day_of_week')?.toString() || ''}
+                          onChange={(value) => setValue('recurrence_day_of_week', value ? Number(value) : '')}
+                          options={[
+                            { value: '0', label: 'Domingo' },
+                            { value: '1', label: 'Segunda-feira' },
+                            { value: '2', label: 'Terça-feira' },
+                            { value: '3', label: 'Quarta-feira' },
+                            { value: '4', label: 'Quinta-feira' },
+                            { value: '5', label: 'Sexta-feira' },
+                            { value: '6', label: 'Sábado' }
+                          ]}
+                          error={errors.recurrence_day_of_week?.message}
+                          disabled={isLoading}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
@@ -994,9 +1042,10 @@ export function CalendarItemForm({
         <Button
           type="submit"
           variant="primary"
-          disabled={isLoading || filtersLoading || loadingGroups}
+          isLoading={isLoading}
+          disabled={filtersLoading || loadingGroups}
         >
-          {isLoading ? 'Salvando...' : mode === 'create' ? 'Criar' : 'Salvar'}
+          {mode === 'create' ? 'Criar' : 'Salvar'}
         </Button>
       </div>
     </form>

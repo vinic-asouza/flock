@@ -6,7 +6,7 @@ import { reportFiltersSchema } from '../validators/reportValidator';
 import { logAudit } from '../utils/auditLogger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
-import { debug, error as logError } from '../utils/logger';
+import { error as logError } from '../utils/logger';
 import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
 import { calculateAge } from '../utils/ageCalculator';
 
@@ -665,22 +665,12 @@ export const createMember = async (req: AuthRequest, res: Response) => {
     // FIM DA TRANSAÇÃO LÓGICA - SUCESSO!
     // ====================
 
-    // Log da operação de criação
-    debug('Criando log de auditoria:', {
-      userId: req.user?.id,
-      memberId: member.id,
-      churchId: church.id,
-      groupsCount: groupIds.length
-    });
-    
     await logAudit(req, {
       entity: 'member',
       entityId: member.id,
       action: 'create',
       changesAfter: { ...member, groups: groupIds }
     });
-    
-    debug(`Membro criado com sucesso e associado a ${groupIds.length} grupo(s)`);
 
     res.status(201).json(member);
 
@@ -694,8 +684,6 @@ export const createMember = async (req: AuthRequest, res: Response) => {
           .from('members')
           .delete()
           .eq('id', createdMemberId);
-        
-        debug('Rollback concluído - membro deletado');
       } catch (rollbackError) {
         logError('Erro ao fazer rollback:', rollbackError);
       }
@@ -844,8 +832,6 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
 
     // PASSO 1.5: Se o membro foi inativado, remover de eventos futuros de calendário
     if (existingMember.active === true && member.active === false) {
-      debug(`Membro ${member.name} foi inativado. Removendo de eventos futuros...`);
-      
       // Buscar participações futuras do membro em eventos
       const now = new Date().toISOString();
       
@@ -875,11 +861,7 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
         if (removeParticipationsError) {
           logError('Erro ao remover participações futuras:', removeParticipationsError);
           // Não falhar a operação, apenas logar o erro
-        } else {
-          debug(`${futureParticipations.length} participação(ões) futura(s) removida(s)`);
         }
-      } else {
-        debug('Nenhuma participação futura encontrada');
       }
     }
 
@@ -967,8 +949,6 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       changesAfter: { ...member, groups: newGroupIds }
     });
 
-    debug(`Membro atualizado com sucesso. Grupos adicionados: ${groupsAdded.length}, removidos: ${groupsRemoved.length}`);
-
     res.json(member);
 
   } catch (error) {
@@ -1003,8 +983,6 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
             .from('member_groups')
             .insert(reAddGroupsData);
         }
-
-        debug('Rollback completo concluído');
       } catch (rollbackError) {
         logError('Erro ao fazer rollback:', rollbackError);
       }
@@ -1893,9 +1871,6 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    debug(`Total de membros ativos com data de nascimento: ${members.length}`);
-    debug(`Buscando aniversariantes do mês ${month}/${year}`);
-
     // Função auxiliar para extrair mês de uma data "YYYY-MM-DD" (ou ISO)
     const getMonthFromBirth = (birth: unknown): number | null => {
       if (!birth) return null;
@@ -1910,13 +1885,8 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
     const birthdaysInMonth = (members || []).filter(member => {
       const birthMonth = getMonthFromBirth(member.birth);
       if (!birthMonth) return false;
-      if (birthMonth === month) {
-        debug(`Aniversariante encontrado: ${member.name} - ${member.birth}`);
-      }
       return birthMonth === month;
     });
-
-    debug(`Aniversariantes no mês ${month}: ${birthdaysInMonth.length}`);
 
     res.json({
       count: birthdaysInMonth.length,

@@ -182,7 +182,7 @@ export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModal
       setTimeout(() => {
         setCopiedLinkId(null);
       }, 2000);
-    } catch (err) {
+    } catch {
       // Erro já tratado pelo toast
     }
   };

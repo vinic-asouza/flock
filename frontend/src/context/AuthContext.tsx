@@ -66,7 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
               const accountData = await apiService.getAccountData();
               userEmail = accountData.email || '';
-            } catch (error) {
+            } catch {
               // Silenciar erro - não crítico durante inicialização
               // Não logar erro para não poluir o console
             }
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const accountData = await apiService.getAccountData();
         userEmail = accountData.email || data.email;
-      } catch (error) {
+      } catch {
         // Silenciar erro - não crítico, usar email do login como fallback
       }
       
@@ -184,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       setIsOperationLoading(false);
-    } catch (error) {
+    } catch {
       setIsOperationLoading(false);
       
       // Mesmo com erro, limpar os dados locais

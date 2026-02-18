@@ -93,7 +93,7 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       const data = await apiService.listCalendarParticipants(calendarItemId);
       setParticipants(data);
       onParticipantsChange?.(data);
-    } catch (error) {
+    } catch {
       toast.error('Erro ao carregar participantes');
     } finally {
       setLoading(false);
@@ -243,7 +243,7 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       await apiService.removeCalendarParticipant(calendarItemId, participantId);
       toast.success('Participante removido');
       await loadParticipants();
-    } catch (error) {
+    } catch {
       toast.error('Erro ao remover participante');
     } finally {
       setLoading(false);

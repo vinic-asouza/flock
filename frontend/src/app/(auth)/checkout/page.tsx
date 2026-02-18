@@ -43,7 +43,7 @@ export default function CheckoutPage() {
           members: plan.members,
         }));
         setPlanOptions(plans);
-      } catch (err) {
+      } catch {
         // Fallback para planos padrão em caso de erro
         setPlanOptions([
           { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },

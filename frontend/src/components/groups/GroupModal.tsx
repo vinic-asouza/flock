@@ -103,7 +103,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
       const currentMemberIds = (group.membersList || []).map((m) => m.id);
       const available = allMembers.filter((m) => !currentMemberIds.includes(m.id));
       setAvailableMembers(available.map((m) => ({ id: m.id, name: m.name })));
-    } catch (err) {
+    } catch {
       // Erro silencioso - não bloquear a interface
       setAvailableMembers([]);
     } finally {
@@ -131,7 +131,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
       });
 
       setFullMembersData(sortedMembers as Array<Member & { addedAt?: string }>);
-    } catch (err) {
+    } catch {
       // Erro silencioso - não bloquear a interface
       setFullMembersData([]);
     } finally {

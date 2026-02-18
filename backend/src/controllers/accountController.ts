@@ -5,6 +5,7 @@ import { validateEmailChange, validatePasswordChange, validateAccountDeletion } 
 import { logAudit } from '../utils/auditLogger';
 import { sendEmail } from '../services/emailService';
 import { getEmailChangeNotificationTemplate, getAccountDeletedTemplate, getPasswordChangedTemplate } from '../templates/emailTemplates';
+import { logError } from '../utils/logger';
 
 /**
  * Buscar dados da conta do usuário

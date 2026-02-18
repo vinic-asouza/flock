@@ -422,7 +422,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             return toKeep;
           });
         }
-      } catch (error) {
+      } catch {
         // Silenciar erro - não crítico, apenas para carregar grupos
         setAvailableGroups([]);
       } finally {
@@ -532,7 +532,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             }
           }
         }
-      } catch (error) {
+      } catch {
         // Silenciar erro - não crítico, CEP é opcional
       } finally {
         setLoadingCEP(false);

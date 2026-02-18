@@ -114,7 +114,7 @@ function MembersPageContent() {
         limit: limitData.limit,
         canAdd: limitData.canAdd,
       });
-    } catch (error) {
+    } catch {
       // Em caso de erro, não definir memberLimit para evitar mostrar botões incorretamente
       // O estado permanece como estava (null ou último valor válido)
       // Silenciar erro - não crítico, apenas para controle de UI

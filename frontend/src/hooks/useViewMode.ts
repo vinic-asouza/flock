@@ -16,7 +16,7 @@ export function useViewMode(initialMode: ViewMode = 'list') {
       if (savedMode && (savedMode === 'list' || savedMode === 'card')) {
         setViewMode(savedMode);
       }
-    } catch (error) {
+    } catch {
       // Silenciar erro - não crítico, apenas preferência de UI
     } finally {
       setIsLoaded(true);
@@ -28,7 +28,7 @@ export function useViewMode(initialMode: ViewMode = 'list') {
     setViewMode(mode);
     try {
       localStorage.setItem(STORAGE_KEY, mode);
-    } catch (error) {
+    } catch {
       // Silenciar erro - não crítico, apenas preferência de UI
     }
   };

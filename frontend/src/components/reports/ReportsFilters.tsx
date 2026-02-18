@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, Search, Calendar, MapPin, Briefcase } from 'lucide-react';
 import { ReportFilters } from '@/types';
 import { Button } from '@/components/ui/Button';
@@ -69,15 +69,16 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
   }, []);
 
   // Debounce para busca geral (500ms)
-  const debouncedApply = useCallback(
-    debounce((filtersToApply: ReportFilters) => {
-      const validationError = validateFilters(filtersToApply);
-      if (!validationError) {
-        onApply(filtersToApply);
-      } else {
-        toast.error(validationError);
-      }
-    }, 500),
+  const debouncedApply = useMemo(
+    () =>
+      debounce((filtersToApply: ReportFilters) => {
+        const validationError = validateFilters(filtersToApply);
+        if (!validationError) {
+          onApply(filtersToApply);
+        } else {
+          toast.error(validationError);
+        }
+      }, 500),
     [onApply, validateFilters]
   );
 

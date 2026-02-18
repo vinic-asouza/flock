@@ -150,7 +150,7 @@ export function PaymentManagement() {
       localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({
         timestamp: Date.now(),
       }));
-    } catch (error) {
+    } catch {
       // Ignorar erros de localStorage (pode estar desabilitado)
       // Não mostrar erro ao usuário, apenas logar silenciosamente
     }
@@ -229,7 +229,7 @@ export function PaymentManagement() {
             await refreshChurch();
           }
         }
-      } catch (err: unknown) {
+      } catch {
         // Não mostrar erro na sincronização automática, apenas logar
         // Sincronização automática falhou silenciosamente
         // Não mostrar erro ao usuário para não poluir a interface

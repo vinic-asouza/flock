@@ -209,7 +209,7 @@ export function PublicMemberForm({
         const congregationParam = congregationIdToUse === '' || congregationIdToUse === undefined || !congregationIdToUse ? 'sede' : congregationIdToUse;
         const response = await apiService.listGroups(congregationParam);
         setAvailableGroups(response);
-      } catch (error) {
+      } catch {
         // Silenciar erro - não crítico, apenas para carregar grupos
         setAvailableGroups([]);
       } finally {

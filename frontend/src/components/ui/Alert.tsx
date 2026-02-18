@@ -65,7 +65,7 @@ export function Alert({
   icon,
 }: AlertProps) {
   const styles = variantStyles[variant];
-  const IconComponent = icon || styles.iconComponent;
+  const VariantIcon = styles.iconComponent;
 
   return (
     <div
@@ -78,7 +78,7 @@ export function Alert({
     >
       <div className="flex items-start">
         <div className="flex-shrink-0">
-          <IconComponent className={clsx('h-5 w-5', styles.icon)} />
+          {icon != null ? icon : <VariantIcon className={clsx('h-5 w-5', styles.icon)} />}
         </div>
         <div className="ml-3 flex-1">
           {title && (

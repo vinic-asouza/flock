@@ -192,7 +192,7 @@ export const updateCalendarItemSchema = Joi.object({
     }),
     otherwise: Joi.date().iso().optional().allow(null)
   }),
-  recurrence_time: Joi.string().pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().allow(null).messages({
+  recurrence_time: Joi.string().pattern(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().allow(null, '').messages({
     'string.pattern.base': 'O horário deve estar no formato HH:mm'
   }),
   recurrence_duration_minutes: Joi.number().integer().min(1).optional().allow(null),

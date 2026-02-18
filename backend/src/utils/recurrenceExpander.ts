@@ -238,6 +238,19 @@ function expandMonthlyByDay(
 }
 
 /**
+ * Retorna o último dia do mês que cai no dia da semana informado (0=Dom, 6=Sab).
+ * setDay(monthEnd, dayOfWeek) pode retornar data no mês seguinte quando a semana
+ * do último dia do mês cruza para o próximo mês; esta função garante resultado dentro do mês.
+ */
+function getLastWeekdayOfMonth(monthStart: Date, dayOfWeek: number): Date {
+  let d = new Date(endOfMonth(monthStart));
+  while (getDay(d) !== dayOfWeek) {
+    d.setDate(d.getDate() - 1);
+  }
+  return d;
+}
+
+/**
  * Expande recorrência mensal por semana do mês (ex: primeira terça-feira)
  */
 function expandMonthlyByWeek(
@@ -257,15 +270,11 @@ function expandMonthlyByWeek(
   let firstOccurrence: Date;
 
   if (weekOfMonth === -1) {
-    // Última semana: encontrar o último dia da semana do mês
-    const monthEnd = endOfMonth(firstMonth);
-    firstOccurrence = setDay(monthEnd, dayOfWeek, { weekStartsOn: 0 });
-    
-    // Se não encontrou no mês atual (ex: último sábado já passou), ir para o próximo mês
+    // Última semana: último dia da semana dentro do mês (ex: último sábado)
+    firstOccurrence = getLastWeekdayOfMonth(firstMonth, dayOfWeek);
     if (isBefore(firstOccurrence, startDate)) {
       const nextMonth = addMonths(firstMonth, 1);
-      const nextMonthEnd = endOfMonth(nextMonth);
-      firstOccurrence = setDay(nextMonthEnd, dayOfWeek, { weekStartsOn: 0 });
+      firstOccurrence = getLastWeekdayOfMonth(nextMonth, dayOfWeek);
     }
   } else {
     // Primeira a quarta semana: encontrar o N-ésimo dia da semana do mês
@@ -311,9 +320,7 @@ function expandMonthlyByWeek(
     const nextMonth = addMonths(startOfMonth(currentDate), 1);
     
     if (weekOfMonth === -1) {
-      // Última semana do próximo mês
-      const nextMonthEnd = endOfMonth(nextMonth);
-      currentDate = setDay(nextMonthEnd, dayOfWeek, { weekStartsOn: 0 });
+      currentDate = getLastWeekdayOfMonth(nextMonth, dayOfWeek);
     } else {
       // N-ésima semana do próximo mês
       const nextFirstDayOfWeek = setDay(nextMonth, dayOfWeek, { weekStartsOn: 0 });

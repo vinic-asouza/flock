@@ -168,7 +168,7 @@ export async function fetchCEPData(cep: string): Promise<{
     }
     
     return data;
-  } catch (error) {
+  } catch {
     // Silenciar erro - não crítico, CEP é opcional
     return null;
   }

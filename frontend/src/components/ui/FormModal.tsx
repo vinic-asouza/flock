@@ -3,7 +3,6 @@
 import React from 'react';
 import { Modal } from './Modal';
 import { Alert } from './Alert';
-import { clsx } from 'clsx';
 
 interface FormModalProps {
   isOpen: boolean;

@@ -112,7 +112,7 @@ export function useProfessions() {
         ];
 
         setProfessions(professionsList);
-      } catch (err) {
+      } catch {
         setError('Erro ao carregar lista de profissões');
       } finally {
         setLoading(false);

@@ -165,7 +165,7 @@ export default function RegisterPage() {
           // Fallback para lista estática
           setStates(statesFallback.map((sigla, index) => ({ id: index, sigla, nome: sigla })));
         }
-      } catch (error) {
+      } catch {
         // Fallback para lista estática
         setStates(statesFallback.map((sigla, index) => ({ id: index, sigla, nome: sigla })));
       } finally {
@@ -194,7 +194,7 @@ export default function RegisterPage() {
             setCities(data);
           }
         }
-      } catch (error) {
+      } catch {
         setCities([]);
       } finally {
         setIsLoadingCities(false);

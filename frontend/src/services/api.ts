@@ -162,7 +162,7 @@ class ApiService {
     try {
       // Chamar a rota de logout no backend para invalidar o token e limpar cookies
       await this.api.post('/auth/logout');
-    } catch (error) {
+    } catch {
       // Mesmo com erro, o servidor limpa os cookies automaticamente
       // Silenciar erro - não crítico, o servidor limpa os cookies automaticamente
     }

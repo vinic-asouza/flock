@@ -76,7 +76,6 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
 
           <ContactLinks
             whatsapp={member.whatsapp}
-            email={member.email}
             phone={member.phone}
           />
         </div>

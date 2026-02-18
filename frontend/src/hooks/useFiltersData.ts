@@ -17,7 +17,7 @@ export function useFiltersData() {
         const congregationsData = await apiService.listCongregations();
 
         setCongregations(congregationsData);
-      } catch (err) {
+      } catch {
         setError('Erro ao carregar dados dos filtros');
       } finally {
         setLoading(false);

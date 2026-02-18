@@ -95,7 +95,7 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
       setExporting(true);
       await onExport(selectedFields, delimiter, includeHeaders);
       onClose();
-    } catch (error) {
+    } catch {
       // Erro já tratado pelo toast no componente pai
     } finally {
       setExporting(false);
