@@ -59,33 +59,70 @@ export const refreshToken = async (req: Request, res: Response) => {
  */
 export const checkAuth = async (req: Request, res: Response) => {
   try {
-    const accessToken = req.cookies[cookieConfig.names.accessToken];
-    
-    if (!accessToken) {
-      return res.status(200).json({
-        authenticated: false,
-        message: 'Usuário não autenticado'
-      });
+    let accessToken = req.cookies[cookieConfig.names.accessToken];
+    let user: any | null = null;
+
+    // 1) Tentar validar com o access token atual (se existir)
+    if (accessToken) {
+      const { data: { user: supaUser }, error } = await supabase.auth.getUser(accessToken);
+      if (!error && supaUser) {
+        user = supaUser;
+      }
     }
 
-    // Verificar se o token é válido
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-    
-    if (error || !user) {
+    // 2) Se não houver usuário válido, tentar renovar usando o refresh token
+    if (!user) {
+      const refreshTokenCookie = req.cookies[cookieConfig.names.refreshToken];
+
+      if (!refreshTokenCookie) {
+        // Não há nenhum token utilizável - considerar não autenticado
+        return res.status(200).json({
+          authenticated: false,
+          message: 'Usuário não autenticado'
+        });
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.refreshSession({
+        refresh_token: refreshTokenCookie
+      });
+
+      if (authError || !authData.session) {
+        // Refresh token inválido/expirado - limpar cookies e considerar deslogado
+        clearAuthCookies(res);
+        return res.status(200).json({
+          authenticated: false,
+          message: 'Sessão expirada'
+        });
+      }
+
+      // Atualizar cookies com nova sessão
+      setAccessToken(res, authData.session.access_token);
+      setRefreshToken(res, authData.session.refresh_token);
+      setSessionCookie(res, {
+        user: authData.user,
+        expires_at: authData.session.expires_at
+      });
+
+      accessToken = authData.session.access_token;
+      user = authData.user;
+    }
+
+    // 3) Se ainda assim não houver usuário, considerar token inválido
+    if (!user) {
       return res.status(200).json({
         authenticated: false,
         message: 'Token inválido'
       });
     }
 
-    // Buscar dados da igreja
+    // 4) Buscar dados da igreja vinculada ao usuário autenticado
     const { data: churchData, error: churchError } = await supabase
       .from('churches')
       .select('*')
       .eq('user_id', user.id)
       .single();
 
-    if (churchError) {
+    if (churchError || !churchData) {
       return res.status(200).json({
         authenticated: false,
         message: 'Igreja não encontrada'
