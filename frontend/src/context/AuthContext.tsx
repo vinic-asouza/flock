@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { 
   AuthContextType, 
   Church, 
+  ChurchUserRole,
   Session, 
   LoginData, 
   RegisterData, 
@@ -43,71 +44,59 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Church | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [currentRole, setCurrentRole] = useState<ChurchUserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
 
-  // Verificar autenticação inicial
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Verificar autenticação via API (cookies são enviados automaticamente)
-        // Silenciar erros durante verificação inicial - é esperado que não esteja autenticado
-        const response = await apiService.isAuthenticated();
-        
-        if (response) {
-          // Obter dados da igreja
-          const church = await apiService.getChurch();
-          
-          if (church) {
-            setUser(church);
-            
-            // Buscar dados da conta para obter o email (silenciar erros)
-            let userEmail = '';
-            try {
-              const accountData = await apiService.getAccountData();
-              userEmail = accountData.email || '';
-            } catch {
-              // Silenciar erro - não crítico durante inicialização
-              // Não logar erro para não poluir o console
-            }
-            
-            // Criar sessão mock para compatibilidade
-            setSession({
-              access_token: 'stored_in_cookie',
-              token_type: 'bearer',
-              expires_in: 900, // 15 minutos
-              expires_at: Date.now() + 15 * 60 * 1000,
-              refresh_token: 'stored_in_cookie',
-              user: {
-                id: church.user_id,
-                email: userEmail,
-                aud: 'authenticated',
-                role: 'authenticated',
-                email_confirmed_at: new Date().toISOString(),
-                phone: '',
-                confirmed_at: new Date().toISOString(),
-                last_sign_in_at: new Date().toISOString(),
-                app_metadata: { provider: 'email', providers: ['email'] },
-                user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: church.user_id },
-                identities: [],
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                is_anonymous: false
-              }
-            });
-          } else {
-            setUser(null);
-            setSession(null);
+        const { authenticated, church, role } = await apiService.getCheckAuth();
+
+        if (authenticated && church) {
+          setUser(church);
+          setCurrentRole((role as ChurchUserRole) ?? 'reader');
+
+          let userEmail = '';
+          try {
+            const accountData = await apiService.getAccountData();
+            userEmail = accountData.email || '';
+          } catch {
+            // não crítico
           }
+
+          setSession({
+            access_token: 'stored_in_cookie',
+            token_type: 'bearer',
+            expires_in: 900,
+            expires_at: Date.now() + 15 * 60 * 1000,
+            refresh_token: 'stored_in_cookie',
+            user: {
+              id: church.user_id,
+              email: userEmail,
+              aud: 'authenticated',
+              role: 'authenticated',
+              email_confirmed_at: new Date().toISOString(),
+              phone: '',
+              confirmed_at: new Date().toISOString(),
+              last_sign_in_at: new Date().toISOString(),
+              app_metadata: { provider: 'email', providers: ['email'] },
+              user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: church.user_id },
+              identities: [],
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_anonymous: false
+            }
+          });
         } else {
           setUser(null);
           setSession(null);
+          setCurrentRole(null);
         }
       } catch {
-        // Silenciar erro durante verificação inicial - é esperado que não esteja autenticado
-        // Não logar como erro para não poluir o console
         setUser(null);
         setSession(null);
+        setCurrentRole(null);
       } finally {
         setIsLoading(false);
       }
@@ -121,21 +110,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsOperationLoading(true);
       const response = await apiService.login(data);
       setUser(response.church);
-      
-      // Buscar dados da conta para obter o email
-      let userEmail = data.email; // Usar o email do login como fallback
+
+      const { role } = await apiService.getCheckAuth();
+      setCurrentRole((role as ChurchUserRole) ?? 'reader');
+
+      let userEmail = data.email;
       try {
         const accountData = await apiService.getAccountData();
         userEmail = accountData.email || data.email;
       } catch {
-        // Silenciar erro - não crítico, usar email do login como fallback
+        // não crítico
       }
-      
-      // Criar sessão mock para compatibilidade (tokens estão em cookies)
+
       setSession({
         access_token: 'stored_in_cookie',
         token_type: 'bearer',
-        expires_in: 900, // 15 minutos
+        expires_in: 900,
         expires_at: Date.now() + 15 * 60 * 1000,
         refresh_token: 'stored_in_cookie',
         user: {
@@ -183,13 +173,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setUser(null);
       setSession(null);
+      setCurrentRole(null);
       setIsOperationLoading(false);
     } catch {
       setIsOperationLoading(false);
-      
-      // Mesmo com erro, limpar os dados locais
       setUser(null);
       setSession(null);
+      setCurrentRole(null);
     }
   }, []);
 
@@ -252,10 +242,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isAuthenticated = useMemo(() => !!user, [user]);
+  const canEdit = useMemo(() => (currentRole === null ? undefined : currentRole !== 'reader'), [currentRole]);
 
   const value: AuthContextType = useMemo(() => ({
     user,
     session,
+    currentRole,
+    canEdit,
     isLoading,
     isOperationLoading,
     isAuthenticated,
@@ -267,7 +260,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updateChurch,
     refreshChurch,
-  }), [user, session, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch]);
+  }), [user, session, currentRole, canEdit, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch]);
 
   return (
     <AuthContext.Provider value={value}>

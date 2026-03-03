@@ -110,9 +110,36 @@ export interface ResetPasswordData {
   token: string;
 }
 
+/** Papel do usuário na igreja (compatível com backend) */
+export type ChurchUserRole = 'owner' | 'admin' | 'editor' | 'reader';
+
+/** Resposta do endpoint /refresh/check */
+export interface CheckAuthResponse {
+  authenticated: boolean;
+  user?: { id: string; email: string };
+  church?: Church;
+  role?: ChurchUserRole;
+}
+
+/** Item da listagem de usuários da igreja */
+export interface ChurchUserListItem {
+  id: string;
+  user_id: string;
+  role: ChurchUserRole;
+  status: string;
+  email: string | null;
+  roleLabel: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface AuthContextType {
   user: Church | null;
   session: Session | null;
+  /** Papel do usuário na igreja (owner | admin | editor | reader) */
+  currentRole: ChurchUserRole | null;
+  /** false quando currentRole === 'reader'; true para editor/admin/owner; undefined se não autenticado */
+  canEdit: boolean | undefined;
   isLoading: boolean;
   isOperationLoading: boolean;
   isAuthenticated: boolean;

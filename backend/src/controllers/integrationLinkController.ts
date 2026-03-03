@@ -39,24 +39,14 @@ export const listIntegrationLinks = async (req: AuthRequest, res: Response) => {
     }
 
     // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
+    const churchId = req.church!.churchId;
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Buscar todos os links da igreja
     const { data: links, error: linksError } = await supabase
       .from('public_integration_links')
       .select('*')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .order('created_at', { ascending: false });
 
     if (linksError) {
@@ -114,25 +104,15 @@ export const getIntegrationLink = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
     // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
+    const churchId = req.church!.churchId;
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Buscar o link
     const { data: link, error: linkError } = await supabase
       .from('public_integration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (linkError || !link) {
@@ -213,18 +193,8 @@ export const createIntegrationLink = async (
     }
 
     // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
+    const churchId = req.church!.churchId;
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Gerar token único
     let token = generateSecureToken();
@@ -256,7 +226,7 @@ export const createIntegrationLink = async (
 
     // Criar o link
     const linkData = {
-      church_id: church.id,
+      church_id: churchId,
       token,
       expires_at: req.body.expires_at,
       max_uses: req.body.max_uses || null,
@@ -330,25 +300,15 @@ export const updateIntegrationLink = async (req: AuthRequest, res: Response) => 
     const { id } = req.params;
 
     // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
+    const churchId = req.church!.churchId;
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Buscar o link existente
     const { data: existingLink, error: fetchError } = await supabase
       .from('public_integration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existingLink) {
@@ -391,7 +351,7 @@ export const updateIntegrationLink = async (req: AuthRequest, res: Response) => 
       .from('public_integration_links')
       .update(updateData)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -450,25 +410,15 @@ export const deactivateIntegrationLink = async (req: AuthRequest, res: Response)
     const { id } = req.params;
 
     // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
+    const churchId = req.church!.churchId;
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Buscar o link existente
     const { data: existingLink, error: fetchError } = await supabase
       .from('public_integration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existingLink) {
@@ -483,7 +433,7 @@ export const deactivateIntegrationLink = async (req: AuthRequest, res: Response)
       .from('public_integration_links')
       .update({ is_active: false })
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -535,25 +485,15 @@ export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => 
     const { id } = req.params;
 
     // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
+    const churchId = req.church!.churchId;
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Buscar o link existente
     const { data: existingLink, error: fetchError } = await supabase
       .from('public_integration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existingLink) {
@@ -568,7 +508,7 @@ export const deleteIntegrationLink = async (req: AuthRequest, res: Response) => 
       .from('public_integration_links')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (deleteError) {
       logError('Erro ao excluir link:', deleteError);

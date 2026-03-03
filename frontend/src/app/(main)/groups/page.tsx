@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/context/AuthContext';
 import { GroupForm } from '@/components/groups/GroupForm';
 import { GroupList } from '@/components/groups/GroupList';
 import { GroupModal } from '@/components/groups/GroupModal';
@@ -24,7 +25,10 @@ import { useFiltersData } from '@/hooks/useFiltersData';
 import { PageHeader } from '@/components/ui/PageHeader';
 import toast from 'react-hot-toast';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 export default function GroupsPage() {
+  const { canEdit } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +146,11 @@ export default function GroupsPage() {
         title="Grupos"
         subtitle="Gerencie os grupos da sua igreja"
         actions={
-          <Button onClick={() => setCreateModalOpen(true)}>
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            disabled={canEdit === false}
+            title={canEdit === false ? READER_TOOLTIP : undefined}
+          >
             <Plus size={18} className="mr-2" />
             Criar Grupo
           </Button>
@@ -235,6 +243,7 @@ export default function GroupsPage() {
           setSelectedGroupId('');
         }}
         groupId={selectedGroupId}
+        canEdit={canEdit}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         onRefresh={loadGroups}

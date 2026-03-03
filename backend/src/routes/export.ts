@@ -8,26 +8,19 @@ import {
   exportIntegrationMembersList
 } from '../controllers/exportController';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
-// Exportar membro individual em PDF
-router.get('/member/:id/pdf', authMiddleware, exportMemberPDF);
+router.use(authMiddleware);
+router.use(requireRole('reader'));
 
-// Exportar integrante individual em PDF
-router.get('/integration/:id/pdf', authMiddleware, exportIntegrationMemberPDF);
-
-// Exportar dashboard em PDF
-router.get('/dashboard/pdf', authMiddleware, exportDashboardPDF);
-
-// Exportar lista de membros em PDF
-router.post('/members/list', authMiddleware, exportMembersList);
-
-// Exportar lista de membros em CSV
-router.post('/members/list/csv', authMiddleware, exportMembersListCSV);
-
-// Exportar lista de integrantes em PDF
-router.post('/integration/list', authMiddleware, exportIntegrationMembersList);
+router.get('/member/:id/pdf', exportMemberPDF);
+router.get('/integration/:id/pdf', exportIntegrationMemberPDF);
+router.get('/dashboard/pdf', exportDashboardPDF);
+router.post('/members/list', exportMembersList);
+router.post('/members/list/csv', exportMembersListCSV);
+router.post('/integration/list', exportIntegrationMembersList);
 
 export default router;
 

@@ -108,19 +108,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Calcula o offset
     const offset = (page - 1) * limit;
@@ -141,7 +129,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
           phone
         )
       `, { count: 'exact' })
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     // Aplica filtros de busca geral
     if (search) {
@@ -383,19 +371,7 @@ export const getMember = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Busca o membro específico com informações da congregação
     const { data: memberWithDetails, error: memberError } = await supabase
@@ -413,7 +389,7 @@ export const getMember = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (memberError) {
@@ -504,22 +480,10 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar limite de membros do plano
-    const limitCheck = await checkMemberLimit(church.id, 1);
+    const limitCheck = await checkMemberLimit(churchId, 1);
     if (!limitCheck.canAdd) {
       return res.status(403).json({
         error: 'Limite de membros atingido',
@@ -546,7 +510,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       const { data: duplicate, error: checkError } = await supabase
         .from('members')
         .select('id, name')
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .ilike('name', normalizedName)
         .limit(1);
       
@@ -563,7 +527,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar email duplicado (se fornecido)
-    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, church.id);
+    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, churchId);
     if (!emailValidation.isValid) {
       return res.status(400).json({
         error: emailValidation.errorMessage || 'Email já cadastrado',
@@ -574,7 +538,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
     }
 
     // Validar que os grupos existem e pertencem à igreja (se fornecidos)
-    const groupsValidation = await validateGroups(groupIds, church.id);
+    const groupsValidation = await validateGroups(groupIds, churchId);
     if (!groupsValidation.isValid) {
       return res.status(400).json({
         error: 'Erro ao validar grupos',
@@ -584,7 +548,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
 
     const memberData: Partial<Member> = {
       ...normalizedData,
-      church_id: church.id,
+      church_id: churchId,
       active: true,
       // Garantir que children seja um array JSON válido
       children: normalizedData.children && Array.isArray(normalizedData.children) 
@@ -709,26 +673,14 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verifica se o membro pertence a esta igreja e busca dados atuais
     const { data: existingMember, error: checkError } = await supabase
       .from('members')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (checkError || !existingMember) {
@@ -760,7 +712,7 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
     const normalizedData = normalizeMemberDates(dataWithoutGroups);
 
     // Verificar email duplicado no update (se fornecido e diferente do atual)
-    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, church.id, id);
+    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, churchId, id);
     if (!emailValidation.isValid) {
       return res.status(400).json({
         error: emailValidation.errorMessage || 'Email já cadastrado',
@@ -771,7 +723,7 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
     }
 
     // Validar que os novos grupos existem e pertencem à igreja (se fornecidos)
-    const groupsValidation = await validateGroups(newGroupIds, church.id);
+    const groupsValidation = await validateGroups(newGroupIds, churchId);
     if (!groupsValidation.isValid) {
       return res.status(400).json({
         error: 'Erro ao validar grupos',
@@ -796,7 +748,7 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       .from('members')
       .update(updateData)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -989,26 +941,14 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verifica se o membro pertence a esta igreja e busca dados atuais
     const { data: existingMember, error: checkError } = await supabase
       .from('members')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (checkError || !existingMember) {
@@ -1023,7 +963,7 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
       .from('members')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (memberError) {
       return res.status(400).json({
@@ -1065,19 +1005,7 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     const members = req.body;
 
@@ -1089,7 +1017,7 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar limite de membros do plano (criação em massa - tudo ou nada)
-    const limitCheck = await checkMemberLimit(church.id, members.length);
+    const limitCheck = await checkMemberLimit(churchId, members.length);
     if (!limitCheck.canAdd) {
       return res.status(403).json({
         error: 'Limite de membros atingido',
@@ -1107,7 +1035,7 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
       const normalized = normalizeMemberDates(member);
       return {
         ...normalized,
-        church_id: church.id,
+        church_id: churchId,
         active: true
       };
     });
@@ -1178,19 +1106,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Parâmetros de filtro (já validados)
     const congregation_id = (validatedFilters.congregation_id as string) || '';
 
-    // Primeiro busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Constrói a query base
     let query = supabase
@@ -1207,7 +1123,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
           phone
         )
       `)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     // Aplica filtro por congregação
     if (congregation_id) {
@@ -1224,7 +1140,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     let countQuery = supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     // Aplicar filtro de congregação na contagem
     if (congregation_id) {
@@ -1274,7 +1190,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
               phone
             )
           `)
-          .eq('church_id', church.id)
+          .eq('church_id', churchId)
           .range(offset, offset + CHUNK_SIZE - 1);
 
         // Reaplicar filtro de congregação
@@ -1541,7 +1457,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     let integrationQuery = supabase
       .from('integration_members')
       .select(integrationSelect)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (congregation_id) {
       if (congregation_id === 'sede') {
@@ -1781,25 +1697,13 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar todos os membros ativos da igreja com data de nascimento
     let query = supabase
       .from('members')
       .select('id, name, birth')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('active', true)
       .not('birth', 'is', null);
 
@@ -1881,19 +1785,7 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar todos os membros ativos da igreja com data de nascimento
     let query = supabase
@@ -1910,7 +1802,7 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
           name
         )
       `)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('active', true)
       .not('birth', 'is', null);
 

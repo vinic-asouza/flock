@@ -38,9 +38,11 @@ interface IntegrationLink {
 interface IntegrationLinksModalProps {
   isOpen: boolean;
   onClose: () => void;
+  canEdit?: boolean;
 }
 
-export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModalProps) {
+export function IntegrationLinksModal({ isOpen, onClose, canEdit = true }: IntegrationLinksModalProps) {
+  const readOnly = canEdit === false;
   const [links, setLinks] = useState<IntegrationLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,10 +230,12 @@ export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModal
                 <p className="text-sm text-gray-600 flex-1">
                   Crie links e compartilhe com a igreja para que pessoas possam se cadastrar no processo de integração utilizando o autocadastro.
                 </p>
+                {!readOnly && (
                 <Button onClick={handleCreate} className="inline-flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
                   <Plus size={18} />
                   Novo Link
                 </Button>
+                )}
               </div>
             )}
 
@@ -243,7 +247,9 @@ export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModal
               <div className="text-center py-12">
                 <LinkIcon className="mx-auto text-gray-400 mb-4" size={48} />
                 <p className="text-gray-600 mb-4">Nenhum link de integração criado ainda.</p>
+                {!readOnly && (
                 <Button onClick={handleCreate}>Criar Primeiro Link</Button>
+                )}
               </div>
             ) : (
               <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-2">
@@ -321,6 +327,8 @@ export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModal
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
+                        {!readOnly && (
+                        <>
                         <Button
                           variant="secondary"
                           size="sm"
@@ -368,6 +376,8 @@ export function IntegrationLinksModal({ isOpen, onClose }: IntegrationLinksModal
                               Excluir
                             </Button>
                           </>
+                        )}
+                        </>
                         )}
                       </div>
                     </div>

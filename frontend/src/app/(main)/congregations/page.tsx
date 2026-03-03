@@ -4,12 +4,16 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { CongregationList } from '@/components/congregations/CongregationList';
 import { CreateCongregationModal } from '@/components/congregations/CreateCongregationModal';
 import { EditCongregationModal } from '@/components/congregations/EditCongregationModal';
 import { DeleteCongregationModal } from '@/components/congregations/DeleteCongregationModal';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 export default function CongregationsPage() {
+  const { canEdit } = useAuth();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Estados dos modais
@@ -56,6 +60,8 @@ export default function CongregationsPage() {
           <Button
             onClick={() => setCreateModalOpen(true)}
             className="inline-flex items-center gap-2"
+            disabled={canEdit === false}
+            title={canEdit === false ? READER_TOOLTIP : undefined}
           >
             <Plus size={18} />
             Adicionar Congregação
@@ -64,6 +70,7 @@ export default function CongregationsPage() {
       />
 
       <CongregationList 
+        canEdit={canEdit}
         onEdit={handleEditCongregation}
         onDelete={handleDeleteCongregation}
         refreshTrigger={refreshTrigger}

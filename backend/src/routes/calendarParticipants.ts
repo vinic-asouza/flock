@@ -6,16 +6,16 @@ import {
   addParticipantsBulk,
 } from '../controllers/calendarParticipantController';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
-// Todas as rotas requerem autenticação
 router.use(authMiddleware);
+router.use(requireRole('reader'));
 
-// Rotas de participantes
-router.post('/calendar-items/:calendarItemId/participants/bulk', addParticipantsBulk); // Bulk add deve vir antes da rota genérica
-router.post('/calendar-items/:calendarItemId/participants', addParticipant);
+router.post('/calendar-items/:calendarItemId/participants/bulk', requireRole('editor'), addParticipantsBulk);
+router.post('/calendar-items/:calendarItemId/participants', requireRole('editor'), addParticipant);
 router.get('/calendar-items/:calendarItemId/participants', listParticipants);
-router.delete('/calendar-items/:calendarItemId/participants/:participantId', removeParticipant);
+router.delete('/calendar-items/:calendarItemId/participants/:participantId', requireRole('editor'), removeParticipant);
 
 export default router;

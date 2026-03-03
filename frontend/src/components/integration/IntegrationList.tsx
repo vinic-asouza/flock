@@ -9,6 +9,7 @@ import { Download, RefreshCcw } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface IntegrationListProps {
+  canEdit?: boolean;
   onEdit: (member: IntegrationMember) => void;
   onConvert: (member: IntegrationMember) => void;
   onDelete: (member: IntegrationMember) => void;
@@ -21,6 +22,7 @@ interface IntegrationListProps {
 }
 
 export function IntegrationList({
+  canEdit = true,
   onEdit,
   onConvert,
   onDelete,
@@ -127,6 +129,7 @@ export function IntegrationList({
           <IntegrationCard
             key={member.id}
             member={member}
+            canEdit={canEdit}
             onEdit={() => onEdit(member)}
             onConvert={() => onConvert(member)}
             onDelete={() => onDelete(member)}

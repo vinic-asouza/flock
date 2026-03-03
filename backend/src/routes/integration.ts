@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 import {
   listIntegrationMembers,
   getIntegrationMember,
@@ -12,13 +13,14 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireRole('reader'));
 
 router.get('/', listIntegrationMembers);
 router.get('/:id', getIntegrationMember);
-router.post('/', createIntegrationMember);
-router.put('/:id', updateIntegrationMember);
-router.delete('/:id', deleteIntegrationMember);
-router.post('/:id/convert', convertIntegrationMember);
+router.post('/', requireRole('editor'), createIntegrationMember);
+router.put('/:id', requireRole('editor'), updateIntegrationMember);
+router.delete('/:id', requireRole('editor'), deleteIntegrationMember);
+router.post('/:id/convert', requireRole('editor'), convertIntegrationMember);
 
 export default router;
 

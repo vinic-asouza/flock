@@ -30,24 +30,13 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
     const { name, address, city, state, leader, phone } = req.body;
 
     // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user?.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({ 
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se já existe uma congregação com o mesmo nome na igreja (case-insensitive)
     const { data: existingCongregations, error: existingCongregationError } = await supabase
       .from('congregations')
       .select('id')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .ilike('name', name.trim());
 
     if (existingCongregationError) {
@@ -73,7 +62,7 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
       .from('congregations')
       .insert([
         {
-          church_id: church.id,
+          church_id: churchId,
           name: name.trim(),
           address: address.trim(),
           city: city.trim(),
@@ -124,23 +113,14 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
  */
 export const getCongregations = async (req: AuthRequest, res: Response) => {
   try {
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user?.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({ error: 'Igreja não encontrada' });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar todas as congregações da igreja
     // Ordenação padrão: por nome (alfabética crescente)
     const { data: congregations, error } = await supabase
       .from('congregations')
       .select('*')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .order('name', { ascending: true });
 
     if (error) {
@@ -163,7 +143,7 @@ export const getCongregations = async (req: AuthRequest, res: Response) => {
     const { data: members, error: membersError } = await supabase
       .from('members')
       .select('congregation_id')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('active', true)
       .in('congregation_id', congregationIds);
 
@@ -210,23 +190,14 @@ export const getCongregation = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user?.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({ error: 'Igreja não encontrada' });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar congregação específica
     const { data: congregation, error } = await supabase
       .from('congregations')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (error || !congregation) {
@@ -240,7 +211,7 @@ export const getCongregation = async (req: AuthRequest, res: Response) => {
     const { count: activeMembersCount, error: countError } = await supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('congregation_id', congregation.id)
       .eq('active', true);
 
@@ -285,25 +256,14 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
     }
 
     // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user?.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({ 
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar congregação existente para auditoria
     const { data: existingCongregation, error: existingError } = await supabase
       .from('congregations')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (existingError || !existingCongregation) {
@@ -320,7 +280,7 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
       const { data: existingCongregations, error: duplicateError } = await supabase
         .from('congregations')
         .select('id')
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .ilike('name', name.trim())
         .neq('id', id);
 
@@ -388,7 +348,7 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
       .from('congregations')
       .update(updateData)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -435,25 +395,14 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
     // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user?.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({ 
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar congregação existente para auditoria
     const { data: existingCongregation, error: existingError } = await supabase
       .from('congregations')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (existingError || !existingCongregation) {
@@ -491,7 +440,7 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
       .from('congregations')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (error) {
       logError('Erro ao deletar congregação:', error);
@@ -540,16 +489,7 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user?.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({ error: 'Igreja não encontrada' });
-    }
+    const churchId = req.church!.churchId;
 
     // Validar cada congregação
     for (const congregation of req.body) {
@@ -567,7 +507,7 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
     const { data: allCongregations, error: existingCongregationsError } = await supabase
       .from('congregations')
       .select('name')
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (existingCongregationsError) {
       logError('Erro ao verificar congregações existentes:', existingCongregationsError);
@@ -592,7 +532,7 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
 
     // Preparar dados para inserção (normalizar telefones)
     const congregationsToInsert = req.body.map(congregation => ({
-      church_id: church.id,
+      church_id: churchId,
       name: congregation.name.trim(),
       address: congregation.address.trim(),
       city: congregation.city.trim(),

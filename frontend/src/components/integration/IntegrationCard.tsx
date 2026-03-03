@@ -6,8 +6,11 @@ import { calculateAge } from '@/utils';
 import { CardHeader } from '@/components/ui/CardHeader';
 import { ContactLinks } from '@/components/ui/ContactLinks';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface IntegrationCardProps {
   member: IntegrationMember;
+  canEdit?: boolean;
   onEdit?: () => void;
   onConvert?: () => void;
   onDelete?: () => void;
@@ -29,7 +32,8 @@ const admissionLabels: Record<string, string> = {
 };
 
 
-export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }: IntegrationCardProps) {
+export function IntegrationCard({ member, canEdit = true, onEdit, onConvert, onDelete, onView }: IntegrationCardProps) {
+  const readOnly = canEdit === false;
   const age = calculateAge(member.birth);
   const admissionLabel = member.expected_admission_type
     ? admissionLabels[member.expected_admission_type] || member.expected_admission_type
@@ -92,26 +96,27 @@ export function IntegrationCard({ member, onEdit, onConvert, onDelete, onView }:
         {!isIntegrated && (
           <>
             <button
-              title="Editar"
+              title={readOnly ? READER_TOOLTIP : 'Editar'}
               onClick={onEdit}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Edit size={18} />
             </button>
             <button
-              title="Descartar"
+              title={readOnly ? READER_TOOLTIP : 'Descartar'}
               onClick={onDelete}
-              disabled={!canDelete}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!canDelete || readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Trash2 size={18} />
             </button>
             {!isIntegrated && (
               <button
-                title="Integrar"
+                title={readOnly ? READER_TOOLTIP : 'Integrar'}
                 onClick={onConvert}
-                disabled={!canIntegrate}
-                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${canIntegrate
+                disabled={!canIntegrate || readOnly}
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center gap-2 transition-colors ${canIntegrate && !readOnly
                   ? 'bg-primary text-white hover:bg-primary/90'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                   }`}

@@ -7,12 +7,13 @@ import { apiService } from '@/services/api';
 import { Congregation } from '@/types/congregation';
 
 interface CongregationListProps {
+  canEdit?: boolean;
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string, activeMembersCount?: number) => void;
   refreshTrigger?: number;
 }
 
-export function CongregationList({ onEdit, onDelete, refreshTrigger }: CongregationListProps) {
+export function CongregationList({ canEdit = true, onEdit, onDelete, refreshTrigger }: CongregationListProps) {
   const [congregations, setCongregations] = useState<Congregation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +91,7 @@ export function CongregationList({ onEdit, onDelete, refreshTrigger }: Congregat
         <CongregationCard
           key={congregation.id}
           congregation={congregation}
+          canEdit={canEdit}
           onEdit={() => handleEdit(congregation.id)}
           onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0)}
         />

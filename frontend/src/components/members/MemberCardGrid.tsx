@@ -3,6 +3,8 @@
 import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle, Phone, MapPin, Briefcase, Church, Users } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface MemberCardGridProps {
   member: {
     id: string;
@@ -30,6 +32,7 @@ interface MemberCardGridProps {
     state?: string | null;
     cep?: string | null;
   };
+  canEdit?: boolean;
   onView?: () => void;
   onEdit?: () => void;
   onDeactivate?: () => void;
@@ -59,8 +62,9 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-export function MemberCardGrid({ member, onView, onEdit, onDeactivate, onReactivate }: MemberCardGridProps) {
+export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onDeactivate, onReactivate }: MemberCardGridProps) {
   const idade = calcularIdade(member.birth);
+  const readOnly = canEdit === false;
 
   return (
     <div className={`flex flex-col border border-gray-200 rounded-lg px-6 py-4 h-full ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
@@ -187,22 +191,23 @@ export function MemberCardGrid({ member, onView, onEdit, onDeactivate, onReactiv
               <Eye size={18} />
             </button>
             <button
-              title="Editar"
+              title={readOnly ? READER_TOOLTIP : 'Editar'}
               onClick={onEdit}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Edit size={18} />
             </button>
             <button
-              title="Inativar"
+              title={readOnly ? READER_TOOLTIP : 'Inativar'}
               onClick={onDeactivate}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <UserMinus size={18} />
             </button>
           </>
         ) : (
-          // Botões para membros inativos
           <>
             <button
               title="Visualizar"
@@ -212,9 +217,10 @@ export function MemberCardGrid({ member, onView, onEdit, onDeactivate, onReactiv
               <Eye size={18} />
             </button>
             <button
-              title="Reativar"
+              title={readOnly ? READER_TOOLTIP : 'Reativar'}
               onClick={onReactivate}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <UserPlus size={18} />
             </button>

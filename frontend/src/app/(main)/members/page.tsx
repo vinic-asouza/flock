@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus, Upload, Link as LinkIcon } from 'lucide-react';
 import { RegistrationLinksModal } from '@/components/members/RegistrationLinksModal';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
+import { useAuth } from '@/context/AuthContext';
 import { useViewMode } from '@/hooks/useViewMode';
 import { apiService } from '@/services/api';
 import { Member } from '@/types';
@@ -103,6 +104,7 @@ function MembersPageContent() {
     canAdd: boolean;
   } | null>(null);
 
+  const { canEdit } = useAuth();
   const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic } = useMembers();
 
   // Função para atualizar o limite de membros
@@ -500,6 +502,8 @@ function MembersPageContent() {
                 variant="secondary"
                 onClick={() => setRegistrationLinksModalOpen(true)}
                 className="inline-flex items-center gap-2"
+                disabled={canEdit === false}
+                title={canEdit === false ? 'Seu usuário tem permissão apenas de leitura nesta igreja.' : undefined}
               >
                 <LinkIcon size={18} />
                 Links de Autocadastro
@@ -508,6 +512,8 @@ function MembersPageContent() {
                 variant="secondary"
                 onClick={() => setImportModalOpen(true)}
                 className="inline-flex items-center gap-2"
+                disabled={canEdit === false}
+                title={canEdit === false ? 'Seu usuário tem permissão apenas de leitura nesta igreja.' : undefined}
               >
                 <Upload size={18} />
                 Importar CSV
@@ -515,6 +521,8 @@ function MembersPageContent() {
               <Button
                 onClick={() => setCreateModalOpen(true)}
                 className="inline-flex items-center gap-2"
+                disabled={canEdit === false}
+                title={canEdit === false ? 'Seu usuário tem permissão apenas de leitura nesta igreja.' : undefined}
               >
                 <Plus size={18} />
                 Adicionar Membro
@@ -551,6 +559,7 @@ function MembersPageContent() {
       <MemberList 
         filters={filters} 
         sorting={sorting}
+        canEdit={canEdit}
         onView={handleViewMember}
         onEdit={handleEditMember}
         onDeactivate={handleDeactivateMember}
@@ -648,6 +657,7 @@ function MembersPageContent() {
       <RegistrationLinksModal
         isOpen={registrationLinksModalOpen}
         onClose={() => setRegistrationLinksModalOpen(false)}
+        canEdit={canEdit}
       />
     </div>
   );

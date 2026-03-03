@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/context/AuthContext';
 import { CalendarItemForm } from '@/components/calendar/CalendarItemForm';
 import { CalendarMonth } from '@/components/calendar/CalendarMonth';
 import { CalendarListView } from '@/components/calendar/CalendarListView';
@@ -33,7 +34,10 @@ function parseCalendarDateForDisplay(dateStr: string, timeStr?: string | null): 
   return local;
 }
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 export default function CalendarPage() {
+  const { canEdit } = useAuth();
   const [items, setItems] = useState<CalendarItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -239,10 +243,12 @@ export default function CalendarPage() {
             variant="primary"
             onClick={() => handleCreateQuick()}
             className="flex items-center gap-2"
+            disabled={canEdit === false}
+            title={canEdit === false ? READER_TOOLTIP : undefined}
           >
-          <Plus size={20} />
-          Novo Item
-        </Button>
+            <Plus size={20} />
+            Novo Item
+          </Button>
         }
       />
 
@@ -287,6 +293,7 @@ export default function CalendarPage() {
             birthdayCount={birthdayCount}
             loadingBirthdays={loadingBirthdays}
             congregationId={filters.congregation_id}
+            canEdit={canEdit}
           />
         ) : (
           <div className="space-y-4">
@@ -672,6 +679,8 @@ export default function CalendarPage() {
                 variant="primary"
                 onClick={handleEditClick}
                 className="flex items-center gap-2"
+                disabled={canEdit === false}
+                title={canEdit === false ? READER_TOOLTIP : undefined}
               >
                 <Edit size={16} />
                 Editar
@@ -680,6 +689,8 @@ export default function CalendarPage() {
                 variant="danger"
                 onClick={handleDeleteClick}
                 className="flex items-center gap-2"
+                disabled={canEdit === false}
+                title={canEdit === false ? READER_TOOLTIP : undefined}
               >
                 <Trash2 size={16} />
                 Excluir

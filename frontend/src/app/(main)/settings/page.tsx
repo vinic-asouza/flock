@@ -1,52 +1,40 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Church, Shield, FileText, CreditCard } from 'lucide-react';
+import { Church, Shield, FileText, CreditCard, Users } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ChurchManagement } from '@/components/settings/ChurchManagement';
 import { AccountManagement } from '@/components/settings/AccountManagement';
 import AuditLogs from '@/components/settings/AuditLogs';
 import { PaymentManagement } from '@/components/settings/PaymentManagement';
+import { ChurchUsersManagement } from '@/components/settings/ChurchUsersManagement';
+import { useAuth } from '@/context/AuthContext';
 
 function SettingsPageContent() {
     const searchParams = useSearchParams();
     const tabFromUrl = searchParams.get('tab');
+    const { currentRole } = useAuth();
     const [activeSection, setActiveSection] = useState('church');
 
-    // Definir aba inicial baseado no query parameter
+    const canSeeUsers = currentRole === 'admin' || currentRole === 'owner';
+
+    const settingsSections = useMemo(() => {
+        const base = [
+            { id: 'church', title: 'Igreja', description: 'Gerencie os dados básicos da sua igreja', icon: Church },
+            { id: 'payment', title: 'Plano', description: 'Gerencie seu plano e assinatura', icon: CreditCard },
+            { id: 'account', title: 'Conta', description: 'Configurações da sua conta', icon: Shield },
+            ...(canSeeUsers ? [{ id: 'users', title: 'Usuários', description: 'Usuários com acesso à igreja', icon: Users }] : []),
+            { id: 'logs', title: 'Logs', description: 'Histórico de operações do sistema', icon: FileText },
+        ];
+        return base;
+    }, [canSeeUsers]);
+
     useEffect(() => {
-        if (tabFromUrl && ['church', 'payment', 'account', 'logs'].includes(tabFromUrl)) {
+        if (tabFromUrl && settingsSections.some((s: { id: string }) => s.id === tabFromUrl)) {
             setActiveSection(tabFromUrl);
         }
-    }, [tabFromUrl]);
-
-    const settingsSections = [
-        {
-            id: 'church',
-            title: 'Igreja',
-            description: 'Gerencie os dados básicos da sua igreja',
-            icon: Church
-        },
-        {
-            id: 'payment',
-            title: 'Plano',
-            description: 'Gerencie seu plano e assinatura',
-            icon: CreditCard
-        },
-        {
-            id: 'account',
-            title: 'Conta',
-            description: 'Configurações da sua conta',
-            icon: Shield
-        },
-        {
-            id: 'logs',
-            title: 'Logs',
-            description: 'Histórico de operações do sistema',
-            icon: FileText
-        }
-    ];
+    }, [tabFromUrl, settingsSections]);
 
     return (
         <div className="space-y-6">
@@ -76,14 +64,11 @@ function SettingsPageContent() {
                 })}
             </nav>
 
-             {/* Conteúdo principal */}
              <div>
                  {activeSection === 'church' && <ChurchManagement />}
-
                  {activeSection === 'payment' && <PaymentManagement />}
-
                  {activeSection === 'account' && <AccountManagement />}
-
+                 {activeSection === 'users' && canSeeUsers && <ChurchUsersManagement />}
                  {activeSection === 'logs' && <AuditLogs />}
              </div>
         </div>

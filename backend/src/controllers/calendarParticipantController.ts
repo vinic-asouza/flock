@@ -38,26 +38,14 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
     const { calendarItemId } = req.params;
     const participantData: CreateParticipantData = req.body;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
       .select('id, church_id')
       .eq('id', calendarItemId)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (itemError || !calendarItem) {
@@ -76,7 +64,7 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
         .from('members')
         .select('id, church_id')
         .eq('id', participantData.member_id!)
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .single();
 
       if (memberError || !member) {
@@ -173,26 +161,14 @@ export const listParticipants = async (req: AuthRequest, res: Response) => {
 
     const { calendarItemId } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
       .select('id, church_id')
       .eq('id', calendarItemId)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (itemError || !calendarItem) {
@@ -252,26 +228,14 @@ export const removeParticipant = async (req: AuthRequest, res: Response) => {
 
     const { calendarItemId, participantId } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
       .select('id, church_id')
       .eq('id', calendarItemId)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (itemError || !calendarItem) {
@@ -363,26 +327,14 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
       .select('id, church_id')
       .eq('id', calendarItemId)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (itemError || !calendarItem) {
@@ -419,7 +371,7 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
             .from('members')
             .select('id, church_id, name')
             .eq('id', participantData.member_id!)
-            .eq('church_id', church.id)
+            .eq('church_id', churchId)
             .single();
 
           if (memberError || !member) {

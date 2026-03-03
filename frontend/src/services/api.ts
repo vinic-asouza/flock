@@ -18,7 +18,9 @@ import {
   ImportResult,
   Group,
   GroupPayload,
-  GroupWithMembers
+  GroupWithMembers,
+  ChurchUserListItem,
+  ChurchUserRole
 } from '@/types';
 import {
   CalendarItem,
@@ -168,24 +170,30 @@ class ApiService {
     }
   }
 
-  // Verificar se está autenticado
-  async isAuthenticated(): Promise<boolean> {
+  // Verificar autenticação e obter church + role em uma chamada
+  async getCheckAuth(): Promise<{ authenticated: boolean; church?: Church | null; role?: string }> {
     try {
       const response = await this.api.get('/refresh/check');
-      return response.data.authenticated;
+      return {
+        authenticated: !!response.data.authenticated,
+        church: response.data.church || null,
+        role: response.data.role ?? undefined
+      };
     } catch {
-      return false;
+      return { authenticated: false, church: null };
     }
+  }
+
+  // Verificar se está autenticado
+  async isAuthenticated(): Promise<boolean> {
+    const { authenticated } = await this.getCheckAuth();
+    return authenticated;
   }
 
   // Obter dados da igreja (agora via API)
   async getChurch(): Promise<Church | null> {
-    try {
-      const response = await this.api.get('/refresh/check');
-      return response.data.church || null;
-    } catch {
-      return null;
-    }
+    const { church } = await this.getCheckAuth();
+    return church ?? null;
   }
 
   // Renovar token de acesso
@@ -704,6 +712,27 @@ class ApiService {
     if (params?.action) queryParams.append('action', params.action);
     
     const response = await this.api.get(`/account/logs?${queryParams.toString()}`);
+    return response.data;
+  }
+
+  // Usuários da igreja (admin/owner)
+  async listChurchUsers(): Promise<{ data: ChurchUserListItem[] }> {
+    const response = await this.api.get('/church-users');
+    return response.data;
+  }
+
+  async createChurchUser(data: { email: string; role: ChurchUserRole }): Promise<{ message: string; data: ChurchUserListItem }> {
+    const response = await this.api.post('/church-users', data);
+    return response.data;
+  }
+
+  async updateChurchUser(id: string, data: { role?: ChurchUserRole; status?: string }): Promise<{ message: string; data: ChurchUserListItem }> {
+    const response = await this.api.patch(`/church-users/${id}`, data);
+    return response.data;
+  }
+
+  async deleteChurchUser(id: string): Promise<{ message: string }> {
+    const response = await this.api.delete(`/church-users/${id}`);
     return response.data;
   }
 

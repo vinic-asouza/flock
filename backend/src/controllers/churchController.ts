@@ -23,7 +23,7 @@ export const getChurch = async (req: AuthRequest, res: Response) => {
     const { data: churchData, error: churchError } = await supabase
       .from('churches')
       .select('*')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (churchError) {
@@ -80,7 +80,7 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
     const { data: existingChurch, error: existingError } = await supabase
       .from('churches')
       .select('*')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (existingError || !existingChurch) {
@@ -98,7 +98,7 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
         .from('churches')
         .select('id, user_id')
         .eq('cnpj', cnpj)
-        .neq('user_id', req.user.id) // Excluir a própria igreja
+        .neq('id', req.church!.churchId) // Excluir a própria igreja
         .single();
 
       if (cnpjCheckError && cnpjCheckError.code !== 'PGRST116') {
@@ -123,7 +123,7 @@ export const updateChurch = async (req: AuthRequest, res: Response) => {
         ...updateData,
         ...(cnpj && { cnpj }) // Só atualizar CNPJ se fornecido
       })
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .select()
       .single();
 
@@ -169,22 +169,10 @@ export const getMemberLimit = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar limite de membros
-    const limitCheck = await checkMemberLimit(church.id, 0);
+    const limitCheck = await checkMemberLimit(churchId, 0);
 
     res.json({
       currentCount: limitCheck.currentCount,

@@ -27,19 +27,7 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Filtro por congregação (query param)
     const congregation_id = req.query.congregation_id as string || '';
@@ -58,7 +46,7 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
           name
         )
       `)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .order('type')
       .order('name');
 
@@ -136,19 +124,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar grupo específico com informações relacionadas
     const { data: group, error: groupError } = await supabase
@@ -171,7 +147,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (groupError || !group) {
@@ -262,22 +238,10 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     const { name, type, description, congregation_id, responsible_id, status } = req.body;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Validar congregação (se fornecida)
-    const congregationValidation = await validateGroupCongregation(congregation_id, church.id);
+    const congregationValidation = await validateGroupCongregation(congregation_id, churchId);
     if (!congregationValidation.isValid) {
       return res.status(400).json({
         error: 'Congregação inválida',
@@ -289,7 +253,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
     const responsibleValidation = await validateResponsibleAndCongregation(
       responsible_id,
       congregation_id,
-      church.id
+      churchId
     );
     if (!responsibleValidation.isValid) {
       return res.status(400).json({
@@ -303,7 +267,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
     let duplicateQuery = supabase
       .from('groups')
       .select('id')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('name', name)
       .eq('type', type)
       .eq('status', true); // Apenas grupos ativos
@@ -325,7 +289,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     // Criar novo grupo
     const groupData: Partial<Group> = {
-      church_id: church.id,
+      church_id: churchId,
       name,
       type,
       description: description || null,
@@ -399,26 +363,14 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar grupo existente
     const { data: existingGroup, error: existingError } = await supabase
       .from('groups')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (existingError || !existingGroup) {
@@ -439,7 +391,7 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       let duplicateQuery = supabase
         .from('groups')
         .select('id')
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .eq('name', finalName)
         .eq('type', finalType)
         .eq('status', true) // Apenas grupos ativos
@@ -478,7 +430,7 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       .from('groups')
       .update(updateData)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -528,26 +480,14 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar grupo para verificar existência e obter dados para log
     const { data: existingGroup, error: existingError } = await supabase
       .from('groups')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (existingError || !existingGroup) {
@@ -568,7 +508,7 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
       .from('groups')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (deleteError) {
       return res.status(400).json({
@@ -616,26 +556,14 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o grupo pertence à igreja
     const { data: group } = await supabase
       .from('groups')
       .select('id')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (!group) {
@@ -724,26 +652,14 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o grupo pertence à igreja
     const { data: group } = await supabase
       .from('groups')
       .select('id, congregation_id')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (!group) {
@@ -754,7 +670,7 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
     }
 
     // Validar se o membro pode ser adicionado ao grupo (pertence à igreja e congregação)
-    const memberValidation = await validateMemberForGroup(member_id, id, church.id);
+    const memberValidation = await validateMemberForGroup(member_id, id, churchId);
     if (!memberValidation.isValid) {
       return res.status(400).json({
         error: 'Membro inválido',
@@ -854,26 +770,14 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
 
     const { id, memberId: member_id } = req.params; // group_id e member_id
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o grupo pertence à igreja
     const { data: group } = await supabase
       .from('groups')
       .select('id')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (!group) {

@@ -7,6 +7,8 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CardHeader } from '@/components/ui/CardHeader';
 import { ContactLinks } from '@/components/ui/ContactLinks';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface MemberCardProps {
   member: {
     id: string;
@@ -25,13 +27,15 @@ interface MemberCardProps {
     whatsapp?: string | null;
     email?: string | null;
   };
+  canEdit?: boolean;
   onView?: () => void;
   onEdit?: () => void;
   onDeactivate?: () => void;
   onReactivate?: () => void;
 }
 
-export function MemberCard({ member, onView, onEdit, onDeactivate, onReactivate }: MemberCardProps) {
+export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivate, onReactivate }: MemberCardProps) {
+  const readOnly = canEdit === false;
   const idade = calculateAge(member.birth);
   return (
     <div className={`flex flex-col gap-1 border border-gray-200 rounded-lg px-6 py-4 md:flex-row md:items-center md:justify-between ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
@@ -86,7 +90,6 @@ export function MemberCard({ member, onView, onEdit, onDeactivate, onReactivate 
       {/* Ações */}
       <div className="flex gap-2 mt-3 md:mt-0 md:ml-4">
         {member.active ? (
-          // Botões para membros ativos
           <>
             <button
               title="Visualizar"
@@ -96,22 +99,23 @@ export function MemberCard({ member, onView, onEdit, onDeactivate, onReactivate 
               <Eye size={18} />
             </button>
             <button
-              title="Editar"
+              title={readOnly ? READER_TOOLTIP : 'Editar'}
               onClick={onEdit}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Edit size={18} />
             </button>
             <button
-              title="Inativar"
+              title={readOnly ? READER_TOOLTIP : 'Inativar'}
               onClick={onDeactivate}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <UserMinus size={18} />
             </button>
           </>
         ) : (
-          // Botões para membros inativos
           <>
             <button
               title="Visualizar"
@@ -121,9 +125,10 @@ export function MemberCard({ member, onView, onEdit, onDeactivate, onReactivate 
               <Eye size={18} />
             </button>
             <button
-              title="Reativar"
+              title={readOnly ? READER_TOOLTIP : 'Reativar'}
               onClick={onReactivate}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors"
+              disabled={readOnly}
+              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <UserPlus size={18} />
             </button>

@@ -91,11 +91,25 @@ export interface IntegrationMember {
   updated_at: Date;
 }
 
+/** Papel do usuário na igreja (church_users.role) */
+export type ChurchUserRole = 'owner' | 'admin' | 'editor' | 'reader';
+
+/** Status do vínculo na igreja */
+export type ChurchUserStatus = 'active' | 'invited' | 'disabled';
+
+/** Contexto de igreja + papel para o usuário autenticado */
+export interface ChurchContext {
+  churchId: string;
+  role: ChurchUserRole;
+}
+
 export interface AuthRequest extends Request {
   user?: {
     id: string;
     email: string;
   };
+  /** Preenchido pelo auth middleware quando o usuário pertence a uma igreja */
+  church?: ChurchContext;
 }
 
 export interface ChurchRegistrationData {

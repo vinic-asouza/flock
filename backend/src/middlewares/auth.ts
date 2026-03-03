@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import supabase from '../services/supabase';
+import { getChurchContextForUser } from '../services/churchContext';
 import { AuthRequest } from '../types';
 import { cookieConfig, setAccessToken, setRefreshToken, setSessionCookie } from '../utils/cookieUtils';
 
@@ -121,6 +122,14 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
               id: newUserData.user.id,
               email: newUserData.user.email || ''
             };
+            const ctx = await getChurchContextForUser(req.user.id);
+            if (!ctx) {
+              return res.status(403).json({
+                error: 'Sem acesso a nenhuma igreja',
+                details: 'Sua conta não está vinculada a uma igreja.'
+              });
+            }
+            req.church = ctx;
             return next();
           }
         }
@@ -137,6 +146,15 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
       id: user.id,
       email: user.email || ''
     };
+
+    const ctx = await getChurchContextForUser(req.user.id);
+    if (!ctx) {
+      return res.status(403).json({
+        error: 'Sem acesso a nenhuma igreja',
+        details: 'Sua conta não está vinculada a uma igreja.'
+      });
+    }
+    req.church = ctx;
     next();
 
   } catch (error) {
@@ -191,6 +209,8 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
             id: newUserData.user.id,
             email: newUserData.user.email || ''
           };
+          const ctx = await getChurchContextForUser(req.user.id);
+          if (ctx) req.church = ctx;
           console.log('✅ optionalAuth: Token renovado e usuário autenticado');
         }
       }
@@ -200,6 +220,8 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
         id: user.id,
         email: user.email || ''
       };
+      const ctx = await getChurchContextForUser(req.user.id);
+      if (ctx) req.church = ctx;
       console.log('✅ optionalAuth: Usuário autenticado:', user.id);
     }
 

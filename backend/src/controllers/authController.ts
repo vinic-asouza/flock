@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import supabase from '../services/supabase';
+import { getChurchContextForUser } from '../services/churchContext';
 import { validateChurch } from '../validators/churchValidator';
 import { ChurchRegistrationData, AuthRequest } from '../types';
 import { setAccessToken, setRefreshToken, setSessionCookie, clearAuthCookies, cookieConfig } from '../utils/cookieUtils';
@@ -204,17 +205,25 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
       });
     }
 
-    // Buscar dados da igreja
+    // Resolver igreja: church_users (convidados) ou churches.user_id (owner)
+    const context = await getChurchContextForUser(authData.user.id);
+    if (!context) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não está vinculado a nenhuma igreja.'
+      });
+    }
+
     const { data: churchData, error: churchError } = await supabase
       .from('churches')
       .select('*')
-      .eq('user_id', authData.user.id)
+      .eq('id', context.churchId)
       .single();
 
-    if (churchError) {
+    if (churchError || !churchData) {
       return res.status(404).json({
         error: 'Igreja não encontrada',
-        details: churchError.message
+        details: churchError?.message ?? 'Igreja não encontrada.'
       });
     }
 

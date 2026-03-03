@@ -15,19 +15,12 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar church_id do usuário
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Buscar dados do membro
     const { data: member, error: memberError } = await supabase
@@ -37,7 +30,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
         congregation:congregations(name)
       `)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (memberError || !member) {
@@ -128,7 +121,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
     doc
       .fontSize(20)
       .font('Helvetica-Bold')
-      .text(church.name, { align: 'center' })
+      .text(churchData?.name, { align: 'center' })
       .moveDown(0.5);
 
     doc
@@ -443,24 +436,18 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
 
     const { id } = req.params;
 
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     const { data: integrationMemberData, error: integrationError } = await supabase
       .from('integration_members')
       .select(getIntegrationSelect())
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (integrationError || !integrationMemberData) {
@@ -488,7 +475,7 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
     doc
       .fontSize(20)
       .font('Helvetica-Bold')
-      .text(church.name, { align: 'center' })
+      .text(churchData?.name, { align: 'center' })
       .moveDown(0.5);
 
     doc
@@ -680,23 +667,17 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
       });
     }
 
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     let query = supabase
       .from('integration_members')
       .select(getIntegrationSelect())
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (filters) {
       if (filters.search) {
@@ -774,7 +755,7 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
     doc
       .fontSize(18)
       .font('Helvetica-Bold')
-      .text(church.name, { align: 'center' })
+      .text(churchData?.name, { align: 'center' })
       .moveDown(0.3);
 
     doc
@@ -907,7 +888,7 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
       .fontSize(7)
       .fillColor('#6B7280')
       .text(
-        `Relatório gerado pelo sistema de gestão eclesiástica - ${church.name}`,
+        `Relatório gerado pelo sistema de gestão eclesiástica - ${churchData?.name}`,
         40,
         doc.page.height - 30,
         { align: 'center', width: pageWidth }
@@ -936,21 +917,14 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
-
-    console.log('✅ Igreja encontrada:', church.name);
+    console.log('✅ Igreja encontrada:', churchData?.name);
 
     // Obter filtros da query string
     const { congregation_id } = req.query;
@@ -1013,7 +987,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
         .from('congregations')
         .select('name')
         .eq('id', congregation_id)
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .single();
       
       if (congregation) {
@@ -1049,7 +1023,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     doc
       .fontSize(20)
       .font('Helvetica-Bold')
-      .text(church.name, { align: 'center' })
+      .text(churchData?.name, { align: 'center' })
       .moveDown(0.3);
 
     doc
@@ -1461,7 +1435,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
         status,
         congregation_id
       `)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('status', true); // Apenas grupos ativos
 
     // Aplicar filtro de congregação se necessário
@@ -1580,7 +1554,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       .fontSize(8)
       .fillColor('#6B7280')
       .text(
-        `Relatório gerado pelo sistema de gestão eclesiástica - ${church.name}`,
+        `Relatório gerado pelo sistema de gestão eclesiástica - ${churchData?.name}`,
         { align: 'center' }
       );
 
@@ -1622,21 +1596,14 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
-
-    console.log('✅ Igreja encontrada:', church.name);
+    console.log('✅ Igreja encontrada:', churchData?.name);
     console.log('🔍 Filtros recebidos:', filters);
     console.log('📋 Campos selecionados:', fields);
 
@@ -1647,7 +1614,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
         *,
         congregation:congregations(name)
       `)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     // Aplicar filtros
     if (filters) {
@@ -1828,7 +1795,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
     doc
       .fontSize(18)
       .font('Helvetica-Bold')
-      .text(church.name, { align: 'center' })
+      .text(churchData?.name, { align: 'center' })
       .moveDown(0.3);
 
     doc
@@ -2049,7 +2016,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       .fontSize(7)
       .fillColor('#6B7280')
       .text(
-        `Relatório gerado pelo sistema de gestão eclesiástica - ${church.name}`,
+        `Relatório gerado pelo sistema de gestão eclesiástica - ${churchData?.name}`,
         40,
         doc.page.height - 30,
         { align: 'center', width: pageWidth }
@@ -2093,21 +2060,14 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
 
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
-
-    console.log('✅ Igreja encontrada:', church.name);
+    console.log('✅ Igreja encontrada:', churchData?.name);
     console.log('🔍 Filtros recebidos:', filters);
     console.log('📋 Campos selecionados:', fields);
     console.log('🔧 Delimitador:', delimiter);
@@ -2120,7 +2080,7 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
         *,
         congregation:congregations(name)
       `)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     // Aplicar filtros (mesma lógica do PDF)
     if (filters) {

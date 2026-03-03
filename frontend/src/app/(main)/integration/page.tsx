@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { LinkIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { useAuth } from '@/context/AuthContext';
 import { IntegrationList } from '@/components/integration/IntegrationList';
 import { CreateIntegrationModal } from '@/components/integration/CreateIntegrationModal';
 import { EditIntegrationModal } from '@/components/integration/EditIntegrationModal';
@@ -30,7 +31,10 @@ const initialFilters: IntegrationFilters = {
   sort_order: 'desc'
 };
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 function IntegrationPageContent() {
+  const { canEdit } = useAuth();
   const {
     loading,
     loadIntegrationMembers,
@@ -156,18 +160,25 @@ function IntegrationPageContent() {
         subtitle="Gerencie integrantes em processo de integração e converta-os em membros."
         actions={
           <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => setIntegrationLinksModalOpen(true)} 
-            variant="secondary"
-            className="inline-flex items-center gap-2"
-          >
-            <LinkIcon size={18} />
-            Links de Autocadastro
-          </Button>
-          <Button onClick={() => setCreateModalOpen(true)} className="inline-flex items-center gap-2">
-            <Plus size={18} />
-            Novo integrante
-          </Button>
+            <Button
+              onClick={() => setIntegrationLinksModalOpen(true)}
+              variant="secondary"
+              className="inline-flex items-center gap-2"
+              disabled={canEdit === false}
+              title={canEdit === false ? READER_TOOLTIP : undefined}
+            >
+              <LinkIcon size={18} />
+              Links de Autocadastro
+            </Button>
+            <Button
+              onClick={() => setCreateModalOpen(true)}
+              className="inline-flex items-center gap-2"
+              disabled={canEdit === false}
+              title={canEdit === false ? READER_TOOLTIP : undefined}
+            >
+              <Plus size={18} />
+              Novo integrante
+            </Button>
           </div>
         }
       />
@@ -188,6 +199,7 @@ function IntegrationPageContent() {
       />
 
       <IntegrationList
+        canEdit={canEdit}
         onEdit={(member) => {
           setSelectedMember(member);
           setEditModalOpen(true);
@@ -255,6 +267,7 @@ function IntegrationPageContent() {
           setSelectedMember(null);
         }}
         integrationMemberId={selectedMember?.id || null}
+        canEdit={canEdit}
         onDelete={() => {
           if (selectedMember) {
             removeIntegrationMemberOptimistic(selectedMember.id);
@@ -288,6 +301,7 @@ function IntegrationPageContent() {
       <IntegrationLinksModal
         isOpen={integrationLinksModalOpen}
         onClose={() => setIntegrationLinksModalOpen(false)}
+        canEdit={canEdit}
       />
     </div>
   );

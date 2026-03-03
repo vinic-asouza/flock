@@ -10,10 +10,13 @@ import { DeleteIntegrationModal } from './DeleteIntegrationModal';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { formatPhone } from '@/utils';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface ViewIntegrationModalProps {
   isOpen: boolean;
   onClose: () => void;
   integrationMemberId: string | null;
+  canEdit?: boolean;
   onDelete?: () => void;
   onConvert?: () => void;
   onDiscard?: () => void;
@@ -51,7 +54,8 @@ const admissionLabels: Record<string, string> = {
   outro: 'Outro'
 };
 
-export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onDelete, onConvert, onDiscard }: ViewIntegrationModalProps) {
+export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, canEdit = true, onDelete, onConvert, onDiscard }: ViewIntegrationModalProps) {
+  const readOnly = canEdit === false;
   const [member, setMember] = useState<IntegrationMember | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -282,7 +286,8 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
                     variant="danger"
                     size="sm"
                     onClick={handleDiscard}
-                    disabled={discarding}
+                    disabled={discarding || readOnly}
+                    title={readOnly ? READER_TOOLTIP : undefined}
                     className="inline-flex items-center gap-2"
                   >
                     {discarding ? (
@@ -301,6 +306,8 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
                     variant="primary"
                     size="sm"
                     onClick={handleConvert}
+                    disabled={readOnly}
+                    title={readOnly ? READER_TOOLTIP : undefined}
                     className="inline-flex items-center gap-2"
                   >
                     <UserPlus size={16} />
@@ -318,6 +325,8 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, onD
                     variant="danger"
                     size="sm"
                     onClick={handleDeleteClick}
+                    disabled={readOnly}
+                    title={readOnly ? READER_TOOLTIP : undefined}
                     className="inline-flex items-center gap-2"
                   >
                     <Trash2 size={16} />

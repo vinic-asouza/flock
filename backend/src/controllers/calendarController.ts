@@ -47,19 +47,7 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     const {
       type,
@@ -112,7 +100,7 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
           name
         )
       `)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     // Aplicar filtros (mas não filtrar por data ainda, pois precisamos dos recorrentes)
     if (typeArray.length > 0) {
@@ -281,19 +269,7 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar item específico com informações relacionadas
     const { data: item, error: itemError } = await supabase
@@ -338,7 +314,7 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
         )
       `)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (itemError || !item) {
@@ -470,22 +446,10 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
       participants
     } = req.body;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Validar congregação
-    const congregationValidation = await validateCongregation(congregation_id, church.id);
+    const congregationValidation = await validateCongregation(congregation_id, churchId);
     if (!congregationValidation.isValid) {
       return res.status(400).json({
         error: 'Dados inválidos',
@@ -494,7 +458,7 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
     }
 
     // Validar grupo
-    const groupValidation = await validateGroup(group_id, congregation_id, church.id);
+    const groupValidation = await validateGroup(group_id, congregation_id, churchId);
     if (!groupValidation.isValid) {
       return res.status(400).json({
         error: 'Dados inválidos',
@@ -503,7 +467,7 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
     }
 
     // Validar responsável
-    const responsibleValidation = await validateResponsibleMember(responsible_member_id, congregation_id, church.id);
+    const responsibleValidation = await validateResponsibleMember(responsible_member_id, congregation_id, churchId);
     if (!responsibleValidation.isValid) {
       return res.status(400).json({
         error: 'Dados inválidos',
@@ -529,7 +493,7 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
 
     // Criar novo item do calendário
     const itemData: Partial<CalendarItem> = {
-      church_id: church.id,
+      church_id: churchId,
       title,
       type,
       description: description || null,
@@ -587,7 +551,7 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
         .map((p: any) => p.member_id);
 
       if (memberIds.length > 0) {
-        const participantsValidation = await validateParticipants(memberIds, congregation_id, church.id);
+        const participantsValidation = await validateParticipants(memberIds, congregation_id, churchId);
         if (!participantsValidation.isValid) {
           // Se algum membro não for válido, remover o item criado
           await supabase.from('calendar_items').delete().eq('id', item.id);
@@ -675,26 +639,14 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o item existe e pertence à igreja
     const { data: existingItem, error: fetchError } = await supabase
       .from('calendar_items')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existingItem) {
@@ -711,7 +663,7 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
 
     // Validar congregação (se estiver sendo atualizada)
     if (req.body.congregation_id !== undefined) {
-      const congregationValidation = await validateCongregation(finalCongregationId, church.id);
+      const congregationValidation = await validateCongregation(finalCongregationId, churchId);
       if (!congregationValidation.isValid) {
         return res.status(400).json({
           error: 'Dados inválidos',
@@ -722,7 +674,7 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
 
     // Validar grupo (se estiver sendo atualizado)
     if (req.body.group_id !== undefined) {
-      const groupValidation = await validateGroup(finalGroupId, finalCongregationId, church.id);
+      const groupValidation = await validateGroup(finalGroupId, finalCongregationId, churchId);
       if (!groupValidation.isValid) {
         return res.status(400).json({
           error: 'Dados inválidos',
@@ -733,7 +685,7 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
 
     // Validar responsável (se estiver sendo atualizado)
     if (req.body.responsible_member_id !== undefined) {
-      const responsibleValidation = await validateResponsibleMember(finalResponsibleId, finalCongregationId, church.id);
+      const responsibleValidation = await validateResponsibleMember(finalResponsibleId, finalCongregationId, churchId);
       if (!responsibleValidation.isValid) {
         return res.status(400).json({
           error: 'Dados inválidos',
@@ -826,7 +778,7 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
       .from('calendar_items')
       .update(updateData)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select(`
         *,
         congregations (
@@ -893,26 +845,14 @@ export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o item existe e pertence à igreja
     const { data: existingItem, error: fetchError } = await supabase
       .from('calendar_items')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existingItem) {
@@ -927,7 +867,7 @@ export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
       .from('calendar_items')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (deleteError) {
       return res.status(400).json({
@@ -976,19 +916,12 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
 
     const { month, year, congregation_id, group_id } = req.query;
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
       .from('churches')
       .select('id, name')
-      .eq('user_id', req.user.id)
+      .eq('id', churchId)
       .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
 
     // Determinar período (mês/ano atual se não especificado)
     const targetMonth = month ? Number(month) : new Date().getMonth() + 1;
@@ -1016,7 +949,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
           name
         )
       `)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('status', 'active')
       .gte('start_date', startDate.toISOString())
       .lte('start_date', endDate.toISOString())
@@ -1048,7 +981,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
     res.json({
       message: 'Exportação PDF ainda não implementada',
       data: {
-        church: church.name,
+        church: churchData?.name,
         month: targetMonth,
         year: targetYear,
         items: items || []
@@ -1083,26 +1016,14 @@ export const listGroupsWithCalendarItems = async (req: AuthRequest, res: Respons
       });
     }
 
-    // Buscar church_id do usuário autenticado
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar grupos distintos que têm itens de calendário vinculados
     // Buscar todos os itens de calendário ativos e extrair group_ids únicos
     const { data: calendarItems, error: itemsError } = await supabase
       .from('calendar_items')
       .select('group_id')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .eq('status', 'active');
 
     if (itemsError) {
@@ -1134,7 +1055,7 @@ export const listGroupsWithCalendarItems = async (req: AuthRequest, res: Respons
         )
       `)
       .in('id', groupIds)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .order('type')
       .order('name');
 

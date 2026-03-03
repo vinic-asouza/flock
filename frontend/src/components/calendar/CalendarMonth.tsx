@@ -20,6 +20,7 @@ interface CalendarMonthProps {
   birthdayCount?: number;
   loadingBirthdays?: boolean;
   congregationId?: string;
+  canEdit?: boolean;
 }
 
 export function CalendarMonth({
@@ -30,8 +31,10 @@ export function CalendarMonth({
   onDateChange,
   birthdayCount = 0,
   loadingBirthdays = false,
-  congregationId
+  congregationId,
+  canEdit = true
 }: CalendarMonthProps) {
+  const readOnly = canEdit === false;
   const [viewDate, setViewDate] = useState(currentDate);
   const [birthdaysModalOpen, setBirthdaysModalOpen] = useState(false);
   const [birthdays, setBirthdays] = useState<Birthday[]>([]);
@@ -315,7 +318,7 @@ export function CalendarMonth({
                 >
                   {dayNumber}
                 </span>
-                {isCurrentMonth && (
+                {isCurrentMonth && !readOnly && (
                   <button
                     onClick={() => onDayClick(day)}
                     className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 hover:bg-gray-100 rounded transition-opacity"

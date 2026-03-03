@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import supabase from '../services/supabase';
+import { getChurchContextForUser } from '../services/churchContext';
 import { setAccessToken, setRefreshToken, setSessionCookie, clearAuthCookies, cookieConfig } from '../utils/cookieUtils';
 
 /**
@@ -115,11 +116,19 @@ export const checkAuth = async (req: Request, res: Response) => {
       });
     }
 
-    // 4) Buscar dados da igreja vinculada ao usuário autenticado
+    // 4) Obter contexto (igreja + papel) do usuário
+    const context = await getChurchContextForUser(user.id);
+    if (!context) {
+      return res.status(200).json({
+        authenticated: false,
+        message: 'Usuário não vinculado a nenhuma igreja'
+      });
+    }
+
     const { data: churchData, error: churchError } = await supabase
       .from('churches')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('id', context.churchId)
       .single();
 
     if (churchError || !churchData) {
@@ -135,7 +144,8 @@ export const checkAuth = async (req: Request, res: Response) => {
         id: user.id,
         email: user.email
       },
-      church: churchData
+      church: churchData,
+      role: context.role
     });
 
   } catch (error) {

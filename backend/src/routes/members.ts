@@ -3,12 +3,13 @@ import rateLimit from 'express-rate-limit';
 import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers, getMemberReports, getBirthdaysCount, getBirthdaysList } from '../controllers/memberController';
 import { validateImport, importMembersFromCSV } from '../controllers/memberImportController';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 import { uploadCSV } from '../middlewares/upload';
 
 const router = Router();
 
-// Todas as rotas de membros requerem autenticação
 router.use(authMiddleware);
+router.use(requireRole('reader'));
 
 // Rate limiting específico para relatórios (operação pesada)
 const reportsLimiter = rateLimit({
@@ -36,24 +37,24 @@ router.get('/birthdays/count', getBirthdaysCount);
 router.get('/birthdays/list', getBirthdaysList);
 
 // Validar arquivo CSV antes da importação
-router.post('/import/validate', uploadCSV.single('file'), validateImport);
+router.post('/import/validate', requireRole('editor'), uploadCSV.single('file'), validateImport);
 
 // Importar membros do CSV
-router.post('/import', uploadCSV.single('file'), importMembersFromCSV);
+router.post('/import', requireRole('editor'), uploadCSV.single('file'), importMembersFromCSV);
 
 // Buscar um membro específico
 router.get('/:id', getMember);
 
 // Criar um novo membro
-router.post('/', createMember);
+router.post('/', requireRole('editor'), createMember);
 
 // Criar múltiplos membros
-router.post('/batch', createBatchMembers);
+router.post('/batch', requireRole('editor'), createBatchMembers);
 
 // Atualizar um membro
-router.put('/:id', updateMember);
+router.put('/:id', requireRole('editor'), updateMember);
 
 // Remover um membro (soft delete)
-router.delete('/:id', deleteMember);
+router.delete('/:id', requireRole('editor'), deleteMember);
 
 export default router; 

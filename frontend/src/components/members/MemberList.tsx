@@ -10,10 +10,13 @@ import { useMembers } from '@/context/MembersContext';
 import { Download, RefreshCcw, FileSpreadsheet } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 export function MemberList({ 
   onTotalChange, 
   filters, 
   sorting,
+  canEdit,
   onView,
   onEdit,
   onDeactivate,
@@ -27,6 +30,7 @@ export function MemberList({
   onTotalChange?: (total: number) => void; 
   filters: MemberFilters;
   sorting?: { sort_by: string; sort_order: 'asc' | 'desc' };
+  canEdit?: boolean;
   onView?: (id: string, name: string) => void;
   onEdit?: (id: string) => void;
   onDeactivate?: (id: string, name: string) => void;
@@ -37,6 +41,7 @@ export function MemberList({
   onExport?: () => void;
   onExportCSV?: () => void;
 }) {
+  const readOnly = canEdit === false;
   const {
     members,
     pagination,
@@ -174,7 +179,9 @@ export function MemberList({
           {onExportCSV && (
             <button
               onClick={onExportCSV}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+              disabled={readOnly}
+              title={readOnly ? READER_TOOLTIP : undefined}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <FileSpreadsheet size={12} />
               Exportar CSV
@@ -191,6 +198,7 @@ export function MemberList({
             <MemberCard
               key={member.id}
               member={member}
+              canEdit={canEdit}
               onView={() => handleView(member.id, member.name)}
               onEdit={() => handleEdit(member.id)}
               onDeactivate={() => handleDeactivate(member.id, member.name)}
@@ -204,6 +212,7 @@ export function MemberList({
             <MemberCardGrid
               key={member.id}
               member={member}
+              canEdit={canEdit}
               onView={() => handleView(member.id, member.name)}
               onEdit={() => handleEdit(member.id)}
               onDeactivate={() => handleDeactivate(member.id, member.name)}

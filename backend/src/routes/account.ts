@@ -10,6 +10,7 @@ import {
   getAuditLogs
 } from '../controllers/accountController';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
@@ -59,7 +60,7 @@ router.delete('/', sensitiveLimiter, deleteAccount);
 // Rota para reenviar confirmação de email
 router.post('/resend-confirmation', resendConfirmation);
 
-// Rota para listar logs de auditoria
-router.get('/logs', getAuditLogs);
+// Rota para listar logs de auditoria (apenas admin/owner)
+router.get('/logs', requireRole('admin'), getAuditLogs);
 
 export default router;

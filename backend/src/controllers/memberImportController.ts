@@ -26,19 +26,7 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Obtém congregation_id do body (pode ser null para "Sede")
     const congregationId = req.body.congregation_id === 'null' || req.body.congregation_id === '' 
@@ -51,7 +39,7 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
         .from('congregations')
         .select('id')
         .eq('id', congregationId)
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .single();
 
       if (congError || !congregation) {
@@ -65,7 +53,7 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
     // Valida o CSV
     const validationResult = await validateCSV(
       req.file.buffer,
-      church.id,
+      churchId,
       congregationId
     );
 
@@ -100,19 +88,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Obtém congregation_id do body (pode ser null para "Sede")
     const congregationId = req.body.congregation_id === 'null' || req.body.congregation_id === '' 
@@ -125,7 +101,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
         .from('congregations')
         .select('id')
         .eq('id', congregationId)
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .single();
 
       if (congError || !congregation) {
@@ -142,7 +118,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
     // Validar CSV primeiro para contar quantos membros válidos serão importados
     const validationResult = await validateCSV(
       req.file.buffer,
-      church.id,
+      churchId,
       congregationId
     );
 
@@ -150,7 +126,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
     const validMembersCount = validationResult.validRows;
     
     // Verificar limite de membros ANTES de importar (tudo ou nada)
-    const limitCheck = await checkMemberLimit(church.id, validMembersCount);
+    const limitCheck = await checkMemberLimit(churchId, validMembersCount);
     if (!limitCheck.canAdd) {
       return res.status(403).json({
         error: 'Limite de membros atingido',
@@ -167,7 +143,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
     // Importa os membros
     const importResult = await importMembers(
       req.file.buffer,
-      church.id,
+      churchId,
       congregationId,
       { skipDuplicates }
     );

@@ -29,25 +29,13 @@ export const listRegistrationLinks = async (req: AuthRequest, res: Response) => 
       });
     }
 
-    // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar todos os links da igreja
     const { data: links, error: linksError } = await supabase
       .from('public_registration_links')
       .select('*')
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .order('created_at', { ascending: false });
 
     if (linksError) {
@@ -100,26 +88,14 @@ export const getRegistrationLink = async (req: AuthRequest, res: Response) => {
 
     const { id } = req.params;
 
-    // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Buscar o link específico
     const { data: link, error: linkError } = await supabase
       .from('public_registration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (linkError || !link) {
@@ -178,19 +154,7 @@ export const createRegistrationLink = async (
       });
     }
 
-    // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Validar se as referências (congregação e função) pertencem à igreja
     if (req.body.default_congregation_id) {
@@ -198,7 +162,7 @@ export const createRegistrationLink = async (
         .from('congregations')
         .select('id')
         .eq('id', req.body.default_congregation_id)
-        .eq('church_id', church.id)
+        .eq('church_id', churchId)
         .single();
 
       if (congError || !congregation) {
@@ -239,7 +203,7 @@ export const createRegistrationLink = async (
 
     // Criar o link
     const linkData = {
-      church_id: church.id,
+      church_id: churchId,
       token,
       expires_at: req.body.expires_at,
       max_uses: req.body.max_uses || null,
@@ -296,26 +260,14 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
 
     const { id } = req.params;
 
-    // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o link existe e pertence à igreja
     const { data: existingLink, error: checkError } = await supabase
       .from('public_registration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (checkError || !existingLink) {
@@ -359,7 +311,7 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
           .from('congregations')
           .select('id')
           .eq('id', req.body.default_congregation_id)
-          .eq('church_id', church.id)
+          .eq('church_id', churchId)
           .single();
 
         if (congError || !congregation) {
@@ -387,7 +339,7 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       .from('public_registration_links')
       .update(updateData)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -431,26 +383,14 @@ export const deactivateRegistrationLink = async (req: AuthRequest, res: Response
 
     const { id } = req.params;
 
-    // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o link existe e pertence à igreja
     const { data: existingLink, error: checkError } = await supabase
       .from('public_registration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (checkError || !existingLink) {
@@ -465,7 +405,7 @@ export const deactivateRegistrationLink = async (req: AuthRequest, res: Response
       .from('public_registration_links')
       .update({ is_active: false })
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select()
       .single();
 
@@ -512,26 +452,14 @@ export const deleteRegistrationLink = async (req: AuthRequest, res: Response) =>
 
     const { id } = req.params;
 
-    // Buscar a igreja do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Verificar se o link existe e pertence à igreja
     const { data: existingLink, error: checkError } = await supabase
       .from('public_registration_links')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (checkError || !existingLink) {
@@ -546,7 +474,7 @@ export const deleteRegistrationLink = async (req: AuthRequest, res: Response) =>
       .from('public_registration_links')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (deleteError) {
       console.error('Erro ao excluir link:', deleteError);

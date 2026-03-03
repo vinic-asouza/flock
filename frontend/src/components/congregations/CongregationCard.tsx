@@ -5,13 +5,17 @@ import { Congregation } from '@/types/congregation';
 import { formatDate } from '@/utils';
 import { InfoRow } from '@/components/ui/InfoRow';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface CongregationCardProps {
   congregation: Congregation;
+  canEdit?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-export function CongregationCard({ congregation, onEdit, onDelete }: CongregationCardProps) {
+export function CongregationCard({ congregation, canEdit = true, onEdit, onDelete }: CongregationCardProps) {
+  const readOnly = canEdit === false;
 
   return (
     <div className="flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full">
@@ -68,16 +72,18 @@ export function CongregationCard({ congregation, onEdit, onDelete }: Congregatio
         </div>
         <div className="flex gap-2">
           <button
-            title="Editar"
+            title={readOnly ? READER_TOOLTIP : 'Editar'}
             onClick={onEdit}
-            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+            disabled={readOnly}
+            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Edit size={18} />
           </button>
           <button
-            title="Excluir"
+            title={readOnly ? READER_TOOLTIP : 'Excluir'}
             onClick={onDelete}
-            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors"
+            disabled={readOnly}
+            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Trash2 size={18} />
           </button>

@@ -9,17 +9,19 @@ import {
   listGroupsWithCalendarItems
 } from '../controllers/calendarController';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireRole('reader'));
 
 router.get('/', listCalendarItems);
 router.get('/groups', listGroupsWithCalendarItems);
 router.get('/:id', getCalendarItem);
-router.post('/', createCalendarItem);
-router.put('/:id', updateCalendarItem);
-router.delete('/:id', deleteCalendarItem);
+router.post('/', requireRole('editor'), createCalendarItem);
+router.put('/:id', requireRole('editor'), updateCalendarItem);
+router.delete('/:id', requireRole('editor'), deleteCalendarItem);
 router.get('/export/pdf', exportCalendarPDF);
 
 export default router;

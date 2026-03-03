@@ -10,16 +10,20 @@ import { apiService } from '@/services/api';
 import { Select } from '@/components/ui/Select';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface GroupModalProps {
   isOpen: boolean;
   onClose: () => void;
   groupId: string | null;
+  canEdit?: boolean;
   onEdit?: (id: string) => void;
   onDelete?: (id: string, name: string) => void;
   onRefresh?: () => void;
 }
 
-export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefresh }: GroupModalProps) {
+export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, onDelete, onRefresh }: GroupModalProps) {
+  const readOnly = canEdit === false;
   const [group, setGroup] = useState<GroupWithMembers | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -317,6 +321,8 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                           onEdit(group.id);
                         }}
                         className="w-full"
+                        disabled={readOnly}
+                        title={readOnly ? READER_TOOLTIP : undefined}
                       >
                         <Edit size={16} className="mr-2" />
                         Editar
@@ -330,6 +336,8 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                           onDelete(group.id, group.name);
                         }}
                         className="w-full"
+                        disabled={readOnly}
+                        title={readOnly ? READER_TOOLTIP : undefined}
                       >
                         <Trash2 size={16} className="mr-2" />
                         Excluir
@@ -350,6 +358,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
               
               <div className="space-y-4 flex flex-col flex-1 min-h-0">
                 {/* Adicionar membro */}
+                {!readOnly && (
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex-shrink-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Adicionar Membro</label>
                   <div className="flex gap-2">
@@ -379,6 +388,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                     </Button>
                   </div>
                 </div>
+                )}
 
                 {/* Lista de membros */}
                 <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -398,6 +408,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                               <MemberCardCompact 
                                 member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
                               />
+                              {!readOnly && (
                               <button
                                 onClick={() => handleRemoveMember(member.id)}
                                 className="absolute top-3 right-3 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
@@ -405,6 +416,7 @@ export function GroupModal({ isOpen, onClose, groupId, onEdit, onDelete, onRefre
                               >
                                 <X size={18} />
                               </button>
+                              )}
                             </div>
                           ))}
                         </div>

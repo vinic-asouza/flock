@@ -1,6 +1,6 @@
 import supabase from '../services/supabase';
-import { Request } from 'express';
 import { logError } from './logger';
+import { AuthRequest } from '../types';
 
 interface AuditLogData {
   entity: 'member' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'member_group' | 'calendar_item' | 'account' | 'church';
@@ -12,14 +12,6 @@ interface AuditLogData {
   userAgent?: string;
 }
 
-interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-  };
-  church_id?: string;
-}
-
 export const logAudit = async (req: AuthRequest, data: AuditLogData) => {
   try {
     if (!req.user?.id) {
@@ -27,19 +19,7 @@ export const logAudit = async (req: AuthRequest, data: AuditLogData) => {
       return;
     }
 
-    // Buscar church_id se não estiver disponível
-    let churchId = req.church_id;
-    if (!churchId) {
-      const { data: church } = await supabase
-        .from('churches')
-        .select('id')
-        .eq('user_id', req.user.id)
-        .single();
-      
-      if (church) {
-        churchId = church.id;
-      }
-    }
+    const churchId = req.church?.churchId;
 
     if (!churchId) {
       logError('Audit log: church_id não encontrado');

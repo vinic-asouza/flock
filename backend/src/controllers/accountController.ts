@@ -384,7 +384,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('id, subscription_status, plan_type, subscription_end_date')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (!churchError && church) {
@@ -546,19 +546,7 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar church_id do usuário
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church!.churchId;
 
     // Parâmetros de paginação e filtros
     const page = parseInt(req.query.page as string) || 1;
@@ -571,7 +559,7 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     let query = supabase
       .from('audit_logs')
       .select('*', { count: 'exact' })
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -584,7 +572,7 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     }
 
     console.log('🔍 Query de logs:', {
-      church_id: church.id,
+      church_id: churchId,
       entity,
       action,
       page,

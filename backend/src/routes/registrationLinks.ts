@@ -8,29 +8,19 @@ import {
   deleteRegistrationLink
 } from '../controllers/registrationLinkController';
 import authMiddleware from '../middlewares/auth';
+import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
-// Todas as rotas de gerenciamento de links requerem autenticação
 router.use(authMiddleware);
+router.use(requireRole('reader'));
 
-// Listar todos os links de registro da igreja
 router.get('/', listRegistrationLinks);
-
-// Criar um novo link de registro
-router.post('/', createRegistrationLink);
-
-// Desativar um link (soft delete) - DEVE VIR ANTES DE /:id
-router.patch('/:id/deactivate', deactivateRegistrationLink);
-
-// Buscar um link específico
+router.post('/', requireRole('editor'), createRegistrationLink);
+router.patch('/:id/deactivate', requireRole('editor'), deactivateRegistrationLink);
 router.get('/:id', getRegistrationLink);
-
-// Atualizar um link existente
-router.put('/:id', updateRegistrationLink);
-
-// Remover permanentemente um link
-router.delete('/:id', deleteRegistrationLink);
+router.put('/:id', requireRole('editor'), updateRegistrationLink);
+router.delete('/:id', requireRole('editor'), deleteRegistrationLink);
 
 export default router;
 

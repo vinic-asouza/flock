@@ -78,12 +78,11 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
     let customerEmail: string;
     let customerName: string;
 
-    if (req.user) {
-      // Buscar igreja do usuário
+    if (req.user && req.church) {
       const { data: church, error: churchError } = await supabase
         .from('churches')
         .select('id, name, email_church, user_id, stripe_customer_id')
-        .eq('user_id', req.user.id)
+        .eq('id', req.church.churchId)
         .single();
 
       if (churchError || !church) {
@@ -203,7 +202,7 @@ export const createPortalSession = async (req: AuthRequest, res: Response) => {
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('stripe_customer_id')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (churchError || !church) {
@@ -1025,7 +1024,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('id, stripe_customer_id, stripe_subscription_id')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (churchError || !church) {
@@ -1193,7 +1192,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('id, stripe_customer_id, stripe_subscription_id, plan_type')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (churchError || !church) {
@@ -1494,7 +1493,7 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('id, plan_type')
-      .eq('user_id', req.user.id)
+      .eq('id', req.church!.churchId)
       .single();
 
     if (churchError || !church) {
