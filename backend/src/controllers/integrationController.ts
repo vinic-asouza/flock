@@ -667,7 +667,6 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       whatsapp: dataWithoutGroups.whatsapp ?? integrationMember.whatsapp,
       admission: dataWithoutGroups.admission ?? mapAdmissionTypeToMember(integrationMember.expected_admission_type),
       congregation_id: dataWithoutGroups.congregation_id ?? integrationMember.expected_congregation_id,
-      role_id: dataWithoutGroups.role_id ?? null,
       church_id: church.id,
       active: true
     };

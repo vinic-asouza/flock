@@ -191,14 +191,6 @@ const memberSchema = Joi.object({
     .optional()
     .allow(null),
 
-  role_id: Joi.string()
-    .uuid()
-    .optional()
-    .allow(null)
-    .messages({
-      'string.guid': 'ID do cargo inválido'
-    }),
-
   occupation: Joi.string()
     .optional()
     .allow(null, ''),

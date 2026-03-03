@@ -167,15 +167,13 @@ CREATE TABLE public.members (
   admission_date date,
   active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT now(),
-  role_id uuid,
   congregation_id uuid,
   father_name text,
   mother_name text,
   children jsonb DEFAULT '[]'::jsonb,
   CONSTRAINT members_pkey PRIMARY KEY (id),
   CONSTRAINT members_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
-  CONSTRAINT members_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
-  CONSTRAINT members_role_id_fkey FOREIGN KEY (role_id) REFERENCES public.roles(id)
+  CONSTRAINT members_congregation_id_fkey FOREIGN KEY (congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL
 );
 CREATE TABLE public.pending_subscriptions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -225,23 +223,11 @@ CREATE TABLE public.public_registration_links (
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   default_congregation_id uuid,
-  default_role_id uuid,
   notes text,
   CONSTRAINT public_registration_links_pkey PRIMARY KEY (id),
   CONSTRAINT public_registration_links_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id),
   CONSTRAINT public_registration_links_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
-  CONSTRAINT public_registration_links_default_congregation_id_fkey FOREIGN KEY (default_congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL,
-  CONSTRAINT public_registration_links_default_role_id_fkey FOREIGN KEY (default_role_id) REFERENCES public.roles(id)
-);
-CREATE TABLE public.roles (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  church_id uuid NOT NULL,
-  name text NOT NULL,
-  description text,
-  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT roles_pkey PRIMARY KEY (id),
-  CONSTRAINT roles_church_id_fkey FOREIGN KEY (church_id) REFERENCES public.churches(id)
+  CONSTRAINT public_registration_links_default_congregation_id_fkey FOREIGN KEY (default_congregation_id) REFERENCES public.congregations(id) ON DELETE SET NULL
 );
 CREATE TABLE public.waitlist (
   id uuid NOT NULL DEFAULT gen_random_uuid(),

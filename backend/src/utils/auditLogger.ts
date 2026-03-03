@@ -3,7 +3,7 @@ import { Request } from 'express';
 import { logError } from './logger';
 
 interface AuditLogData {
-  entity: 'member' | 'role' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'member_group' | 'calendar_item' | 'account' | 'church';
+  entity: 'member' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'member_group' | 'calendar_item' | 'account' | 'church';
   entityId: string | null;
   action: 'create' | 'update' | 'delete' | 'convert' | 'import' | 'deactivate';
   changesBefore?: any;

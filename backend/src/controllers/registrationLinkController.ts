@@ -209,22 +209,6 @@ export const createRegistrationLink = async (
       }
     }
 
-    if (req.body.default_role_id) {
-      const { data: role, error: roleError } = await supabase
-        .from('roles')
-        .select('id')
-        .eq('id', req.body.default_role_id)
-        .eq('church_id', church.id)
-        .single();
-
-      if (roleError || !role) {
-        return res.status(400).json({
-          error: 'Função inválida',
-          details: 'A função especificada não pertence à sua igreja'
-        });
-      }
-    }
-
     // Gerar token único
     let token = generateSecureToken();
     let attempts = 0;
@@ -263,7 +247,6 @@ export const createRegistrationLink = async (
       is_active: true,
       created_by: req.user.id,
       default_congregation_id: req.body.default_congregation_id || null,
-      default_role_id: req.body.default_role_id || null,
       notes: req.body.notes || null
     };
 
@@ -357,7 +340,6 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
         expires_at: expiresAtString,
         max_uses: req.body.max_uses !== undefined ? req.body.max_uses : existingLink.max_uses,
         default_congregation_id: req.body.default_congregation_id ?? existingLink.default_congregation_id ?? null,
-        default_role_id: req.body.default_role_id ?? existingLink.default_role_id ?? null,
         notes: req.body.notes ?? existingLink.notes ?? null
       };
 
@@ -389,24 +371,6 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       }
     }
 
-    if (req.body.default_role_id !== undefined) {
-      if (req.body.default_role_id) {
-        const { data: role, error: roleError } = await supabase
-          .from('roles')
-          .select('id')
-          .eq('id', req.body.default_role_id)
-          .eq('church_id', church.id)
-          .single();
-
-        if (roleError || !role) {
-          return res.status(400).json({
-            error: 'Função inválida',
-            details: 'A função especificada não pertence à sua igreja'
-          });
-        }
-      }
-    }
-
     // Preparar dados de atualização
     const updateData: Partial<PublicRegistrationLink> = {
       ...(req.body.expires_at && { expires_at: new Date(req.body.expires_at) }),
@@ -414,9 +378,6 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       ...(req.body.is_active !== undefined && { is_active: req.body.is_active }),
       ...(req.body.default_congregation_id !== undefined && { 
         default_congregation_id: req.body.default_congregation_id || null 
-      }),
-      ...(req.body.default_role_id !== undefined && { 
-        default_role_id: req.body.default_role_id || null 
       }),
       ...(req.body.notes !== undefined && { notes: req.body.notes || null })
     };

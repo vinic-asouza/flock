@@ -31,7 +31,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     
     // Filtros básicos
     const active = req.query.active !== undefined ? req.query.active === 'true' : undefined;
-    const role_id = req.query.role_id as string || '';
     const congregation_id = req.query.congregation_id as string || '';
 
     // Filtros por campos específicos
@@ -132,11 +131,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       .from('members')
       .select(`
         *,
-        roles (
-          id,
-          name,
-          description
-        ),
         congregations (
           id,
           name,
@@ -157,10 +151,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     // Aplica filtros básicos
     if (active !== undefined) {
       query = query.eq('active', active);
-    }
-
-    if (role_id) {
-      query = query.eq('role_id', role_id);
     }
 
     if (congregation_id) {
@@ -299,10 +289,8 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     // Formatar a resposta para manter compatibilidade
     const formattedMembers = filteredMembers.map(member => ({
       ...member,
-      role: member.roles,
       congregation: member.congregations,
       groups: memberGroupsMap[member.id] || [],
-      roles: undefined, // Remove o campo roles da resposta
       congregations: undefined // Remove o campo congregations da resposta
     }));
 
@@ -327,7 +315,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       filters: {
         search: search || null,
         active: active !== undefined ? active : null,
-        role_id: role_id || null,
         congregation_id: congregation_id || null,
         gender: gender || null,
         marital_status: marital_status || null,
@@ -377,7 +364,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
  * 
  * Retorna dados completos do membro incluindo:
  * - Informações pessoais
- * - Cargo (role)
  * - Congregação
  * - Grupos associados
  * - Filhos (children)
@@ -411,16 +397,11 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Busca o membro específico com informações do cargo e congregação
+    // Busca o membro específico com informações da congregação
     const { data: memberWithDetails, error: memberError } = await supabase
       .from('members')
       .select(`
         *,
-        roles (
-          id,
-          name,
-          description
-        ),
         congregations (
           id,
           name,
@@ -474,7 +455,6 @@ export const getMember = async (req: AuthRequest, res: Response) => {
     // children já vem no memberWithDetails como JSONB e foi normalizado acima
     const formattedMember = {
       ...normalizedMember,
-      role: (normalizedMember as any).roles,
       congregation: (normalizedMember as any).congregations,
       children: (normalizedMember as any).children || [],
       groups: memberGroups?.map((mg: any) => ({
@@ -482,7 +462,6 @@ export const getMember = async (req: AuthRequest, res: Response) => {
         memberGroupId: mg.id,
         addedAt: mg.created_at
       })) || [],
-      roles: undefined, // Remove o campo roles da resposta
       congregations: undefined // Remove o campo congregations da resposta
     };
 
@@ -1218,11 +1197,6 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .from('members')
       .select(`
         *,
-        roles (
-          id,
-          name,
-          description
-        ),
         congregations (
           id,
           name,
@@ -1290,11 +1264,6 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
           .from('members')
           .select(`
             *,
-            roles (
-              id,
-              name,
-              description
-            ),
             congregations (
               id,
               name,
@@ -1380,19 +1349,6 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     const maritalStatsSorted = Object.fromEntries(
       Object.entries(maritalStats).sort(([a], [b]) => a.localeCompare(b))
     );
-
-    // Estatísticas por cargo (apenas membros ativos)
-    const roleStats = activeMembersOnly.reduce((acc, member) => {
-      const roleName = member.roles?.name || 'Sem cargo';
-      const roleId = member.roles?.id || null;
-      
-      if (!acc[roleName]) {
-        acc[roleName] = { count: 0, id: roleId };
-      }
-      acc[roleName].count++;
-      return acc;
-    }, {} as Record<string, { count: number; id: string | null }>);
-
 
     // Estatísticas por congregação (apenas membros ativos)
     const congregationStats = activeMembersOnly.reduce((acc, member) => {
@@ -1502,9 +1458,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Formatar todos os membros para manter compatibilidade com o frontend
     const formattedMembers = allMembers.map(member => ({
       ...member,
-      role: member.roles,
       congregation: member.congregations,
-      roles: undefined,
       congregations: undefined
     }));
 
@@ -1749,7 +1703,6 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         states: stateStatsSorted
       },
       churchStructure: {
-        roles: roleStats,
         congregations: congregationStats
       },
       timeline: {

@@ -16,7 +16,6 @@ CREATE TABLE IF NOT EXISTS public_registration_links (
   
   -- Campos opcionais para pré-configuração
   default_congregation_id UUID REFERENCES congregations(id),
-  default_role_id UUID REFERENCES roles(id),
   notes TEXT, -- Para identificar o propósito do link
   
   -- Constraints
@@ -55,7 +54,6 @@ COMMENT ON COLUMN public_registration_links.max_uses IS 'Número máximo de usos
 COMMENT ON COLUMN public_registration_links.current_uses IS 'Número atual de cadastros realizados através deste link';
 COMMENT ON COLUMN public_registration_links.is_active IS 'Indica se o link está ativo (pode ser desativado manualmente)';
 COMMENT ON COLUMN public_registration_links.default_congregation_id IS 'Congregação padrão para membros cadastrados via este link';
-COMMENT ON COLUMN public_registration_links.default_role_id IS 'Função padrão para membros cadastrados via este link';
 COMMENT ON COLUMN public_registration_links.notes IS 'Notas ou descrição do propósito do link';
 
 -- 6. Verificar a estrutura criada

@@ -139,7 +139,6 @@ export interface MemberReports {
 export interface ReportFilters {
   // Filtros básicos
   active?: boolean;
-  role_id?: string;
   congregation_id?: string;
   
   // Filtros demográficos

@@ -204,7 +204,6 @@ class ApiService {
     limit?: number;
     search?: string;
     active?: boolean;
-    role_id?: string;
     congregation_id?: string;
     gender?: string;
     marital_status?: string;
@@ -235,7 +234,6 @@ class ApiService {
     
     // Filtros básicos
     if (params.active !== undefined) queryParams.append('active', params.active.toString());
-    if (params.role_id) queryParams.append('role_id', params.role_id);
     if (params.congregation_id) queryParams.append('congregation_id', params.congregation_id);
     
     // Filtros demográficos
@@ -375,42 +373,6 @@ class ApiService {
         responseType: 'blob'
       }
     );
-    return response.data;
-  }
-
-  // Listar cargos
-  async listRoles() {
-    const response = await this.api.get('/roles');
-    return response.data;
-  }
-
-  // Criar cargo
-  async createRole(data: { name: string; description?: string }) {
-    const response = await this.api.post('/roles', data);
-    return response.data;
-  }
-
-  // Buscar cargo por ID
-  async getRole(id: string) {
-    const response = await this.api.get(`/roles/${id}`);
-    return response.data;
-  }
-
-  // Atualizar cargo
-  async updateRole(id: string, data: { name?: string; description?: string }) {
-    const response = await this.api.put(`/roles/${id}`, data);
-    return response.data;
-  }
-
-  // Excluir cargo
-  async deleteRole(id: string) {
-    const response = await this.api.delete(`/roles/${id}`);
-    return response.data;
-  }
-
-  // Criar cargos em lote
-  async createRolesBatch(data: Array<{ name: string; description?: string }>) {
-    const response = await this.api.post('/roles/batch', data);
     return response.data;
   }
 
@@ -650,7 +612,6 @@ class ApiService {
     
     // Filtros básicos
     if (filters?.active !== undefined) queryParams.append('active', filters.active.toString());
-    if (filters?.role_id) queryParams.append('role_id', filters.role_id);
     if (filters?.congregation_id) queryParams.append('congregation_id', filters.congregation_id);
     
     // Filtros demográficos
@@ -864,7 +825,6 @@ class ApiService {
     expires_at: string;
     max_uses?: number | null;
     default_congregation_id?: string | null;
-    default_role_id?: string | null;
     notes?: string | null;
   }) {
     const response = await this.api.post('/registration-links', data);
@@ -877,7 +837,6 @@ class ApiService {
     max_uses?: number | null;
     is_active?: boolean;
     default_congregation_id?: string | null;
-    default_role_id?: string | null;
     notes?: string | null;
   }) {
     const response = await this.api.put(`/registration-links/${id}`, data);

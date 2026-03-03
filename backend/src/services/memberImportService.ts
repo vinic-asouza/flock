@@ -133,7 +133,6 @@ export async function validateCSV(
         admission: row.admission || '',
         admission_date: admissionDate,
         congregation_id: congregationId || undefined,
-        role_id: undefined, // Sempre undefined conforme requisitos
         occupation: row.occupation || undefined,
         father_name: row.father_name || undefined,
         mother_name: row.mother_name || undefined,
@@ -141,7 +140,7 @@ export async function validateCSV(
         active: true
         // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
       };
-      
+
       memberDataList.push({ data: memberData, rowNumber });
       
       // Verifica duplicatas dentro do próprio CSV (por nome em lowercase)
@@ -441,7 +440,6 @@ export async function importMembers(
         admission: row.admission || '',
         admission_date: admissionDate,
         congregation_id: congregationId || undefined,
-        role_id: undefined, // Sempre undefined conforme requisitos
         occupation: row.occupation || undefined,
         father_name: row.father_name || undefined,
         mother_name: row.mother_name || undefined,
@@ -449,7 +447,7 @@ export async function importMembers(
         active: true
         // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
       };
-      
+
       // Valida dados
       const { error: validationError } = validateMember(memberData);
       

@@ -55,14 +55,6 @@ const registrationLinkSchema = Joi.object<CreateRegistrationLinkData>({
       'string.guid': 'ID da congregação inválido'
     }),
 
-  default_role_id: Joi.string()
-    .uuid()
-    .optional()
-    .allow(null, '')
-    .messages({
-      'string.guid': 'ID da função inválido'
-    }),
-
   notes: Joi.string()
     .max(500)
     .optional()

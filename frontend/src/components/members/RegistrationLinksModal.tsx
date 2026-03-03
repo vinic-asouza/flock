@@ -29,7 +29,6 @@ interface RegistrationLink {
   current_uses: number;
   is_active: boolean;
   default_congregation_id?: string | null;
-  default_role_id?: string | null;
   notes?: string | null;
   created_at: string;
   is_expired: boolean;

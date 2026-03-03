@@ -35,15 +35,6 @@ export interface Congregation {
   updated_at: Date;
 }
 
-export interface Role {
-  id: string;
-  church_id: string;
-  name: string;
-  description?: string;
-  created_at: Date;
-  updated_at: Date;
-}
-
 export interface Child {
   name: string;
   birth?: string;
@@ -70,7 +61,6 @@ export interface Member {
   whatsapp?: string;
   email?: string;
   baptism_date?: Date;
-  role_id?: string;
   occupation?: string;
   admission?: string;
   admission_date?: Date;
@@ -134,7 +124,6 @@ export interface PublicRegistrationLink {
   created_at: Date;
   updated_at: Date;
   default_congregation_id?: string | null;
-  default_role_id?: string | null;
   notes?: string | null;
 }
 
@@ -142,7 +131,6 @@ export interface CreateRegistrationLinkData {
   expires_at: string; // ISO date string
   max_uses?: number | null;
   default_congregation_id?: string | null;
-  default_role_id?: string | null;
   notes?: string | null;
 }
 

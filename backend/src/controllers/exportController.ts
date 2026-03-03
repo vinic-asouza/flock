@@ -1272,49 +1272,6 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
     doc.fillColor('#000000').moveDown(1);
 
-    // ===== DISTRIBUIÇÃO POR CARGOS =====
-    if (doc.y > 600) {
-      doc.addPage();
-    }
-
-    doc
-      .fontSize(14)
-      .font('Helvetica-Bold')
-      .fillColor('#1F2937')
-      .text('Distribuição por Cargos')
-      .fillColor('#000000')
-      .moveDown(0.3);
-
-    if (reportsData.churchStructure?.roles && typeof reportsData.churchStructure.roles === 'object') {
-      const roleEntries = Object.entries(reportsData.churchStructure.roles)
-        .sort(([_, a], [__, b]) => ((b as any).count || 0) - ((a as any).count || 0));
-      
-      if (roleEntries.length > 0) {
-        const total = roleEntries.reduce((sum, [_, data]) => sum + ((data as any).count || 0), 0);
-        
-        doc.fontSize(11).font('Helvetica');
-        roleEntries.forEach(([role, data]) => {
-          const count = (data as any).count || 0;
-          const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-          
-          doc
-            .fillColor('#374151')
-            .font('Helvetica-Bold')
-            .text(`  • ${role}: `, { continued: true })
-            .font('Helvetica')
-            .fillColor('#6B7280')
-            .text(`${count} membros (${percentage}%)`);
-        });
-        doc.fillColor('#000000');
-      } else {
-        doc.fontSize(10).font('Helvetica').fillColor('#6B7280').text('Nenhum cargo registrado');
-      }
-    } else {
-      doc.fontSize(10).font('Helvetica').fillColor('#6B7280').text('Nenhum cargo registrado');
-    }
-
-    doc.fillColor('#000000').moveDown(1);
-
     // ===== DISTRIBUIÇÃO POR CONGREGAÇÕES (somente para dados gerais) =====
     if (!congregation_id) {
       if (doc.y > 600) {
@@ -1688,7 +1645,6 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       .from('members')
       .select(`
         *,
-        role:roles(name),
         congregation:congregations(name)
       `)
       .eq('church_id', church.id);
@@ -1700,9 +1656,6 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       }
       if (filters.status && filters.status !== 'all') {
         query = query.eq('active', filters.status === 'active');
-      }
-      if (filters.role_id) {
-        query = query.eq('role_id', filters.role_id);
       }
       if (filters.congregation_id) {
         if (filters.congregation_id === 'sede') {
@@ -2165,7 +2118,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       .from('members')
       .select(`
         *,
-        role:roles(name),
         congregation:congregations(name)
       `)
       .eq('church_id', church.id);
@@ -2182,9 +2134,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
         } else if (filters.status === 'inactive') {
           query = query.eq('active', false);
         }
-      }
-      if (filters.role_id) {
-        query = query.eq('role_id', filters.role_id);
       }
       if (filters.congregation_id) {
         if (filters.congregation_id === 'sede') {
@@ -2319,7 +2268,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       email: 'Email',
       active: 'Status',
       congregation: 'Congregação',
-      role: 'Cargo',
       baptism_date: 'Data de Batismo',
       admission: 'Tipo de Recebimento',
       admission_date: 'Data de Recebimento',
@@ -2397,9 +2345,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
             break;
           case 'congregation':
             value = member.congregation?.name || 'Sede';
-            break;
-          case 'role':
-            value = member.role?.name || '';
             break;
           case 'baptism_date':
             value = formatDate(member.baptism_date);

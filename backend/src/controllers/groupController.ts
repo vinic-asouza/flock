@@ -195,12 +195,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
           whatsapp,
           active,
           congregation_id,
-          role_id,
           congregations (
-            id,
-            name
-          ),
-          roles (
             id,
             name
           )
@@ -664,12 +659,7 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
           whatsapp,
           active,
           congregation_id,
-          role_id,
           congregations (
-            id,
-            name
-          ),
-          roles (
             id,
             name
           )

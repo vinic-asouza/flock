@@ -136,7 +136,6 @@ export const createMemberViaPublicLink = async (
     // Preparar dados do membro
     // Converter null para undefined para compatibilidade com o tipo Member
     const congregationId = (normalizedData.congregation_id as string | null | undefined) || registrationLink.default_congregation_id;
-    const roleId = (normalizedData.role_id as string | null | undefined) || registrationLink.default_role_id;
 
     const memberData: Partial<Member> = {
       ...normalizedData,
@@ -144,8 +143,6 @@ export const createMemberViaPublicLink = async (
       active: true,
       // Usar congregação padrão do link se não foi especificada
       congregation_id: congregationId ?? undefined,
-      // Usar função padrão do link se não foi especificada
-      role_id: roleId ?? undefined,
       // Garantir que children seja um array JSON válido
       children: normalizedData.children && Array.isArray(normalizedData.children) 
         ? normalizedData.children 

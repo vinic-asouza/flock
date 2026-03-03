@@ -469,12 +469,6 @@
     },
     {
         "table_name": "members",
-        "column_name": "role_id",
-        "data_type": "uuid",
-        "is_nullable": "YES"
-    },
-    {
-        "table_name": "members",
         "column_name": "congregation_id",
         "data_type": "uuid",
         "is_nullable": "YES"
@@ -532,42 +526,6 @@
         "column_name": "expires_at",
         "data_type": "timestamp with time zone",
         "is_nullable": "YES"
-    },
-    {
-        "table_name": "roles",
-        "column_name": "id",
-        "data_type": "uuid",
-        "is_nullable": "NO"
-    },
-    {
-        "table_name": "roles",
-        "column_name": "church_id",
-        "data_type": "uuid",
-        "is_nullable": "NO"
-    },
-    {
-        "table_name": "roles",
-        "column_name": "name",
-        "data_type": "text",
-        "is_nullable": "NO"
-    },
-    {
-        "table_name": "roles",
-        "column_name": "description",
-        "data_type": "text",
-        "is_nullable": "YES"
-    },
-    {
-        "table_name": "roles",
-        "column_name": "created_at",
-        "data_type": "timestamp with time zone",
-        "is_nullable": "NO"
-    },
-    {
-        "table_name": "roles",
-        "column_name": "updated_at",
-        "data_type": "timestamp with time zone",
-        "is_nullable": "NO"
     },
     {
         "table_name": "waitlist",
