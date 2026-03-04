@@ -88,8 +88,11 @@ const statusLabels: Record<string, { label: string; color: string; bgColor: stri
   unpaid: { label: 'Não Paga', color: 'text-red-700', bgColor: 'bg-red-50' },
 };
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 export function PaymentManagement() {
-  const { user, refreshChurch } = useAuth();
+  const { user, refreshChurch, currentRole } = useAuth();
+  const canManagePlan = currentRole === 'admin' || currentRole === 'owner';
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
@@ -680,7 +683,8 @@ export function PaymentManagement() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={handleManageSubscription}
-                disabled={isLoadingPortal || isSyncing || isChangingPlan}
+                disabled={isLoadingPortal || isSyncing || isChangingPlan || !canManagePlan}
+                title={!canManagePlan ? READER_TOOLTIP : undefined}
                 className="flex-1"
                 isLoading={isLoadingPortal}
               >
@@ -700,7 +704,8 @@ export function PaymentManagement() {
               {!subscriptionEndDate && (
                 <Button
                   onClick={() => setShowChangePlanModal(true)}
-                  disabled={isChangingPlan || subscriptionStatus !== 'active' || isLoadingPortal || isSyncing}
+                  disabled={isChangingPlan || subscriptionStatus !== 'active' || isLoadingPortal || isSyncing || !canManagePlan}
+                  title={!canManagePlan ? READER_TOOLTIP : undefined}
                   variant="secondary"
                   className="flex-1"
                   isLoading={isChangingPlan}
@@ -711,7 +716,8 @@ export function PaymentManagement() {
               )}
               <Button
                 onClick={() => handleSyncSubscription(false)}
-                disabled={isSyncing || isLoadingPortal || isChangingPlan}
+                disabled={isSyncing || isLoadingPortal || isChangingPlan || !canManagePlan}
+                title={!canManagePlan ? READER_TOOLTIP : undefined}
                 variant="secondary"
                 className="flex-1"
                 isLoading={isSyncing}
@@ -760,10 +766,10 @@ export function PaymentManagement() {
               {user?.stripe_customer_id && (
                 <Button
                   onClick={() => handleSyncSubscription(false)}
-                  disabled={isSyncing}
+                  disabled={isSyncing || !canManagePlan}
+                  title={!canManagePlan ? READER_TOOLTIP : 'Sincroniza apenas se não houver cache válido (últimos 5 minutos)'}
                   variant="secondary"
                   className="w-full sm:w-auto"
-                  title="Sincroniza apenas se não houver cache válido (últimos 5 minutos)"
                 >
                   {isSyncing ? (
                     <>
@@ -780,6 +786,8 @@ export function PaymentManagement() {
               )}
               <Button
                 onClick={() => window.location.href = '/checkout?plan=200'}
+                disabled={!canManagePlan}
+                title={!canManagePlan ? READER_TOOLTIP : undefined}
                 className="w-full sm:w-auto"
               >
                 <CreditCard className="w-5 h-5 mr-2" />

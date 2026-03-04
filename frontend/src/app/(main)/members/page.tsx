@@ -582,6 +582,7 @@ function MembersPageContent() {
           isOpen={viewModalOpen}
           onClose={() => setViewModalOpen(false)}
           memberId={selectedMemberId}
+          canEdit={canEdit}
           onEdit={() => {
             setViewModalOpen(false);
             setEditModalOpen(true);

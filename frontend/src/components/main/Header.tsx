@@ -19,7 +19,7 @@ interface MemberLimitInfo {
 
 export function Header() {
   const router = useRouter();
-  const { user, session, logout } = useAuth();
+  const { user, session, currentRole, logout } = useAuth();
   const [memberLimit, setMemberLimit] = useState<MemberLimitInfo | null>(null);
 
   // Função para carregar informações do limite
@@ -153,12 +153,36 @@ export function Header() {
           </Link>
         )}
 
-        {/* Email do Usuário */}
-        <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
+        {/* Email do Usuário + Papel */}
+        <div className="hidden sm:flex items-center gap-1 text-sm text-gray-600">
           <User size={16} className="text-gray-600" />
-          <span className="truncate max-w-48" title={session?.user?.email}>
-            {session?.user?.email || 'usuario@igreja.com'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="truncate max-w-48" title={session?.user?.email}>
+              {session?.user?.email || 'usuario@igreja.com'}
+            </span>
+            {currentRole && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-700 border border-gray-200"
+                title={
+                  currentRole === 'owner'
+                    ? 'Conta Principal'
+                    : currentRole === 'admin'
+                    ? 'Administrador'
+                    : currentRole === 'editor'
+                    ? 'Editor'
+                    : 'Leitor'
+                }
+              >
+                {currentRole === 'owner'
+                  ? 'Conta Principal'
+                  : currentRole === 'admin'
+                  ? 'administrador'
+                  : currentRole === 'editor'
+                  ? 'editor'
+                  : 'leitor'}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Botão Sair */}

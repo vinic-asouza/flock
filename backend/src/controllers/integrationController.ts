@@ -33,14 +33,6 @@ const selectIntegrationMember = `
   )
 `;
 
-const getChurchByUser = async (userId: string) => {
-  return supabase
-    .from('churches')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-};
-
 const mapGenderToMember = (gender?: string | null): Member['gender'] | undefined => {
   if (!gender) return undefined;
   if (gender.toLowerCase() === 'masculino') return 'Masculino';
@@ -106,6 +98,13 @@ export const listIntegrationMembers = async (req: AuthRequest, res: Response) =>
       });
     }
 
+    if (!req.church) {
+      return res.status(403).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não está vinculado a nenhuma igreja'
+      });
+    }
+
     const page = parseInt(req.query.page as string, 10) || DEFAULT_PAGE;
     const limit = parseInt(req.query.limit as string, 10) || DEFAULT_LIMIT;
     const search = (req.query.search as string) || '';
@@ -122,21 +121,14 @@ export const listIntegrationMembers = async (req: AuthRequest, res: Response) =>
       });
     }
 
-    const { data: church, error: churchError } = await getChurchByUser(req.user.id);
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church.churchId;
 
     const offset = (page - 1) * limit;
 
     let query = supabase
       .from('integration_members')
       .select(selectIntegrationMember, { count: 'exact' })
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (search) {
       query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,whatsapp.ilike.%${search}%`);
@@ -231,22 +223,21 @@ export const getIntegrationMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { id } = req.params;
-
-    const { data: church, error: churchError } = await getChurchByUser(req.user.id);
-
-    if (churchError || !church) {
-      return res.status(404).json({
+    if (!req.church) {
+      return res.status(403).json({
         error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
+        details: 'Usuário não está vinculado a nenhuma igreja'
       });
     }
+
+    const { id } = req.params;
+    const churchId = req.church.churchId;
 
     const { data, error } = await supabase
       .from('integration_members')
       .select(selectIntegrationMember)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (error || !data) {
@@ -295,6 +286,13 @@ export const createIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
+    if (!req.church) {
+      return res.status(403).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não está vinculado a nenhuma igreja'
+      });
+    }
+
     const { error: validationError, value } = validateIntegrationMember(req.body);
 
     if (validationError) {
@@ -304,17 +302,10 @@ export const createIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
-    const { data: church, error: churchError } = await getChurchByUser(req.user.id);
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church.churchId;
 
     // Validar todos os dados do integrante (congregação, mentor, duplicidade de nome)
-    const dataValidation = await validateIntegrationMemberData(value, church.id);
+    const dataValidation = await validateIntegrationMemberData(value, churchId);
     if (!dataValidation.isValid) {
       const errorTitle = dataValidation.field === 'name' 
         ? 'Nome já cadastrado'
@@ -333,7 +324,7 @@ export const createIntegrationMember = async (req: AuthRequest, res: Response) =
 
     const payload: Partial<IntegrationMember> = {
       ...normalizedData,
-      church_id: church.id,
+      church_id: churchId,
       status: value.status ?? 'em_progresso',
       expected_congregation_id: value.expected_congregation_id || null,
       mentor_id: value.mentor_id || null,
@@ -399,6 +390,13 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
+    if (!req.church) {
+      return res.status(403).json({
+        error: 'Igreja não encontrada',
+        details: 'Usuário não está vinculado a nenhuma igreja'
+      });
+    }
+
     const { id } = req.params;
 
     const { error: validationError, value } = validateIntegrationMember(req.body);
@@ -410,20 +408,13 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
-    const { data: church, error: churchError } = await getChurchByUser(req.user.id);
-
-    if (churchError || !church) {
-      return res.status(404).json({
-        error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
-      });
-    }
+    const churchId = req.church.churchId;
 
     const { data: existing, error: fetchError } = await supabase
       .from('integration_members')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existing) {
@@ -438,7 +429,7 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
     const shouldCheckName = value.name && value.name.trim() !== existing.name.trim();
     const dataValidation = await validateIntegrationMemberData(
       value, 
-      church.id, 
+      churchId, 
       shouldCheckName ? id : undefined
     );
     if (!dataValidation.isValid) {
@@ -468,7 +459,7 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       .from('integration_members')
       .update(updatePayload)
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select(selectIntegrationMember)
       .single();
 
@@ -517,22 +508,21 @@ export const deleteIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
-    const { id } = req.params;
-
-    const { data: church, error: churchError } = await getChurchByUser(req.user.id);
-
-    if (churchError || !church) {
-      return res.status(404).json({
+    if (!req.church) {
+      return res.status(403).json({
         error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
+        details: 'Usuário não está vinculado a nenhuma igreja'
       });
     }
+
+    const { id } = req.params;
+    const churchId = req.church.churchId;
 
     const { data: existing, error: fetchError } = await supabase
       .from('integration_members')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !existing) {
@@ -546,7 +536,7 @@ export const deleteIntegrationMember = async (req: AuthRequest, res: Response) =
       .from('integration_members')
       .delete()
       .eq('id', id)
-      .eq('church_id', church.id);
+      .eq('church_id', churchId);
 
     if (error) {
       return res.status(400).json({
@@ -600,22 +590,21 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       });
     }
 
-    const { id } = req.params;
-
-    const { data: church, error: churchError } = await getChurchByUser(req.user.id);
-
-    if (churchError || !church) {
-      return res.status(404).json({
+    if (!req.church) {
+      return res.status(403).json({
         error: 'Igreja não encontrada',
-        details: 'Não foi possível encontrar a igreja associada ao usuário'
+        details: 'Usuário não está vinculado a nenhuma igreja'
       });
     }
+
+    const { id } = req.params;
+    const churchId = req.church.churchId;
 
     const { data: integrationMember, error: fetchError } = await supabase
       .from('integration_members')
       .select('*')
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .single();
 
     if (fetchError || !integrationMember) {
@@ -640,7 +629,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
     }
 
     // Verificar limite de membros do plano
-    const limitCheck = await checkMemberLimit(church.id, 1);
+    const limitCheck = await checkMemberLimit(churchId, 1);
     if (!limitCheck.canAdd) {
       return res.status(403).json({
         error: 'Limite de membros atingido',
@@ -667,7 +656,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       whatsapp: dataWithoutGroups.whatsapp ?? integrationMember.whatsapp,
       admission: dataWithoutGroups.admission ?? mapAdmissionTypeToMember(integrationMember.expected_admission_type),
       congregation_id: dataWithoutGroups.congregation_id ?? integrationMember.expected_congregation_id,
-      church_id: church.id,
+      church_id: churchId,
       active: true
     };
 
@@ -730,7 +719,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       .from('integration_members')
       .update({ status: 'integrado' })
       .eq('id', id)
-      .eq('church_id', church.id)
+      .eq('church_id', churchId)
       .select(selectIntegrationMember)
       .single();
 

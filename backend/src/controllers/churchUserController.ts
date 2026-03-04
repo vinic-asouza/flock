@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { ChurchUserRole } from '../types';
 import { sendEmail } from '../services/emailService';
+import { getChurchUserInvitationTemplate } from '../templates/emailTemplates';
 import { logError } from '../utils/logger';
 
 const ROLE_LABELS: Record<ChurchUserRole, string> = {
@@ -180,16 +181,16 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
     const appUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
 
     try {
+      const html = getChurchUserInvitationTemplate({
+        churchName,
+        roleLabel: ROLE_LABELS[role],
+        appUrl
+      });
+
       await sendEmail({
         to: normalizedEmail,
         subject: `Você foi adicionado(a) à igreja ${churchName} no Flock`,
-        html: `
-          <p>Olá,</p>
-          <p>Você foi adicionado(a) à igreja <strong>${churchName}</strong> no sistema Flock com o papel de <strong>${ROLE_LABELS[role]}</strong>.</p>
-          <p>Acesse o sistema em: <a href="${appUrl}/login">${appUrl}/login</a></p>
-          <p>Use seu email para entrar. Se ainda não definiu uma senha, use a opção "Esqueci minha senha" na tela de login.</p>
-          <p>— Equipe Flock</p>
-        `
+        html
       });
     } catch (emailErr) {
       logError('Erro ao enviar email de convite (não bloqueante):', emailErr);

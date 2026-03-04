@@ -106,3 +106,14 @@ export const getMemberLimitWarningTemplate = (data: {
 }): string => {
   return renderTemplate('member-limit-warning', data);
 };
+
+/**
+ * Template de convite para usuário adicionado a uma igreja
+ */
+export const getChurchUserInvitationTemplate = (data: {
+  churchName: string;
+  roleLabel: string;
+  appUrl: string;
+}): string => {
+  return renderTemplate('church-user-invitation', data);
+};

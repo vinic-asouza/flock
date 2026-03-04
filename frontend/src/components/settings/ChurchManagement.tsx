@@ -55,6 +55,8 @@ const planNames: Record<string, string> = {
   '800': 'Plano 800 Membros',
 };
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 // Schema de validação Zod para dados da igreja
 const churchSchema = z.object({
   name: z.string()
@@ -101,7 +103,8 @@ const churchSchema = z.object({
 type ChurchFormData = z.infer<typeof churchSchema>;
 
 export function ChurchManagement() {
-  const { user, updateChurch } = useAuth();
+  const { user, updateChurch, currentRole } = useAuth();
+  const canManageChurch = currentRole === 'admin' || currentRole === 'owner';
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -297,6 +300,8 @@ export function ChurchManagement() {
               <Button
                 onClick={() => setIsEditing(true)}
                 variant="primary"
+                disabled={!canManageChurch}
+                title={!canManageChurch ? READER_TOOLTIP : undefined}
               >
                 Editar Dados
               </Button>
@@ -528,7 +533,8 @@ export function ChurchManagement() {
                 <Button
                   onClick={handleSave}
                   variant="primary"
-                  disabled={isSaving}
+                  disabled={isSaving || !canManageChurch}
+                  title={!canManageChurch ? READER_TOOLTIP : undefined}
                 >
                   {isSaving ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>

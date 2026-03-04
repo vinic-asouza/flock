@@ -18,6 +18,7 @@ function SettingsPageContent() {
     const [activeSection, setActiveSection] = useState('church');
 
     const canSeeUsers = currentRole === 'admin' || currentRole === 'owner';
+    const canSeeLogs = currentRole === 'admin' || currentRole === 'owner';
 
     const settingsSections = useMemo(() => {
         const base = [
@@ -25,10 +26,10 @@ function SettingsPageContent() {
             { id: 'payment', title: 'Plano', description: 'Gerencie seu plano e assinatura', icon: CreditCard },
             { id: 'account', title: 'Conta', description: 'Configurações da sua conta', icon: Shield },
             ...(canSeeUsers ? [{ id: 'users', title: 'Usuários', description: 'Usuários com acesso à igreja', icon: Users }] : []),
-            { id: 'logs', title: 'Logs', description: 'Histórico de operações do sistema', icon: FileText },
+            ...(canSeeLogs ? [{ id: 'logs', title: 'Logs', description: 'Histórico de operações do sistema', icon: FileText }] : []),
         ];
         return base;
-    }, [canSeeUsers]);
+    }, [canSeeUsers, canSeeLogs]);
 
     useEffect(() => {
         if (tabFromUrl && settingsSections.some((s: { id: string }) => s.id === tabFromUrl)) {
@@ -69,7 +70,7 @@ function SettingsPageContent() {
                  {activeSection === 'payment' && <PaymentManagement />}
                  {activeSection === 'account' && <AccountManagement />}
                  {activeSection === 'users' && canSeeUsers && <ChurchUsersManagement />}
-                 {activeSection === 'logs' && <AuditLogs />}
+                 {activeSection === 'logs' && canSeeLogs && <AuditLogs />}
              </div>
         </div>
     );

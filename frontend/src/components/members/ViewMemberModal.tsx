@@ -8,6 +8,8 @@ import apiService from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { calculateAge } from '@/utils';
 
+const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
 interface Member {
   id: string;
   name: string;
@@ -56,6 +58,7 @@ interface ViewMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   memberId: string;
+  canEdit?: boolean;
   onEdit: () => void;
   onDeactivate: () => void;
   onReactivate: () => void;
@@ -119,11 +122,12 @@ function formatarTelefone(telefone: string): string {
   return telefone;
 }
 
-export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivate, onReactivate, onDeletePermanently }: ViewMemberModalProps) {
+export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onEdit, onDeactivate, onReactivate, onDeletePermanently }: ViewMemberModalProps) {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const readOnly = canEdit === false;
 
   useEffect(() => {
     if (isOpen && memberId) {
@@ -475,7 +479,8 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                 <Button
                   variant="danger"
                   onClick={onDeletePermanently}
-                  disabled={loading}
+                  disabled={loading || readOnly}
+                  title={readOnly ? READER_TOOLTIP : undefined}
                 >
                   <Trash2 size={16} className="mr-2" />
                   Excluir Permanentemente
@@ -486,7 +491,8 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                     <Button
                       variant="secondary"
                       onClick={onDeactivate}
-                      disabled={loading}
+                      disabled={loading || readOnly}
+                      title={readOnly ? READER_TOOLTIP : undefined}
                     >
                       <UserMinus size={16} className="mr-2" />
                       Inativar Membro
@@ -496,7 +502,8 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                     <Button
                       variant="secondary"
                       onClick={onReactivate}
-                      disabled={loading}
+                      disabled={loading || readOnly}
+                      title={readOnly ? READER_TOOLTIP : undefined}
                     >
                       <UserPlus size={16} className="mr-2" />
                       Reativar
@@ -504,7 +511,8 @@ export function ViewMemberModal({ isOpen, onClose, memberId, onEdit, onDeactivat
                   )}
                   <Button
                     onClick={onEdit}
-                    disabled={loading}
+                    disabled={loading || readOnly}
+                    title={readOnly ? READER_TOOLTIP : undefined}
                   >
                     Editar
                   </Button>
