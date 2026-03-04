@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import apiService from '@/services/api';
 import type { ChurchUserListItem, ChurchUserRole } from '@/types';
 import toast from 'react-hot-toast';
-import { UserPlus, Mail, Shield, Loader2, Trash2 } from 'lucide-react';
+import { UserPlus, Shield, Loader2, Trash2 } from 'lucide-react';
 
 const ROLE_OPTIONS: { value: ChurchUserRole; label: string }[] = [
   { value: 'reader', label: 'Leitor' },
@@ -24,7 +24,7 @@ const STATUS_OPTIONS = [
 ];
 
 export function ChurchUsersManagement() {
-  const { currentRole, user } = useAuth();
+  const { currentRole } = useAuth();
   const [list, setList] = useState<ChurchUserListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
