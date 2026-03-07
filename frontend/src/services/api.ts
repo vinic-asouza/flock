@@ -421,10 +421,24 @@ class ApiService {
   }
 
   // Listar grupos
-  async listGroups(congregationId?: string): Promise<Group[]> {
+  async listGroups(params?: {
+    congregation_id?: string;
+    type?: string;
+    status?: 'active' | 'inactive' | 'all';
+    search?: string;
+  }): Promise<Group[]> {
     const queryParams = new URLSearchParams();
-    if (congregationId) {
-      queryParams.append('congregation_id', congregationId);
+    if (params?.congregation_id) {
+      queryParams.append('congregation_id', params.congregation_id);
+    }
+    if (params?.type) {
+      queryParams.append('type', params.type);
+    }
+    if (params?.status && params.status !== 'all') {
+      queryParams.append('status', params.status);
+    }
+    if (params?.search?.trim()) {
+      queryParams.append('search', params.search.trim());
     }
     const url = `/groups${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.api.get(url);
@@ -762,6 +776,16 @@ class ApiService {
       fields: selectedFields
     }, {
       responseType: 'blob', // Importante para receber o arquivo como blob
+    });
+    return response.data;
+  }
+
+  async exportGroupMembersList(groupId: string, selectedFields: string[]): Promise<Blob> {
+    const response = await this.api.post('/export/group/members/list', {
+      groupId,
+      fields: selectedFields
+    }, {
+      responseType: 'blob',
     });
     return response.data;
   }

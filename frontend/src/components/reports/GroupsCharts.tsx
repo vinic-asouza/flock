@@ -44,7 +44,7 @@ export function GroupsCharts({ loading = false, viewMode = 'all', selectedCongre
         }
         // Para 'all', não passar congregationId (undefined) para buscar todos
 
-        const data = await apiService.listGroups(congregationId);
+        const data = await apiService.listGroups({ congregation_id: congregationId });
         // Filtrar apenas grupos ativos (status === true)
         const activeGroups = (data || []).filter((group: Group) => group.status === true);
         setGroups(activeGroups);

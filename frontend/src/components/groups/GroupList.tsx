@@ -82,7 +82,7 @@ export function GroupList({ groups, onGroupClick }: GroupListProps) {
                 </span>
               </div>
               {isExpanded && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-4 animate-in fade-in duration-200">
                   {groupedByType[type].map((group) => (
                     <GroupCard
                       key={group.id}

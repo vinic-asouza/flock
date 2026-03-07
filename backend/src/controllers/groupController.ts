@@ -11,10 +11,12 @@ import { debug, error as logError } from '../utils/logger';
  * 
  * Suporta:
  * - Filtro por congregação (query param congregation_id)
+ * - Filtro por tipo (query param type)
+ * - Filtro por status (query param status: active | inactive | all)
  * - Ordenação por tipo e nome
  * - Contagem de membros por grupo
  * 
- * @param req - Request com query parameter congregation_id (opcional)
+ * @param req - Request com query params congregation_id, type, status (opcionais)
  * @param res - Response com lista de grupos incluindo contagem de membros
  * @returns JSON com array de grupos
  */
@@ -29,9 +31,11 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
 
     const churchId = req.church!.churchId;
 
-    // Filtro por congregação (query param)
-    const congregation_id = req.query.congregation_id as string || '';
-    
+    const congregation_id = (req.query.congregation_id as string) || '';
+    const type = req.query.type as string || '';
+    const statusParam = (req.query.status as string) || 'all';
+    const search = (req.query.search as string) || '';
+
     // Construir query base
     let query = supabase
       .from('groups')
@@ -53,12 +57,27 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     // Aplicar filtro de congregação
     if (congregation_id) {
       if (congregation_id === 'sede') {
-        // Filtrar grupos sem congregação (congregation_id IS NULL)
         query = query.is('congregation_id', null);
       } else {
-        // Filtrar por congregação específica
         query = query.eq('congregation_id', congregation_id);
       }
+    }
+
+    // Aplicar filtro de tipo
+    if (type) {
+      query = query.eq('type', type);
+    }
+
+    // Aplicar filtro de status (active = true, inactive = false)
+    if (statusParam === 'active') {
+      query = query.eq('status', true);
+    } else if (statusParam === 'inactive') {
+      query = query.eq('status', false);
+    }
+
+    // Busca por nome (ilike para correspondência parcial)
+    if (search.trim()) {
+      query = query.ilike('name', `%${search.trim()}%`);
     }
 
     const { data: groups, error } = await query;

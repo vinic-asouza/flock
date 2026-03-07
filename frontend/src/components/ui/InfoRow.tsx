@@ -42,7 +42,7 @@ export function InfoRow({
           valueClassName
         )}
       >
-        {label && <span className="font-medium">{label}: </span>}
+        {label && <span>{label}: </span>}
         {value}
       </span>
     </div>

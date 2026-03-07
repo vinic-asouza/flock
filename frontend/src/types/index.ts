@@ -304,3 +304,10 @@ export interface GroupPayload {
   responsible_id?: string | null;
   status?: boolean;
 }
+
+export interface GroupFilters {
+  search: string;
+  congregationId: string;
+  type: GroupType | '';
+  status: 'active' | 'inactive' | 'all';
+}

@@ -22,7 +22,7 @@ export function Button({
 
   const variants = {
     primary: 'bg-primary text-white hover:opacity-90 shadow-md hover:shadow-lg',
-    secondary: 'bg-white text-gray-900 hover:opacity-90 shadow-sm hover:shadow-md',
+    secondary: 'bg-white border border-gray-100 text-gray-900 hover:opacity-90 shadow-sm hover:shadow-md',
     ghost: 'text-primary hover:opacity-90 hover:shadow-sm',
     danger: 'bg-red-600 text-white hover:opacity-90 shadow-md hover:shadow-lg',
   };

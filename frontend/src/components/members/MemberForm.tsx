@@ -410,7 +410,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         setLoadingGroups(true);
         // Se congregação vazia ou null, buscar grupos da sede
         const congregationParam = congregationIdToUse === '' || !congregationIdToUse ? 'sede' : congregationIdToUse;
-        const response = await apiService.listGroups(congregationParam);
+        const response = await apiService.listGroups({ congregation_id: congregationParam });
         setAvailableGroups(response);
         
         // No modo edit, manter grupos selecionados se ainda estiverem disponíveis

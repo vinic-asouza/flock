@@ -2040,6 +2040,279 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * Exporta lista de membros de um grupo para PDF.
+ * Inclui dados do grupo (nome, tipo, congregação, responsável) e tabela de membros com campos selecionados.
+ */
+export const exportGroupMembersList = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado'
+      });
+    }
+
+    const { groupId, fields } = req.body;
+
+    if (!groupId || !fields || !Array.isArray(fields) || fields.length === 0) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: 'É necessário informar o ID do grupo e selecionar pelo menos um campo para exportar'
+      });
+    }
+
+    const churchId = req.church!.churchId;
+
+    const { data: churchData } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('id', churchId)
+      .single();
+
+    const { data: group, error: groupError } = await supabase
+      .from('groups')
+      .select(`
+        id,
+        name,
+        type,
+        congregations ( id, name ),
+        members!groups_responsible_id_fkey ( id, name, email, phone, whatsapp )
+      `)
+      .eq('id', groupId)
+      .eq('church_id', churchId)
+      .single();
+
+    if (groupError || !group) {
+      return res.status(404).json({
+        error: 'Grupo não encontrado',
+        details: 'Não foi possível encontrar o grupo solicitado'
+      });
+    }
+
+    const { data: memberGroups } = await supabase
+      .from('member_groups')
+      .select('member_id')
+      .eq('group_id', groupId);
+
+    const memberIds = (memberGroups || []).map((mg: { member_id: string }) => mg.member_id);
+
+    let members: any[] = [];
+    if (memberIds.length > 0) {
+      const { data: membersData, error: membersError } = await supabase
+        .from('members')
+        .select(`
+          *,
+          congregation:congregations(name)
+        `)
+        .eq('church_id', churchId)
+        .in('id', memberIds)
+        .order('name', { ascending: true });
+
+      if (membersError) {
+        return res.status(500).json({
+          error: 'Erro ao buscar membros do grupo',
+          details: membersError.message
+        });
+      }
+      members = membersData || [];
+    }
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 40, bottom: 40, left: 40, right: 40 }
+    });
+
+    const filename = `grupo-${(group.name || 'grupo').replace(/\s+/g, '-')}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    doc.pipe(res);
+
+    doc.on('error', (err) => {
+      console.error('Erro no stream do PDF:', err);
+    });
+
+    const calculateAge = (birth: string) => {
+      if (!birth) return null;
+      const birthDate = new Date(birth);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+      return age;
+    };
+
+    const formatDate = (date: string | null) => {
+      if (!date) return '-';
+      return new Date(date).toLocaleDateString('pt-BR');
+    };
+
+    const formatPhone = (phone: string) => {
+      if (!phone) return '-';
+      const numbers = phone.replace(/\D/g, '');
+      if (numbers.length === 10) return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+      if (numbers.length === 11) return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      return phone;
+    };
+
+    const fieldLabels: Record<string, string> = {
+      name: 'Nome',
+      age: 'Idade',
+      birth: 'Nascimento',
+      gender: 'Gênero',
+      marital_status: 'Estado Civil',
+      nationality: 'Nacionalidade',
+      spouse: 'Cônjuge',
+      father_name: 'Nome do Pai',
+      mother_name: 'Nome da Mãe',
+      occupation: 'Profissão',
+      children: 'Filhos',
+      phone: 'Telefone',
+      whatsapp: 'WhatsApp',
+      email: 'Email',
+      active: 'Status',
+      congregation: 'Congregação',
+      baptism_date: 'Batismo',
+      admission: 'Recebimento',
+      admission_date: 'Data Recebimento',
+      address: 'Endereço',
+      complement: 'Complemento',
+      neighborhood: 'Bairro',
+      city: 'Cidade',
+      state: 'Estado',
+      cep: 'CEP'
+    };
+
+    const groupData = group as any;
+    const congregationName = groupData.congregations?.name || 'Sede';
+    const responsible = groupData.members || null;
+
+    doc.fontSize(18).font('Helvetica-Bold').text(churchData?.name || '', { align: 'center' }).moveDown(0.3);
+    doc.fontSize(14).font('Helvetica').text('Lista de membros do grupo', { align: 'center' }).moveDown(0.5);
+
+    doc.fontSize(10).font('Helvetica-Bold').text('Grupo', 40, doc.y).moveDown(0.2);
+    doc.fontSize(9).font('Helvetica');
+    doc.text(`Nome: ${groupData.name || '-'}`, 40, doc.y).moveDown(0.15);
+    doc.text(`Tipo: ${groupData.type || '-'}`, 40, doc.y).moveDown(0.15);
+    doc.text(`Congregação: ${congregationName}`, 40, doc.y).moveDown(0.15);
+    if (responsible) {
+      doc.text(`Responsável: ${responsible.name || '-'}`, 40, doc.y).moveDown(0.15);
+      if (responsible.email || responsible.phone || responsible.whatsapp) {
+        const contact: string[] = [];
+        if (responsible.email) contact.push(`E-mail: ${responsible.email}`);
+        if (responsible.phone) contact.push(`Telefone: ${formatPhone(responsible.phone)}`);
+        if (responsible.whatsapp) contact.push(`WhatsApp: ${formatPhone(responsible.whatsapp)}`);
+        doc.text(contact.join('  |  '), 40, doc.y).moveDown(0.15);
+      }
+    }
+    doc.moveDown(0.5);
+
+    doc.strokeColor('#E5E7EB').lineWidth(1).moveTo(40, doc.y).lineTo(doc.page.width - 40, doc.y).stroke().moveDown(0.5);
+
+    doc.fontSize(9).fillColor('#6B7280').text(`Total: ${members.length} membro(s)  •  Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 40, doc.y).fillColor('#000000').moveDown(0.8);
+
+    const pageWidth = doc.page.width - 80;
+    const columnWidth = pageWidth / fields.length;
+    const rowHeight = 25;
+    const headerHeight = 30;
+    let currentY = doc.y;
+
+    doc.fontSize(8).font('Helvetica-Bold');
+    fields.forEach((field: string, index: number) => {
+      const x = 40 + index * columnWidth;
+      doc.rect(x, currentY, columnWidth, headerHeight).fillAndStroke('#F3F4F6', '#E5E7EB');
+      doc.fillColor('#000000').text(fieldLabels[field] || field, x + 5, currentY + 8, { width: columnWidth - 10, align: 'left' });
+    });
+    currentY += headerHeight;
+
+    doc.fontSize(7).font('Helvetica');
+
+    const getMemberValue = (member: any, field: string) => {
+      switch (field) {
+        case 'name': return member.name ? member.name.toUpperCase() : '-';
+        case 'age': {
+          const age = calculateAge(member.birth);
+          return age !== null ? `${age}` : '-';
+        }
+        case 'birth': return formatDate(member.birth);
+        case 'gender': return member.gender || '-';
+        case 'marital_status': return member.marital_status || '-';
+        case 'nationality': return member.nationality || '-';
+        case 'spouse': return member.spouse || '-';
+        case 'father_name': return member.father_name || '-';
+        case 'mother_name': return member.mother_name || '-';
+        case 'occupation': return member.occupation || '-';
+        case 'children':
+          if (member.children && Array.isArray(member.children) && member.children.length > 0) {
+            return member.children.map((c: any) => c.name).join('; ') || '-';
+          }
+          return '-';
+        case 'phone': return formatPhone(member.phone);
+        case 'whatsapp': return formatPhone(member.whatsapp);
+        case 'email': return member.email || '-';
+        case 'active': return member.active ? 'Ativo' : 'Inativo';
+        case 'congregation': return member.congregation?.name || 'Sede';
+        case 'baptism_date': return formatDate(member.baptism_date);
+        case 'admission': return member.admission || '-';
+        case 'admission_date': return formatDate(member.admission_date);
+        case 'address': return member.address || '-';
+        case 'complement': return member.complement || '-';
+        case 'neighborhood': return member.neighborhood || '-';
+        case 'city': return member.city || '-';
+        case 'state': return member.state || '-';
+        case 'cep': return member.cep || '-';
+        default: return '-';
+      }
+    };
+
+    members.forEach((member, rowIndex) => {
+      if (currentY + rowHeight > doc.page.height - 60) {
+        doc.addPage();
+        currentY = 40;
+        doc.fontSize(8).font('Helvetica-Bold');
+        fields.forEach((field: string, index: number) => {
+          const x = 40 + index * columnWidth;
+          doc.rect(x, currentY, columnWidth, headerHeight).fillAndStroke('#F3F4F6', '#E5E7EB');
+          doc.fillColor('#000000').text(fieldLabels[field] || field, x + 5, currentY + 8, { width: columnWidth - 10, align: 'left' });
+        });
+        currentY += headerHeight;
+        doc.fontSize(7).font('Helvetica');
+      }
+
+      if (rowIndex % 2 === 0) {
+        doc.rect(40, currentY, pageWidth, rowHeight).fillAndStroke('#FAFAFA', '#E5E7EB');
+      } else {
+        doc.rect(40, currentY, pageWidth, rowHeight).stroke('#E5E7EB');
+      }
+
+      fields.forEach((field: string, colIndex: number) => {
+        const x = 40 + colIndex * columnWidth;
+        const value = getMemberValue(member, field);
+        doc.fillColor('#000000').text(value, x + 5, currentY + 8, { width: columnWidth - 10, align: 'left', ellipsis: true });
+      });
+      currentY += rowHeight;
+    });
+
+    doc.fontSize(7).fillColor('#6B7280').text(
+      `Relatório gerado pelo sistema de gestão eclesiástica - ${churchData?.name}`,
+      40,
+      doc.page.height - 30,
+      { align: 'center', width: pageWidth }
+    );
+
+    doc.end();
+  } catch (error) {
+    console.error('Erro ao exportar PDF do grupo:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro ao exportar lista do grupo',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+};
+
 export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
   try {
     console.log('📊 Iniciando exportação de lista de membros em CSV...');

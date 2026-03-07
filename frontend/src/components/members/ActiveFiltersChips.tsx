@@ -1,6 +1,6 @@
 'use client';
 
-import { X, Trash2 } from 'lucide-react';
+import { X, RefreshCcw } from 'lucide-react';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
 
@@ -230,51 +230,48 @@ export function ActiveFiltersChips({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-      <span className="text-sm font-medium text-gray-600">Filtros ativos:</span>
-      
+    <div className="flex flex-wrap items-center gap-2">
       {activeFilters.map(([key, value]) => {
         const label = getFilterLabel(key as keyof MemberFilters, value);
         if (!label) return null;
 
         return (
-          <div
+          <span
             key={key}
-            className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md border border-gray-200"
+            className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700"
           >
             <span>{label}</span>
             <button
               type="button"
               onClick={() => onRemoveFilter(key as keyof MemberFilters)}
-              className="ml-1 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              <X size={12} />
+              <X size={14} />
             </button>
-          </div>
+          </span>
         );
       })}
 
-      {/* Chip de ordenação */}
       {hasActiveSorting && sortingLabel && onRemoveSorting && (
-        <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md border border-gray-200">
+        <span className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700">
           <span>Ordenar por: {sortingLabel}</span>
           <button
             type="button"
             onClick={onRemoveSorting}
-            className="ml-1 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <X size={12} />
+            <X size={14} />
           </button>
-        </div>
+        </span>
       )}
-      
+
       <button
         type="button"
         onClick={onClearAll}
-        className="inline-flex items-center gap-1 px-2 py-1 text-gray-500 text-xs font-medium hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+        className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-primary transition-colors"
       >
-        <Trash2 size={12} />
-        Limpar todos
+        <RefreshCcw size={14} />
+        Limpar filtros
       </button>
     </div>
   );

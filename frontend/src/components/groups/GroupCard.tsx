@@ -94,7 +94,7 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
         {/* Linha 5: Contador de membros */}
         <InfoRow
           icon={Users}
-          value={`${group.memberCount || 0} membro${(group.memberCount || 0) !== 1 ? 's' : ''}`}
+          value={(group.memberCount ?? 0) === 0 ? 'Nenhum membro' : `${group.memberCount} membro${group.memberCount !== 1 ? 's' : ''}`}
           className="mb-3"
         />
       </div>

@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import { GroupForm } from '@/components/groups/GroupForm';
 import { GroupList } from '@/components/groups/GroupList';
 import { GroupModal } from '@/components/groups/GroupModal';
-import { Group, GroupPayload } from '@/types';
+import { GroupFiltersBar } from '@/components/groups/GroupFiltersBar';
+import { GroupActiveFiltersChips } from '@/components/groups/GroupActiveFiltersChips';
+import { GroupSummaryBar } from '@/components/groups/GroupSummaryBar';
+import { MemberSearchInput } from '@/components/members/MemberSearchInput';
+import { Group, GroupPayload, GroupFilters } from '@/types';
 
 // Tipo do formulário de grupo (mesmo do GroupForm)
 type GroupFormData = {
@@ -21,19 +24,24 @@ type GroupFormData = {
 };
 import { apiService } from '@/services/api';
 import { Plus, Loader2, Trash2 } from 'lucide-react';
-import { useFiltersData } from '@/hooks/useFiltersData';
 import { PageHeader } from '@/components/ui/PageHeader';
 import toast from 'react-hot-toast';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+
+const initialFilters: GroupFilters = {
+  search: '',
+  congregationId: 'sede',
+  type: '',
+  status: 'all'
+};
 
 export default function GroupsPage() {
   const { canEdit } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCongregationId, setSelectedCongregationId] = useState<string>('sede'); // Padrão: Sede
-  const { congregations, loading: loadingCongregations } = useFiltersData();
+  const [filters, setFilters] = useState<GroupFilters>(initialFilters);
 
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -45,17 +53,15 @@ export default function GroupsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadGroups = useCallback(async () => {
-    // Só carregar se uma congregação estiver selecionada
-    if (!selectedCongregationId) {
-      setGroups([]);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
-      const data = await apiService.listGroups(selectedCongregationId);
+      const data = await apiService.listGroups({
+        congregation_id: filters.congregationId || undefined,
+        type: filters.type || undefined,
+        status: filters.status,
+        search: filters.search.trim() || undefined
+      });
       setGroups(data);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar grupos';
@@ -63,11 +69,27 @@ export default function GroupsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCongregationId]);
+  }, [filters.congregationId, filters.type, filters.status, filters.search]);
 
   useEffect(() => {
     loadGroups();
   }, [loadGroups]);
+
+  const handleFilterChange = useCallback((changes: Partial<GroupFilters>) => {
+    setFilters(prev => ({ ...prev, ...changes }));
+  }, []);
+
+  const handleRemoveFilter = useCallback((key: keyof GroupFilters) => {
+    setFilters(prev => ({ ...prev, [key]: initialFilters[key] }));
+  }, []);
+
+  const handleClearAllFilters = useCallback(() => {
+    setFilters(initialFilters);
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setFilters(prev => ({ ...prev, search: value }));
+  }, []);
 
   const handleCreateGroup = async (data: GroupFormData) => {
     try {
@@ -157,56 +179,23 @@ export default function GroupsPage() {
         }
       />
 
-      {/* Seletor de Congregação */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Selecionar Congregação
-        </label>
-        <div className="max-w-xs">
-          <Select
-            value={selectedCongregationId}
-            onChange={setSelectedCongregationId}
-            options={[
-              { value: 'sede', label: 'Sede' },
-              ...(congregations || []).map((cong) => ({
-                value: cong.id,
-                label: cong.name
-              }))
-            ]}
-            disabled={loadingCongregations}
-            searchable={true}
-            placeholder="Selecione uma congregação"
-          />
-        </div>
-        <p className="mt-2 text-sm text-gray-500">
-          Selecione uma congregação para visualizar e gerenciar os grupos
-        </p>
-      </div>
+      <MemberSearchInput
+        value={filters.search}
+        onChange={handleSearchChange}
+        isLoading={loading}
+        placeholder="Busque por nome do grupo"
+      />
+
+      <GroupFiltersBar filters={filters} onChange={handleFilterChange} />
+
+      <GroupActiveFiltersChips
+        filters={filters}
+        onRemoveFilter={handleRemoveFilter}
+        onClearAll={handleClearAllFilters}
+      />
 
       {/* Conteúdo */}
-      {!selectedCongregationId ? (
-        <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-            <svg
-              className="w-8 h-8 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-          </div>
-          <p className="text-lg font-medium text-gray-900 mb-2">Selecione uma congregação</p>
-          <p className="text-sm text-gray-500 text-center max-w-md">
-            Selecione uma congregação acima para visualizar e gerenciar os grupos.
-          </p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -216,7 +205,13 @@ export default function GroupsPage() {
           <Button onClick={loadGroups}>Tentar novamente</Button>
         </div>
       ) : (
-        <GroupList groups={groups} onGroupClick={handleViewGroup} />
+        <>
+          <GroupSummaryBar
+            congregationId={filters.congregationId}
+            groups={groups}
+          />
+          <GroupList groups={groups} onGroupClick={handleViewGroup} />
+        </>
       )}
 
       {/* Modal de Criação */}
@@ -231,7 +226,7 @@ export default function GroupsPage() {
           onSubmit={handleCreateGroup}
           onCancel={() => setCreateModalOpen(false)}
           isLoading={isSubmitting}
-          selectedCongregationId={selectedCongregationId || undefined}
+          selectedCongregationId={filters.congregationId || 'sede'}
         />
       </Modal>
 
@@ -269,7 +264,7 @@ export default function GroupsPage() {
               setSelectedGroupId('');
             }}
             isLoading={isSubmitting}
-            selectedCongregationId={selectedCongregationId || undefined}
+            selectedCongregationId={filters.congregationId || 'sede'}
           />
         </Modal>
       )}

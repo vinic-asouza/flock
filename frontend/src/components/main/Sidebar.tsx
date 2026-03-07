@@ -15,8 +15,8 @@ const navItems = [
   { label: 'Membros', href: '/members', icon: Users },
   { label: 'Integração', href: '/integration', icon: UserPlus },
   { label: 'Grupos', href: '/groups', icon: UserCog },
-  { label: 'Calendário', href: '/calendar', icon: Calendar },
   { label: 'Congregações', href: '/congregations', icon: Layers },
+  { label: 'Calendário', href: '/calendar', icon: Calendar },
   { label: 'Configurações', href: '/settings', icon: Settings },
   { label: 'Tutoriais', href: '/tutorials', icon: BookOpen },
 ];

@@ -207,7 +207,7 @@ export function PublicMemberForm({
         setLoadingGroups(true);
         // Se congregação vazia ou null, buscar grupos da sede
         const congregationParam = congregationIdToUse === '' || congregationIdToUse === undefined || !congregationIdToUse ? 'sede' : congregationIdToUse;
-        const response = await apiService.listGroups(congregationParam);
+        const response = await apiService.listGroups({ congregation_id: congregationParam });
         setAvailableGroups(response);
       } catch {
         // Silenciar erro - não crítico, apenas para carregar grupos

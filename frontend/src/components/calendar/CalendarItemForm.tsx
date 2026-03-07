@@ -303,7 +303,7 @@ export function CalendarItemForm({
     const loadGroups = async () => {
       try {
         setLoadingGroups(true);
-        const data = await apiService.listGroups(selectedCongregation || undefined);
+        const data = await apiService.listGroups({ congregation_id: selectedCongregation || undefined });
         setGroups(data);
       } catch {
         toast.error('Erro ao carregar grupos');

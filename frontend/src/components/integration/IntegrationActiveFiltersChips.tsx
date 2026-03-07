@@ -49,7 +49,7 @@ export function IntegrationActiveFiltersChips({
       {activeChips.map(chip => (
         <span
           key={chip.key}
-          className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-gray-100 text-gray-700"
+          className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-gray-200 text-gray-700"
         >
           {chip.label}
           <button

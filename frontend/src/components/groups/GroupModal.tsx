@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
+import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download } from 'lucide-react';
 import { GroupWithMembers } from '@/types';
 import { Member } from '@/types/reports';
 import { apiService } from '@/services/api';
 import { Select } from '@/components/ui/Select';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
+import { ExportGroupMembersModal } from '@/components/groups/ExportGroupMembersModal';
+import toast from 'react-hot-toast';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -35,6 +37,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
   const [membersPerPage] = useState(10);
   const [fullMembersData, setFullMembersData] = useState<Array<Member & { addedAt?: string }>>([]);
   const [loadingFullMembers, setLoadingFullMembers] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && groupId) {
@@ -313,6 +316,14 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                 
                 <div className="pt-4 border-t border-gray-200">
                   <div className="flex flex-col gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={() => setExportModalOpen(true)}
+                      className="w-full"
+                    >
+                      <Download size={16} className="mr-2" />
+                      Exportar PDF
+                    </Button>
                     {onEdit && (
                       <Button
                         variant="secondary"
@@ -476,6 +487,25 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
           </div>
         ) : null}
       </Modal>
+
+      {groupId && (
+        <ExportGroupMembersModal
+          isOpen={exportModalOpen}
+          onClose={() => setExportModalOpen(false)}
+          onExport={async (selectedFields) => {
+            const blob = await apiService.exportGroupMembersList(groupId, selectedFields);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `grupo-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toast.success('PDF exportado com sucesso!');
+          }}
+        />
+      )}
     </>
   );
 }
