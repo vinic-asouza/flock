@@ -8,12 +8,13 @@ import { Congregation } from '@/types/congregation';
 
 interface CongregationListProps {
   canEdit?: boolean;
+  onView?: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string, activeMembersCount?: number) => void;
   refreshTrigger?: number;
 }
 
-export function CongregationList({ canEdit = true, onEdit, onDelete, refreshTrigger }: CongregationListProps) {
+export function CongregationList({ canEdit = true, onView, onEdit, onDelete, refreshTrigger }: CongregationListProps) {
   const [congregations, setCongregations] = useState<Congregation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +93,7 @@ export function CongregationList({ canEdit = true, onEdit, onDelete, refreshTrig
           key={congregation.id}
           congregation={congregation}
           canEdit={canEdit}
+          onView={onView ? () => onView(congregation.id) : undefined}
           onEdit={() => handleEdit(congregation.id)}
           onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0)}
         />

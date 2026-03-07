@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download } from 'lucide-react';
+import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download, Tag, CircleDot, MapPin, User, FileText } from 'lucide-react';
 import { GroupWithMembers } from '@/types';
 import { Member } from '@/types/reports';
 import { apiService } from '@/services/api';
@@ -240,19 +240,25 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
             <Button onClick={loadGroup} className="mt-4">Tentar novamente</Button>
           </div>
         ) : group ? (
-          <div className="flex h-full max-h-[calc(90vh-120px)] gap-6 p-6">
+          <div className="flex h-full min-h-[55vh] max-h-[calc(90vh-120px)] gap-6 p-6">
             {/* Coluna Esquerda - Informações (30%) */}
             <div className="w-[30%] flex-shrink-0 border-r border-gray-200 pr-6 overflow-y-auto">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Tipo</label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
+                    <Tag size={18} className="text-gray-400 flex-shrink-0" />
+                    Tipo
+                  </label>
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(group.type)}`}>
                     {group.type}
                   </span>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Status</label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
+                    <CircleDot size={18} className="text-gray-400 flex-shrink-0" />
+                    Status
+                  </label>
                   <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                     group.status ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
                   }`}>
@@ -261,13 +267,19 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">Congregação</label>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
+                    <MapPin size={18} className="text-gray-400 flex-shrink-0" />
+                    Congregação
+                  </label>
                   <p className="text-gray-900">{group.congregations?.name || 'Sede'}</p>
                 </div>
                 
                 {group.responsible && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-2">Responsável</label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-2">
+                      <User size={18} className="text-gray-400 flex-shrink-0" />
+                      Responsável
+                    </label>
                     <div className="space-y-2">
                       <p className="text-gray-900 font-medium">{group.responsible.name || '-'}</p>
                       {(group.responsible.email || group.responsible.phone || group.responsible.whatsapp) && (
@@ -309,7 +321,10 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                 
                 {group.description && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Descrição</label>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
+                      <FileText size={18} className="text-gray-400 flex-shrink-0" />
+                      Descrição
+                    </label>
                     <p className="text-gray-900 whitespace-pre-wrap text-sm">{group.description}</p>
                   </div>
                 )}

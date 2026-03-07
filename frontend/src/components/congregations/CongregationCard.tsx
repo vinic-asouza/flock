@@ -1,6 +1,6 @@
 'use client';
 
-import { Edit, Trash2, MapPin, Phone, User } from 'lucide-react';
+import { Edit, Trash2, MapPin, Phone, User, Eye } from 'lucide-react';
 import { Congregation } from '@/types/congregation';
 import { formatDate } from '@/utils';
 import { InfoRow } from '@/components/ui/InfoRow';
@@ -10,16 +10,32 @@ const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igre
 interface CongregationCardProps {
   congregation: Congregation;
   canEdit?: boolean;
+  onView?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
-export function CongregationCard({ congregation, canEdit = true, onEdit, onDelete }: CongregationCardProps) {
+export function CongregationCard({ congregation, canEdit = true, onView, onEdit, onDelete }: CongregationCardProps) {
   const readOnly = canEdit === false;
 
   return (
-    <div className="flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full">
-      <div className="flex-1 min-w-0">
+    <div
+      onClick={onView}
+      className="relative flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full cursor-pointer transition-all hover:shadow-md hover:border-primary"
+    >
+      {/* Ícone de visualizar no canto superior direito */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onView?.();
+        }}
+        className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+        title="Ver detalhes"
+      >
+        <Eye size={18} />
+      </button>
+
+      <div className="flex-1 min-w-0 pr-8">
         {/* Linha 1: Nome da congregação */}
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <span className="font-semibold text-gray-900 text-base truncate" title={congregation.name}>
@@ -73,7 +89,10 @@ export function CongregationCard({ congregation, canEdit = true, onEdit, onDelet
         <div className="flex gap-2">
           <button
             title={readOnly ? READER_TOOLTIP : 'Editar'}
-            onClick={onEdit}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.();
+            }}
             disabled={readOnly}
             className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
@@ -81,7 +100,10 @@ export function CongregationCard({ congregation, canEdit = true, onEdit, onDelet
           </button>
           <button
             title={readOnly ? READER_TOOLTIP : 'Excluir'}
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.();
+            }}
             disabled={readOnly}
             className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >

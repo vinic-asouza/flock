@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { CongregationList } from '@/components/congregations/CongregationList';
+import { CongregationModal } from '@/components/congregations/CongregationModal';
 import { CreateCongregationModal } from '@/components/congregations/CreateCongregationModal';
 import { EditCongregationModal } from '@/components/congregations/EditCongregationModal';
 import { DeleteCongregationModal } from '@/components/congregations/DeleteCongregationModal';
@@ -17,12 +18,18 @@ export default function CongregationsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Estados dos modais
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedCongregationId, setSelectedCongregationId] = useState<string>('');
   const [selectedCongregationName, setSelectedCongregationName] = useState<string>('');
   const [selectedCongregationMembersCount, setSelectedCongregationMembersCount] = useState<number>(0);
+
+  const handleViewCongregation = (id: string) => {
+    setSelectedCongregationId(id);
+    setDetailModalOpen(true);
+  };
 
   const handleCreateSuccess = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -71,9 +78,27 @@ export default function CongregationsPage() {
 
       <CongregationList 
         canEdit={canEdit}
+        onView={handleViewCongregation}
         onEdit={handleEditCongregation}
         onDelete={handleDeleteCongregation}
         refreshTrigger={refreshTrigger}
+      />
+
+      {/* Modal de detalhes da congregação */}
+      <CongregationModal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        congregationId={detailModalOpen ? selectedCongregationId : null}
+        canEdit={canEdit}
+        onEdit={(id) => {
+          setDetailModalOpen(false);
+          handleEditCongregation(id);
+        }}
+        onDelete={(id, name) => {
+          setDetailModalOpen(false);
+          handleDeleteCongregation(id, name);
+        }}
+        onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
       />
 
       {/* Modais */}
