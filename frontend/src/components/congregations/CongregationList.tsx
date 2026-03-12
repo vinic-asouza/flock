@@ -1,29 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { CongregationCard } from './CongregationCard';
+import { CongregationSummaryBar } from './CongregationSummaryBar';
 import { CongregationsSkeleton } from './CongregationsSkeleton';
 import { apiService } from '@/services/api';
 import { Congregation } from '@/types/congregation';
 
 interface CongregationListProps {
+  search?: string;
   canEdit?: boolean;
   onView?: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string, name: string, activeMembersCount?: number) => void;
+  onExport?: () => void;
+  exporting?: boolean;
   refreshTrigger?: number;
 }
 
-export function CongregationList({ canEdit = true, onView, onEdit, onDelete, refreshTrigger }: CongregationListProps) {
+export function CongregationList({
+  search = '',
+  canEdit = true,
+  onView,
+  onEdit,
+  onDelete,
+  onExport,
+  exporting = false,
+  refreshTrigger,
+}: CongregationListProps) {
   const [congregations, setCongregations] = useState<Congregation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadCongregations = async () => {
+  const loadCongregations = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const congregationsData = await apiService.listCongregations();
+      const congregationsData = await apiService.listCongregations(
+        search.trim() ? { search: search.trim() } : undefined
+      );
       setCongregations(congregationsData);
     } catch (err: unknown) {
       const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
@@ -34,11 +49,11 @@ export function CongregationList({ canEdit = true, onView, onEdit, onDelete, ref
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
 
   useEffect(() => {
     loadCongregations();
-  }, [refreshTrigger]);
+  }, [loadCongregations, refreshTrigger]);
 
   const handleEdit = (id: string) => {
     onEdit(id);
@@ -80,14 +95,27 @@ export function CongregationList({ canEdit = true, onView, onEdit, onDelete, ref
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </div>
-        <p className="text-lg font-medium text-gray-900 mb-2">Nenhuma congregação encontrada</p>
-        <p className="text-sm text-gray-500">Comece adicionando uma nova congregação.</p>
+        <p className="text-lg font-medium text-gray-900 mb-2">
+          {search.trim() ? 'Nenhuma congregação encontrada' : 'Nenhuma congregação cadastrada'}
+        </p>
+        <p className="text-sm text-gray-500">
+          {search.trim()
+            ? 'Tente ajustar o termo de busca.'
+            : 'Comece adicionando uma nova congregação.'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="flex flex-col gap-2">
+      <CongregationSummaryBar
+        congregations={congregations}
+        onExportClick={onExport}
+        onRefreshClick={loadCongregations}
+        exporting={exporting}
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {congregations.map((congregation) => (
         <CongregationCard
           key={congregation.id}
@@ -98,6 +126,7 @@ export function CongregationList({ canEdit = true, onView, onEdit, onDelete, ref
           onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0)}
         />
       ))}
+      </div>
     </div>
   );
 }

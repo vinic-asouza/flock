@@ -114,14 +114,19 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
 export const getCongregations = async (req: AuthRequest, res: Response) => {
   try {
     const churchId = req.church!.churchId;
+    const search = (req.query.search as string)?.trim() || '';
 
-    // Buscar todas as congregações da igreja
-    // Ordenação padrão: por nome (alfabética crescente)
-    const { data: congregations, error } = await supabase
+    // Buscar congregações da igreja (com filtro opcional por nome)
+    let query = supabase
       .from('congregations')
       .select('*')
-      .eq('church_id', churchId)
-      .order('name', { ascending: true });
+      .eq('church_id', churchId);
+
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
+
+    const { data: congregations, error } = await query.order('name', { ascending: true });
 
     if (error) {
       logError('Erro ao buscar congregações:', error);

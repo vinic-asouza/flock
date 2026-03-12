@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus } from 'lucide-react';
@@ -10,12 +10,17 @@ import { CongregationModal } from '@/components/congregations/CongregationModal'
 import { CreateCongregationModal } from '@/components/congregations/CreateCongregationModal';
 import { EditCongregationModal } from '@/components/congregations/EditCongregationModal';
 import { DeleteCongregationModal } from '@/components/congregations/DeleteCongregationModal';
+import { MemberSearchInput } from '@/components/members/MemberSearchInput';
+import { apiService } from '@/services/api';
+import toast from 'react-hot-toast';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
 export default function CongregationsPage() {
   const { canEdit } = useAuth();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [search, setSearch] = useState('');
+  const [exporting, setExporting] = useState(false);
   
   // Estados dos modais
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -58,6 +63,28 @@ export default function CongregationsPage() {
     setDeleteModalOpen(false);
   };
 
+  const handleExport = useCallback(async () => {
+    try {
+      setExporting(true);
+      const filters = search.trim() ? { search: search.trim() } : {};
+      const blob = await apiService.exportCongregationsList(filters);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `congregacoes-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF exportado com sucesso!');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao exportar PDF. Tente novamente.';
+      toast.error(msg);
+    } finally {
+      setExporting(false);
+    }
+  }, [search]);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -76,11 +103,21 @@ export default function CongregationsPage() {
         }
       />
 
+      <MemberSearchInput
+        value={search}
+        onChange={setSearch}
+        isLoading={false}
+        placeholder="Busque por nome da congregação"
+      />
+
       <CongregationList 
+        search={search}
         canEdit={canEdit}
         onView={handleViewCongregation}
         onEdit={handleEditCongregation}
         onDelete={handleDeleteCongregation}
+        onExport={handleExport}
+        exporting={exporting}
         refreshTrigger={refreshTrigger}
       />
 

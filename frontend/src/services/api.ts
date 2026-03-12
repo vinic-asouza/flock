@@ -1,9 +1,9 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { 
-  LoginData, 
-  RegisterData, 
-  ForgotPasswordData, 
-  ChangePasswordData, 
+import {
+  LoginData,
+  RegisterData,
+  ForgotPasswordData,
+  ChangePasswordData,
   ResetPasswordData,
   LoginResponse,
   RegisterResponse,
@@ -37,7 +37,7 @@ class ApiService {
 
   constructor() {
     const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-    
+
     this.api = axios.create({
       baseURL,
       timeout: 10000,
@@ -74,26 +74,26 @@ class ApiService {
           window.location.pathname.startsWith('/public/register/') ||
           window.location.pathname.startsWith('/public/integration/')
         );
-        
+
         // Silenciar erros 401 durante verificação de autenticação (é esperado)
         if (error.response?.status === 401 && isCheckAuthEndpoint) {
           // Retornar erro silencioso - não logar
           return Promise.reject(new Error('Não autenticado'));
         }
-        
+
         // Não redirecionar para login se for rota pública ou já estiver em página pública
         if (error.response?.status === 401 && !isCheckAuthEndpoint && !isLoginEndpoint && !isRegisterEndpoint && !isPublicEndpoint && !isAlreadyOnLogin && !isAlreadyOnRegister && !isOnPublicPage) {
           // Token expirado ou inválido - redirecionar para login
           // Cookies serão limpos automaticamente pelo servidor
           window.location.href = '/login';
         }
-        
+
         // Capturar erros específicos da API
         if (error.response?.data) {
           const responseData = error.response.data;
           let errorMessage = 'Erro desconhecido';
           let errorDetails: string | string[] | undefined;
-          
+
           // Verificar diferentes formatos de erro
           if (typeof responseData === 'object') {
             if ('error' in responseData) {
@@ -101,14 +101,14 @@ class ApiService {
             } else if ('message' in responseData) {
               errorMessage = responseData.message;
             }
-            
+
             if ('details' in responseData) {
               errorDetails = responseData.details;
             }
           } else if (typeof responseData === 'string') {
             errorMessage = responseData;
           }
-          
+
           // Criar um erro mais informativo
           const enhancedError = new Error(errorMessage) as Error & {
             details?: string | string[];
@@ -118,10 +118,10 @@ class ApiService {
           enhancedError.details = errorDetails;
           enhancedError.status = error.response.status;
           enhancedError.originalError = error.response.data;
-          
+
           return Promise.reject(enhancedError);
         }
-        
+
         return Promise.reject(error);
       }
     );
@@ -232,18 +232,18 @@ class ApiService {
     sort_order?: 'asc' | 'desc';
   }) {
     const queryParams = new URLSearchParams();
-    
+
     // Paginação
     if (params.page) queryParams.append('page', params.page.toString());
     if (params.limit) queryParams.append('limit', params.limit.toString());
-    
+
     // Busca
     if (params.search) queryParams.append('search', params.search);
-    
+
     // Filtros básicos
     if (params.active !== undefined) queryParams.append('active', params.active.toString());
     if (params.congregation_id) queryParams.append('congregation_id', params.congregation_id);
-    
+
     // Filtros demográficos
     if (params.gender) queryParams.append('gender', params.gender);
     if (params.marital_status) queryParams.append('marital_status', params.marital_status);
@@ -252,23 +252,23 @@ class ApiService {
     if (params.city) queryParams.append('city', params.city);
     if (params.state) queryParams.append('state', params.state);
     if (params.neighborhood) queryParams.append('neighborhood', params.neighborhood);
-    
+
     // Filtros de idade
     if (params.age_from !== undefined) queryParams.append('age_from', params.age_from.toString());
     if (params.age_to !== undefined) queryParams.append('age_to', params.age_to.toString());
-    
+
     // Filtros de data de nascimento
     if (params.birth_date_from) queryParams.append('birth_date_from', params.birth_date_from);
     if (params.birth_date_to) queryParams.append('birth_date_to', params.birth_date_to);
-    
+
     // Filtros de data de batismo
     if (params.baptism_date_from) queryParams.append('baptism_date_from', params.baptism_date_from);
     if (params.baptism_date_to) queryParams.append('baptism_date_to', params.baptism_date_to);
-    
+
     // Filtros de data de recebimento
     if (params.admission_date_from) queryParams.append('admission_date_from', params.admission_date_from);
     if (params.admission_date_to) queryParams.append('admission_date_to', params.admission_date_to);
-    
+
     // Ordenação
     if (params.sort_by) queryParams.append('sort_by', params.sort_by);
     if (params.sort_order) queryParams.append('sort_order', params.sort_order);
@@ -355,8 +355,8 @@ class ApiService {
     return response.data;
   }
 
-  async convertIntegrationMember(id: string, data: { name: string; [key: string]: unknown }): Promise<{
-    member: { id: string; [key: string]: unknown };
+  async convertIntegrationMember(id: string, data: { name: string;[key: string]: unknown }): Promise<{
+    member: { id: string;[key: string]: unknown };
     integrationMember: IntegrationMember;
   }> {
     const response = await this.api.post(`/integration/${id}/convert`, data);
@@ -385,8 +385,13 @@ class ApiService {
   }
 
   // Listar congregações
-  async listCongregations() {
-    const response = await this.api.get('/congregations');
+  async listCongregations(params?: { search?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.search?.trim()) {
+      queryParams.append('search', params.search.trim());
+    }
+    const url = `/congregations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await this.api.get(url);
     return response.data;
   }
 
@@ -492,7 +497,7 @@ class ApiService {
   // Listar itens do calendário
   async listCalendarItems(filters?: CalendarFilters): Promise<CalendarListResponse> {
     const queryParams = new URLSearchParams();
-    
+
     if (filters?.type && filters.type.length > 0) {
       filters.type.forEach(type => queryParams.append('type', type));
     }
@@ -591,8 +596,8 @@ class ApiService {
     };
     results: {
       success: CalendarParticipant[];
-      duplicates: {member_id?: string; guest_name?: string; details?: string}[];
-      errors: {member_id?: string; guest_name?: string; details?: string}[];
+      duplicates: { member_id?: string; guest_name?: string; details?: string }[];
+      errors: { member_id?: string; guest_name?: string; details?: string }[];
     };
   }> {
     const response = await this.api.post(`/calendar-items/${calendarItemId}/participants/bulk`, { participants });
@@ -605,13 +610,13 @@ class ApiService {
   }
 
   // Criar membro
-  async createMember(data: { name: string; [key: string]: unknown }) {
+  async createMember(data: { name: string;[key: string]: unknown }) {
     const response = await this.api.post('/members', data);
     return response.data;
   }
 
   // Atualizar membro
-  async updateMember(id: string, data: { name: string; [key: string]: unknown }) {
+  async updateMember(id: string, data: { name: string;[key: string]: unknown }) {
     const response = await this.api.put(`/members/${id}`, data);
     return response.data;
   }
@@ -631,11 +636,11 @@ class ApiService {
   // Relatórios de membros
   async getMemberReports(filters?: ReportFilters): Promise<MemberReports> {
     const queryParams = new URLSearchParams();
-    
+
     // Filtros básicos
     if (filters?.active !== undefined) queryParams.append('active', filters.active.toString());
     if (filters?.congregation_id) queryParams.append('congregation_id', filters.congregation_id);
-    
+
     // Filtros demográficos
     if (filters?.gender) queryParams.append('gender', filters.gender);
     if (filters?.marital_status) queryParams.append('marital_status', filters.marital_status);
@@ -643,7 +648,7 @@ class ApiService {
     if (filters?.occupation) queryParams.append('occupation', filters.occupation);
     if (filters?.city) queryParams.append('city', filters.city);
     if (filters?.state) queryParams.append('state', filters.state);
-    
+
     // Filtros temporais
     if (filters?.birth_date_from) queryParams.append('birth_date_from', filters.birth_date_from);
     if (filters?.birth_date_to) queryParams.append('birth_date_to', filters.birth_date_to);
@@ -653,7 +658,7 @@ class ApiService {
     if (filters?.admission_date_to) queryParams.append('admission_date_to', filters.admission_date_to);
     if (filters?.age_from !== undefined) queryParams.append('age_from', filters.age_from.toString());
     if (filters?.age_to !== undefined) queryParams.append('age_to', filters.age_to.toString());
-    
+
     // Busca geral
     if (filters?.search) queryParams.append('search', filters.search);
 
@@ -688,43 +693,43 @@ class ApiService {
   }
 
   // Gerenciamento de Conta
-  async getAccountData(): Promise<{ id: string; email: string; phone?: string; [key: string]: unknown }> {
+  async getAccountData(): Promise<{ id: string; email: string; phone?: string;[key: string]: unknown }> {
     const response = await this.api.get('/account');
     return response.data.user;
   }
 
-  async changeEmail(data: { newEmail: string; password: string }): Promise<{ message: string; [key: string]: unknown }> {
+  async changeEmail(data: { newEmail: string; password: string }): Promise<{ message: string;[key: string]: unknown }> {
     const response = await this.api.put('/account/email', data);
     return response.data;
   }
 
-  async changeAccountPassword(data: { currentPassword: string; newPassword: string }): Promise<{ message: string; [key: string]: unknown }> {
+  async changeAccountPassword(data: { currentPassword: string; newPassword: string }): Promise<{ message: string;[key: string]: unknown }> {
     const response = await this.api.put('/account/password', data);
     return response.data;
   }
 
-  async changePhone(data: { newPhone: string; password: string }): Promise<{ message: string; [key: string]: unknown }> {
+  async changePhone(data: { newPhone: string; password: string }): Promise<{ message: string;[key: string]: unknown }> {
     const response = await this.api.put('/account/phone', data);
     return response.data;
   }
 
-  async deleteAccount(data: { password: string; confirmation: string }): Promise<{ message: string; [key: string]: unknown }> {
+  async deleteAccount(data: { password: string; confirmation: string }): Promise<{ message: string;[key: string]: unknown }> {
     const response = await this.api.delete('/account', { data });
     return response.data;
   }
 
-  async resendConfirmation(email: string): Promise<{ message: string; [key: string]: unknown }> {
+  async resendConfirmation(email: string): Promise<{ message: string;[key: string]: unknown }> {
     const response = await this.api.post('/account/resend-confirmation', { email });
     return response.data;
   }
 
-  async getAuditLogs(params?: { page?: number; limit?: number; entity?: string; action?: string }): Promise<{ data: { id: string; [key: string]: unknown }[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } }> {
+  async getAuditLogs(params?: { page?: number; limit?: number; entity?: string; action?: string }): Promise<{ data: { id: string;[key: string]: unknown }[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } }> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.entity) queryParams.append('entity', params.entity);
     if (params?.action) queryParams.append('action', params.action);
-    
+
     const response = await this.api.get(`/account/logs?${queryParams.toString()}`);
     return response.data;
   }
@@ -763,7 +768,7 @@ class ApiService {
     if (congregationId) {
       params.append('congregation_id', congregationId);
     }
-    
+
     const response = await this.api.get(`/export/dashboard/pdf?${params.toString()}`, {
       responseType: 'blob', // Importante para receber o arquivo como blob
     });
@@ -780,6 +785,28 @@ class ApiService {
     return response.data;
   }
 
+  async exportGroupsList(
+    filters: Record<string, string | number | boolean | null | undefined>
+  ): Promise<Blob> {
+    const response = await this.api.post('/export/groups/list', {
+      filters,
+    }, {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
+  async exportCongregationsList(
+    filters?: Record<string, string | number | boolean | null | undefined>
+  ): Promise<Blob> {
+    const response = await this.api.post('/export/congregations/list', {
+      filters: filters || {},
+    }, {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
   async exportGroupMembersList(groupId: string, selectedFields: string[]): Promise<Blob> {
     const response = await this.api.post('/export/group/members/list', {
       groupId,
@@ -791,7 +818,7 @@ class ApiService {
   }
 
   async exportMembersListCSV(
-    filters: Record<string, string | number | boolean | null | undefined>, 
+    filters: Record<string, string | number | boolean | null | undefined>,
     selectedFields: string[],
     delimiter: string = ',',
     includeHeaders: boolean = true
@@ -854,7 +881,7 @@ class ApiService {
   }
 
   // Criar membro via link público
-  async createMemberViaPublicLink(token: string, data: { name: string; [key: string]: unknown }) {
+  async createMemberViaPublicLink(token: string, data: { name: string;[key: string]: unknown }) {
     const response = await this.api.post(`/public/registration/${token}`, data);
     return response.data;
   }
@@ -917,7 +944,7 @@ class ApiService {
   }
 
   // Criar integrante via link público
-  async createIntegrationMemberViaPublicLink(token: string, data: { name: string; [key: string]: unknown }) {
+  async createIntegrationMemberViaPublicLink(token: string, data: { name: string;[key: string]: unknown }) {
     const response = await this.api.post(`/public/integration/${token}`, data);
     return response.data;
   }

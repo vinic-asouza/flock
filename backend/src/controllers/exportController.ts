@@ -34,12 +34,12 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       .single();
 
     if (memberError || !member) {
-      const errorMessage = memberError 
-        ? (typeof memberError === 'object' && 'message' in memberError 
-          ? (memberError as { message: string }).message 
+      const errorMessage = memberError
+        ? (typeof memberError === 'object' && 'message' in memberError
+          ? (memberError as { message: string }).message
           : String(memberError))
         : 'Membro não existe ou não pertence a esta igreja';
-      
+
       return res.status(404).json({
         error: 'Membro não encontrado',
         details: errorMessage
@@ -74,7 +74,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
     }
 
     // Criar documento PDF
-    const doc = new PDFDocument({ 
+    const doc = new PDFDocument({
       size: 'A4',
       margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
@@ -192,7 +192,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       doc
         .font('Helvetica-Bold')
         .text('Filhos:');
-      
+
       member.children.forEach((child: any) => {
         const childAge = child.birth ? calculateAge(child.birth) : null;
         let childText = `  • ${child.name}`;
@@ -243,10 +243,10 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       doc
         .font('Helvetica-Bold')
         .text('Grupos / Ministérios:');
-      
+
       const activeGroups = member.groups.filter((g: any) => g.status);
       const inactiveGroups = member.groups.filter((g: any) => !g.status);
-      
+
       if (activeGroups.length > 0) {
         activeGroups.forEach((group: any) => {
           doc
@@ -254,7 +254,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
             .text(`  • ${group.type} - ${group.name}`);
         });
       }
-      
+
       if (inactiveGroups.length > 0) {
         doc
           .font('Helvetica')
@@ -279,7 +279,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       .moveDown(0.5);
 
     doc.fontSize(11).font('Helvetica');
-    
+
     // Email (com link)
     if (member.email) {
       doc
@@ -489,8 +489,8 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
       integrationMember.status === 'integrado'
         ? '#047857'
         : integrationMember.status === 'descartado'
-        ? '#6B7280'
-        : '#2563EB';
+          ? '#6B7280'
+          : '#2563EB';
 
     doc
       .fontSize(10)
@@ -909,7 +909,7 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
 export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
   try {
     console.log('📊 Iniciando exportação de dashboard PDF...');
-    
+
     if (!req.user) {
       return res.status(401).json({
         error: 'Não autorizado',
@@ -929,7 +929,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     // Obter filtros da query string
     const { congregation_id } = req.query;
     const filters: any = {};
-    
+
     if (congregation_id) {
       filters.congregation_id = congregation_id as string;
     }
@@ -960,7 +960,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     // Chamar o controller de relatórios
     console.log('📡 Buscando dados dos relatórios...');
     await getMemberReports(mockReq, mockRes);
-    
+
     console.log('📊 Status da resposta:', statusCode);
     console.log('📊 Dados recebidos:', reportsData ? 'Sim' : 'Não');
 
@@ -977,7 +977,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     // Determinar título do relatório baseado nos filtros
     let reportTitle = 'Relatório Geral';
     let reportSubtitle = 'Todos os membros da igreja';
-    
+
     if (congregation_id === 'sede') {
       reportTitle = 'Relatório da Sede';
       reportSubtitle = 'Membros da igreja sede';
@@ -989,7 +989,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
         .eq('id', congregation_id)
         .eq('church_id', churchId)
         .single();
-      
+
       if (congregation) {
         reportTitle = `Relatório - ${congregation.name}`;
         reportSubtitle = `Membros da congregação ${congregation.name}`;
@@ -999,7 +999,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     console.log('📄 Iniciando geração do PDF...');
 
     // Criar documento PDF
-    const doc = new PDFDocument({ 
+    const doc = new PDFDocument({
       size: 'A4',
       margins: { top: 50, bottom: 50, left: 50, right: 50 }
     });
@@ -1063,7 +1063,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       .moveDown(0.5);
 
     const summary = reportsData.summary;
-    
+
     // Membros Ativos e Inativos
     doc.fontSize(11).font('Helvetica');
     doc
@@ -1098,13 +1098,13 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       .moveDown(0.5);
 
     const currentYear = new Date().getFullYear();
-    const baptismsThisYear = (reportsData.timeline?.baptismsByYear && typeof reportsData.timeline.baptismsByYear === 'object') 
-      ? (reportsData.timeline.baptismsByYear[currentYear] || 0) 
+    const baptismsThisYear = (reportsData.timeline?.baptismsByYear && typeof reportsData.timeline.baptismsByYear === 'object')
+      ? (reportsData.timeline.baptismsByYear[currentYear] || 0)
       : 0;
     const admissionsThisYear = (reportsData.timeline?.admissionsByYear && typeof reportsData.timeline.admissionsByYear === 'object')
       ? (reportsData.timeline.admissionsByYear[currentYear] || 0)
       : 0;
-    
+
     doc.fontSize(11).font('Helvetica');
     doc
       .font('Helvetica-Bold')
@@ -1137,11 +1137,11 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       const genderEntries = Object.entries(reportsData.demographics.gender);
       if (genderEntries.length > 0) {
         const total = genderEntries.reduce((sum, [_, count]) => sum + (count as number), 0);
-        
+
         doc.fontSize(11).font('Helvetica');
         genderEntries.forEach(([gender, count]) => {
           const percentage = total > 0 ? Math.round(((count as number) / total) * 100) : 0;
-          
+
           doc
             .fillColor('#374151')
             .font('Helvetica-Bold')
@@ -1176,14 +1176,14 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     if (reportsData.demographics?.maritalStatus && typeof reportsData.demographics.maritalStatus === 'object') {
       const maritalEntries = Object.entries(reportsData.demographics.maritalStatus)
         .sort(([_, a], [__, b]) => (b as number) - (a as number));
-      
+
       if (maritalEntries.length > 0) {
         const total = maritalEntries.reduce((sum, [_, count]) => sum + (count as number), 0);
-        
+
         doc.fontSize(11).font('Helvetica');
         maritalEntries.forEach(([status, count]) => {
           const percentage = total > 0 ? Math.round(((count as number) / total) * 100) : 0;
-          
+
           doc
             .fillColor('#374151')
             .font('Helvetica-Bold')
@@ -1220,14 +1220,14 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       const ageOrder = ['0-12', '13-17', '18-25', '26-35', '36-50', '51-65', '65+'];
       const ageEntries = Object.entries(reportsData.demographics.ageRanges)
         .sort(([a], [b]) => ageOrder.indexOf(a) - ageOrder.indexOf(b));
-      
+
       if (ageEntries.length > 0) {
         const total = ageEntries.reduce((sum, [_, count]) => sum + (count as number), 0);
-        
+
         doc.fontSize(11).font('Helvetica');
         ageEntries.forEach(([range, count]) => {
           const percentage = total > 0 ? Math.round(((count as number) / total) * 100) : 0;
-          
+
           doc
             .fillColor('#374151')
             .font('Helvetica-Bold')
@@ -1263,15 +1263,15 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       if (reportsData.churchStructure?.congregations && typeof reportsData.churchStructure.congregations === 'object') {
         const congEntries = Object.entries(reportsData.churchStructure.congregations)
           .sort(([_, a], [__, b]) => ((b as any).count || 0) - ((a as any).count || 0));
-        
+
         if (congEntries.length > 0) {
           const total = congEntries.reduce((sum, [_, data]) => sum + ((data as any).count || 0), 0);
-          
+
           doc.fontSize(11).font('Helvetica');
           congEntries.forEach(([congregation, data]) => {
             const count = (data as any).count || 0;
             const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-            
+
             doc
               .fillColor('#374151')
               .font('Helvetica-Bold')
@@ -1308,14 +1308,14 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       const cityEntries = Object.entries(reportsData.demographics.cities)
         .sort(([_, a], [__, b]) => (b as number) - (a as number))
         .slice(0, 10);
-      
+
       if (cityEntries.length > 0) {
         const total = Object.values(reportsData.demographics.cities).reduce((sum: number, count) => sum + (count as number), 0);
-        
+
         doc.fontSize(11).font('Helvetica');
         cityEntries.forEach(([city, count]) => {
           const percentage = total > 0 ? Math.round(((count as number) / total) * 100) : 0;
-          
+
           doc
             .fillColor('#374151')
             .font('Helvetica-Bold')
@@ -1350,14 +1350,14 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     if (reportsData.demographics?.states && typeof reportsData.demographics.states === 'object') {
       const stateEntries = Object.entries(reportsData.demographics.states)
         .sort(([_, a], [__, b]) => (b as number) - (a as number));
-      
+
       if (stateEntries.length > 0) {
         const total = Object.values(reportsData.demographics.states).reduce((sum: number, count) => sum + (count as number), 0);
-        
+
         doc.fontSize(11).font('Helvetica');
         stateEntries.forEach(([state, count]) => {
           const percentage = total > 0 ? Math.round(((count as number) / total) * 100) : 0;
-          
+
           doc
             .fillColor('#374151')
             .font('Helvetica-Bold')
@@ -1391,12 +1391,12 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
     if (reportsData.topOccupations && Array.isArray(reportsData.topOccupations) && reportsData.topOccupations.length > 0) {
       const total = reportsData.topOccupations.reduce((sum: number, item: any) => sum + (item.count || 0), 0);
-      
+
       doc.fontSize(11).font('Helvetica');
       reportsData.topOccupations.forEach((item: any) => {
         const count = item.count || 0;
         const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-        
+
         doc
           .fillColor('#374151')
           .font('Helvetica-Bold')
@@ -1457,7 +1457,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
             .from('member_groups')
             .select('*', { count: 'exact', head: true })
             .eq('group_id', group.id);
-          
+
           return {
             ...group,
             memberCount: memberCount || 0
@@ -1492,11 +1492,11 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       });
 
       doc.fontSize(11).font('Helvetica');
-      
+
       sortedTypes.forEach((type) => {
         const typeGroups = groupsByType[type]
           .sort((a: any, b: any) => (b.memberCount || 0) - (a.memberCount || 0));
-        
+
         const totalMembersInType = typeGroups.reduce((sum: number, g: any) => sum + (g.memberCount || 0), 0);
         const totalMembersForPercentage = summary.totalMembers;
 
@@ -1525,13 +1525,13 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
         }
 
         doc.fontSize(11).font('Helvetica');
-        
+
         // Listar grupos do tipo
         typeGroups.forEach((group: any) => {
-          const groupPercentage = totalMembersInType > 0 
+          const groupPercentage = totalMembersInType > 0
             ? ((group.memberCount / totalMembersInType) * 100).toFixed(1)
             : '0.0';
-          
+
           doc
             .fillColor('#374151')
             .font('Helvetica-Bold')
@@ -1565,7 +1565,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('❌ Erro ao gerar PDF do dashboard:', error);
-    
+
     // Se já iniciou o stream do PDF, não pode enviar JSON
     if (!res.headersSent) {
       res.status(500).json({
@@ -1579,7 +1579,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 export const exportMembersList = async (req: AuthRequest, res: Response) => {
   try {
     console.log('📊 Iniciando exportação de lista de membros...');
-    
+
     if (!req.user) {
       return res.status(401).json({
         error: 'Não autorizado',
@@ -1710,7 +1710,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
     console.log(`✅ ${members.length} membros encontrados`);
 
     // Criar documento PDF
-    const doc = new PDFDocument({ 
+    const doc = new PDFDocument({
       size: 'A4',
       layout: 'landscape', // Paisagem para melhor visualização de tabelas
       margins: { top: 40, bottom: 40, left: 40, right: 40 }
@@ -1830,15 +1830,15 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
 
     // Cabeçalho da tabela
     doc.fontSize(8).font('Helvetica-Bold');
-    
+
     fields.forEach((field, index) => {
       const x = 40 + (index * columnWidth);
-      
+
       // Fundo do cabeçalho
       doc
         .rect(x, currentY, columnWidth, headerHeight)
         .fillAndStroke('#F3F4F6', '#E5E7EB');
-      
+
       // Texto do cabeçalho
       doc
         .fillColor('#000000')
@@ -1860,7 +1860,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       if (currentY + rowHeight > doc.page.height - 60) {
         doc.addPage();
         currentY = 40;
-        
+
         // Repetir cabeçalho
         doc.fontSize(8).font('Helvetica-Bold');
         fields.forEach((field, index) => {
@@ -2029,12 +2029,493 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('❌ Erro ao gerar PDF da lista de membros:', error);
-    
+
     // Se já iniciou o stream do PDF, não pode enviar JSON
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Erro interno do servidor',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+};
+
+/**
+ * Exporta lista de grupos para PDF.
+ * Inclui dados do grupo (nome, tipo, congregação, status, descrição, responsável) e tabela de membros com campos selecionados.
+ */
+export const exportGroupsList = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado',
+      });
+    }
+
+    const { filters } = req.body;
+
+    // Campos fixos: nome, congregação, responsável, quantidade de membros
+    const fields = ['name', 'congregation', 'responsible_name', 'member_count'] as const;
+
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('id', churchId)
+      .single();
+
+    // Base: groups + congregação + responsável
+    let query = supabase
+      .from('groups')
+      .select(`
+        *,
+        congregations (
+          id,
+          name
+        ),
+        members!groups_responsible_id_fkey (
+          id,
+          name,
+          email,
+          phone,
+          whatsapp
+        )
+      `)
+      .eq('church_id', churchId);
+
+    // Aplicar filtros (mesma lógica de listGroups)
+    if (filters) {
+      if (filters.congregation_id) {
+        if (filters.congregation_id === 'sede') {
+          query = query.is('congregation_id', null);
+        } else {
+          query = query.eq('congregation_id', filters.congregation_id);
+        }
+      }
+      if (filters.type) {
+        query = query.eq('type', filters.type);
+      }
+      if (filters.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status === 'active');
+      }
+      if (filters.search) {
+        query = query.ilike('name', `%${filters.search}%`);
+      }
+    }
+
+    // Ordenar por tipo e nome
+    query = query.order('type', { ascending: true }).order('name', { ascending: true });
+
+    const { data: groups, error: groupsError } = await query;
+
+    if (groupsError) {
+      return res.status(500).json({
+        error: 'Erro ao buscar grupos',
+        details: groupsError.message,
+      });
+    }
+
+    if (!groups || groups.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum grupo encontrado',
+        details: 'Não há grupos que correspondam aos filtros aplicados',
+      });
+    }
+
+    // Helpers
+    const formatPhone = (phone: string | null) => {
+      if (!phone) return '-';
+      const numbers = phone.replace(/\D/g, '');
+      if (numbers.length === 10) {
+        return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+      }
+      if (numbers.length === 11) {
+        return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      }
+      return phone;
+    };
+
+    const fieldLabels: Record<string, string> = {
+      name: 'Nome do grupo',
+      congregation: 'Congregação',
+      responsible_name: 'Responsável',
+      member_count: 'Qtd. membros',
+    };
+
+    const getGroupValue = (group: any, field: string) => {
+      switch (field) {
+        case 'name':
+          return group.name || '-';
+        case 'congregation':
+          return group.congregations?.name || 'Sede';
+        case 'responsible_name':
+          return group.members?.name || '-';
+        case 'member_count':
+          return String(memberCounts[group.id] ?? 0);
+        default:
+          return '-';
+      }
+    };
+
+    const groupIds = (groups as any[]).map(g => g.id);
+    const memberCounts: Record<string, number> = {};
+
+    if (groupIds.length > 0) {
+      for (const groupId of groupIds) {
+        const { count } = await supabase
+          .from('member_groups')
+          .select('*', { count: 'exact', head: true })
+          .eq('group_id', groupId);
+
+        memberCounts[groupId] = count || 0;
+      }
+    }
+
+    // Criar PDF
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    });
+
+    const filename = `lista-grupos-${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    doc.pipe(res);
+
+    // Cabeçalho
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text(churchData?.name || '', { align: 'center' })
+      .moveDown(0.3);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica')
+      .text('Lista de Grupos', { align: 'center' })
+      .moveDown(0.2);
+
+    doc
+      .fontSize(9)
+      .fillColor('#6B7280')
+      .text(
+        `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+        { align: 'center' },
+      )
+      .text(`Total: ${groups.length} grupo(s)`, { align: 'center' })
+      .fillColor('#000000')
+      .moveDown(1);
+
+    const pageWidth = doc.page.width - 80;
+    const columnWidth = pageWidth / fields.length;
+    const rowHeight = 25;
+    const headerHeight = 30;
+    let currentY = doc.y;
+
+    let lastType: string | null = null;
+
+    // Para cada grupo (já ordenados por type, name)
+    (groups as any[]).forEach((group, index) => {
+      // Quebra por tipo: quando muda o type, desenha cabeçalho de seção + header da tabela
+      if (group.type !== lastType) {
+        lastType = group.type;
+
+        // Espaço + título da seção
+        doc
+          .moveDown(0.8)
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#111827')
+          .text(`Tipo: ${group.type}`, 40)
+          .moveDown(0.3);
+
+        if (doc.y > doc.page.height - 120) {
+          doc.addPage();
+        }
+
+        // Cabeçalho da tabela para esse tipo
+        currentY = doc.y;
+        doc.fontSize(8).font('Helvetica-Bold');
+        fields.forEach((field: string, colIndex: number) => {
+          const x = 40 + colIndex * columnWidth;
+          doc
+            .rect(x, currentY, columnWidth, headerHeight)
+            .fillAndStroke('#F3F4F6', '#E5E7EB');
+          doc
+            .fillColor('#000000')
+            .text(fieldLabels[field] || field, x + 5, currentY + 8, {
+              width: columnWidth - 10,
+              align: 'left',
+            });
+        });
+        currentY += headerHeight;
+        doc.fontSize(7).font('Helvetica');
+      }
+
+      // Nova página se necessário
+      if (currentY + rowHeight > doc.page.height - 60) {
+        doc.addPage();
+        currentY = 40;
+
+        // Repetir cabeçalho da tabela
+        doc.fontSize(8).font('Helvetica-Bold');
+        fields.forEach((field: string, colIndex: number) => {
+          const x = 40 + colIndex * columnWidth;
+          doc
+            .rect(x, currentY, columnWidth, headerHeight)
+            .fillAndStroke('#F3F4F6', '#E5E7EB');
+          doc
+            .fillColor('#000000')
+            .text(fieldLabels[field] || field, x + 5, currentY + 8, {
+              width: columnWidth - 10,
+              align: 'left',
+            });
+        });
+        currentY += headerHeight;
+        doc.fontSize(7).font('Helvetica');
+      }
+
+      // Fundo alternado
+      if (index % 2 === 0) {
+        doc.rect(40, currentY, pageWidth, rowHeight).fillAndStroke('#FAFAFA', '#E5E7EB');
+      } else {
+        doc.rect(40, currentY, pageWidth, rowHeight).stroke('#E5E7EB');
+      }
+
+      // Células
+      fields.forEach((field: string, colIndex: number) => {
+        const x = 40 + colIndex * columnWidth;
+        const value = getGroupValue(group, field);
+        doc
+          .fillColor('#000000')
+          .text(value, x + 5, currentY + 8, {
+            width: columnWidth - 10,
+            align: 'left',
+            ellipsis: true,
+          });
+      });
+
+      currentY += rowHeight;
+    });
+
+    // Rodapé
+    doc
+      .fontSize(7)
+      .fillColor('#6B7280')
+      .text(
+        `Relatório gerado pelo sistema de gestão eclesiástica - ${churchData?.name}`,
+        40,
+        doc.page.height - 30,
+        { align: 'center', width: pageWidth },
+      );
+
+    doc.end();
+  } catch (error) {
+    console.error('Erro ao exportar PDF de grupos:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro ao exportar lista de grupos',
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+    }
+  }
+};
+
+/**
+ * Exporta lista de congregações para PDF.
+ */
+export const exportCongregationsList = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado',
+      });
+    }
+
+    const { filters } = req.body;
+    const search = (filters?.search as string)?.trim() || '';
+
+    const churchId = req.church!.churchId;
+    const { data: churchData } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('id', churchId)
+      .single();
+
+    let query = supabase
+      .from('congregations')
+      .select('*')
+      .eq('church_id', churchId);
+
+    if (search) {
+      query = query.ilike('name', `%${search}%`);
+    }
+
+    const { data: congregations, error: congregationsError } = await query.order('name', { ascending: true });
+
+    if (congregationsError) {
+      return res.status(500).json({
+        error: 'Erro ao buscar congregações',
+        details: congregationsError.message,
+      });
+    }
+
+    if (!congregations || congregations.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhuma congregação encontrada',
+        details: 'Não há congregações que correspondam aos critérios aplicados',
+      });
+    }
+
+    const congregationIds = congregations.map((c: { id: string }) => c.id);
+    const { data: members } = await supabase
+      .from('members')
+      .select('congregation_id')
+      .eq('church_id', churchId)
+      .eq('active', true)
+      .in('congregation_id', congregationIds);
+
+    const memberCountByCongregation: Record<string, number> = {};
+    (members || []).forEach((m: { congregation_id: string }) => {
+      if (m.congregation_id) {
+        memberCountByCongregation[m.congregation_id] = (memberCountByCongregation[m.congregation_id] || 0) + 1;
+      }
+    });
+
+    const formatPhone = (phone: string | null) => {
+      if (!phone) return '-';
+      const numbers = phone.replace(/\D/g, '');
+      if (numbers.length === 10) {
+        return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+      }
+      if (numbers.length === 11) {
+        return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+      }
+      return phone;
+    };
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      layout: 'landscape',
+      margins: { top: 40, bottom: 40, left: 40, right: 40 },
+    });
+
+    const filename = `lista-congregacoes-${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    doc.pipe(res);
+
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text(churchData?.name || '', { align: 'center' })
+      .moveDown(0.3);
+    doc
+      .fontSize(14)
+      .font('Helvetica')
+      .text('Lista de Congregações', { align: 'center' })
+      .moveDown(0.2);
+    doc
+      .fontSize(9)
+      .fillColor('#6B7280')
+      .text(
+        `Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`,
+        { align: 'center' },
+      )
+      .text(`Total: ${congregations.length} congregação(ões)`, { align: 'center' })
+      .fillColor('#000000')
+      .moveDown(1);
+
+    const pageWidth = doc.page.width - 80;
+    const fields = ['name', 'address', 'city_state', 'leader', 'phone', 'member_count'];
+    const fieldLabels: Record<string, string> = {
+      name: 'Nome',
+      address: 'Endereço',
+      city_state: 'Cidade / Estado',
+      leader: 'Líder',
+      phone: 'Telefone',
+      member_count: 'Qtd. membros',
+    };
+    const columnWidth = pageWidth / fields.length;
+    const rowHeight = 22;
+    const headerHeight = 28;
+    let currentY = doc.y;
+
+    doc.fontSize(8).font('Helvetica-Bold');
+    fields.forEach((field: string, colIndex: number) => {
+      const x = 40 + colIndex * columnWidth;
+      doc.rect(x, currentY, columnWidth, headerHeight).fillAndStroke('#F3F4F6', '#E5E7EB');
+      doc
+        .fillColor('#000000')
+        .text(fieldLabels[field] || field, x + 5, currentY + 8, { width: columnWidth - 10, align: 'left' });
+    });
+    currentY += headerHeight;
+    doc.fontSize(7).font('Helvetica');
+
+    (congregations as any[]).forEach((c: any, index: number) => {
+      if (currentY + rowHeight > doc.page.height - 60) {
+        doc.addPage({ size: 'A4', layout: 'landscape', margins: { top: 40, bottom: 40, left: 40, right: 40 } });
+        currentY = 40;
+        doc.fontSize(8).font('Helvetica-Bold');
+        fields.forEach((field: string, colIndex: number) => {
+          const x = 40 + colIndex * columnWidth;
+          doc.rect(x, currentY, columnWidth, headerHeight).fillAndStroke('#F3F4F6', '#E5E7EB');
+          doc
+            .fillColor('#000000')
+            .text(fieldLabels[field] || field, x + 5, currentY + 8, { width: columnWidth - 10, align: 'left' });
+        });
+        currentY += headerHeight;
+        doc.fontSize(7).font('Helvetica');
+      }
+
+      if (index % 2 === 0) {
+        doc.rect(40, currentY, pageWidth, rowHeight).fillAndStroke('#FAFAFA', '#E5E7EB');
+      } else {
+        doc.rect(40, currentY, pageWidth, rowHeight).stroke('#E5E7EB');
+      }
+
+      const cityState = [c.city, c.state].filter(Boolean).join(' / ') || '-';
+      const values: Record<string, string> = {
+        name: c.name || '-',
+        address: (c.address || '-').substring(0, 35),
+        city_state: cityState,
+        leader: c.leader || '-',
+        phone: formatPhone(c.phone),
+        member_count: String(memberCountByCongregation[c.id] ?? 0),
+      };
+      fields.forEach((field: string, colIndex: number) => {
+        const x = 40 + colIndex * columnWidth;
+        doc
+          .fillColor('#000000')
+          .text(values[field] || '-', x + 5, currentY + 6, {
+            width: columnWidth - 10,
+            align: 'left',
+            ellipsis: true,
+          });
+      });
+      currentY += rowHeight;
+    });
+
+    doc
+      .fontSize(7)
+      .fillColor('#6B7280')
+      .text(
+        `Relatório gerado pelo sistema de gestão eclesiástica - ${churchData?.name}`,
+        40,
+        doc.page.height - 30,
+        { align: 'center', width: pageWidth },
+      );
+
+    doc.end();
+  } catch (error) {
+    console.error('Erro ao exportar PDF de congregações:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro ao exportar lista de congregações',
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
       });
     }
   }
@@ -2316,7 +2797,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
   try {
     console.log('📊 Iniciando exportação de lista de membros em CSV...');
-    
+
     if (!req.user) {
       return res.status(401).json({
         error: 'Não autorizado',
@@ -2603,31 +3084,31 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
           case 'state':
             value = member.state || '';
             break;
-      case 'cep':
-        value = member.cep || '';
-        break;
-      case 'children':
-        // Formato: "Nome1|Data1|Dependente1;Nome2|Data2|Dependente2"
-        if (member.children && Array.isArray(member.children) && member.children.length > 0) {
-          const childrenParts = member.children.map((child: any) => {
-            const parts = [child.name || ''];
-            if (child.birth) {
-              const birthDate = formatDate(child.birth);
-              parts.push(birthDate);
+          case 'cep':
+            value = member.cep || '';
+            break;
+          case 'children':
+            // Formato: "Nome1|Data1|Dependente1;Nome2|Data2|Dependente2"
+            if (member.children && Array.isArray(member.children) && member.children.length > 0) {
+              const childrenParts = member.children.map((child: any) => {
+                const parts = [child.name || ''];
+                if (child.birth) {
+                  const birthDate = formatDate(child.birth);
+                  parts.push(birthDate);
+                }
+                if (child.dependent !== undefined) {
+                  parts.push(child.dependent ? 'Sim' : 'Não');
+                }
+                return parts.join('|');
+              });
+              value = childrenParts.join(';');
+            } else {
+              value = '';
             }
-            if (child.dependent !== undefined) {
-              parts.push(child.dependent ? 'Sim' : 'Não');
-            }
-            return parts.join('|');
-          });
-          value = childrenParts.join(';');
-        } else {
-          value = '';
+            break;
+          default:
+            value = '';
         }
-        break;
-      default:
-        value = '';
-    }
 
         row.push(escapeCSVValue(value));
       });
@@ -2648,7 +3129,7 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('❌ Erro ao gerar CSV da lista de membros:', error);
-    
+
     if (!res.headersSent) {
       res.status(500).json({
         error: 'Erro interno do servidor',

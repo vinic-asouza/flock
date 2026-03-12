@@ -6,7 +6,9 @@ import {
   exportMembersListCSV,
   exportIntegrationMemberPDF,
   exportIntegrationMembersList,
-  exportGroupMembersList
+  exportGroupMembersList,
+  exportGroupsList,
+  exportCongregationsList,
 } from '../controllers/exportController';
 import authMiddleware from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
@@ -23,6 +25,8 @@ router.post('/members/list', exportMembersList);
 router.post('/members/list/csv', exportMembersListCSV);
 router.post('/group/members/list', exportGroupMembersList);
 router.post('/integration/list', exportIntegrationMembersList);
+router.post('/groups/list', exportGroupsList);
+router.post('/congregations/list', exportCongregationsList);
 
 export default router;
 

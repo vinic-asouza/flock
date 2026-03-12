@@ -51,6 +51,7 @@ export default function GroupsPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<string>('');
   const [selectedGroupName, setSelectedGroupName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExportingGroups, setIsExportingGroups] = useState(false);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -161,6 +162,35 @@ export default function GroupsPage() {
     setDeleteModalOpen(true);
   };
 
+  const handleExportGroups = useCallback(async () => {
+    try {
+      setIsExportingGroups(true);
+
+      const params: Record<string, string | number | boolean | null | undefined> = {};
+
+      if (filters.search) params.search = filters.search;
+      if (filters.congregationId) params.congregation_id = filters.congregationId;
+      if (filters.type) params.type = filters.type;
+      if (filters.status && filters.status !== 'all') params.status = filters.status;
+
+      const blob = await apiService.exportGroupsList(params);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `grupos-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF exportado com sucesso!');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Erro ao exportar PDF. Tente novamente.';
+      toast.error(msg);
+    } finally {
+      setIsExportingGroups(false);
+    }
+  }, [filters]);
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -209,6 +239,9 @@ export default function GroupsPage() {
           <GroupSummaryBar
             congregationId={filters.congregationId}
             groups={groups}
+            onRefreshClick={loadGroups}
+            onExportClick={handleExportGroups}
+            exporting={isExportingGroups}
           />
           <GroupList groups={groups} onGroupClick={handleViewGroup} />
         </>
@@ -282,7 +315,7 @@ export default function GroupsPage() {
       >
         <div className="p-6">
           <p className="text-gray-700 mb-6">
-            Tem certeza que deseja excluir o grupo <strong>{selectedGroupName}</strong>? 
+            Tem certeza que deseja excluir o grupo <strong>{selectedGroupName}</strong>?
             Esta ação não poderá ser desfeita.
           </p>
           <div className="flex justify-end gap-3">
@@ -311,3 +344,7 @@ export default function GroupsPage() {
     </div>
   );
 }
+function setIsExportingGroups(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}
+
