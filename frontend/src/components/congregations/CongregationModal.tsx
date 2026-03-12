@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Edit, Trash2, MapPin, Phone, User, Users, Loader2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
@@ -31,7 +31,6 @@ export function CongregationModal({
   canEdit = true,
   onEdit,
   onDelete,
-  onRefresh,
 }: CongregationModalProps) {
   const readOnly = canEdit === false;
   const [congregation, setCongregation] = useState<Congregation | null>(null);
@@ -61,19 +60,7 @@ export function CongregationModal({
     }
   }, [congregationId, membersSearchDebounced]);
 
-  useEffect(() => {
-    if (isOpen && congregationId) {
-      loadCongregation();
-    }
-  }, [isOpen, congregationId]);
-
-  useEffect(() => {
-    if (isOpen && congregationId) {
-      loadMembers();
-    }
-  }, [isOpen, congregationId, membersPage, membersSearchDebounced]);
-
-  const loadCongregation = async () => {
+  const loadCongregation = useCallback(async () => {
     if (!congregationId) return;
     try {
       setLoading(true);
@@ -86,9 +73,9 @@ export function CongregationModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [congregationId]);
 
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     if (!congregationId) return;
     try {
       setLoadingMembers(true);
@@ -108,7 +95,19 @@ export function CongregationModal({
     } finally {
       setLoadingMembers(false);
     }
-  };
+  }, [congregationId, membersPage, membersSearchDebounced]);
+
+  useEffect(() => {
+    if (isOpen && congregationId) {
+      loadCongregation();
+    }
+  }, [isOpen, congregationId, loadCongregation]);
+
+  useEffect(() => {
+    if (isOpen && congregationId) {
+      loadMembers();
+    }
+  }, [isOpen, congregationId, loadMembers]);
 
   const handleClose = () => {
     if (!loading) {

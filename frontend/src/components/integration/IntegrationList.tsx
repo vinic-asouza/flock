@@ -4,7 +4,6 @@ import { IntegrationMember, IntegrationFilters } from '@/types';
 import { IntegrationCard } from './IntegrationCard';
 import { Pagination } from '@/components/common/Pagination';
 import { useIntegration } from '@/context/IntegrationContext';
-import { Button } from '@/components/ui/Button';
 import { Download, RefreshCcw } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 
@@ -102,25 +101,24 @@ export function IntegrationList({
             <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
             Atualizar
           </button>
-          <Button
-            variant="secondary"
-            size="sm"
+          <button
+            type="button"
             onClick={onExport}
             disabled={isExporting}
-            className="inline-flex items-center gap-2"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isExporting ? (
               <>
-                <span className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Exportando...
               </>
             ) : (
               <>
-                <Download size={16} />
+                <Download size={12} />
                 Exportar lista
               </>
             )}
-          </Button>
+          </button>
         </div>
       </div>
 

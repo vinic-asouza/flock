@@ -1,8 +1,6 @@
 'use client';
 
 import { Group } from '@/types';
-import { useFiltersData } from '@/hooks/useFiltersData';
-import { Button } from '@/components/ui/Button';
 import { Download, Loader2, RefreshCcw } from 'lucide-react';
 
 interface GroupSummaryBarProps {
@@ -13,23 +11,14 @@ interface GroupSummaryBarProps {
   exporting?: boolean;
 }
 
-export function GroupSummaryBar({ congregationId, groups, onRefreshClick, onExportClick, exporting }: GroupSummaryBarProps) {
-  const { congregations } = useFiltersData();
-
-  const congregationLabel =
-    !congregationId
-      ? 'Todas as congregações'
-      : congregationId === 'sede'
-        ? 'Sede'
-        : congregations.find(c => c.id === congregationId)?.name ?? 'Congregação';
-
+export function GroupSummaryBar({ groups, onRefreshClick, onExportClick, exporting }: GroupSummaryBarProps) {
   const totalGroups = groups.length;
   const totalMembers = groups.reduce((sum, g) => sum + (g.memberCount ?? 0), 0);
   const emptyCount = groups.filter(g => (g.memberCount ?? 0) === 0).length;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
         <span>
           {totalGroups} grupo{totalGroups !== 1 ? 's' : ''}
         </span>

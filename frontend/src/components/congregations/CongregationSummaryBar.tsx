@@ -21,7 +21,7 @@ export function CongregationSummaryBar({
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
-      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
         <span>
           {totalCongregations} {totalCongregations === 1 ? 'congregação' : 'congregações'}
         </span>

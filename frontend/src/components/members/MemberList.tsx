@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { MemberCard } from './MemberCard';
 import { MemberCardGrid } from './MemberCardGrid';
 import { ViewMode } from './ViewModeSelector';
@@ -51,12 +51,16 @@ export function MemberList({
     loadMembers,
     setPage
   } = useMembers();
+  const isInitialMount = useRef(true);
 
-  // Carregar membros quando filtros, ordenação ou página mudarem
+  // Carregar membros quando filtros, ordenação ou página mudarem (pula o primeiro run: a página já carregou na inicialização)
   useEffect(() => {
-    if (sorting) {
-      loadMembers(filters, sorting, currentPage);
+    if (!sorting) return;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
+    loadMembers(filters, sorting, currentPage);
   }, [filters, sorting, currentPage, loadMembers]);
 
   // Recarregar lista quando necessário

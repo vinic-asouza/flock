@@ -209,14 +209,23 @@ export default function GroupsPage() {
         }
       />
 
-      <MemberSearchInput
-        value={filters.search}
-        onChange={handleSearchChange}
-        isLoading={loading}
-        placeholder="Busque por nome do grupo"
-      />
-
-      <GroupFiltersBar filters={filters} onChange={handleFilterChange} />
+      <div className="flex flex-nowrap items-end gap-2 w-full overflow-x-auto">
+        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+          <label htmlFor="groups-search" className="block text-xs font-medium text-gray-600">
+            Busca
+          </label>
+          <MemberSearchInput
+            id="groups-search"
+            value={filters.search}
+            onChange={handleSearchChange}
+            isLoading={loading}
+            placeholder="Busque por nome do grupo"
+          />
+        </div>
+        <div className="flex-shrink-0">
+          <GroupFiltersBar filters={filters} onChange={handleFilterChange} />
+        </div>
+      </div>
 
       <GroupActiveFiltersChips
         filters={filters}
@@ -343,8 +352,5 @@ export default function GroupsPage() {
       </Modal>
     </div>
   );
-}
-function setIsExportingGroups(arg0: boolean) {
-  throw new Error('Function not implemented.');
 }
 

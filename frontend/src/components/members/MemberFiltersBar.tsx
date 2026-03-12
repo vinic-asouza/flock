@@ -1,9 +1,11 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { ChevronDown, Filter, ArrowUpDown, Loader } from 'lucide-react';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
-import { useState, useEffect, useRef } from 'react';
+import { Congregation } from '@/types/congregation';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 
 interface MemberFiltersBarProps {
   filters: MemberFilters;
@@ -15,6 +17,10 @@ interface MemberFiltersBarProps {
     sort_order: 'asc' | 'desc';
   };
   onSortingChange: (sorting: { sort_by: string; sort_order: 'asc' | 'desc' }) => void;
+  /** Quando passado pela página de membros, evita carregamento separado */
+  congregations?: Congregation[];
+  filtersLoading?: boolean;
+  filtersError?: string | null;
 }
 
 export function MemberFiltersBar({ 
@@ -23,20 +29,65 @@ export function MemberFiltersBar({
   onShowAdvanced, 
   showAdvanced, 
   sorting, 
-  onSortingChange 
+  onSortingChange,
+  congregations: congregationsProp,
+  filtersLoading: filtersLoadingProp,
+  filtersError: filtersErrorProp,
 }: MemberFiltersBarProps) {
-  const { congregations, loading: filtersLoading, error } = useFiltersData();
+  const fromHook = useFiltersData();
+  const congregations = congregationsProp !== undefined ? congregationsProp : fromHook.congregations;
+  const filtersLoading = filtersLoadingProp !== undefined ? filtersLoadingProp : fromHook.loading;
+  const error = filtersErrorProp !== undefined ? filtersErrorProp : fromHook.error;
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const [showSortingDropdown, setShowSortingDropdown] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownPortalRef = useRef<HTMLDivElement>(null);
+  const statusTriggerRef = useRef<HTMLButtonElement>(null);
+  const congregationTriggerRef = useRef<HTMLButtonElement>(null);
+  const sortTriggerRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPlacement, setDropdownPlacement] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  // Fechar dropdowns quando clicar fora
+  // Posicionar dropdown sobreposto (portal)
+  const activeDropdown = openSelect === 'status' ? 'status' : openSelect === 'congregation' ? 'congregation' : showSortingDropdown ? 'sorting' : null;
+  const triggerRef = activeDropdown === 'status' ? statusTriggerRef : activeDropdown === 'congregation' ? congregationTriggerRef : sortTriggerRef;
+
+  const updateDropdownPlacement = useCallback(() => {
+    if (!activeDropdown || !triggerRef?.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const width = 192;
+    setDropdownPlacement({
+      top: rect.bottom + 4,
+      left: rect.right - width,
+      width,
+    });
+  }, [activeDropdown, triggerRef]);
+
+  useLayoutEffect(() => {
+    if (!activeDropdown || !triggerRef.current) {
+      setDropdownPlacement(null);
+      return;
+    }
+    updateDropdownPlacement();
+  }, [activeDropdown, openSelect, showSortingDropdown, triggerRef, updateDropdownPlacement]);
+
+  // Atualizar posição do dropdown ao rolar ou redimensionar (mantém alinhado ao seletor)
+  useEffect(() => {
+    if (!activeDropdown) return;
+    window.addEventListener('scroll', updateDropdownPlacement, true);
+    window.addEventListener('resize', updateDropdownPlacement);
+    return () => {
+      window.removeEventListener('scroll', updateDropdownPlacement, true);
+      window.removeEventListener('resize', updateDropdownPlacement);
+    };
+  }, [activeDropdown, updateDropdownPlacement]);
+
+  // Fechar dropdowns quando clicar fora (barra ou portal do dropdown)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpenSelect(null);
-        setShowSortingDropdown(false);
-      }
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target) || dropdownPortalRef.current?.contains(target)) return;
+      setOpenSelect(null);
+      setShowSortingDropdown(false);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -79,15 +130,16 @@ export function MemberFiltersBar({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-wrap gap-4 items-start w-full">
+    <div ref={containerRef} className="flex flex-nowrap gap-2 items-center overflow-visible">
       {/* Status */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 overflow-visible">
         <label className="block text-xs font-medium text-gray-600">Status</label>
-        <div className="relative">
+        <div className="relative overflow-visible">
           <button
+            ref={statusTriggerRef}
             type="button"
             onClick={() => setOpenSelect(openSelect === 'status' ? null : 'status')}
-            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
           >
             <span>
               {filters.status === 'active' ? 'Ativo' : filters.status === 'inactive' ? 'Inativo' : 'Todos'}
@@ -97,55 +149,18 @@ export function MemberFiltersBar({
               className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'status' ? 'rotate-180' : ''}`}
             />
           </button>
-          
-          {/* Dropdown de Status */}
-          {openSelect === 'status' && (
-            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ status: 'active' });
-                    setOpenSelect(null);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'active' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Ativo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ status: 'inactive' });
-                    setOpenSelect(null);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'inactive' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Inativo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ status: 'all' });
-                    setOpenSelect(null);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'all' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Todos
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
       
       {/* Congregação */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 overflow-visible">
         <label className="block text-xs font-medium text-gray-600">Congregação</label>
-        <div className="relative">
+        <div className="relative overflow-visible">
           <button
+            ref={congregationTriggerRef}
             type="button"
             onClick={() => setOpenSelect(openSelect === 'congregation' ? null : 'congregation')}
-            className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={filtersLoading}
           >
             <span>
@@ -161,160 +176,153 @@ export function MemberFiltersBar({
               className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'congregation' ? 'rotate-180' : ''}`}
             />
           </button>
-          
-          {/* Dropdown de Congregação */}
-          {openSelect === 'congregation' && (
-            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <div className="py-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ congregationId: '' });
-                    setOpenSelect(null);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.congregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Todas as congregações
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ congregationId: 'sede' });
-                    setOpenSelect(null);
-                  }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === 'sede' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Sede
-                </button>
-                {filtersLoading ? (
-                  <div className="px-3 py-2 text-sm text-gray-500">Carregando congregações...</div>
-                ) : (
-                  congregations.map(cong => (
-                    <button
-                      key={cong.id}
-                      type="button"
-                      onClick={() => {
-                        onChange({ congregationId: cong.id });
-                        setOpenSelect(null);
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                    >
-                      {cong.name}
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
       
       {/* Ordenar */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 overflow-visible">
         <label className="block text-xs font-medium text-gray-600">Ordenar por</label>
-        <div className="relative">
+        <div className="relative overflow-visible">
           <button
+            ref={sortTriggerRef}
             type="button"
             onClick={() => setShowSortingDropdown(!showSortingDropdown)}
-            className="inline-flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+            className="h-10 inline-flex items-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0"
           >
             <ArrowUpDown size={16} />
             {getSortingLabel()}
             <ChevronDown size={16} className={`transition-transform duration-200 ${showSortingDropdown ? 'rotate-180' : ''}`} />
           </button>
-          
-          {/* Dropdown de ordenação */}
-          {showSortingDropdown && (
-            <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              <div className="py-1">
-                {/* Nome */}
-                <button
-                  type="button"
-                  onClick={() => handleSortingChange('name', sorting.sort_by === 'name' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'name' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  <span>Nome</span>
-                  {sorting.sort_by === 'name' && (
-                    <span className="text-xs text-gray-500">
-                      {sorting.sort_order === 'asc' ? 'A-Z' : 'Z-A'}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Idade */}
-                <button
-                  type="button"
-                  onClick={() => handleSortingChange('birth', sorting.sort_by === 'birth' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'birth' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  <span>Idade</span>
-                  {sorting.sort_by === 'birth' && (
-                    <span className="text-xs text-gray-500">
-                      {sorting.sort_order === 'asc' ? 'Menor' : 'Maior'}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Data de Batismo */}
-                <button
-                  type="button"
-                  onClick={() => handleSortingChange('baptism_date', sorting.sort_by === 'baptism_date' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'baptism_date' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  <span>Data de Batismo</span>
-                  {sorting.sort_by === 'baptism_date' && (
-                    <span className="text-xs text-gray-500">
-                      {sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Data de Recebimento */}
-                <button
-                  type="button"
-                  onClick={() => handleSortingChange('admission_date', sorting.sort_by === 'admission_date' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'admission_date' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  <span>Data de Recebimento</span>
-                  {sorting.sort_by === 'admission_date' && (
-                    <span className="text-xs text-gray-500">
-                      {sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Data de Criação */}
-                <button
-                  type="button"
-                  onClick={() => handleSortingChange('created_at', sorting.sort_by === 'created_at' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'created_at' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  <span>Data de Criação</span>
-                  {sorting.sort_by === 'created_at' && (
-                    <span className="text-xs text-gray-500">
-                      {sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
       
       {/* Mais opções */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 overflow-visible">
         <label className="block text-xs font-medium text-gray-600 opacity-0">Ações</label>
         <button
           type="button"
           onClick={onShowAdvanced}
-          className={`inline-flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors ${showAdvanced ? 'bg-gray-50 border-gray-300' : ''}`}
+          className={`h-10 inline-flex items-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0 ${showAdvanced ? 'bg-gray-50 border-gray-300' : ''}`}
         >
           <Filter size={16} />
           Mais opções
           <ChevronDown size={16} className={`transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
         </button>
       </div>
+
+      {/* Portal: dropdowns sobrepostos */}
+      {dropdownPlacement && activeDropdown && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={dropdownPortalRef}
+          className="bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[12rem] max-h-[min(20rem,80vh)] overflow-y-auto"
+          style={{
+            position: 'fixed',
+            top: dropdownPlacement.top,
+            left: dropdownPlacement.left,
+            width: dropdownPlacement.width,
+            zIndex: 9999,
+          }}
+        >
+          {activeDropdown === 'status' && (
+            <>
+              <button
+                type="button"
+                onClick={() => { onChange({ status: 'active' }); setOpenSelect(null); }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'active' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                Ativo
+              </button>
+              <button
+                type="button"
+                onClick={() => { onChange({ status: 'inactive' }); setOpenSelect(null); }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'inactive' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                Inativo
+              </button>
+              <button
+                type="button"
+                onClick={() => { onChange({ status: 'all' }); setOpenSelect(null); }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'all' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                Todos
+              </button>
+            </>
+          )}
+          {activeDropdown === 'congregation' && (
+            <>
+              <button
+                type="button"
+                onClick={() => { onChange({ congregationId: '' }); setOpenSelect(null); }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.congregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                Todas as congregações
+              </button>
+              <button
+                type="button"
+                onClick={() => { onChange({ congregationId: 'sede' }); setOpenSelect(null); }}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === 'sede' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                Sede
+              </button>
+              {!filtersLoading && congregations.map(cong => (
+                <button
+                  key={cong.id}
+                  type="button"
+                  onClick={() => { onChange({ congregationId: cong.id }); setOpenSelect(null); }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                >
+                  {cong.name}
+                </button>
+              ))}
+            </>
+          )}
+          {activeDropdown === 'sorting' && (
+            <>
+              <button
+                type="button"
+                onClick={() => handleSortingChange('name', sorting.sort_by === 'name' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'name' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                <span>Nome</span>
+                {sorting.sort_by === 'name' && <span className="text-xs text-gray-500">{sorting.sort_order === 'asc' ? 'A-Z' : 'Z-A'}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortingChange('birth', sorting.sort_by === 'birth' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'birth' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                <span>Idade</span>
+                {sorting.sort_by === 'birth' && <span className="text-xs text-gray-500">{sorting.sort_order === 'asc' ? 'Menor' : 'Maior'}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortingChange('baptism_date', sorting.sort_by === 'baptism_date' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'baptism_date' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                <span>Data de Batismo</span>
+                {sorting.sort_by === 'baptism_date' && <span className="text-xs text-gray-500">{sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortingChange('admission_date', sorting.sort_by === 'admission_date' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'admission_date' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                <span>Data de Recebimento</span>
+                {sorting.sort_by === 'admission_date' && <span className="text-xs text-gray-500">{sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSortingChange('created_at', sorting.sort_by === 'created_at' && sorting.sort_order === 'desc' ? 'asc' : 'desc')}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === 'created_at' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+              >
+                <span>Data de Criação</span>
+                {sorting.sort_by === 'created_at' && <span className="text-xs text-gray-500">{sorting.sort_order === 'asc' ? 'Antiga' : 'Recente'}</span>}
+              </button>
+            </>
+          )}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

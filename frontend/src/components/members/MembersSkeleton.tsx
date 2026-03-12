@@ -12,12 +12,15 @@ export function MembersSkeleton() {
         <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
       </div>
 
-      {/* Search and Filters Skeleton */}
-      <div className="space-y-4">
-        <div className="h-12 bg-gray-200 rounded w-full animate-pulse"></div>
-        <div className="flex flex-wrap gap-2">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+      {/* Search and Filters Skeleton - mesma estrutura da página (busca + filtros na mesma linha) */}
+      <div className="flex flex-nowrap items-end gap-2 w-full">
+        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+          <div className="h-3.5 w-10 bg-gray-200 rounded animate-pulse" aria-hidden />
+          <div className="h-10 w-full bg-gray-200 rounded-lg animate-pulse" />
+        </div>
+        <div className="flex-shrink-0 flex flex-nowrap gap-3 items-center">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-10 w-24 bg-gray-200 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>

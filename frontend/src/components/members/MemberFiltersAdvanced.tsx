@@ -127,7 +127,7 @@ export function MemberFiltersAdvanced({ filters, onChange }: MemberFiltersAdvanc
   };
 
   return (
-    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 border border-gray-200 rounded-lg p-4 mt-2">
+    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white border border-gray-200 rounded-lg p-4 mt-2">
       {/* Gênero */}
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Gênero</label>

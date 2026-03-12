@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LinkIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -43,7 +43,7 @@ function IntegrationPageContent() {
     removeIntegrationMemberOptimistic
   } = useIntegration();
 
-  const { congregations } = useFiltersData();
+  const { congregations, loading: filtersLoading, error: filtersError } = useFiltersData();
 
   const [filters, setFilters] = useState<IntegrationFilters>(initialFilters);
   const [currentPage, setCurrentPage] = useState(1);
@@ -68,8 +68,13 @@ function IntegrationPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const hasLoadedOnce = useRef(false);
   useEffect(() => {
     if (!isInitializing) {
+      if (!hasLoadedOnce.current) {
+        hasLoadedOnce.current = true;
+        return;
+      }
       loadIntegrationMembers(filters, currentPage);
     }
   }, [filters, currentPage, loadIntegrationMembers, isInitializing]);
@@ -149,7 +154,8 @@ function IntegrationPageContent() {
     }
   };
 
-  if (isInitializing) {
+  const isPageReady = !isInitializing && !filtersLoading;
+  if (!isPageReady) {
     return <MembersSkeleton />;
   }
 
@@ -183,13 +189,28 @@ function IntegrationPageContent() {
         }
       />
 
-      <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={loading} />
-
-      <IntegrationFiltersBar
-        filters={filters}
-        onChange={handleFilterChange}
-        congregations={congregations}
-      />
+      <div className="flex flex-nowrap items-end gap-2 w-full overflow-x-auto">
+        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+          <label htmlFor="integration-search" className="block text-xs font-medium text-gray-600">
+            Busca
+          </label>
+          <MemberSearchInput
+            id="integration-search"
+            value={filters.search}
+            onChange={handleSearchChange}
+            isLoading={loading}
+          />
+        </div>
+        <div className="flex-shrink-0">
+          <IntegrationFiltersBar
+            filters={filters}
+            onChange={handleFilterChange}
+            congregations={congregations}
+            filtersLoading={filtersLoading}
+            filtersError={filtersError}
+          />
+        </div>
+      </div>
 
       <IntegrationActiveFiltersChips
         filters={filters}

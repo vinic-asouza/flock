@@ -25,6 +25,7 @@ import { RegistrationLinksModal } from '@/components/members/RegistrationLinksMo
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useAuth } from '@/context/AuthContext';
 import { useViewMode } from '@/hooks/useViewMode';
+import { useFiltersData } from '@/hooks/useFiltersData';
 import { apiService } from '@/services/api';
 import { Member } from '@/types';
 import toast from 'react-hot-toast';
@@ -106,6 +107,7 @@ function MembersPageContent() {
 
   const { canEdit } = useAuth();
   const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic } = useMembers();
+  const { congregations, loading: filtersLoading, error: filtersError } = useFiltersData();
 
   // Função para atualizar o limite de membros
   const updateMemberLimit = useCallback(async () => {
@@ -479,8 +481,9 @@ function MembersPageContent() {
     }
   }, [filters, sorting]);
 
-  // Mostrar loading durante inicialização
-  if (isInitializing) {
+  // Mostrar skeleton até membros, filtros (congregações) e viewMode estarem prontos
+  const isPageReady = !isInitializing && !filtersLoading && isLoaded;
+  if (!isPageReady) {
     return <MembersSkeleton />;
   }
 
@@ -536,15 +539,32 @@ function MembersPageContent() {
           </div>
         }
       />
-      <MemberSearchInput value={filters.search} onChange={handleSearchChange} isLoading={false} />
-      <MemberFiltersBar
-        filters={filters}
-        onChange={handleFilterChange}
-        onShowAdvanced={handleShowAdvanced}
-        showAdvanced={showAdvanced}
-        sorting={sorting}
-        onSortingChange={handleSortingChange}
-      />
+      <div className="flex flex-nowrap items-end gap-2 w-full overflow-x-auto">
+        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+          <label htmlFor="members-search" className="block text-xs font-medium text-gray-600">
+            Busca
+          </label>
+          <MemberSearchInput
+            id="members-search"
+            value={filters.search}
+            onChange={handleSearchChange}
+            isLoading={false}
+          />
+        </div>
+        <div className="flex-shrink-0">
+          <MemberFiltersBar
+            filters={filters}
+            onChange={handleFilterChange}
+            onShowAdvanced={handleShowAdvanced}
+            showAdvanced={showAdvanced}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
+            congregations={congregations}
+            filtersLoading={filtersLoading}
+            filtersError={filtersError}
+          />
+        </div>
+      </div>
       {showAdvanced && (
         <MemberFiltersAdvanced filters={filters} onChange={handleFilterChange} />
       )}
@@ -555,6 +575,7 @@ function MembersPageContent() {
         sorting={sorting}
         onRemoveSorting={() => setSorting(initialSorting)}
         defaultSorting={initialSorting}
+        congregations={congregations}
       />
       <MemberList 
         filters={filters} 

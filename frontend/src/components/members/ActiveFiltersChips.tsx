@@ -3,6 +3,7 @@
 import { X, RefreshCcw } from 'lucide-react';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
+import { Congregation } from '@/types/congregation';
 
 interface ActiveFiltersChipsProps {
   filters: MemberFilters;
@@ -17,6 +18,8 @@ interface ActiveFiltersChipsProps {
     sort_by: string;
     sort_order: 'asc' | 'desc';
   };
+  /** Quando passado pela página de membros, usa dados já carregados */
+  congregations?: Congregation[];
 }
 
 export function ActiveFiltersChips({ 
@@ -25,9 +28,11 @@ export function ActiveFiltersChips({
   onClearAll, 
   sorting, 
   onRemoveSorting,
-  defaultSorting = { sort_by: 'created_at', sort_order: 'desc' }
+  defaultSorting = { sort_by: 'created_at', sort_order: 'desc' },
+  congregations: congregationsProp,
 }: ActiveFiltersChipsProps) {
-  const { congregations } = useFiltersData();
+  const fromHook = useFiltersData();
+  const congregations = congregationsProp ?? fromHook.congregations;
 
   // Função para obter o label de ordenação
   const getSortingLabel = () => {

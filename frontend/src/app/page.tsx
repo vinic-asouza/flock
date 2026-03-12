@@ -345,8 +345,6 @@ export default function HomePage() {
                             data={reportsData.churchStructure}
                             loading={loading}
                             hideCongregations={viewMode === 'sede' || viewMode === 'congregation'}
-                            viewMode={viewMode}
-                            selectedCongregationId={selectedCongregationId}
                           />
 
                           {/* Divisória */}
