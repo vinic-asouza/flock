@@ -1,17 +1,45 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/main/Sidebar';
 import { Header } from '@/components/main/Header';
 import { Footer } from '@/components/main/Footer';
 import { useAuth } from '@/context/AuthContext';
+import { Spinner } from '@/components/ui/Spinner';
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const { user } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  // ACHADO 16: redirecionar para /login se o usuário não estiver autenticado.
+  // Sem essa proteção, todas as rotas /members, /groups, /calendar etc. ficavam
+  // expostas — o usuário via a "casca" do app antes de qualquer erro aparecer.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-app">
+        <div className="text-center">
+          <Spinner className="mx-auto mb-4" />
+          <p className="text-sm text-gray-500">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Evitar flash de conteúdo enquanto o redirect ainda não ocorreu
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="h-screen bg-app flex flex-col overflow-hidden">
@@ -29,4 +57,4 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </div>
     </div>
   );
-} 
+}

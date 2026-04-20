@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import supabase from '../services/supabase';
+import supabase, { supabaseAdmin } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { validateChangePassword, validateResetPassword } from '../validators/passwordValidator';
 import { sendEmail } from '../services/emailService';
@@ -16,6 +16,16 @@ export const forgotPassword = async (req: Request<{}, {}, { email: string }>, re
       return res.status(400).json({
         error: 'Email não fornecido',
         details: 'O email é obrigatório para recuperação de senha'
+      });
+    }
+
+    // ACHADO 14: validar formato do email antes de chamar o Supabase para evitar erros
+    // opacos em inglês retornados diretamente pelo Supabase Auth
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        error: 'Email inválido',
+        details: 'Informe um endereço de email válido'
       });
     }
 
@@ -146,9 +156,9 @@ export const resetPassword = async (req: Request<{}, {}, { newPassword: string, 
       });
     }
 
-    // Para reset de senha com token, precisamos primeiro verificar se o token é válido
+    // Validar o token de recuperação e obter o usuário
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
+
     if (userError || !user) {
       return res.status(400).json({
         error: 'Token inválido ou expirado',
@@ -156,22 +166,19 @@ export const resetPassword = async (req: Request<{}, {}, { newPassword: string, 
       });
     }
 
-    // Agora vamos atualizar a senha usando o token diretamente
-    // Para isso, precisamos criar uma sessão temporária
-    const { data: { session }, error: sessionError } = await supabase.auth.setSession({
-      access_token: token,
-      refresh_token: token
-    });
-
-    if (sessionError || !session) {
-      return res.status(400).json({
-        error: 'Erro ao criar sessão temporária',
-        details: sessionError?.message || 'Não foi possível criar uma sessão válida'
+    // ACHADO 13: o código anterior usava setSession({ access_token: token, refresh_token: token })
+    // com o mesmo valor para ambos os campos — semanticamente incorreto e frágil.
+    // O fluxo correto server-side é atualizar a senha via Admin API usando o user.id
+    // já validado acima, sem precisar criar uma sessão temporária.
+    if (!supabaseAdmin) {
+      console.error('[resetPassword] SUPABASE_SERVICE_ROLE_KEY não configurada — supabaseAdmin indisponível.');
+      return res.status(503).json({
+        error: 'Serviço temporariamente indisponível',
+        details: 'Não foi possível redefinir sua senha no momento. Tente novamente mais tarde ou entre em contato com o suporte.'
       });
     }
 
-    // Agora podemos atualizar a senha
-    const { error: updateError } = await supabase.auth.updateUser({
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       password: newPassword
     });
 

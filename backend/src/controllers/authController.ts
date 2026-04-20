@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import supabase from '../services/supabase';
+import supabase, { supabaseAdmin } from '../services/supabase';
 import { getChurchContextForUser } from '../services/churchContext';
 import { validateChurch } from '../validators/churchValidator';
 import { ChurchRegistrationData, AuthRequest } from '../types';
@@ -235,10 +235,12 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
       expires_at: authData.session.expires_at
     });
 
+    // ACHADO 06: role + email no response eliminam as chamadas extras getCheckAuth() e getAccountData()
     res.json({
       message: 'Login realizado com sucesso',
-      church: churchData
-      // Não retornar tokens no JSON - agora estão em cookies seguros
+      church: churchData,
+      role: context.role,
+      email: authData.user.email,
     });
 
   } catch (error) {
@@ -294,16 +296,21 @@ export const logout = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Tentar fazer logout no Supabase (se suportado)
-    try {
-      await supabase.auth.signOut();
-    } catch (signOutError) {
-      // Se o Supabase não suportar logout server-side, continuamos com a blacklist
-      console.warn('Supabase signOut não suportado no servidor:', signOutError);
+    // ACHADO 04: usar supabaseAdmin para invalidar a sessão do usuário no Supabase.
+    // O cliente anon (supabase.auth.signOut) encerra apenas a sessão anônima do client,
+    // não a sessão autenticada do usuário. O admin.signOut invalida o token server-side.
+    if (supabaseAdmin) {
+      try {
+        await supabaseAdmin.auth.admin.signOut(user.id);
+      } catch (signOutError) {
+        console.warn('[Logout] Erro ao invalidar sessão via supabaseAdmin:', signOutError);
+      }
+    } else {
+      console.warn('[Logout] supabaseAdmin não disponível (SUPABASE_SERVICE_ROLE_KEY ausente). Sessão do Supabase pode permanecer ativa.');
     }
 
-    // Adicionar token à blacklist (implementação simples em memória)
-    // Em produção, usar Redis ou banco de dados
+    // ACHADO 08: blacklist em memória — tokens revogados voltam a ser válidos após restart.
+    // TODO: substituir por Redis ou tabela revoked_tokens no Supabase antes de ir para produção com alta criticidade.
     if (!global.tokenBlacklist) {
       global.tokenBlacklist = new Set();
     }

@@ -71,8 +71,10 @@ export interface Session {
 
 export interface LoginResponse {
   message: string;
-  session: Session;
   church: Church;
+  /** ACHADO 06: role e email retornados pelo backend eliminam chamadas extras ao getCheckAuth() e getAccountData() */
+  role?: ChurchUserRole;
+  email?: string;
 }
 
 export interface RegisterData {

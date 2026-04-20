@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, memo, useEffect } from 'react';
+import { useState, memo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,33 +10,35 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
-// Estado global para erros de login (persiste entre re-renderizações)
-let globalLoginError: string | null = null;
-let globalLoginErrorDetails: string | null = null;
-
+// ACHADO 02: schema de LOGIN não deve validar complexidade de senha —
+// apenas verificar que o campo não está vazio. Complexidade é validada no cadastro.
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string()
-    .min(8, 'A senha deve ter pelo menos 8 caracteres')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número'),
+  password: z.string().min(1, 'Senha obrigatória'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
+// ACHADO 01: verifica se a URL de redirect é interna (mesmo origin ou caminho relativo)
+const isInternalRedirect = (url: string): boolean => {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.origin === window.location.origin;
+  } catch {
+    return url.startsWith('/') && !url.startsWith('//');
+  }
+};
+
 function LoginPageComponent() {
-  const [error, setError] = useState<string | null>(globalLoginError);
-  const [errorDetails, setErrorDetails] = useState<string | null>(globalLoginErrorDetails);
+  // ACHADO 05: removidas variáveis de módulo globais — estado apenas via useState
+  const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
   const { login, isOperationLoading, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get('redirect');
   const message = searchParams.get('message');
-  
-  // Ref para manter os estados durante re-renderizações
-  const errorRef = useRef<string | null>(globalLoginError);
-  const errorDetailsRef = useRef<string | null>(globalLoginErrorDetails);
 
-  // Mostrar mensagem especial se houver
   useEffect(() => {
     if (message === 'email_confirm_required') {
       setError('Confirme seu email para continuar');
@@ -44,26 +46,19 @@ function LoginPageComponent() {
     }
   }, [message]);
 
-  // Estado para controlar se estamos no meio de um login
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  
-  // Se já estiver autenticado ao carregar a página (não após submit), redirecionar
+
+  // Redirecionar automaticamente se o usuário já estiver autenticado ao carregar a página
   useEffect(() => {
-    // Só redirecionar automaticamente se:
-    // 1. Usuário está autenticado
-    // 2. NÃO estamos no meio de um processo de login (para evitar conflito)
-    // 3. Há redirectUrl (vamos respeitar o redirectUrl sempre)
-    if (user && !isLoggingIn && redirectUrl) {
-      // Usar window.location.href para garantir que o redirect aconteça corretamente
-      // Usar replace para evitar adicionar ao histórico
-      window.location.replace(redirectUrl);
-    } else if (user && !isLoggingIn && !redirectUrl) {
-      // Se não houver redirectUrl, redirecionar para home
-      router.push('/');
+    if (user && !isLoggingIn) {
+      // ACHADO 01: validar que o redirect é uma rota interna antes de redirecionar
+      if (redirectUrl && isInternalRedirect(redirectUrl)) {
+        window.location.replace(redirectUrl);
+      } else {
+        router.push('/');
+      }
     }
   }, [user, redirectUrl, router, isLoggingIn]);
-
-
 
   const {
     register,
@@ -78,79 +73,62 @@ function LoginPageComponent() {
       setIsLoggingIn(true);
       setError(null);
       setErrorDetails(null);
-      // Limpar estado global
-      globalLoginError = null;
-      globalLoginErrorDetails = null;
-      
+
       await login(data);
-      
-      // Aguardar um momento para garantir que o estado do usuário foi atualizado no contexto
-      // Isso garante que o useEffect não interfira
+
+      // Aguardar brevemente para garantir que o estado do AuthContext foi atualizado
       await new Promise(resolve => setTimeout(resolve, 150));
-      
-      // Redirecionar para URL de redirect se houver, senão para home
-      // Usar window.location.replace para garantir que o redirecionamento aconteça
-      // e evitar adicionar ao histórico (evita loops de redirecionamento)
-      if (redirectUrl) {
+
+      // ACHADO 01: validar redirect antes de usar
+      if (redirectUrl && isInternalRedirect(redirectUrl)) {
         window.location.replace(redirectUrl);
       } else {
         router.push('/');
       }
-      
-      // Não resetar isLoggingIn aqui pois vamos sair da página
+
+      // ACHADO 07: reset de segurança caso a navegação não ocorra (ex: router.push falho)
+      setTimeout(() => setIsLoggingIn(false), 2000);
     } catch (err: unknown) {
       let errorMessage = 'Erro ao fazer login';
-      let errorDetails: string | null = null;
-      
+      let errorDetailsValue: string | null = null;
+
       if (err instanceof Error) {
         errorMessage = err.message;
-        // Verificar se tem detalhes customizados
         const errorObj = err as Error & { details?: string | string[] };
         if (errorObj.details) {
-          errorDetails = typeof errorObj.details === 'string' ? errorObj.details : errorObj.details.join(', ');
+          errorDetailsValue = typeof errorObj.details === 'string' ? errorObj.details : errorObj.details.join(', ');
         }
       } else if (typeof err === 'string') {
         errorMessage = err;
       } else if (err && typeof err === 'object') {
-        // Verificar se tem propriedades específicas
         const errorObj = err as { message?: string; details?: string | string[] };
         if (errorObj.message && typeof errorObj.message === 'string') {
           errorMessage = errorObj.message;
         }
-        
         if (errorObj.details) {
           const details = errorObj.details;
           if (typeof details === 'string') {
-            errorDetails = details;
+            errorDetailsValue = details;
           } else if (Array.isArray(details)) {
-            errorDetails = details.join(', ');
+            errorDetailsValue = details.join(', ');
           }
         }
       }
-      
-      // Mapear erro de email não confirmado para mensagem amigável
-      const combined = `${errorMessage} ${errorDetails || ''}`.toLowerCase();
+
+      const combined = `${errorMessage} ${errorDetailsValue || ''}`.toLowerCase();
       if (combined.includes('email não confirmado') || combined.includes('confirm')) {
         errorMessage = 'Necessário realizar confirmação de email';
-        errorDetails = 'Verifique sua caixa de entrada e clique no link de confirmação.';
+        errorDetailsValue = 'Verifique sua caixa de entrada e clique no link de confirmação.';
       }
 
-      // Salvar no estado global para persistir durante re-renderizações
-      globalLoginError = errorMessage;
-      globalLoginErrorDetails = errorDetails;
-      
-      // Atualizar tanto o estado quanto a ref
       setError(errorMessage);
-      setErrorDetails(errorDetails);
-      errorRef.current = errorMessage;
-      errorDetailsRef.current = errorDetails;
+      setErrorDetails(errorDetailsValue);
       setIsLoggingIn(false);
     }
   };
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900">Entrar no Flock</h1>
         <p className="mt-2 text-gray-600">
@@ -158,17 +136,12 @@ function LoginPageComponent() {
         </p>
       </div>
 
-      {/* Formulário */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {(error || globalLoginError) && (
+        {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm font-medium text-red-600">
-              {error || globalLoginError}
-            </p>
-            {(errorDetails || globalLoginErrorDetails) && (
-              <p className="text-sm text-red-500 mt-1">
-                {errorDetails || globalLoginErrorDetails}
-              </p>
+            <p className="text-sm font-medium text-red-600">{error}</p>
+            {errorDetails && (
+              <p className="text-sm text-red-500 mt-1">{errorDetails}</p>
             )}
           </div>
         )}
@@ -195,10 +168,6 @@ function LoginPageComponent() {
           <Link
             href="/forgot-password"
             className="text-sm text-primary hover:text-primary/80 cursor-pointer"
-            onClick={() => {
-              globalLoginError = null;
-              globalLoginErrorDetails = null;
-            }}
           >
             Esqueceu sua senha?
           </Link>
@@ -213,7 +182,6 @@ function LoginPageComponent() {
         </Button>
       </form>
 
-      {/* Link para cadastro */}
       <div className="text-center pt-4 border-t border-gray-200">
         <p className="text-sm text-gray-600">
           Ainda não possui conta?{' '}
@@ -229,5 +197,4 @@ function LoginPageComponent() {
   );
 }
 
-// Memoizar o componente para evitar re-renderizações desnecessárias
-export default memo(LoginPageComponent); 
+export default memo(LoginPageComponent);

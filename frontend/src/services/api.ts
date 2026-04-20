@@ -162,11 +162,12 @@ class ApiService {
   // Logout
   async logout(): Promise<void> {
     try {
-      // Chamar a rota de logout no backend para invalidar o token e limpar cookies
       await this.api.post('/auth/logout');
-    } catch {
-      // Mesmo com erro, o servidor limpa os cookies automaticamente
-      // Silenciar erro - não crítico, o servidor limpa os cookies automaticamente
+    } catch (error) {
+      // ACHADO 09: logar falha de comunicação — sem resposta do servidor, o token pode
+      // permanecer ativo até expirar naturalmente. O estado local será limpo pelo
+      // AuthContext mesmo assim, mas o usuário deve ser informado se necessário.
+      console.warn('[Logout] Falha ao comunicar logout ao servidor. Token pode ainda estar ativo no Supabase.', error);
     }
   }
 

@@ -36,14 +36,14 @@ Inclua no relatório, detalhamente do que o desenvolvimento deve ajustar.
 
 ---
 
-REANALISE
+REVALIDAÇÃO
 
-Faça a revalidação de QA deste módulo após os ajustes do DEV.
+Faça a revalidação de QA do módulo de Autenticação após os ajustes do DEV.
 
 Contexto disponível:
-- levantamento de fluxos do projeto
-- relatório original de QA do módulo
-- contexto das alterações feitas pelo DEV
+
+- relatório original de QA: @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao.md 
+- relatório das alterações feitas pelo DEV: @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao-dev-report.md 
 - código atualizado do monorepo
 
 Objetivo:
@@ -77,6 +77,8 @@ Formato de saída:
 4. avaliação de UX após correção
 5. itens encerrados
 6. itens reabertos
+
+Após analise, edite o arquivo: @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao.md 
 
 
 ---

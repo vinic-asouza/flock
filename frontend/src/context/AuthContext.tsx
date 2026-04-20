@@ -62,14 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const accountData = await apiService.getAccountData();
             userEmail = accountData.email || '';
           } catch {
-            // não crítico
+            // ACHADO 18: email não está disponível aqui (sem data.email), mas a falha
+            // não é crítica. O email será exibido vazio na UI até que o usuário recarregue.
+            console.warn('[AuthContext] getAccountData falhou na inicialização. Email pode ficar vazio na UI.');
           }
 
+          // ACHADO 17: expires_at=0 — o valor real de expiração está no cookie session_id
+          // gerenciado pelo backend. Não calcular localmente para evitar inconsistência.
           setSession({
             access_token: 'stored_in_cookie',
             token_type: 'bearer',
             expires_in: 900,
-            expires_at: Date.now() + 15 * 60 * 1000,
+            expires_at: 0,
             refresh_token: 'stored_in_cookie',
             user: {
               id: church.user_id,
@@ -111,22 +115,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiService.login(data);
       setUser(response.church);
 
-      const { role } = await apiService.getCheckAuth();
-      setCurrentRole((role as ChurchUserRole) ?? 'reader');
+      // ACHADO 06: role e email agora vêm no response de login — zero chamadas extras.
+      // Fallbacks garantidos: role→'reader', email→data.email (digitado pelo usuário).
+      setCurrentRole((response.role as ChurchUserRole) ?? 'reader');
+      const userEmail = response.email || data.email;
 
-      let userEmail = data.email;
-      try {
-        const accountData = await apiService.getAccountData();
-        userEmail = accountData.email || data.email;
-      } catch {
-        // não crítico
-      }
-
+      // ACHADO 17: expires_at fictício removido — o valor real está no cookie session_id
+      // gerenciado pelo backend. Expor um placeholder aqui causaria inconsistência em
+      // qualquer lógica que dependa deste campo para verificar expiração.
       setSession({
         access_token: 'stored_in_cookie',
         token_type: 'bearer',
         expires_in: 900,
-        expires_at: Date.now() + 15 * 60 * 1000,
+        expires_at: 0,
         refresh_token: 'stored_in_cookie',
         user: {
           id: response.church.user_id,

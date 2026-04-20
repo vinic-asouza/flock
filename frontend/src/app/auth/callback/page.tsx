@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
@@ -10,14 +10,19 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Processando confirmação...');
+  // Ref para evitar dupla execução em StrictMode/re-renders
+  const hasRun = useRef(false);
 
+  // ACHADO 12: dependency array vazia — router não é usado dentro do effect
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
     const handleAuthCallback = async () => {
       try {
-        // Ler parâmetros do fragmento da URL (após #)
-        const hash = window.location.hash.substring(1); // Remove o #
+        const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
-        
+
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const error = params.get('error');
@@ -25,31 +30,30 @@ export default function AuthCallbackPage() {
         const type = params.get('type');
         const messageParam = params.get('message');
 
-        // Caso especial: fluxo de mudança de email do Supabase
-        // Primeiro clique confirma posse do email antigo e pode vir apenas com #message e type=email_change
+        // Fluxo de mudança de email: primeiro clique confirma o email antigo
         if (!accessToken && !refreshToken && type === 'email_change' && messageParam) {
           setStatus('success');
           setMessage('Link confirmado. Verifique o link enviado para o novo email para concluir.');
           return;
         }
 
-        // Se há erro nos parâmetros
         if (error) {
           setStatus('error');
           setMessage(errorDescription || 'Erro na confirmação do email');
           return;
         }
 
-        // Se não há tokens
         if (!accessToken || !refreshToken) {
           setStatus('error');
           setMessage(messageParam || 'Token de confirmação inválido ou expirado');
           return;
         }
 
-        // Processar confirmação com o backend
+        // ACHADO 03: adicionar credentials: 'include' para que cookies Set-Cookie
+        // do backend sejam gravados corretamente em ambientes cross-origin
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/auth/callback`, {
           method: 'POST',
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -63,8 +67,14 @@ export default function AuthCallbackPage() {
 
         if (response.ok) {
           setStatus('success');
-          setMessage('Email confirmado com sucesso! Agora você pode fazer login no sistema.');
+          setMessage('Email confirmado com sucesso! Redirecionando...');
           toast.success('Email confirmado com sucesso!');
+
+          // ACHADO 11: cookies já foram setados pelo backend — redirecionar automaticamente
+          // após breve delay para o usuário ver a mensagem de sucesso
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
         } else {
           setStatus('error');
           const errorMessage = data.details || data.error || 'Erro ao confirmar email';
@@ -82,12 +92,13 @@ export default function AuthCallbackPage() {
     handleAuthCallback();
   }, [router]);
 
-  const handleRetry = () => {
+  const handleGoToLogin = () => {
     router.push('/login');
   };
 
-  const handleGoToLogin = () => {
-    router.push('/login');
+  // ACHADO 10: ação de reenvio de confirmação (direciona para login com msg de reenvio)
+  const handleResendConfirmation = () => {
+    router.push('/login?message=email_confirm_required');
   };
 
   return (
@@ -121,13 +132,16 @@ export default function AuthCallbackPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-2">
               Email Confirmado!
             </h2>
+            {/* ACHADO 11: mensagem indica redirecionamento automático */}
             <p className="text-sm text-gray-600 mb-6">{message}</p>
+            {/* R01: usuário já está autenticado após callback bem-sucedido.
+                Botão aponta para '/' — não para '/login' — para evitar redirect duplo via AuthGuard */}
             <Button
-              onClick={handleGoToLogin}
+              onClick={() => router.push('/')}
               variant="primary"
               className="w-full"
             >
-              Fazer Login
+              Ir para o Painel
             </Button>
           </div>
         )}
@@ -139,20 +153,21 @@ export default function AuthCallbackPage() {
               Erro na Confirmação
             </h2>
             <p className="text-sm text-gray-600 mb-6">{message}</p>
+            {/* ACHADO 10: dois botões com labels e ações distintas */}
             <div className="space-y-3">
               <Button
-                onClick={handleRetry}
+                onClick={handleGoToLogin}
                 variant="primary"
                 className="w-full"
               >
-                Fazer Login
+                Ir para o Login
               </Button>
               <Button
-                onClick={handleGoToLogin}
+                onClick={handleResendConfirmation}
                 variant="secondary"
                 className="w-full"
               >
-                Fazer Login
+                Reenviar confirmação
               </Button>
             </div>
           </div>
