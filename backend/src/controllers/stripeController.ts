@@ -1503,11 +1503,12 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se já está no plano gratuito
+    // ACHADO 09: retornar 200 quando plano já está ativo — comportamento idempotente.
+    // Antes retornava 400, fazendo o frontend tratar como erro de formulário.
     if (church.plan_type === '100') {
-      return res.status(400).json({
-        error: 'Plano já ativo',
-        details: 'Você já está no plano gratuito',
+      return res.json({
+        message: 'Plano gratuito já está ativo',
+        plan_type: '100',
       });
     }
 

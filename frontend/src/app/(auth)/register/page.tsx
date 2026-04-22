@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,121 +9,79 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DENOMINATIONS } from '@/utils';
+import { validateCNPJ } from '@/utils/validations';
+import { CheckCircle2, Mail } from 'lucide-react';
 
-// Estado global para erros de registro (persiste entre re-renderizações)
-let globalRegisterError: string | null = null;
-let globalRegisterErrorDetails: string | null = null;
+// ACHADO 02: removidas variáveis de módulo globais (globalRegisterError, globalRegisterErrorDetails,
+// globalFormData). Estado gerenciado exclusivamente via useState/useRef — sem vazamento entre abas.
 
-// Estado global para dados do formulário (persiste entre re-renderizações)
-let globalFormData: RegisterFormData | null = null;
-
+// ACHADO 10: adicionada validação de dígitos verificadores do CNPJ via refine()
 const registerSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string()
     .min(8, 'A senha deve ter pelo menos 8 caracteres')
     .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número'),
   confirmPassword: z.string()
-    .min(8, 'A confirmação de senha deve ter pelo menos 8 caracteres')
-    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, 'A confirmação de senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número'),
+    .min(8, 'A confirmação de senha deve ter pelo menos 8 caracteres'),
   phone: z.string().min(1, 'Telefone é obrigatório'),
   name: z.string().min(2, 'Nome da igreja deve ter pelo menos 2 caracteres'),
   denomination: z.string().min(2, 'Denominação deve ter pelo menos 2 caracteres'),
   address: z.string().min(5, 'Endereço deve ter pelo menos 5 caracteres'),
   city: z.string().min(2, 'Cidade deve ter pelo menos 2 caracteres'),
   state: z.string().length(2, 'Estado deve ter 2 caracteres'),
-  cnpj: z.string().length(14, 'CNPJ deve ter 14 dígitos').regex(/^\d+$/, 'CNPJ deve conter apenas números'),
+  cnpj: z.string()
+    .length(14, 'CNPJ deve ter 14 dígitos')
+    .regex(/^\d+$/, 'CNPJ deve conter apenas números')
+    .refine(validateCNPJ, 'CNPJ inválido — verifique os dígitos'),
   email_church: z.string().email('Email da igreja inválido').optional().or(z.literal('')),
   phone_church: z.string().optional().or(z.literal('')),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não coincidem",
-  path: ["confirmPassword"],
+  message: 'As senhas não coincidem',
+  path: ['confirmPassword'],
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 const denominations = DENOMINATIONS;
 
-// Estados brasileiros (fallback)
 const statesFallback = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
-interface State {
-  id: number;
-  sigla: string;
-  nome: string;
-}
+interface State { id: number; sigla: string; nome: string; }
+interface City { id: number; nome: string; }
 
-interface City {
-  id: number;
-  nome: string;
-}
-
-// Função para formatar CNPJ
 const formatCNPJ = (value: string): string => {
-  // Remove tudo que não é número
-  const numbers = value.replace(/\D/g, '');
-
-  // Limita a 14 dígitos
-  const limitedNumbers = numbers.slice(0, 14);
-
-  // Aplica a formatação XX.XXX.XXX/XXXX-XX
-  if (limitedNumbers.length <= 2) {
-    return limitedNumbers;
-  } else if (limitedNumbers.length <= 5) {
-    return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2)}`;
-  } else if (limitedNumbers.length <= 8) {
-    return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5)}`;
-  } else if (limitedNumbers.length <= 12) {
-    return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}/${limitedNumbers.slice(8)}`;
-  } else {
-    return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}/${limitedNumbers.slice(8, 12)}-${limitedNumbers.slice(12)}`;
-  }
+  const numbers = value.replace(/\D/g, '').slice(0, 14);
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 5) return `${numbers.slice(0, 2)}.${numbers.slice(2)}`;
+  if (numbers.length <= 8) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5)}`;
+  if (numbers.length <= 12) return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8)}`;
+  return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12)}`;
 };
 
-// Função para remover formatação do CNPJ
-const removeCNPJFormatting = (value: string): string => {
-  return value.replace(/\D/g, '');
-};
+const removeCNPJFormatting = (value: string): string => value.replace(/\D/g, '');
 
-// Função para formatar telefone
 const formatPhone = (value: string): string => {
-  // Remove tudo que não é número
-  const numbers = value.replace(/\D/g, '');
-
-  // Limita a 11 dígitos (DDD + 9 dígitos)
-  const limitedNumbers = numbers.slice(0, 11);
-
-  // Se tem 11 dígitos, assume que é celular (formato: (XX) 9XXXX-XXXX)
-  if (limitedNumbers.length === 11) {
-    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
-  }
-  // Se tem 10 dígitos, assume que é telefone fixo (formato: (XX) XXXX-XXXX)
-  else if (limitedNumbers.length === 10) {
-    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`;
-  }
-  // Para menos de 10 dígitos, aplica formatação progressiva
-  else if (limitedNumbers.length <= 2) {
-    return `(${limitedNumbers}`;
-  } else if (limitedNumbers.length <= 6) {
-    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`;
-  } else if (limitedNumbers.length <= 10) {
-    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`;
-  } else {
-    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
-  }
+  const numbers = value.replace(/\D/g, '').slice(0, 11);
+  if (numbers.length <= 2) return `(${numbers}`;
+  if (numbers.length <= 6) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  if (numbers.length === 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
 };
 
-// Função para remover formatação do telefone
-const removePhoneFormatting = (value: string): string => {
-  return value.replace(/\D/g, '');
-};
+const removePhoneFormatting = (value: string): string => value.replace(/\D/g, '');
 
 export default function RegisterPage() {
-  const [error, setError] = useState<string | null>(globalRegisterError);
-  const [errorDetails, setErrorDetails] = useState<string | null>(globalRegisterErrorDetails);
+  // ACHADO 02: estado local apenas — sem variáveis de módulo
+  const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  // ACHADO 08: estado de sucesso pós-registro
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
+
   const [states, setStates] = useState<State[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [isLoadingStates, setIsLoadingStates] = useState(true);
@@ -134,25 +92,18 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register: registerChurch, login, isOperationLoading } = useAuth();
 
-  // Ref para manter os estados durante re-renderizações
-  const errorRef = useRef<string | null>(globalRegisterError);
-  const errorDetailsRef = useRef<string | null>(globalRegisterErrorDetails);
-
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    reset,
     watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: globalFormData || undefined,
   });
 
   const selectedState = watch('state');
 
-  // Carregar estados da API do IBGE
   useEffect(() => {
     const loadStates = async () => {
       try {
@@ -162,28 +113,20 @@ export default function RegisterPage() {
           const data: State[] = await response.json();
           setStates(data);
         } else {
-          // Fallback para lista estática
           setStates(statesFallback.map((sigla, index) => ({ id: index, sigla, nome: sigla })));
         }
       } catch {
-        // Fallback para lista estática
         setStates(statesFallback.map((sigla, index) => ({ id: index, sigla, nome: sigla })));
       } finally {
         setIsLoadingStates(false);
       }
     };
-
     loadStates();
   }, []);
 
-  // Carregar cidades quando estado for selecionado
   useEffect(() => {
     const loadCities = async () => {
-      if (!selectedState) {
-        setCities([]);
-        return;
-      }
-
+      if (!selectedState) { setCities([]); return; }
       try {
         setIsLoadingCities(true);
         const state = states.find(s => s.sigla === selectedState);
@@ -200,194 +143,137 @@ export default function RegisterPage() {
         setIsLoadingCities(false);
       }
     };
-
     loadCities();
   }, [selectedState, states]);
 
-  // Restaurar dados do formulário quando o componente montar
-  useEffect(() => {
-    if (globalFormData) {
-      // Restaurar cada campo do formulário
-      Object.entries(globalFormData).forEach(([key, value]) => {
-        setValue(key as keyof RegisterFormData, value);
-        // Restaurar CNPJ formatado se existir
-        if (key === 'cnpj' && value) {
-          setCnpjDisplay(formatCNPJ(value));
-        }
-        // Restaurar telefone formatado se existir
-        if (key === 'phone' && value) {
-          setPhoneDisplay(formatPhone(value));
-        }
-        // Restaurar telefone da igreja formatado se existir
-        if (key === 'phone_church' && value) {
-          setPhoneChurchDisplay(formatPhone(value));
-        }
-      });
-    }
-  }, [setValue]);
-
-  // Limpar dados globais quando o componente desmontar
-  useEffect(() => {
-    return () => {
-      // Só limpar se não houver erro (para manter dados em caso de erro)
-      if (!globalRegisterError) {
-        globalFormData = null;
-      }
-    };
-  }, []);
-
-  // Função para lidar com mudanças no CNPJ
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatCNPJ(value);
+    const formatted = formatCNPJ(e.target.value);
     setCnpjDisplay(formatted);
-
-    // Atualizar o valor no formulário sem formatação
-    const unformatted = removeCNPJFormatting(formatted);
-    setValue('cnpj', unformatted);
+    setValue('cnpj', removeCNPJFormatting(formatted));
   };
 
-  // Função para lidar com mudanças no telefone
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatPhone(value);
+    const formatted = formatPhone(e.target.value);
     setPhoneDisplay(formatted);
-
-    // Atualizar o valor no formulário sem formatação
-    const unformatted = removePhoneFormatting(formatted);
-    setValue('phone', unformatted);
+    setValue('phone', removePhoneFormatting(formatted));
   };
 
-  // Função para lidar com mudanças no telefone da igreja
   const handlePhoneChurchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatPhone(value);
+    const formatted = formatPhone(e.target.value);
     setPhoneChurchDisplay(formatted);
-
-    // Atualizar o valor no formulário sem formatação
-    const unformatted = removePhoneFormatting(formatted);
-    setValue('phone_church', unformatted);
+    setValue('phone_church', removePhoneFormatting(formatted));
   };
 
   const onSubmit = async (data: RegisterFormData) => {
-    // Prevenir múltiplos envios
-    if (isSubmitting) {
-      return;
-    }
+    if (isSubmitting) return;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { confirmPassword, ...dataToSend } = data;
+    const cleanData = {
+      ...dataToSend,
+      cnpj: removeCNPJFormatting(dataToSend.cnpj),
+      phone: removePhoneFormatting(dataToSend.phone),
+      email_church: dataToSend.email_church || undefined,
+      phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined,
+    };
+
+    setIsSubmitting(true);
+    setError(null);
+    setErrorDetails(null);
+
+    // ACHADO 01: Passo 1 — registrar a conta. Se falhar aqui, é erro de registro real.
     try {
-      setIsSubmitting(true);
-      setError(null);
-      setErrorDetails(null);
-      // Limpar estado global
-      globalRegisterError = null;
-      globalRegisterErrorDetails = null;
-
-      // Remover confirmPassword e garantir que o CNPJ esteja sem formatação
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { confirmPassword, ...dataToSend } = data;
-      const cleanData = {
-        ...dataToSend,
-        cnpj: removeCNPJFormatting(dataToSend.cnpj),
-        phone: removePhoneFormatting(dataToSend.phone), // Garantir que o telefone esteja sem formatação
-        // Garantir que campos opcionais vazios sejam undefined
-        email_church: dataToSend.email_church || undefined,
-        phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined
-      };
-
-      // 1. Criar conta
       await registerChurch(cleanData);
-
-      // Limpar dados do formulário em caso de sucesso
-      globalFormData = null;
-      reset();
-      setCnpjDisplay('');
-      setPhoneDisplay('');
-      setPhoneChurchDisplay('');
-
-      // 2. Definir flag para evitar redirecionamento do AuthGuard para dashboard
-      sessionStorage.setItem('redirectingToCheckout', 'true');
-
-      // 3. Fazer login automático
-      await login({
-        email: cleanData.email,
-        password: cleanData.password,
-      });
-
-      // 4. Redirecionar para página de checkout para selecionar plano
-      // Usar window.location.href para garantir redirecionamento imediato
-      // e evitar que AuthGuard intercepte e redirecione para dashboard
-      window.location.href = '/checkout';
-
     } catch (err: unknown) {
       let errorMessage = 'Erro ao registrar igreja';
-      let errorDetails: string | null = null;
+      let errorDetailsValue: string | null = null;
 
       if (err instanceof Error) {
         errorMessage = err.message;
-
-        // Verificar se tem detalhes customizados
         const errorObj = err as Error & { details?: string | string[] };
         if (errorObj.details) {
-          errorDetails = typeof errorObj.details === 'string' ? errorObj.details : errorObj.details.join(', ');
+          errorDetailsValue = typeof errorObj.details === 'string' ? errorObj.details : errorObj.details.join(', ');
         }
-      } else if (typeof err === 'string') {
-        errorMessage = err;
       } else if (err && typeof err === 'object') {
-        // Verificar se tem propriedades específicas
         const errorObj = err as { message?: string; details?: string | string[] };
-        if (errorObj.message && typeof errorObj.message === 'string') {
-          errorMessage = errorObj.message;
-        }
-
+        if (errorObj.message) errorMessage = errorObj.message;
         if (errorObj.details) {
-          const details = errorObj.details;
-          if (typeof details === 'string') {
-            errorDetails = details;
-          } else if (Array.isArray(details)) {
-            errorDetails = details.join(', ');
-          }
+          errorDetailsValue = Array.isArray(errorObj.details) ? errorObj.details.join(', ') : String(errorObj.details);
         }
       }
 
-      // Verificar se é erro de CNPJ duplicado
-      const isCNPJError = errorMessage.toLowerCase().includes('cnpj') ||
-        errorMessage.toLowerCase().includes('já cadastrado') ||
-        errorMessage.toLowerCase().includes('already registered') ||
-        (errorDetails && (
-          errorDetails.toLowerCase().includes('cnpj') ||
-          errorDetails.toLowerCase().includes('já cadastrado')
-        ));
-
-      if (isCNPJError) {
-        errorMessage = 'CNPJ já cadastrado';
-        errorDetails =
-          'Este CNPJ já está cadastrado no sistema. ' +
-          'Se você já possui uma conta, faça login. ' +
-          'Se você acabou de se registrar, aguarde alguns instantes ou verifique seu email. ' +
-          'Caso contrário, entre em contato com o suporte.';
-      }
-
-      // Salvar dados do formulário para manter durante re-renderizações
-      globalFormData = data;
-
-      // Salvar no estado global para persistir durante re-renderizações
-      globalRegisterError = errorMessage;
-      globalRegisterErrorDetails = errorDetails;
-
-      // Atualizar tanto o estado quanto a ref
       setError(errorMessage);
-      setErrorDetails(errorDetails);
-      errorRef.current = errorMessage;
-      errorDetailsRef.current = errorDetails;
+      setErrorDetails(errorDetailsValue);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // ACHADO 08: Registro concluído — mostrar estado de sucesso imediatamente
+    setRegisteredEmail(cleanData.email);
+    setRegistrationSuccess(true);
+
+    // ACHADO 01: Passo 2 — tentar auto-login. Se falhar por email não confirmado,
+    // mantemos o estado de sucesso (usuário precisa confirmar o email).
+    // ACHADO 07: sessionStorage flag definida APENAS após login bem-sucedido.
+    try {
+      await login({ email: cleanData.email, password: cleanData.password });
+      sessionStorage.setItem('redirectingToCheckout', 'true');
+      window.location.href = '/checkout';
+    } catch (loginErr: unknown) {
+      const msg = loginErr instanceof Error ? loginErr.message.toLowerCase() : '';
+      const isEmailNotConfirmed = msg.includes('email não confirmado') || msg.includes('not confirmed') || msg.includes('confirm');
+      if (!isEmailNotConfirmed) {
+        console.warn('[Register] Auto-login falhou por motivo inesperado após registro:', loginErr);
+      }
+      // Em qualquer caso: mantém registrationSuccess=true para mostrar orientação ao usuário.
+      // sessionStorage NÃO é setado — nenhum redirect para checkout acontecerá.
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ACHADO 08: tela de confirmação de e-mail exibida após registro concluído
+  if (registrationSuccess) {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="flex justify-center">
+          <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+          </div>
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Cadastro concluído!</h1>
+          <p className="mt-2 text-gray-600">
+            Sua conta foi criada com sucesso.
+          </p>
+        </div>
+        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
+          <div className="flex items-start gap-3">
+            <Mail className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-blue-800">Confirme seu e-mail para continuar</p>
+              <p className="text-sm text-blue-700 mt-1">
+                Enviamos um link de confirmação para <strong>{registeredEmail}</strong>.
+                Clique no link do e-mail para ativar sua conta e acessar o sistema.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-500">
+          Após confirmar o e-mail, acesse o sistema pelo login.
+        </p>
+        <Link
+          href="/login"
+          className="inline-block w-full py-2 px-4 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors text-center"
+        >
+          Ir para o Login
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900">Registrar Igreja</h1>
         <p className="mt-2 text-gray-600">
@@ -395,8 +281,8 @@ export default function RegisterPage() {
         </p>
       </div>
 
-      {/* Formulário */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* ACHADO 12: reordenado — Email → Senha → Confirmar Senha → Telefone */}
         <Input
           label="Email"
           type="email"
@@ -404,17 +290,6 @@ export default function RegisterPage() {
           error={errors.email?.message}
           isLoading={isOperationLoading}
           {...register('email')}
-        />
-
-        <Input
-          label="Telefone"
-          type="tel"
-          placeholder="(11) 99999-9999"
-          error={errors.phone?.message}
-          isLoading={isOperationLoading}
-          {...register('phone')}
-          value={phoneDisplay}
-          onChange={handlePhoneChange}
         />
 
         <Input
@@ -435,7 +310,17 @@ export default function RegisterPage() {
           {...register('confirmPassword')}
         />
 
-        {/* Linha divisória */}
+        <Input
+          label="Telefone"
+          type="tel"
+          placeholder="(11) 99999-9999"
+          error={errors.phone?.message}
+          isLoading={isOperationLoading}
+          {...register('phone')}
+          value={phoneDisplay}
+          onChange={handlePhoneChange}
+        />
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300"></div>
@@ -504,61 +389,40 @@ export default function RegisterPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Estado
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
             <select
               className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               {...register('state')}
               disabled={isLoadingStates || isOperationLoading}
             >
-              <option value="">
-                {isLoadingStates ? 'Carregando...' : 'Selecione o estado'}
-              </option>
+              <option value="">{isLoadingStates ? 'Carregando...' : 'Selecione o estado'}</option>
               {states.map((state) => (
-                <option key={state.sigla} value={state.sigla}>
-                  {state.nome}
-                </option>
+                <option key={state.sigla} value={state.sigla}>{state.nome}</option>
               ))}
             </select>
-            {errors.state && (
-              <p className="text-sm text-red-600 mt-1">{errors.state.message}</p>
-            )}
+            {errors.state && <p className="text-sm text-red-600 mt-1">{errors.state.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Cidade
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
             <select
               className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               {...register('city')}
               disabled={!selectedState || isLoadingCities || isOperationLoading}
             >
               <option value="">
-                {!selectedState
-                  ? 'Selecione o estado primeiro'
-                  : isLoadingCities
-                    ? 'Carregando...'
-                    : 'Selecione a cidade'
-                }
+                {!selectedState ? 'Selecione o estado primeiro' : isLoadingCities ? 'Carregando...' : 'Selecione a cidade'}
               </option>
               {cities.map((city) => (
-                <option key={city.id} value={city.nome}>
-                  {city.nome}
-                </option>
+                <option key={city.id} value={city.nome}>{city.nome}</option>
               ))}
             </select>
-            {errors.city && (
-              <p className="text-sm text-red-600 mt-1">{errors.city.message}</p>
-            )}
+            {errors.city && <p className="text-sm text-red-600 mt-1">{errors.city.message}</p>}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            CNPJ
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ</label>
           <input
             type="text"
             placeholder="00.000.000/0000-00"
@@ -568,10 +432,15 @@ export default function RegisterPage() {
             maxLength={18}
             disabled={isOperationLoading}
           />
-          {errors.cnpj && (
-            <p className="text-sm text-red-600 mt-1">{errors.cnpj.message}</p>
-          )}
+          {errors.cnpj && <p className="text-sm text-red-600 mt-1">{errors.cnpj.message}</p>}
         </div>
+
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm font-medium text-red-600">{error}</p>
+            {errorDetails && <p className="text-sm text-red-500 mt-1">{errorDetails}</p>}
+          </div>
+        )}
 
         <Button
           type="submit"
@@ -583,37 +452,14 @@ export default function RegisterPage() {
         </Button>
       </form>
 
-      {/* Bloco de Erro - Posicionado após o formulário para melhor visibilidade */}
-      {(error || globalRegisterError) && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm font-medium text-red-600">
-            {error || globalRegisterError}
-          </p>
-          {(errorDetails || globalRegisterErrorDetails) && (
-            <p className="text-sm text-red-500 mt-1">
-              {errorDetails || globalRegisterErrorDetails}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Links */}
       <div className="text-center">
         <p className="text-sm text-gray-600">
           Já tem uma conta?{' '}
-          <Link
-            href="/login"
-            className="font-medium text-primary hover:text-primary/80 cursor-pointer"
-            onClick={() => {
-              globalFormData = null;
-              globalRegisterError = null;
-              globalRegisterErrorDetails = null;
-            }}
-          >
+          <Link href="/login" className="font-medium text-primary hover:text-primary/80 cursor-pointer">
             Faça login
           </Link>
         </p>
       </div>
     </div>
   );
-} 
+}

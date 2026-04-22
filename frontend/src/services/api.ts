@@ -130,6 +130,29 @@ class ApiService {
   // Gerenciamento de autenticação via cookies (gerenciado pelo servidor)
   // Os tokens agora são armazenados em httpOnly cookies, não acessíveis via JavaScript
 
+  // ========== Planos e Stripe ==========
+
+  // ACHADO 04: métodos centralizados para uso no checkout — garante interceptor de 401
+  async getPlans(): Promise<{ plans: { id: string; name: string; priceFormatted: string; description?: string; members: number }[] }> {
+    const response = await this.api.get('/plans');
+    return response.data;
+  }
+
+  async activateFreePlan(): Promise<{ message: string; plan_type: string }> {
+    const response = await this.api.post('/stripe/activate-free-plan', {});
+    return response.data;
+  }
+
+  async createCheckoutSession(plan: string): Promise<{ url: string }> {
+    const response = await this.api.post('/stripe/create-checkout-session', { plan });
+    return response.data;
+  }
+
+  async getCheckoutStatus(sessionId: string): Promise<{ confirmed: boolean }> {
+    const response = await this.api.get(`/stripe/checkout-status?session_id=${sessionId}`);
+    return response.data;
+  }
+
   // Métodos de autenticação
   async login(data: LoginData): Promise<LoginResponse> {
     const response: AxiosResponse<LoginResponse> = await this.api.post('/auth/login', data);

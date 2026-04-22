@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { getAllPlans, getPlanConfig, getPaidPlans } from '../config/plans';
+// ACHADO 14: substituído require() dinâmico dentro das funções por import estático no topo
+import { getAllPlans, getPlanConfig, getPaidPlans, PLAN_CONFIG } from '../config/plans';
 
 /**
  * Obter todos os planos disponíveis
@@ -10,9 +11,7 @@ export const getPlans = async (_req: Request, res: Response) => {
     const plans = getAllPlans();
     res.json({
       plans: plans.map(plan => ({
-        id: Object.keys(require('../config/plans').PLAN_CONFIG).find(
-          key => require('../config/plans').PLAN_CONFIG[key] === plan
-        ),
+        id: Object.keys(PLAN_CONFIG).find(key => PLAN_CONFIG[key] === plan),
         ...plan,
       })),
     });
@@ -34,9 +33,7 @@ export const getPaidPlansList = async (_req: Request, res: Response) => {
     const plans = getPaidPlans();
     res.json({
       plans: plans.map(plan => ({
-        id: Object.keys(require('../config/plans').PLAN_CONFIG).find(
-          key => require('../config/plans').PLAN_CONFIG[key] === plan
-        ),
+        id: Object.keys(PLAN_CONFIG).find(key => PLAN_CONFIG[key] === plan),
         ...plan,
       })),
     });

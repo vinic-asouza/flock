@@ -4,7 +4,10 @@ alwaysApply: false
 
 ANALISE
 
-Analise profundamente o fluxo de cadastro e login deste projeto.
+@docs/prompts/QA/qa-usability-master.mdc 
+
+Analise profundamente o fluxo de 2. Onboarding e Registro de Igreja.
+Foi levantado em: @levantamento-fluxos.md (170-248) 
 
 Quero que você valide:
 - experiência do usuário
@@ -32,6 +35,7 @@ Procure especialmente por:
 
 Quero evidências concretas, arquivos relacionados e impacto no usuário.
 
+Gere relatório em: @docs/QA/modulo-02-onboarding-register 
 Inclua no relatório, detalhamente do que o desenvolvimento deve ajustar.
 
 ---
@@ -78,7 +82,7 @@ Formato de saída:
 5. itens encerrados
 6. itens reabertos
 
-Após analise, edite o arquivo: @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao.md 
+Após analise, crie um novo arquivo em : @docs/QA/modulo-02-onboarding-register 
 
 
 ---

@@ -5,9 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Loader, CreditCard, CheckCircle2, Check } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+// ACHADO 04: removido import direto de axios — usar apiService com interceptor de 401
+import apiService from '@/services/api';
 
 interface PlanOption {
   value: string;
@@ -23,19 +22,20 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, refreshChurch } = useAuth();
+  // ACHADO 03: desestruturar isLoading do AuthContext
+  const { user, isLoading: isAuthLoading, refreshChurch } = useAuth();
   const initialPlan = searchParams.get('plan') as '100' | '200' | '500' | '800' | null;
   const [selectedPlan, setSelectedPlan] = useState<'100' | '200' | '500' | '800' | null>(
     initialPlan && ['100', '200', '500', '800'].includes(initialPlan) ? initialPlan : null
   );
   const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
 
-  // Carregar planos da API
+  // ACHADO 04: usar apiService.getPlans() — inclui interceptor de 401 automaticamente
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const response = await axios.get(`${API_URL}/plans`);
-        const plans = response.data.plans.map((plan: { id: string; name: string; priceFormatted: string; description?: string; members: number }) => ({
+        const data = await apiService.getPlans();
+        const plans = data.plans.map((plan) => ({
           value: plan.id,
           name: plan.name,
           price: plan.priceFormatted + (plan.id !== '100' ? '/mês' : ''),
@@ -44,7 +44,6 @@ export default function CheckoutPage() {
         }));
         setPlanOptions(plans);
       } catch {
-        // Fallback para planos padrão em caso de erro
         setPlanOptions([
           { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },
           { value: '200', name: 'Plano 200 Membros', price: 'R$ 29,99/mês', description: 'Para igrejas pequenas', members: 200 },
@@ -55,21 +54,22 @@ export default function CheckoutPage() {
         setIsLoadingPlans(false);
       }
     };
-
     loadPlans();
   }, []);
 
   useEffect(() => {
-    // Verificar se usuário está autenticado
-    if (!user) {
-      // Usar initialPlan da URL ou selectedPlan do estado
-      const planToRedirect = initialPlan || selectedPlan;
-      router.push('/login?redirect=/checkout' + (planToRedirect ? `?plan=${planToRedirect}` : ''));
-      return;
-    }
+    // ACHADO 03: aguardar AuthContext inicializar antes de verificar autenticação.
+    // Sem esse guard, user=null durante isAuthLoading=true causava redirect prematuro
+    // para /login mesmo quando o usuário estava autenticado.
+    if (isAuthLoading) return;
 
-    // Não definir plano padrão - usuário deve selecionar manualmente
-  }, [user, router, initialPlan, selectedPlan]);
+    if (!user) {
+      const planToRedirect = initialPlan || selectedPlan;
+      // ACHADO 11: encode correto do redirect URL — segundo '?' deve ser encodeURIComponent
+      const redirectPath = planToRedirect ? `/checkout?plan=${planToRedirect}` : '/checkout';
+      router.push(`/login?redirect=${encodeURIComponent(redirectPath)}`);
+    }
+  }, [isAuthLoading, user, router, initialPlan, selectedPlan]);
 
   const handleCheckout = async () => {
     if (!selectedPlan) {
@@ -81,45 +81,27 @@ export default function CheckoutPage() {
       setIsLoading(true);
       setError(null);
 
-      // Se for plano gratuito (100), ativar diretamente
       if (selectedPlan === '100') {
-        await axios.post(
-          `${API_URL}/stripe/activate-free-plan`,
-          {},
-          {
-            withCredentials: true,
-          }
-        );
-
-        // Atualizar dados da igreja
+        // ACHADO 04: usar apiService (inclui withCredentials + interceptor de 401)
+        // ACHADO 09: backend agora retorna 200 quando plano já está ativo (idempotente)
+        await apiService.activateFreePlan();
         await refreshChurch();
-
-        // Redirecionar para o sistema
         router.push('/');
         return;
       }
 
-      // Para planos pagos, criar sessão de checkout
-      const response = await axios.post(
-        `${API_URL}/stripe/create-checkout-session`,
-        { plan: selectedPlan },
-        {
-          withCredentials: true,
-        }
-      );
-
-      const { url } = response.data;
+      // ACHADO 04: usar apiService para criar sessão de checkout
+      const { url } = await apiService.createCheckoutSession(selectedPlan);
 
       if (!url) {
         throw new Error('URL de checkout não recebida');
       }
 
-      // Redirecionar para checkout do Stripe
       window.location.href = url;
     } catch (err: unknown) {
       let errorMessage = 'Erro ao processar sua solicitação. Tente novamente.';
       let errorDetails = '';
-      
+
       if (err && typeof err === 'object' && 'response' in err) {
         const axiosError = err as { response?: { data?: { error?: string; details?: string } } };
         if (axiosError.response?.data) {
@@ -129,17 +111,14 @@ export default function CheckoutPage() {
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
-      
-      setError(
-        errorDetails 
-          ? `${errorMessage}: ${errorDetails}`
-          : errorMessage
-      );
+
+      setError(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
       setIsLoading(false);
     }
   };
 
-  if (!user || isLoadingPlans) {
+  // ACHADO 03: exibir loading durante inicialização do AuthContext
+  if (isAuthLoading || isLoadingPlans) {
     return (
       <div className="flex items-center justify-center w-full">
         <div className="text-center">
@@ -150,6 +129,8 @@ export default function CheckoutPage() {
     );
   }
 
+  if (!user) return null;
+
   const selectedPlanData = planOptions.find(p => p.value === selectedPlan);
 
   return (
@@ -159,12 +140,8 @@ export default function CheckoutPage() {
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-3">
             <CreditCard className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">
-            Escolha seu Plano
-          </h1>
-          <p className="text-sm text-gray-600">
-            Selecione o plano ideal para sua igreja
-          </p>
+          <h1 className="text-xl font-bold text-gray-900 mb-1">Escolha seu Plano</h1>
+          <p className="text-sm text-gray-600">Selecione o plano ideal para sua igreja</p>
         </div>
 
         {error && (
@@ -173,12 +150,10 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Seletor de Planos */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {planOptions.map((plan) => {
             const isSelected = selectedPlan === plan.value;
             const isFree = plan.value === '100';
-            
             return (
               <button
                 key={plan.value}
@@ -196,19 +171,14 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 )}
-                
                 <div className="text-center">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">
-                    {plan.members}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-0.5 leading-tight">{plan.members}</h3>
                   <p className="text-xs text-gray-500 mb-2">membros</p>
                   <div className="flex flex-col items-center">
                     <span className={`text-base font-bold ${isFree ? 'text-green-600' : 'text-primary'}`}>
                       {isFree ? 'Grátis' : plan.price.split('/')[0]}
                     </span>
-                    {!isFree && (
-                      <span className="text-[10px] text-gray-500 mt-0.5">/mês</span>
-                    )}
+                    {!isFree && <span className="text-[10px] text-gray-500 mt-0.5">/mês</span>}
                   </div>
                 </div>
               </button>
@@ -216,7 +186,6 @@ export default function CheckoutPage() {
           })}
         </div>
 
-        {/* Resumo do Plano Selecionado */}
         {selectedPlanData && (
           <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
@@ -247,7 +216,6 @@ export default function CheckoutPage() {
           </div>
         )}
 
-        {/* Botão de Ação */}
         <Button
           onClick={handleCheckout}
           disabled={isLoading || !selectedPlan}
