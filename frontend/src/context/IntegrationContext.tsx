@@ -1,7 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
-import apiService from '@/services/api';
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember, IntegrationFilters } from '@/types';
 
 export interface IntegrationPaginationInfo {
@@ -46,6 +46,8 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentFilters, setCurrentFilters] = useState<IntegrationFilters>(defaultFilters);
+  // Contador monotônico para ignorar respostas de requisições desatualizadas
+  const requestIdRef = useRef(0);
 
   const mapFiltersToParams = (filters: IntegrationFilters) => {
     const params: Record<string, string | undefined> = {
@@ -61,6 +63,8 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
   };
 
   const loadIntegrationMembers = useCallback(async (filters: IntegrationFilters, page: number) => {
+    const reqId = ++requestIdRef.current;
+
     setLoading(true);
     setError(null);
     setCurrentFilters(filters);
@@ -73,13 +77,19 @@ export function IntegrationProvider({ children }: { children: ReactNode }) {
         limit: 10,
       });
 
+      // Descartar resposta se uma requisição mais recente já foi disparada
+      if (reqId !== requestIdRef.current) return;
+
       setIntegrationMembers(response.data);
       setPagination(response.pagination);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar integrantes';
+      if (reqId !== requestIdRef.current) return;
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      if (reqId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

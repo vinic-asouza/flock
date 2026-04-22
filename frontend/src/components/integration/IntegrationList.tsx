@@ -15,6 +15,7 @@ interface IntegrationListProps {
   onView: (member: IntegrationMember) => void;
   onPageChange: (page: number) => void;
   onExport: () => void;
+  onRetry?: () => void;
   isExporting?: boolean;
   filters?: IntegrationFilters;
   currentPage?: number;
@@ -28,6 +29,7 @@ export function IntegrationList({
   onView,
   onPageChange,
   onExport,
+  onRetry,
   isExporting = false,
   filters,
   currentPage
@@ -61,7 +63,7 @@ export function IntegrationList({
         <p className="text-lg font-medium text-gray-900 mb-2">Erro ao carregar</p>
         <p className="text-sm text-gray-500 mb-4">{error}</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => onRetry ? onRetry() : window.location.reload()}
           className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
         >
           Tentar novamente

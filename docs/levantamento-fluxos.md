@@ -83,7 +83,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 1 — Autenticação e Sessão
+### ✅ Módulo 1 — Autenticação e Sessão
 
 **Objetivo:** Controlar acesso ao sistema, garantir identidade do usuário, isolar o tenant correto e manter a sessão válida.
 
@@ -167,7 +167,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 2 — Onboarding e Registro de Igreja
+### ✅ Módulo 2 — Onboarding e Registro de Igreja
 
 **Objetivo:** Criar um novo tenant (church) com seu owner, vincular ao plano escolhido, confirmar e-mail e dar acesso ao sistema.
 
@@ -247,7 +247,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 3 — Gestão de Membros
+### ✅ Módulo 3 — Gestão de Membros
 
 **Objetivo:** Permitir o gerenciamento completo da membresia: criação, edição, exclusão, visualização, importação em lote, exportação e autocadastro público.
 

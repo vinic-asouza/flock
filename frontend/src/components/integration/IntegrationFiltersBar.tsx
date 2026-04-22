@@ -13,16 +13,18 @@ interface IntegrationFiltersBarProps {
   filtersError?: string | null;
 }
 
-const statusLabels: Record<Exclude<IntegrationFilters['status'], 'descartado'>, string> = {
+const statusLabels: Record<NonNullable<IntegrationFilters['status']>, string> = {
   todos: 'Todos',
   em_progresso: 'Em progresso',
-  integrado: 'Integrado'
+  integrado: 'Integrado',
+  descartado: 'Descartado'
 };
 
-const statusOptions: Array<Exclude<IntegrationFilters['status'], 'descartado'>> = [
+const statusOptions: Array<NonNullable<IntegrationFilters['status']>> = [
   'todos',
   'em_progresso',
-  'integrado'
+  'integrado',
+  'descartado'
 ];
 
 export function IntegrationFiltersBar({
@@ -85,7 +87,7 @@ export function IntegrationFiltersBar({
     setOpenSelect(prev => (prev === key ? null : key));
   };
 
-  const currentStatus = filters.status === 'descartado' ? 'todos' : filters.status;
+  const currentStatus = filters.status ?? 'todos';
 
   return (
     <div ref={containerRef} className="flex flex-nowrap gap-2 items-end overflow-visible">

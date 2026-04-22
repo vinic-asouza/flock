@@ -38,6 +38,14 @@ export const validateIntegrationLink = async (
       });
     }
 
+    // Buscar congregações da igreja para o formulário público (sem autenticação)
+    const { data: congregations } = await supabase
+      .from('congregations')
+      .select('id, name')
+      .eq('church_id', churchId)
+      .eq('active', true)
+      .order('name');
+
     res.json({
       valid: true,
       church_name: church.name,
@@ -46,7 +54,8 @@ export const validateIntegrationLink = async (
       current_uses: integrationLink.current_uses,
       remaining_uses: integrationLink.max_uses 
         ? integrationLink.max_uses - integrationLink.current_uses 
-        : null
+        : null,
+      congregations: congregations || []
     });
 
   } catch (error) {
@@ -129,17 +138,25 @@ export const createIntegrationMemberViaPublicLink = async (
       });
     }
 
-    // Incrementar contador de usos do link
-    const { error: updateError } = await supabase
+    // Incrementar contador com condição no valor atual (proteção contra race condition)
+    // { count: 'exact' } é necessário para que updatedCount seja preenchido pelo PostgREST
+    const { error: updateError, count: updatedCount } = await supabase
       .from('public_integration_links')
-      .update({ 
-        current_uses: integrationLink.current_uses + 1 
-      })
-      .eq('id', integrationLink.id);
+      .update({ current_uses: integrationLink.current_uses + 1 }, { count: 'exact' })
+      .eq('id', integrationLink.id)
+      .eq('current_uses', integrationLink.current_uses);
 
-    if (updateError) {
-      logError('Erro ao atualizar contador de usos:', updateError);
-      // Não falhar a requisição se apenas o contador falhar
+    if (updateError || updatedCount === 0) {
+      // Outro request já incrementou o contador — desfazer o cadastro
+      await supabase.from('integration_members').delete().eq('id', integrationMember.id);
+      return res.status(409).json({
+        error: 'Limite de usos atingido',
+        details: 'Este link atingiu o número máximo de usos. Seu cadastro não foi registrado.'
+      });
+    }
+    if (updatedCount === null) {
+      // Com { count: 'exact' }, count null indica resposta inesperada do PostgREST — logar para monitoramento
+      logError('Contador de usos retornou null após update com count:exact', { linkId: integrationLink.id });
     }
 
     // Buscar informações da igreja para resposta

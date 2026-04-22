@@ -111,7 +111,11 @@ export const listIntegrationMembers = async (req: AuthRequest, res: Response) =>
     const status = (req.query.status as string) || '';
     const expected_congregation_id = (req.query.expected_congregation_id as string) || '';
     const mentor_id = (req.query.mentor_id as string) || '';
-    const sort_by = (req.query.sort_by as string) || 'created_at';
+    const ALLOWED_SORT_FIELDS = ['created_at', 'updated_at', 'name', 'birth', 'status'] as const;
+    const requestedSort = (req.query.sort_by as string) || 'created_at';
+    const sort_by = ALLOWED_SORT_FIELDS.includes(requestedSort as typeof ALLOWED_SORT_FIELDS[number])
+      ? requestedSort
+      : 'created_at';
     const sort_order = (req.query.sort_order as 'asc' | 'desc') || 'desc';
 
     if (page < 1 || limit < 1 || limit > 100) {
@@ -448,12 +452,19 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
     // Normalizar datas antes de atualizar o integrante (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(value as unknown as Record<string, unknown>);
 
-    const updatePayload: Partial<IntegrationMember> = {
-      ...normalizedData,
-      expected_congregation_id: value.expected_congregation_id || null,
-      mentor_id: value.mentor_id || null,
-      notes: value.notes ?? null
-    };
+    // Campos anuláveis só são incluídos no payload quando explicitamente presentes no body,
+    // evitando que um PUT parcial (ex.: só status) apague mentor, congregação ou notas.
+    const bodyKeys = Object.keys(req.body);
+    const updatePayload: Partial<IntegrationMember> = { ...normalizedData };
+    if (bodyKeys.includes('expected_congregation_id')) {
+      updatePayload.expected_congregation_id = value.expected_congregation_id || null;
+    }
+    if (bodyKeys.includes('mentor_id')) {
+      updatePayload.mentor_id = value.mentor_id || null;
+    }
+    if (bodyKeys.includes('notes')) {
+      updatePayload.notes = value.notes ?? null;
+    }
 
     const { data, error } = await supabase
       .from('integration_members')

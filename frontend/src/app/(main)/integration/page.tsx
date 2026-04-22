@@ -138,6 +138,21 @@ function IntegrationPageContent() {
     try {
       setExportingList(true);
       const blob = await apiService.exportIntegrationList(filters, selectedFields);
+
+      // Verificar se a resposta é um JSON de erro disfarçado de blob
+      if (blob.type === 'application/json') {
+        const text = await blob.text();
+        let errorMsg = 'Erro ao gerar PDF. Tente novamente.';
+        try {
+          const json = JSON.parse(text) as { error?: string; details?: string };
+          const detail = Array.isArray(json.details) ? (json.details as string[]).join('; ') : json.details;
+          errorMsg = detail ? `${json.error}: ${detail}` : (json.error || errorMsg);
+        } catch {
+          // parse falhou — manter mensagem genérica
+        }
+        throw new Error(errorMsg);
+      }
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -148,7 +163,7 @@ function IntegrationPageContent() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar lista. Tente novamente.';
-      alert(errorMessage);
+      throw new Error(errorMessage);
     } finally {
       setExportingList(false);
     }
@@ -239,6 +254,7 @@ function IntegrationPageContent() {
         }}
         onPageChange={handlePageChange}
         onExport={() => setExportModalOpen(true)}
+        onRetry={() => loadIntegrationMembers(filters, currentPage)}
         isExporting={exportingList}
         filters={filters}
         currentPage={currentPage}

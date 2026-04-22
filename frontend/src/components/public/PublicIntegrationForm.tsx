@@ -7,24 +7,37 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
-import { useFiltersData } from '@/hooks/useFiltersData';
 import {
   IntegrationMemberPayload,
   IntegrationGender,
   IntegrationMaritalStatus
 } from '@/types';
 
+const phoneRefine = (val: string | undefined) => {
+  if (!val || val.trim() === '') return true;
+  const digits = val.replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 11;
+};
+const phoneMessage = 'Telefone inválido (10 ou 11 dígitos)';
+
 // Schema de validação (sem expected_admission_type, mentor_id, notes)
 const integrationSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  birth: z.string().optional(),
+  birth: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val || val.trim() === '') return true;
+      const date = new Date(val);
+      return !isNaN(date.getTime()) && date <= new Date();
+    }, 'Data de nascimento inválida ou futura'),
   gender: z.union([z.literal(''), z.enum(['masculino', 'feminino'])]).optional(),
   marital_status: z.union([
     z.literal(''),
     z.enum(['solteiro', 'casado', 'divorciado', 'viuvo', 'outro'])
   ]).optional(),
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
+  phone: z.string().optional().refine(phoneRefine, phoneMessage),
+  whatsapp: z.string().optional().refine(phoneRefine, phoneMessage),
   expected_congregation_id: z.union([z.literal(''), z.string().uuid()]).optional(),
 });
 
@@ -35,6 +48,7 @@ interface PublicIntegrationFormProps {
   onCancel?: () => void;
   isLoading?: boolean;
   churchName?: string;
+  congregations?: { id: string; name: string }[];
 }
 
 const genderOptions: { value: '' | IntegrationGender; label: string }[] = [
@@ -65,9 +79,9 @@ const formatPhone = (value: string): string => {
 export function PublicIntegrationForm({ 
   onSubmit, 
   onCancel, 
-  isLoading = false
+  isLoading = false,
+  congregations = []
 }: PublicIntegrationFormProps) {
-  const { congregations, loading: loadingFilters } = useFiltersData();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
@@ -207,8 +221,7 @@ export function PublicIntegrationForm({
           onChange={(value) => setValue('expected_congregation_id', value as IntegrationFormData['expected_congregation_id'])}
           label="Congregação prevista"
           placeholder="Selecione"
-          disabled={isLoading || loadingFilters}
-          helperText={loadingFilters ? 'Carregando congregações...' : undefined}
+          disabled={isLoading}
         />
       </div>
 

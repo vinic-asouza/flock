@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { MemberForm } from '@/components/members/MemberForm';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember } from '@/types';
 
 interface ConvertIntegrationModalProps {
@@ -60,7 +60,6 @@ export function ConvertIntegrationModal({
 }: ConvertIntegrationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasSubmittedOnce, setHasSubmittedOnce] = useState(false);
 
   const initialMemberData = useMemo(() => {
     if (!integrationMember) return null;
@@ -108,13 +107,12 @@ export function ConvertIntegrationModal({
     try {
       setIsLoading(true);
       setError(null);
-      setHasSubmittedOnce(true);
 
       const result = await apiService.convertIntegrationMember(integrationMember.id, formData);
       onSuccess(result);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao converter integrante em membro';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
       // Não resetar o formulário - os dados devem permanecer
     } finally {
@@ -125,7 +123,6 @@ export function ConvertIntegrationModal({
   const handleClose = () => {
     if (!isLoading) {
       setError(null);
-      setHasSubmittedOnce(false);
       onClose();
     }
   };
@@ -158,7 +155,7 @@ export function ConvertIntegrationModal({
           <MemberForm
             key={integrationMember?.id || 'new'}
             mode="create"
-            member={hasSubmittedOnce ? undefined : initialMemberData}
+            member={initialMemberData}
             onSubmit={handleSubmit}
             onCancel={handleClose}
             isLoading={isLoading}

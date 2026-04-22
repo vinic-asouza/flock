@@ -7,7 +7,7 @@ import { Loader, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import { IntegrationMemberPayload } from '@/types';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 
 export default function PublicIntegrationPage() {
   const params = useParams();
@@ -25,6 +25,7 @@ export default function PublicIntegrationPage() {
     max_uses?: number | null;
     current_uses: number;
     remaining_uses?: number | null;
+    congregations?: { id: string; name: string }[];
   } | null>(null);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function PublicIntegrationPage() {
         setIsValid(true);
         setLinkInfo(response);
       } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Link inválido ou expirado';
+        const errorMessage = formatApiError(err);
         setError(errorMessage);
         setErrorType('link');
         setIsValid(false);
@@ -63,7 +64,7 @@ export default function PublicIntegrationPage() {
       
       setSuccess(true);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar cadastro';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
       setErrorType('submission');
       throw err;
@@ -243,6 +244,7 @@ export default function PublicIntegrationPage() {
             onSubmit={handleSubmit}
             isLoading={isSubmitting}
             churchName={linkInfo?.church_name}
+            congregations={linkInfo?.congregations ?? []}
           />
           
           {error && errorType === 'submission' && (

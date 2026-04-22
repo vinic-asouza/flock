@@ -61,7 +61,7 @@ class ApiService {
     // Interceptor para tratamento de erros
     this.api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
         // Não redirecionar para login se for o endpoint de verificação de auth
         const url: string = error.config?.url || '';
         const isCheckAuthEndpoint = url.includes('/refresh/check');
@@ -90,12 +90,23 @@ class ApiService {
 
         // Capturar erros específicos da API
         if (error.response?.data) {
-          const responseData = error.response.data;
+          let responseData = error.response.data;
           let errorMessage = 'Erro desconhecido';
           let errorDetails: string | string[] | undefined;
 
+          // Quando responseType é 'blob' (ex.: exportação PDF), erros HTTP chegam como Blob.
+          // Precisamos ler o Blob como texto para extrair o JSON de erro do backend.
+          if (responseData instanceof Blob && responseData.type === 'application/json') {
+            try {
+              const text = await responseData.text();
+              responseData = JSON.parse(text);
+            } catch {
+              // Blob não é JSON válido — manter mensagem genérica
+            }
+          }
+
           // Verificar diferentes formatos de erro
-          if (typeof responseData === 'object') {
+          if (typeof responseData === 'object' && !(responseData instanceof Blob)) {
             if ('error' in responseData) {
               errorMessage = responseData.error;
             } else if ('message' in responseData) {
@@ -1030,3 +1041,20 @@ class ApiService {
 // Instância singleton
 export const apiService = new ApiService();
 export default apiService;
+
+/**
+ * Formata um erro da API exibindo tanto a mensagem principal quanto os detalhes de validação (Joi).
+ * Use nos catch dos modais e páginas para garantir feedback completo ao usuário.
+ */
+export function formatApiError(err: unknown): string {
+  if (!(err instanceof Error)) {
+    return 'Ocorreu um erro inesperado.';
+  }
+  const enhanced = err as Error & { details?: string | string[] };
+  const details = enhanced.details;
+  if (details) {
+    const detailsText = Array.isArray(details) ? details.join('; ') : details;
+    return `${err.message}: ${detailsText}`;
+  }
+  return err.message;
+}

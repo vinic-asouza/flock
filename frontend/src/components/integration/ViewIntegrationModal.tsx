@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Loader, MessageCircle, User, Clipboard, Info, Download, Loader2, Trash2, UserPlus, XCircle } from 'lucide-react';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember } from '@/types';
 import { DeleteIntegrationModal } from './DeleteIntegrationModal';
 import { formatMemberName } from '@/utils/formatMemberName';
@@ -77,7 +77,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
       const data = await apiService.getIntegrationMember(integrationMemberId!);
       setMember(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do integrante';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -106,7 +106,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar PDF. Tente novamente.';
+      const errorMessage = formatApiError(err);
       alert(errorMessage);
     } finally {
       setExporting(false);
@@ -138,7 +138,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
       setDiscarding(true);
       setError(null);
       await apiService.updateIntegrationMember(integrationMemberId, {
-        ...member!,
+        name: member!.name,
         status: 'descartado'
       });
       if (onDiscard) {
@@ -146,7 +146,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
       }
       handleClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao descartar integrante';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
       setDiscarding(false);

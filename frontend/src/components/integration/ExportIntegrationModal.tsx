@@ -44,6 +44,7 @@ const CATEGORIES: Record<FieldOption['category'], string> = {
 export function ExportIntegrationModal({ isOpen, onClose, onExport }: ExportIntegrationModalProps) {
   const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'status', 'expected_congregation']);
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -63,16 +64,18 @@ export function ExportIntegrationModal({ isOpen, onClose, onExport }: ExportInte
 
   const handleExport = async () => {
     if (selectedFields.length === 0) {
-      alert('Selecione pelo menos um campo para exportar');
+      setExportError('Selecione pelo menos um campo para exportar.');
       return;
     }
 
     try {
       setExporting(true);
+      setExportError(null);
       await onExport(selectedFields);
       onClose();
-    } catch {
-      // Erro já tratado pelo toast
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erro ao exportar lista. Tente novamente.';
+      setExportError(msg);
     } finally {
       setExporting(false);
     }
@@ -152,7 +155,11 @@ export function ExportIntegrationModal({ isOpen, onClose, onExport }: ExportInte
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex flex-col gap-2 p-6 border-t border-gray-200 bg-gray-50">
+          {exportError && (
+            <p className="text-sm text-red-600 text-right">{exportError}</p>
+          )}
+          <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" onClick={onClose} disabled={exporting}>
             Cancelar
           </Button>
@@ -169,6 +176,7 @@ export function ExportIntegrationModal({ isOpen, onClose, onExport }: ExportInte
               </>
             )}
           </Button>
+          </div>
         </div>
       </div>
     </div>

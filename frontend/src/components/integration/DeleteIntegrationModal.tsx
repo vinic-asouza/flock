@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 
 interface DeleteIntegrationModalProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ export function DeleteIntegrationModal({
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : errorMessage;
+      const errorMsg = formatApiError(err);
       setError(errorMsg);
     } finally {
       setIsLoading(false);

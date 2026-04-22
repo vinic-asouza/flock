@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { IntegrationForm } from './IntegrationForm';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember, IntegrationMemberPayload } from '@/types';
 
 interface CreateIntegrationModalProps {
@@ -25,7 +25,7 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
       onSuccess(response);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao cadastrar integrante';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
