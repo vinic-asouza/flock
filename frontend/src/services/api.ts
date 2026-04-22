@@ -645,6 +645,12 @@ class ApiService {
     return response.data;
   }
 
+  // ACHADO 05: endpoint atômico para alterar apenas status active — evita GET+PUT race condition
+  async setMemberStatus(id: string, active: boolean): Promise<{ message: string; member: { id: string; name: string; active: boolean } }> {
+    const response = await this.api.patch(`/members/${id}/status`, { active });
+    return response.data;
+  }
+
   // Buscar membro por ID
   async getMember(id: string) {
     const response = await this.api.get(`/members/${id}`);

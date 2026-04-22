@@ -195,9 +195,22 @@ const memberSchema = Joi.object({
     .optional()
     .allow(null, ''),
 
+  // ACHADO 04: enum de valores aceitos para admission — alinhado com o frontend <Select>
   admission: Joi.string()
+    .valid(
+      'Batismo',
+      'Batismo Infantil',
+      'Transferencia',
+      'Reconciliação',
+      'Profissão de fé',
+      'Apresentação (sem batismo)',
+      'Apresentação (Criança)',
+      'Batismo não professo (Criança)',
+      'Outro'
+    )
     .required()
     .messages({
+      'any.only': 'Tipo de recebimento inválido. Valores aceitos: Batismo, Batismo Infantil, Transferencia, Reconciliação, Profissão de fé, Apresentação (sem batismo), Apresentação (Criança), Batismo não professo (Criança), Outro',
       'string.empty': 'Tipo de recebimento é obrigatório',
       'any.required': 'Tipo de recebimento é obrigatório'
     }),

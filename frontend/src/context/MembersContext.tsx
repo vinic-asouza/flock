@@ -112,9 +112,11 @@ export function MembersProvider({ children }: { children: ReactNode }) {
     admissionDateFrom: '',
     admissionDateTo: '',
   });
+  // ACHADO 10: alinhado com o initialSorting da página (created_at desc) para evitar
+  // divergência de estado se syncWithServer() disparar antes de loadMembers()
   const [currentSorting, setCurrentSorting] = useState<{ sort_by: string; sort_order: 'asc' | 'desc' }>({
-    sort_by: 'name',
-    sort_order: 'asc'
+    sort_by: 'created_at',
+    sort_order: 'desc'
   });
 
   // Função para carregar membros do servidor

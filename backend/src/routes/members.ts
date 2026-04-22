@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers, getMemberReports, getBirthdaysCount, getBirthdaysList } from '../controllers/memberController';
+import { listMembers, getMember, createMember, updateMember, deleteMember, createBatchMembers, getMemberReports, getBirthdaysCount, getBirthdaysList, setMemberStatus } from '../controllers/memberController';
 import { validateImport, importMembersFromCSV } from '../controllers/memberImportController';
 import authMiddleware from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
@@ -53,6 +53,9 @@ router.post('/batch', requireRole('editor'), createBatchMembers);
 
 // Atualizar um membro
 router.put('/:id', requireRole('editor'), updateMember);
+
+// ACHADO 05: endpoint atômico para alterar apenas status active — evita race condition do GET+PUT
+router.patch('/:id/status', requireRole('editor'), setMemberStatus);
 
 // Remover um membro (soft delete)
 router.delete('/:id', requireRole('editor'), deleteMember);

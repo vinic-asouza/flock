@@ -53,8 +53,10 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     const age_from = req.query.age_from ? parseInt(req.query.age_from as string) : undefined;
     const age_to = req.query.age_to ? parseInt(req.query.age_to as string) : undefined;
 
-    // Ordenação
-    const sort_by = req.query.sort_by as string || 'name';
+    // ACHADO 07: whitelist de campos para sort_by — evita acesso indireto a colunas sensíveis
+    const ALLOWED_SORT_FIELDS = ['name', 'birth', 'created_at', 'updated_at', 'admission_date', 'city', 'state'];
+    const sort_by_raw = req.query.sort_by as string || 'name';
+    const sort_by = ALLOWED_SORT_FIELDS.includes(sort_by_raw) ? sort_by_raw : 'name';
     const sort_order = req.query.sort_order as 'asc' | 'desc' || 'asc';
 
     // Validações
@@ -204,38 +206,70 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     // Aplica ordenação
     query = query.order(sort_by, { ascending: sort_order === 'asc' });
 
-    // Aplica paginação
-    const { data: members, error: membersError, count } = await query
-      .range(offset, offset + limit - 1);
+    // ACHADO 01: quando há filtro de faixa etária, a idade é calculada a partir de 'birth'
+    // que não é uma coluna filterable no banco. A solução segura é buscar todos os membros
+    // que passam nos demais filtros, aplicar o filtro de idade em memória e depois paginar.
+    // Para volumes moderados (até alguns milhares), esta abordagem é aceitável.
+    const hasAgeFilter = age_from !== undefined || age_to !== undefined;
 
-    if (membersError) {
-      logError('Erro ao buscar membros:', membersError);
-      return res.status(500).json({
-        error: 'Erro ao buscar membros',
-        details: membersError.message
-      });
-    }
+    // Função auxiliar de cálculo de idade (timezone-safe: parse manual de YYYY-MM-DD)
+    const calcAge = (birth: string): number | null => {
+      if (!birth) return null;
+      const parts = birth.split('T')[0].split('-').map(Number);
+      if (parts.length < 3) return null;
+      const [bYear, bMonth, bDay] = parts;
+      const today = new Date();
+      let age = today.getFullYear() - bYear;
+      if (today.getMonth() + 1 < bMonth || (today.getMonth() + 1 === bMonth && today.getDate() < bDay)) {
+        age--;
+      }
+      return age >= 0 ? age : null;
+    };
 
-    // Filtra por faixa etária se necessário (após buscar os dados)
-    let filteredMembers = members;
-    if (age_from !== undefined || age_to !== undefined) {
-      filteredMembers = members.filter(member => {
+    let filteredMembers: typeof members;
+    let actualCount: number;
+
+    if (hasAgeFilter) {
+      // Buscar TODOS os membros que passam nos filtros normais (sem paginação)
+      const { data: allMembers, error: allMembersError } = await query;
+
+      if (allMembersError) {
+        logError('Erro ao buscar membros (age filter):', allMembersError);
+        return res.status(500).json({
+          error: 'Erro ao buscar membros',
+          details: allMembersError.message
+        });
+      }
+
+      // Aplica filtro de idade em memória sobre o universo completo
+      const ageFiltered = (allMembers || []).filter(member => {
         if (!member.birth) return false;
-        
-        const birthDate = new Date(member.birth);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        
-        const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) 
-          ? age - 1 
-          : age;
-
-        if (age_from !== undefined && actualAge < age_from) return false;
-        if (age_to !== undefined && actualAge > age_to) return false;
-        
+        const age = calcAge(member.birth);
+        if (age === null) return false;
+        if (age_from !== undefined && age < age_from) return false;
+        if (age_to !== undefined && age > age_to) return false;
         return true;
       });
+
+      // Paginação manual sobre o resultado filtrado
+      actualCount = ageFiltered.length;
+      filteredMembers = ageFiltered.slice(offset, offset + limit);
+
+    } else {
+      // Caminho normal: paginação no banco
+      const { data: members, error: membersError, count } = await query
+        .range(offset, offset + limit - 1);
+
+      if (membersError) {
+        logError('Erro ao buscar membros:', membersError);
+        return res.status(500).json({
+          error: 'Erro ao buscar membros',
+          details: membersError.message
+        });
+      }
+
+      filteredMembers = members || [];
+      actualCount = count || 0;
     }
 
     // Buscar grupos para todos os membros
@@ -282,8 +316,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       congregations: undefined // Remove o campo congregations da resposta
     }));
 
-    // Calcula informações de paginação (ajustado para filtros aplicados)
-    const actualCount = age_from !== undefined || age_to !== undefined ? filteredMembers.length : (count || 0);
+    // Paginação calculada sobre o actualCount já determinado acima
     const totalPages = Math.ceil(actualCount / limit);
     const hasNextPage = page < totalPages;
     const hasPrevPage = page > 1;
@@ -615,6 +648,34 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       changesAfter: { ...member, groups: groupIds }
     });
 
+    // ACHADO 09: retornar membro completo com grupos e congregação no response do create,
+    // pois o frontend faz cast direto para Member e espera esses campos no update otimístico.
+    const { data: fullMember } = await supabase
+      .from('members')
+      .select(`
+        *,
+        congregations (id, name, address, city, state, leader, phone),
+        member_groups (
+          groups (id, name, type, status, congregation_id, congregations (id, name))
+        )
+      `)
+      .eq('id', member.id)
+      .single();
+
+    if (fullMember) {
+      const memberWithGroups = {
+        ...fullMember,
+        congregation: fullMember.congregations,
+        groups: (fullMember.member_groups || [])
+          .map((mg: any) => mg.groups)
+          .filter(Boolean),
+        congregations: undefined,
+        member_groups: undefined,
+      };
+      return res.status(201).json(memberWithGroups);
+    }
+
+    // Fallback: retornar membro simples se o join falhar por algum motivo
     res.status(201).json(member);
 
   } catch (error) {
@@ -1887,4 +1948,114 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
       details: error instanceof Error ? error.message : 'Erro desconhecido'
     });
   }
-}; 
+};
+
+/**
+ * ACHADO 05: Altera apenas o status `active` de um membro de forma atômica.
+ * Substitui o padrão GET-then-PUT que gerava race condition ao copiar todos os campos.
+ *
+ * PATCH /api/members/:id/status
+ * Body: { active: boolean }
+ */
+export const setMemberStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autorizado', details: 'Usuário não está autenticado' });
+    }
+
+    const { id } = req.params;
+    const churchId = req.church!.churchId;
+
+    if (typeof req.body.active !== 'boolean') {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: 'O campo "active" é obrigatório e deve ser um booleano'
+      });
+    }
+
+    const { active } = req.body as { active: boolean };
+
+    // Verificar se o membro pertence a esta igreja
+    const { data: existing, error: checkError } = await supabase
+      .from('members')
+      .select('id, name, active')
+      .eq('id', id)
+      .eq('church_id', churchId)
+      .single();
+
+    if (checkError || !existing) {
+      return res.status(404).json({
+        error: 'Membro não encontrado',
+        details: 'Não foi possível encontrar o membro solicitado'
+      });
+    }
+
+    // Atualização atômica — altera APENAS o campo active
+    const { data: updated, error: updateError } = await supabase
+      .from('members')
+      .update({ active })
+      .eq('id', id)
+      .eq('church_id', churchId)
+      .select('id, name, active')
+      .single();
+
+    if (updateError || !updated) {
+      logError('Erro ao atualizar status do membro:', updateError);
+      return res.status(500).json({
+        error: 'Erro ao atualizar status do membro',
+        details: updateError?.message
+      });
+    }
+
+    // R01: replicar o mesmo cleanup de calendário que existia no PUT /members/:id
+    // Se o membro foi inativado (era ativo e agora é false), remover de eventos futuros
+    if (active === false && existing.active === true) {
+      const now = new Date().toISOString();
+      const { data: futureParticipations, error: participationsError } = await supabase
+        .from('calendar_participants')
+        .select(`
+          id,
+          calendar_item_id,
+          calendar_items!inner (
+            start_date
+          )
+        `)
+        .eq('member_id', id)
+        .gte('calendar_items.start_date', now);
+
+      if (participationsError) {
+        logError('Erro ao buscar participações futuras do membro desativado:', participationsError);
+      } else if (futureParticipations && futureParticipations.length > 0) {
+        const participationIds = futureParticipations.map(p => p.id);
+        const { error: removeError } = await supabase
+          .from('calendar_participants')
+          .delete()
+          .in('id', participationIds);
+
+        if (removeError) {
+          logError('Erro ao remover participações futuras do membro desativado:', removeError);
+        }
+      }
+    }
+
+    await logAudit(req, {
+      entity: 'member',
+      entityId: id,
+      action: 'update',
+      changesBefore: { active: existing.active },
+      changesAfter: { active }
+    });
+
+    res.json({
+      message: `Membro ${active ? 'reativado' : 'desativado'} com sucesso`,
+      member: updated
+    });
+
+  } catch (error) {
+    logError('Erro ao alterar status do membro:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};

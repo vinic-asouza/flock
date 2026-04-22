@@ -234,18 +234,22 @@ const formatDateFromISO = (value: string | null | undefined): string => {
 
 // formatDateToISO agora é importado de @/utils
 
-// Função para calcular idade
+// ACHADO 12: parse manual de YYYY-MM-DD para evitar off-by-one em fusos UTC- no dia do aniversário.
+// new Date('YYYY-MM-DD') interpreta como UTC midnight → em UTC-3 vira o dia anterior.
 const calcularIdade = (birth: string): number | null => {
   if (!birth) return null;
-  const birthDate = new Date(birth);
-  if (isNaN(birthDate.getTime())) return null;
+  const datePart = birth.split('T')[0]; // suporte a strings ISO completas
+  const parts = datePart.split('-').map(Number);
+  if (parts.length < 3) return null;
+  const [bYear, bMonth, bDay] = parts;
+  if (isNaN(bYear) || isNaN(bMonth) || isNaN(bDay)) return null;
   const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+  let age = today.getFullYear() - bYear;
+  const monthDiff = today.getMonth() + 1 - bMonth;
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < bDay)) {
     age--;
   }
-  return age;
+  return age >= 0 ? age : null;
 };
 
 export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode, error }: MemberFormProps) {
@@ -513,19 +517,19 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       try {
         const cepData = await fetchCEPData(cleanCEP);
         if (cepData) {
-          // Preencher campos automaticamente
-          if (cepData.logradouro) {
+          // ACHADO 11: preencher apenas campos que estiverem vazios — não sobrescrever
+          // seleções manuais do usuário (ex.: usuário escolheu Estado/Cidade antes de digitar CEP)
+          if (cepData.logradouro && !watch('address')) {
             setValue('address', cepData.logradouro);
           }
-          if (cepData.bairro) {
+          if (cepData.bairro && !watch('neighborhood')) {
             setValue('neighborhood', cepData.bairro);
           }
-          if (cepData.localidade) {
+          if (cepData.localidade && !watch('city')) {
             setValue('city', cepData.localidade);
           }
-          if (cepData.uf) {
+          if (cepData.uf && !watch('state')) {
             setValue('state', cepData.uf);
-            // Buscar cidades do estado
             const state = states.find(s => s.sigla === cepData.uf);
             if (state) {
               fetchCities(state.id.toString());
@@ -707,6 +711,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             value={whatsappDisplay}
             onChange={(e) => handlePhoneChange(e, 'whatsapp')}
             maxLength={15}
+            error={errors.whatsapp?.message}
             isLoading={isLoading}
           />
 

@@ -108,28 +108,20 @@ export const createMemberViaPublicLink = async (
     // Normalizar datas antes de criar o membro (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(req.body);
 
-    // Verificar duplicidade por nome (lowercase)
+    // ACHADO 06: substituído loop O(n) por ilike query — mesma abordagem do memberController autenticado
     if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
-      const normalizedName = normalizedData.name.trim().toLowerCase();
-      
-      // Busca membros existentes com o mesmo nome (lowercase)
-      const { data: existingMembers, error: checkError } = await supabase
+      const { data: duplicate, error: checkError } = await supabase
         .from('members')
         .select('id, name')
-        .eq('church_id', churchId);
-      
-      if (!checkError && existingMembers) {
-        for (const existingMember of existingMembers) {
-          if (existingMember.name) {
-            const existingNormalizedName = existingMember.name.trim().toLowerCase();
-            if (existingNormalizedName === normalizedName) {
-              return res.status(400).json({
-                error: 'Membro já cadastrado',
-                details: 'Já existe um membro cadastrado com este nome completo.'
-              });
-            }
-          }
-        }
+        .eq('church_id', churchId)
+        .ilike('name', normalizedData.name.trim())
+        .limit(1);
+
+      if (!checkError && duplicate && duplicate.length > 0) {
+        return res.status(400).json({
+          error: 'Membro já cadastrado',
+          details: 'Já existe um membro cadastrado com este nome completo.'
+        });
       }
     }
 
@@ -205,17 +197,38 @@ export const createMemberViaPublicLink = async (
       }
     }
 
-    // Incrementar contador de usos do link
-    const { error: updateError } = await supabase
-      .from('public_registration_links')
-      .update({ 
-        current_uses: registrationLink.current_uses + 1 
-      })
-      .eq('id', registrationLink.id);
+    // ACHADO 02: incremento atômico com optimistic locking (move para APÓS member criado,
+    // mas com condição eq(current_uses) que garante atomicidade:
+    // se outro request já incrementou, esta atualização afeta 0 linhas e retornamos erro).
+    // O incremento ocorre APÓS o insert para garantir que só contabilizamos cadastros reais.
+    if (registrationLink.max_uses !== null) {
+      const { data: claimed, error: claimError } = await supabase
+        .from('public_registration_links')
+        .update({ current_uses: registrationLink.current_uses + 1 })
+        .eq('id', registrationLink.id)
+        .eq('current_uses', registrationLink.current_uses) // lock otimístico
+        .lt('current_uses', registrationLink.max_uses)     // guarda extra: não ultrapassar
+        .select('current_uses')
+        .single();
 
-    if (updateError) {
-      console.error('Erro ao atualizar contador de usos:', updateError);
-      // Não falhar a requisição se apenas o contador falhar
+      if (claimError || !claimed) {
+        // Outro request chegou primeiro — desfazer o membro criado (rollback)
+        await supabase.from('members').delete().eq('id', member.id);
+        return res.status(400).json({
+          error: 'Limite de usos atingido',
+          details: 'O limite máximo de cadastros deste link foi atingido. Tente novamente ou contate a igreja.'
+        });
+      }
+    } else {
+      // Sem limite de usos — incremento simples (sem condição)
+      const { error: updateError } = await supabase
+        .from('public_registration_links')
+        .update({ current_uses: registrationLink.current_uses + 1 })
+        .eq('id', registrationLink.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar contador de usos (sem limite):', updateError);
+      }
     }
 
     // Buscar informações da igreja para resposta

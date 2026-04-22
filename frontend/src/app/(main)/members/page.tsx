@@ -104,6 +104,8 @@ function MembersPageContent() {
     limit: number;
     canAdd: boolean;
   } | null>(null);
+  // ACHADO 08: estado separado para distinguir "ainda carregando" (null) de "falhou" (true)
+  const [memberLimitLoadError, setMemberLimitLoadError] = useState(false);
 
   const { canEdit } = useAuth();
   const { loadMembers, addMemberOptimistic, updateMemberOptimistic, removeMemberOptimistic } = useMembers();
@@ -118,10 +120,12 @@ function MembersPageContent() {
         limit: limitData.limit,
         canAdd: limitData.canAdd,
       });
+      // ACHADO 08: limpar estado de erro se a chamada subsequente tiver sucesso
+      setMemberLimitLoadError(false);
     } catch {
-      // Em caso de erro, não definir memberLimit para evitar mostrar botões incorretamente
-      // O estado permanece como estava (null ou último valor válido)
-      // Silenciar erro - não crítico, apenas para controle de UI
+      // ACHADO 08: sinalizar explicitamente a falha para que o render não mostre os botões
+      // como se o estado fosse "ainda carregando" (null)
+      setMemberLimitLoadError(true);
     }
   }, []);
 
@@ -235,52 +239,19 @@ function MembersPageContent() {
     setDeactivateModalOpen(true);
   }, []);
 
+  // ACHADO 05: usa PATCH /members/:id/status em vez de GET+PUT para evitar race condition.
+  // O endpoint atômico altera apenas o campo 'active', sem risco de sobrescrever edições concorrentes.
   const handleConfirmDeactivate = useCallback(async () => {
     if (!selectedMemberId || !selectedMemberName) return;
 
     try {
-      // Buscar dados atuais do membro
-      const currentMember = await apiService.getMember(selectedMemberId);
-      
-      // Preparar dados para atualização (mantendo todos os campos obrigatórios)
-      const updateData = {
-        name: currentMember.name,
-        birth: currentMember.birth,
-        gender: currentMember.gender,
-        marital_status: currentMember.marital_status,
-        nationality: currentMember.nationality || null,
-        document: currentMember.document || null,
-        spouse: currentMember.spouse || null,
-        address: currentMember.address || null,
-        complement: currentMember.complement || null,
-        cep: currentMember.cep || null,
-        neighborhood: currentMember.neighborhood || null,
-        city: currentMember.city || null,
-        state: currentMember.state || null,
-        phone: currentMember.phone || null,
-        whatsapp: currentMember.whatsapp || null,
-        email: currentMember.email || null,
-        baptism_date: currentMember.baptism_date || null,
-        occupation: currentMember.occupation || null,
-        admission: currentMember.admission || null,
-        admission_date: currentMember.admission_date || null,
-        congregation_id: currentMember.congregation_id || null,
-        active: false // Campo que queremos alterar
-      };
-
-      // Atualizar o membro
-      await apiService.updateMember(selectedMemberId, updateData);
-
-      // Atualizar otimisticamente na lista
-      updateMemberOptimistic(selectedMemberId, { ...currentMember, active: false });
-      
-      // Disparar evento para recarregar a lista
+      await apiService.setMemberStatus(selectedMemberId, false);
+      updateMemberOptimistic(selectedMemberId, { active: false });
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('memberUpdated'));
       }, 100);
-      
     } catch (error) {
-      throw error; // Re-throw para o modal lidar com o erro
+      throw error;
     }
   }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
 
@@ -294,48 +265,13 @@ function MembersPageContent() {
     if (!selectedMemberId || !selectedMemberName) return;
 
     try {
-      // Buscar dados atuais do membro
-      const currentMember = await apiService.getMember(selectedMemberId);
-      
-      // Preparar dados para atualização (mantendo todos os campos obrigatórios)
-      const updateData = {
-        name: currentMember.name,
-        birth: currentMember.birth,
-        gender: currentMember.gender,
-        marital_status: currentMember.marital_status,
-        nationality: currentMember.nationality || null,
-        document: currentMember.document || null,
-        spouse: currentMember.spouse || null,
-        address: currentMember.address || null,
-        complement: currentMember.complement || null,
-        cep: currentMember.cep || null,
-        neighborhood: currentMember.neighborhood || null,
-        city: currentMember.city || null,
-        state: currentMember.state || null,
-        phone: currentMember.phone || null,
-        whatsapp: currentMember.whatsapp || null,
-        email: currentMember.email || null,
-        baptism_date: currentMember.baptism_date || null,
-        occupation: currentMember.occupation || null,
-        admission: currentMember.admission || null,
-        admission_date: currentMember.admission_date || null,
-        congregation_id: currentMember.congregation_id || null,
-        active: true // Campo que queremos alterar
-      };
-
-      // Atualizar o membro
-      await apiService.updateMember(selectedMemberId, updateData);
-
-      // Atualizar otimisticamente na lista
-      updateMemberOptimistic(selectedMemberId, { ...currentMember, active: true });
-      
-      // Disparar evento para recarregar a lista
+      await apiService.setMemberStatus(selectedMemberId, true);
+      updateMemberOptimistic(selectedMemberId, { active: true });
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('memberUpdated'));
       }, 100);
-      
     } catch (error) {
-      throw error; // Re-throw para o modal lidar com o erro
+      throw error;
     }
   }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
 
@@ -499,7 +435,15 @@ function MembersPageContent() {
               - Puder adicionar (canAdd === true) OU  
               - O limite for infinito (sem plano ou plano custom)
           */}
-          {memberLimit === null || memberLimit.canAdd === true || memberLimit.limit === Infinity ? (
+          {/* ACHADO 08: três estados distintos:
+              - null + sem erro = ainda carregando → mostrar botões (estado inicial seguro)
+              - erro ao carregar = mostrar aviso discreto em vez de esconder botões indevidamente
+              - carregado = verificar canAdd */}
+          {memberLimitLoadError ? (
+            <div className="text-sm text-amber-600 italic px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
+              Não foi possível verificar o limite de membros.
+            </div>
+          ) : memberLimit === null || memberLimit.canAdd === true || memberLimit.limit === Infinity ? (
             <>
               <Button
                 variant="secondary"
