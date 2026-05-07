@@ -87,7 +87,16 @@ const formatPhone = (value: string): string => {
 };
 
 export function CongregationForm({ congregation, onSubmit, onCancel, isLoading = false, mode }: CongregationFormProps) {
-  const { states, cities, loadingCities, fetchCities } = useIbgeData();
+  const {
+    states,
+    cities,
+    loadingStates,
+    loadingCities,
+    errorStates,
+    errorCities,
+    fetchStates,
+    fetchCities,
+  } = useIbgeData();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
 
@@ -97,7 +106,7 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, dirtyFields },
     setValue,
     watch,
     reset,
@@ -110,6 +119,12 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   });
 
   const selectedState = watch('state');
+  const selectedStateMeta = states.find((state) => state.sigla === selectedState);
+  const isStatesUnavailable = !loadingStates && (states.length === 0 || !!errorStates);
+  const isCitiesUnavailable = !!selectedState && (loadingCities || !!errorCities || (!loadingCities && cities.length === 0));
+  const locationTouchedInEdit = mode === 'edit' && (Boolean(dirtyFields.state) || Boolean(dirtyFields.city));
+  const shouldBlockByLocation = mode === 'create' || locationTouchedInEdit;
+  const isSubmitBlocked = isLoading || (shouldBlockByLocation && (loadingStates || isStatesUnavailable || isCitiesUnavailable));
 
   // Resetar formulário quando congregation mudar (para modo edit)
   useEffect(() => {
@@ -151,6 +166,8 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   useEffect(() => {
     if (congregation && congregation.phone) {
       setPhoneDisplay(formatPhone(congregation.phone));
+    } else {
+      setPhoneDisplay('');
     }
   }, [congregation]);
 
@@ -162,6 +179,9 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   };
 
   const handleFormSubmit = async (data: CongregationFormData) => {
+    if (isSubmitBlocked) {
+      return;
+    }
     try {
       await onSubmit(data);
 
@@ -224,15 +244,21 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
           <Select
             label="Estado *"
             value={watch('state') || ''}
-            onChange={(value) => setValue('state', value)}
+            onChange={(value) => {
+              setValue('state', value, { shouldValidate: true, shouldDirty: true });
+              setValue('city', '', { shouldValidate: true, shouldDirty: true });
+            }}
             options={[
-              { value: '', label: 'Selecione o estado' },
+              {
+                value: '',
+                label: loadingStates ? 'Carregando estados...' : 'Selecione o estado'
+              },
               ...states.map((state) => ({
                 value: state.sigla,
                 label: state.nome
               }))
             ]}
-            disabled={isLoading}
+            disabled={isLoading || loadingStates}
             error={errors.state?.message}
             searchable={true}
           />
@@ -271,6 +297,33 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
             error={errors.phone?.message as string | undefined}
           />
         </div>
+
+        {errorStates && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-700 mb-2">
+              Não foi possível carregar a lista de estados: {errorStates}
+            </p>
+            <Button type="button" variant="secondary" onClick={() => fetchStates()} disabled={loadingStates || isLoading}>
+              Tentar carregar estados novamente
+            </Button>
+          </div>
+        )}
+
+        {errorCities && selectedStateMeta && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="text-sm text-red-700 mb-2">
+              Não foi possível carregar as cidades de {selectedStateMeta.nome}: {errorCities}
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => fetchCities(selectedStateMeta.id.toString())}
+              disabled={loadingCities || isLoading}
+            >
+              Tentar carregar cidades novamente
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Botões */}
@@ -286,10 +339,16 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
         <Button
           type="submit"
           isLoading={isLoading}
+          disabled={isSubmitBlocked}
         >
           {mode === 'create' ? 'Criar Congregação' : 'Salvar Alterações'}
         </Button>
       </div>
+      {shouldBlockByLocation && isCitiesUnavailable && (
+        <p className="text-sm text-amber-700">
+          Aguarde o carregamento das cidades ou resolva o erro de integração com o IBGE antes de enviar.
+        </p>
+      )}
     </form>
   );
 }

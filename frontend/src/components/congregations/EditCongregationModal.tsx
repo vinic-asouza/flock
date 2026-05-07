@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { CongregationForm } from './CongregationForm';
 import { LoaderCircle } from 'lucide-react';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 
 interface Congregation {
   id: string;
@@ -47,11 +47,7 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       const data = await apiService.getCongregation(congregationId);
       setCongregation(data);
     } catch (err: unknown) {
-      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
-      const errorMessage = errorResponse.response?.data?.details 
-        || errorResponse.response?.data?.error 
-        || (err instanceof Error ? err.message : 'Erro ao carregar dados da congregação');
-      setError(errorMessage);
+      setError(formatApiError(err));
     } finally {
       setIsLoadingCongregation(false);
     }
@@ -62,20 +58,11 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       setIsLoading(true);
       setError(null);
       
-      await apiService.updateCongregation(congregationId, data);
-      
-      // Buscar os dados atualizados da congregação para garantir que temos todos os dados
-      const updatedCongregation = await apiService.getCongregation(congregationId);
-      
-      // Passar os dados da congregação atualizada com a estrutura completa
+      const updatedCongregation = await apiService.updateCongregation(congregationId, data);
       onSuccess(updatedCongregation);
       onClose();
     } catch (err: unknown) {
-      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
-      const errorMessage = errorResponse.response?.data?.details 
-        || errorResponse.response?.data?.error 
-        || (err instanceof Error ? err.message : 'Erro ao atualizar congregação');
-      setError(errorMessage);
+      setError(formatApiError(err));
     } finally {
       setIsLoading(false);
     }

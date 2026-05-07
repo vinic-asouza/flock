@@ -370,7 +370,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 4 — Integração de Novos Membros
+### ✅ Módulo 4 — Integração de Novos Membros
 
 **Objetivo:** Gerenciar o processo de acolhimento/integração de visitantes e candidatos à membresia antes de se tornarem membros formais. Funciona como um funil pré-membresia.
 

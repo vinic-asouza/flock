@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { CongregationCard } from './CongregationCard';
 import { CongregationSummaryBar } from './CongregationSummaryBar';
 import { CongregationsSkeleton } from './CongregationsSkeleton';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { Congregation } from '@/types/congregation';
 
 interface CongregationListProps {
@@ -31,23 +31,29 @@ export function CongregationList({
   const [congregations, setCongregations] = useState<Congregation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   const loadCongregations = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     try {
       setLoading(true);
       setError(null);
       const congregationsData = await apiService.listCongregations(
         search.trim() ? { search: search.trim() } : undefined
       );
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       setCongregations(congregationsData);
     } catch (err: unknown) {
-      const errorResponse = err as { response?: { data?: { error?: string; details?: string } } };
-      const errorMessage = errorResponse.response?.data?.details 
-        || errorResponse.response?.data?.error 
-        || (err instanceof Error ? err.message : 'Erro ao carregar congregações');
-      setError(errorMessage);
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+      setError(formatApiError(err));
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [search]);
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Edit, Trash2, MapPin, Phone, User, Users, Loader2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Congregation } from '@/types/congregation';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import type { Member } from '@/types/reports';
 
@@ -17,7 +17,7 @@ interface CongregationModalProps {
   congregationId: string | null;
   canEdit?: boolean;
   onEdit?: (id: string) => void;
-  onDelete?: (id: string, name: string) => void;
+  onDelete?: (id: string, name: string, activeMembersCount: number) => void;
   onRefresh?: () => void;
 }
 
@@ -42,8 +42,10 @@ export function CongregationModal({
     pagination?: { total: number; page: number; limit: number; totalPages?: number };
   } | null>(null);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [errorMembers, setErrorMembers] = useState<string | null>(null);
   const [membersSearch, setMembersSearch] = useState('');
   const [membersSearchDebounced, setMembersSearchDebounced] = useState('');
+  const membersRequestIdRef = useRef(0);
 
   // Debounce do termo de busca
   useEffect(() => {
@@ -77,8 +79,10 @@ export function CongregationModal({
 
   const loadMembers = useCallback(async () => {
     if (!congregationId) return;
+    const requestId = ++membersRequestIdRef.current;
     try {
       setLoadingMembers(true);
+      setErrorMembers(null);
       const response = await apiService.listMembers({
         page: membersPage,
         limit: MEMBERS_PER_PAGE,
@@ -86,14 +90,23 @@ export function CongregationModal({
         active: true,
         ...(membersSearchDebounced ? { search: membersSearchDebounced } : {}),
       });
+      if (requestId !== membersRequestIdRef.current) {
+        return;
+      }
       setMembersResponse({
         data: response.data || [],
         pagination: response.pagination,
       });
-    } catch {
-      setMembersResponse({ data: [] });
+    } catch (err) {
+      if (requestId !== membersRequestIdRef.current) {
+        return;
+      }
+      setErrorMembers(formatApiError(err));
+      setMembersResponse(null);
     } finally {
-      setLoadingMembers(false);
+      if (requestId === membersRequestIdRef.current) {
+        setLoadingMembers(false);
+      }
     }
   }, [congregationId, membersPage, membersSearchDebounced]);
 
@@ -115,6 +128,7 @@ export function CongregationModal({
       setError(null);
       setMembersPage(1);
       setMembersResponse(null);
+      setErrorMembers(null);
       setMembersSearch('');
       setMembersSearchDebounced('');
       onClose();
@@ -224,7 +238,7 @@ export function CongregationModal({
                       variant="danger"
                       onClick={() => {
                         handleClose();
-                        onDelete(congregation.id, congregation.name);
+                        onDelete(congregation.id, congregation.name, congregation.activeMembersCount ?? 0);
                       }}
                       className="w-full"
                       disabled={readOnly}
@@ -266,6 +280,15 @@ export function CongregationModal({
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 size={20} className="animate-spin" />
                     Carregando membros...
+                  </div>
+                </div>
+              ) : errorMembers ? (
+                <div className="flex items-center justify-center flex-1">
+                  <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+                    <p className="text-sm font-medium text-red-700 mb-3">{errorMembers}</p>
+                    <Button onClick={loadMembers} variant="secondary">
+                      Tentar novamente
+                    </Button>
                   </div>
                 </div>
               ) : members.length > 0 ? (

@@ -153,8 +153,11 @@ export const getCongregations = async (req: AuthRequest, res: Response) => {
       .in('congregation_id', congregationIds);
 
     if (membersError) {
-      // Se houver erro, retornar congregações sem contagem
-      return res.json(congregations.map(c => ({ ...c, activeMembersCount: 0 })));
+      logError('Erro ao buscar contagem de membros por congregação:', membersError);
+      return res.status(500).json({
+        error: 'Erro ao calcular resumo de congregações',
+        details: 'Não foi possível carregar a contagem de membros ativos por congregação no momento'
+      });
     }
 
     // Contar membros por congregação
@@ -507,8 +510,24 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       }
     }
 
-    // Verificar se já existem congregações com os mesmos nomes (case-insensitive)
     const congregationNames = req.body.map(congregation => congregation.name.trim());
+    const normalizedBatchNames = congregationNames.map((name) => name.toLowerCase());
+    const duplicateNamesInPayload = Array.from(
+      new Set(
+        congregationNames.filter((name, index) =>
+          normalizedBatchNames.indexOf(name.toLowerCase()) !== index
+        )
+      )
+    );
+
+    if (duplicateNamesInPayload.length > 0) {
+      return res.status(400).json({
+        error: 'Nomes duplicados no lote',
+        details: `O payload contém congregações repetidas: ${duplicateNamesInPayload.join(', ')}`
+      });
+    }
+
+    // Verificar se já existem congregações com os mesmos nomes (case-insensitive)
     const { data: allCongregations, error: existingCongregationsError } = await supabase
       .from('congregations')
       .select('name')

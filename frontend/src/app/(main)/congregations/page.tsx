@@ -131,9 +131,9 @@ export default function CongregationsPage() {
           setDetailModalOpen(false);
           handleEditCongregation(id);
         }}
-        onDelete={(id, name) => {
+        onDelete={(id, name, activeMembersCount) => {
           setDetailModalOpen(false);
-          handleDeleteCongregation(id, name);
+          handleDeleteCongregation(id, name, activeMembersCount);
         }}
         onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
       />

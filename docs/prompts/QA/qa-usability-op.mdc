@@ -6,8 +6,8 @@ ANALISE
 
 @docs/prompts/QA/qa-usability-master.mdc 
 
-Analise profundamente o fluxo de 2. Onboarding e Registro de Igreja.
-Foi levantado em: @levantamento-fluxos.md (170-248) 
+Analise profundamente o fluxo de Módulo 5 — Gestão de Congregações
+Foi levantado em: @levantamento-fluxos.md (454-509) 
 
 Quero que você valide:
 - experiência do usuário
@@ -35,7 +35,7 @@ Procure especialmente por:
 
 Quero evidências concretas, arquivos relacionados e impacto no usuário.
 
-Gere relatório em: @docs/QA/modulo-02-onboarding-register 
+Gere relatório em: @docs/QA 
 Inclua no relatório, detalhamente do que o desenvolvimento deve ajustar.
 
 ---
@@ -89,8 +89,6 @@ Após analise, crie um novo arquivo em : @docs/QA/modulo-02-onboarding-register
 
 DEV:
 
-@docs/prompts/DEV/dev-usability-master.mdc - Leia atentamente essas instruções para seguir. 
-
-Vamos iniciar os ajustes do @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao.md.
-
-Grave relatório em @docs/QA/modulo-01-autenticacao.
+Com base nas instruções: @docs/prompts/QA/dev-usability-master.mdc 
+Vamos iniciar os ajustes do: @docs/QA/modulo-05-congregacoes/modulo-05-congregacoes.md 
+Grave relatório em 

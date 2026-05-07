@@ -3,6 +3,10 @@ import Joi from 'joi';
 // Regex para validar telefone brasileiro (aceita com ou sem formatação)
 // Aceita: (11) 99999-9999, (11) 9999-9999, 11999999999, 1199999999
 const phoneRegex = /^[\d\s\(\)\-]{10,15}$/;
+const isPhoneDigitCountValid = (value: string): boolean => {
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 11;
+};
 
 export const createCongregationSchema = Joi.object({
   name: Joi.string()
@@ -55,11 +59,19 @@ export const createCongregationSchema = Joi.object({
     .allow('')
     .optional()
     .pattern(phoneRegex)
+    .custom((value, helpers) => {
+      if (!value || value.trim() === '') return value;
+      if (!isPhoneDigitCountValid(value)) {
+        return helpers.error('phone.digits');
+      }
+      return value;
+    })
     .max(20)
     .messages({
       'string.empty': 'O telefone não pode estar vazio',
       'string.pattern.base': 'O telefone deve conter apenas números e caracteres de formatação (parênteses, hífens e espaços)',
-      'string.max': 'O telefone não pode ter mais de 20 caracteres'
+      'string.max': 'O telefone não pode ter mais de 20 caracteres',
+      'phone.digits': 'Telefone inválido. Deve conter 10 ou 11 dígitos'
     })
 });
 
@@ -110,10 +122,18 @@ export const updateCongregationSchema = Joi.object({
     .allow('')
     .optional()
     .pattern(phoneRegex)
+    .custom((value, helpers) => {
+      if (!value || value.trim() === '') return value;
+      if (!isPhoneDigitCountValid(value)) {
+        return helpers.error('phone.digits');
+      }
+      return value;
+    })
     .max(20)
     .messages({
       'string.empty': 'O telefone não pode estar vazio',
       'string.pattern.base': 'O telefone deve conter apenas números e caracteres de formatação (parênteses, hífens e espaços)',
-      'string.max': 'O telefone não pode ter mais de 20 caracteres'
+      'string.max': 'O telefone não pode ter mais de 20 caracteres',
+      'phone.digits': 'Telefone inválido. Deve conter 10 ou 11 dígitos'
     })
 }); 
