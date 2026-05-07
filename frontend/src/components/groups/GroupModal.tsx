@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download, Tag, CircleDot, MapPin, User, FileText } from 'lucide-react';
 import { GroupWithMembers } from '@/types';
 import { Member } from '@/types/reports';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { Select } from '@/components/ui/Select';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { ExportGroupMembersModal } from '@/components/groups/ExportGroupMembersModal';
@@ -33,10 +33,13 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
   const [availableMembers, setAvailableMembers] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [errorAvailableMembers, setErrorAvailableMembers] = useState<string | null>(null);
   const [membersPage, setMembersPage] = useState(1);
   const [membersPerPage] = useState(10);
   const [fullMembersData, setFullMembersData] = useState<Array<Member & { addedAt?: string }>>([]);
   const [loadingFullMembers, setLoadingFullMembers] = useState(false);
+  const [errorMembersList, setErrorMembersList] = useState<string | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
 
   useEffect(() => {
@@ -81,6 +84,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
     if (!groupId || !group) return;
     try {
       setLoadingMembers(true);
+      setErrorAvailableMembers(null);
       // Normalizar: se congregation_id é null, usar 'sede' para filtrar membros sem congregação
       const congregationId = group.congregation_id ? group.congregation_id : 'sede';
       
@@ -110,8 +114,8 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
       const currentMemberIds = (group.membersList || []).map((m) => m.id);
       const available = allMembers.filter((m) => !currentMemberIds.includes(m.id));
       setAvailableMembers(available.map((m) => ({ id: m.id, name: m.name })));
-    } catch {
-      // Erro silencioso - não bloquear a interface
+    } catch (err) {
+      setErrorAvailableMembers(formatApiError(err));
       setAvailableMembers([]);
     } finally {
       setLoadingMembers(false);
@@ -126,6 +130,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
 
     try {
       setLoadingFullMembers(true);
+      setErrorMembersList(null);
       // ✅ OTIMIZADO: Usar endpoint getGroupMembers que retorna todos os membros de uma vez
       // em vez de buscar individualmente (N+1 problem)
       const members = await apiService.getGroupMembers(groupId);
@@ -138,8 +143,8 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
       });
 
       setFullMembersData(sortedMembers as Array<Member & { addedAt?: string }>);
-    } catch {
-      // Erro silencioso - não bloquear a interface
+    } catch (err) {
+      setErrorMembersList(formatApiError(err));
       setFullMembersData([]);
     } finally {
       setLoadingFullMembers(false);
@@ -156,8 +161,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
       await loadAvailableMembers();
       if (onRefresh) onRefresh();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao adicionar membro';
-      alert(errorMessage);
+      toast.error(formatApiError(err));
     } finally {
       setAddingMember(false);
     }
@@ -172,13 +176,15 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
     );
     if (!confirmed) return;
     try {
+      setRemovingMemberId(memberId);
       await apiService.removeMemberFromGroup(groupId, memberId);
       await loadGroup();
       await loadAvailableMembers();
       if (onRefresh) onRefresh();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao remover membro';
-      alert(errorMessage);
+      toast.error(formatApiError(err));
+    } finally {
+      setRemovingMemberId(null);
     }
   };
 
@@ -189,6 +195,9 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
       setSelectedMemberId('');
       setMembersPage(1);
       setFullMembersData([]);
+      setErrorAvailableMembers(null);
+      setErrorMembersList(null);
+      setRemovingMemberId(null);
       onClose();
     }
   };
@@ -387,6 +396,14 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                 {!readOnly && (
                 <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 flex-shrink-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Adicionar Membro</label>
+                  {errorAvailableMembers && (
+                    <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2.5">
+                      <p className="text-xs text-red-700 mb-2">{errorAvailableMembers}</p>
+                      <Button type="button" variant="secondary" onClick={loadAvailableMembers} disabled={loadingMembers || addingMember}>
+                        Tentar novamente
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <Select
@@ -437,10 +454,15 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                               {!readOnly && (
                               <button
                                 onClick={() => handleRemoveMember(member.id)}
-                                className="absolute top-3 right-3 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+                                className="absolute top-3 right-3 p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
                                 title="Remover do grupo"
+                                disabled={removingMemberId === member.id}
                               >
-                                <X size={18} />
+                                {removingMemberId === member.id ? (
+                                  <Loader2 size={18} className="animate-spin" />
+                                ) : (
+                                  <X size={18} />
+                                )}
                               </button>
                               )}
                             </div>
@@ -492,7 +514,15 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                     <div className="flex items-center justify-center flex-1 text-gray-500">
                       <div className="text-center">
                         <Users size={48} className="mx-auto mb-2 text-gray-300" />
-                        <p>Nenhum membro vinculado a este grupo</p>
+                        <p>{errorMembersList ? 'Falha ao carregar membros vinculados' : 'Nenhum membro vinculado a este grupo'}</p>
+                        {errorMembersList && (
+                          <div className="mt-3">
+                            <p className="text-xs text-red-700 mb-2">{errorMembersList}</p>
+                            <Button type="button" variant="secondary" onClick={loadFullMembersData} disabled={loadingFullMembers}>
+                              Tentar novamente
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

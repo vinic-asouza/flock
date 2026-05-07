@@ -24,21 +24,16 @@ export function useMemberOptions({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialSearch);
-  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
 
   const fetchMembers = useCallback(async (searchValue: string) => {
+    const requestId = ++requestIdRef.current;
     if (!enabled) {
       setOptions([]);
       return;
     }
 
     try {
-      if (abortRef.current) {
-        abortRef.current.abort();
-      }
-      const controller = new AbortController();
-      abortRef.current = controller;
-
       setLoading(true);
       setError(null);
 
@@ -61,13 +56,21 @@ export function useMemberOptions({
         active: member.active,
       }));
 
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       setOptions(mappedOptions);
     } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') return;
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar membros';
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [includeInactive, enabled, congregationId]);
 

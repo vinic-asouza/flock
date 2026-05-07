@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { X, Download, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { formatApiError } from '@/services/api';
+import toast from 'react-hot-toast';
 
 interface ExportGroupMembersModalProps {
   isOpen: boolean;
@@ -54,6 +56,7 @@ const CATEGORIES = {
 export function ExportGroupMembersModal({ isOpen, onClose, onExport }: ExportGroupMembersModalProps) {
   const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'phone', 'email']);
   const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -73,15 +76,20 @@ export function ExportGroupMembersModal({ isOpen, onClose, onExport }: ExportGro
 
   const handleExport = async () => {
     if (selectedFields.length === 0) {
-      alert('Selecione pelo menos um campo para exportar');
+      const message = 'Selecione pelo menos um campo para exportar.';
+      setExportError(message);
+      toast.error(message);
       return;
     }
     try {
       setExporting(true);
+      setExportError(null);
       await onExport(selectedFields);
       onClose();
-    } catch {
-      // Erro tratado no pai
+    } catch (err) {
+      const message = formatApiError(err);
+      setExportError(message);
+      toast.error(message);
     } finally {
       setExporting(false);
     }
@@ -110,6 +118,12 @@ export function ExportGroupMembersModal({ isOpen, onClose, onExport }: ExportGro
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
+          {exportError && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3">
+              <p className="text-sm text-red-700">{exportError}</p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-6">
             <div className="text-sm text-gray-600">
               <span className="font-medium text-gray-900">{selectedFields.length}</span> campos selecionados

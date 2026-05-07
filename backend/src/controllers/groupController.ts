@@ -89,25 +89,35 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Para cada grupo, buscar contagem de membros
-    const groupsWithMemberCount = await Promise.all(
-      (groups || []).map(async (group: any) => {
-        const { count: memberCount, error: countError } = await supabase
-          .from('member_groups')
-          .select('*', { count: 'exact', head: true })
-          .eq('group_id', group.id);
+    if (!groups || groups.length === 0) {
+      return res.json([]);
+    }
 
-        if (countError) {
-          logError(`Erro ao contar membros para o grupo ${group.name}:`, countError);
-          return { ...group, memberCount: 0 };
-        }
+    const groupIds = groups.map((group: any) => group.id);
+    const { data: memberGroups, error: memberGroupsError } = await supabase
+      .from('member_groups')
+      .select('group_id')
+      .in('group_id', groupIds);
 
-        return {
-          ...group,
-          memberCount: memberCount || 0
-        };
-      })
-    );
+    if (memberGroupsError) {
+      logError('Erro ao carregar contagem de membros dos grupos:', memberGroupsError);
+      return res.status(500).json({
+        error: 'Erro ao calcular resumo dos grupos',
+        details: 'Não foi possível carregar a contagem de membros por grupo no momento'
+      });
+    }
+
+    const memberCountByGroup = (memberGroups || []).reduce((acc, current) => {
+      if (current.group_id) {
+        acc[current.group_id] = (acc[current.group_id] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+
+    const groupsWithMemberCount = groups.map((group: any) => ({
+      ...group,
+      memberCount: memberCountByGroup[group.id] || 0
+    }));
 
     res.json(groupsWithMemberCount);
   } catch (error) {
@@ -200,6 +210,10 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
 
     if (memberGroupsError) {
       logError('Erro ao buscar membros do grupo:', memberGroupsError);
+      return res.status(500).json({
+        error: 'Erro ao carregar membros do grupo',
+        details: 'Não foi possível carregar os membros vinculados a este grupo no momento'
+      });
     }
 
     // Separar responsável dos membros vinculados
@@ -399,12 +413,35 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const { name, type, congregation_id, responsible_id } = req.body;
+    const finalCongregationId = congregation_id !== undefined ? (congregation_id || null) : existingGroup.congregation_id;
+    const finalResponsibleId = responsible_id !== undefined ? (responsible_id || null) : existingGroup.responsible_id;
+
+    // Aplicar as mesmas validações do create usando o estado final do grupo
+    const congregationValidation = await validateGroupCongregation(finalCongregationId, churchId);
+    if (!congregationValidation.isValid) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: congregationValidation.errorMessage || 'A congregação não é válida'
+      });
+    }
+
+    const responsibleValidation = await validateResponsibleAndCongregation(
+      finalResponsibleId,
+      finalCongregationId,
+      churchId
+    );
+    if (!responsibleValidation.isValid) {
+      return res.status(400).json({
+        error: 'Responsável inválido',
+        details: responsibleValidation.errorMessage || 'O responsável selecionado não é válido'
+      });
+    }
+
     // Se nome ou tipo foram alterados, verificar duplicatas
-    const { name, type, congregation_id } = req.body;
     if (name || type || congregation_id !== undefined) {
       const finalName = name || existingGroup.name;
       const finalType = type || existingGroup.type;
-      const finalCongregationId = congregation_id !== undefined ? congregation_id : existingGroup.congregation_id;
 
       // Verificar duplicidade considerando apenas grupos ativos (exceto o próprio grupo sendo editado)
       let duplicateQuery = supabase
@@ -437,6 +474,13 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       ...req.body,
       updated_at: new Date()
     };
+
+    if (updateData.congregation_id === '') {
+      updateData.congregation_id = null;
+    }
+    if (updateData.responsible_id === '') {
+      updateData.responsible_id = null;
+    }
 
     // Remover campos undefined para não sobrescrever com null
     Object.keys(updateData).forEach(key => {

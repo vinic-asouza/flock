@@ -8,9 +8,11 @@ import { GroupCard } from './GroupCard';
 interface GroupListProps {
   groups: Group[];
   onGroupClick: (id: string) => void;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 }
 
-export function GroupList({ groups, onGroupClick }: GroupListProps) {
+export function GroupList({ groups, onGroupClick, hasActiveFilters = false, onClearFilters }: GroupListProps) {
   // Agrupar grupos por tipo
   const groupedByType = groups.reduce((acc, group) => {
     const type = group.type;
@@ -49,7 +51,18 @@ export function GroupList({ groups, onGroupClick }: GroupListProps) {
           </svg>
         </div>
         <p className="text-lg font-medium text-gray-900 mb-2">Nenhum grupo encontrado</p>
-        <p className="text-sm text-gray-500">Comece criando um novo grupo.</p>
+        <p className="text-sm text-gray-500">
+          {hasActiveFilters ? 'Nenhum resultado para os filtros aplicados.' : 'Comece criando um novo grupo.'}
+        </p>
+        {hasActiveFilters && onClearFilters && (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="mt-3 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+          >
+            Limpar filtros
+          </button>
+        )}
       </div>
     );
   }

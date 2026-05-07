@@ -451,7 +451,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 5 — Gestão de Congregações
+### ✅ Módulo 5 — Gestão de Congregações
 
 **Objetivo:** Gerenciar as congregações (filiais, pontos de encontro) que compõem a estrutura organizacional da igreja.
 

@@ -31,7 +31,7 @@ const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igre
 
 const initialFilters: GroupFilters = {
   search: '',
-  congregationId: 'sede',
+  congregationId: '',
   type: '',
   status: 'all'
 };
@@ -191,6 +191,12 @@ export default function GroupsPage() {
     }
   }, [filters]);
 
+  const hasActiveFilters =
+    filters.search.trim().length > 0 ||
+    filters.congregationId !== '' ||
+    filters.type !== '' ||
+    filters.status !== 'all';
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -252,7 +258,12 @@ export default function GroupsPage() {
             onExportClick={handleExportGroups}
             exporting={isExportingGroups}
           />
-          <GroupList groups={groups} onGroupClick={handleViewGroup} />
+          <GroupList
+            groups={groups}
+            onGroupClick={handleViewGroup}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={handleClearAllFilters}
+          />
         </>
       )}
 
