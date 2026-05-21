@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { CalendarItemType, CalendarFilters as CalendarFiltersType } from '@/types/calendar';
 import { useFiltersData } from '@/hooks/useFiltersData';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { Group } from '@/types';
 import { ChevronDown, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface CalendarFiltersHorizontalProps {
   filters: CalendarFiltersType;
@@ -18,26 +19,30 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
   const { congregations, loading: filtersLoading } = useFiltersData();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
   const [openSelect, setOpenSelect] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Carregar apenas grupos que têm itens de calendário vinculados
   useEffect(() => {
-    const loadGroups = async () => {
-      try {
-        setLoadingGroups(true);
-        const data = await apiService.listGroupsWithCalendarItems();
-        setGroups(data || []);
-      } catch {
-        // Erro silencioso - grupos são opcionais para filtros
-        setGroups([]);
-      } finally {
-        setLoadingGroups(false);
-      }
-    };
-
-    loadGroups();
+    void loadGroups();
   }, []);
+
+  const loadGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      setGroupsError(null);
+      const data = await apiService.listGroupsWithCalendarItems();
+      setGroups(data || []);
+    } catch (err) {
+      const message = formatApiError(err);
+      setGroups([]);
+      setGroupsError(message);
+      toast.error(message);
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
 
   // Fechar dropdowns quando clicar fora
   useEffect(() => {
@@ -326,6 +331,19 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
               Limpar todos
             </button>
           )}
+        </div>
+      )}
+
+      {groupsError && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-2">
+          <p className="text-xs text-amber-800 mb-1">Falha ao carregar grupos para filtro.</p>
+          <button
+            type="button"
+            onClick={loadGroups}
+            className="text-xs font-medium text-amber-800 underline hover:text-amber-900"
+          >
+            Tentar novamente
+          </button>
         </div>
       )}
     </div>

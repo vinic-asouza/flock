@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import PDFDocument from 'pdfkit';
 import supabase from '../services/supabase';
 import { AuthRequest, CalendarItem, Group } from '../types';
 import { 
@@ -205,9 +206,12 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
       if (calendarItem.is_recurring && calendarItem.recurrence_pattern) {
         recurringItems.push(calendarItem);
       } else {
-        // Filtrar itens não recorrentes que estão no intervalo
+        // Filtrar itens não recorrentes que intersectam o intervalo.
+        // Evita sumiço de eventos multi-dia quando start_date fica antes da janela.
         const itemStart = new Date(calendarItem.start_date);
-        if (itemStart >= expansionStartDate && itemStart <= expansionEndDate) {
+        const itemEnd = calendarItem.end_date ? new Date(calendarItem.end_date) : itemStart;
+        const intersectsRange = itemStart <= expansionEndDate && itemEnd >= expansionStartDate;
+        if (intersectsRange) {
           nonRecurringItems.push(calendarItem);
         }
       }
@@ -898,12 +902,12 @@ export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
  * Exporta calendário mensal em PDF
  * 
  * @param req - Request contendo query params: month, year, congregation_id, group_id
- * @param res - Response com dados do calendário (PDF ainda não implementado)
+ * @param res - Response com arquivo PDF
  * 
  * @remarks
- * - Por enquanto retorna JSON com os dados
- * - A implementação do PDF será feita posteriormente usando pdfkit ou puppeteer
- * - Filtra apenas itens ativos do mês/ano especificado
+ * - Exporta itens ativos do mês/ano especificado
+ * - Expande ocorrências recorrentes dentro da janela do mês
+ * - Mantém filtros por congregação e grupo
  */
 export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
   try {
@@ -926,9 +930,21 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
     // Determinar período (mês/ano atual se não especificado)
     const targetMonth = month ? Number(month) : new Date().getMonth() + 1;
     const targetYear = year ? Number(year) : new Date().getFullYear();
-    
-    const startDate = new Date(targetYear, targetMonth - 1, 1);
-    const endDate = new Date(targetYear, targetMonth, 0, 23, 59, 59);
+
+    if (
+      Number.isNaN(targetMonth) ||
+      Number.isNaN(targetYear) ||
+      targetMonth < 1 ||
+      targetMonth > 12
+    ) {
+      return res.status(400).json({
+        error: 'Parâmetros inválidos',
+        details: 'Informe um mês válido entre 1 e 12 e um ano numérico'
+      });
+    }
+
+    const startDate = startOfMonth(new Date(targetYear, targetMonth - 1, 1));
+    const endDate = endOfMonth(new Date(targetYear, targetMonth - 1, 1));
 
     // Construir query
     let query = supabase
@@ -951,8 +967,6 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       `)
       .eq('church_id', churchId)
       .eq('status', 'active')
-      .gte('start_date', startDate.toISOString())
-      .lte('start_date', endDate.toISOString())
       .order('start_date', { ascending: true });
 
     if (congregation_id && congregation_id !== 'sede') {
@@ -974,21 +988,152 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // TODO: Implementar geração de PDF
-    // Por enquanto, retornar JSON com os dados
-    // A implementação do PDF será feita posteriormente usando pdfkit ou puppeteer
-    
-    res.json({
-      message: 'Exportação PDF ainda não implementada',
-      data: {
-        church: churchData?.name,
-        month: targetMonth,
-        year: targetYear,
-        items: items || []
-      }
+    const normalizedItems: CalendarItem[] = (items || []).map((item: any) => {
+      const normalizedCongregation = Array.isArray(item.congregations)
+        ? (item.congregations[0] || null)
+        : (item.congregations || null);
+      const normalizedGroup = Array.isArray(item.groups)
+        ? (item.groups[0] || null)
+        : (item.groups || null);
+      const normalizedMember = Array.isArray(item.members)
+        ? (item.members[0] || null)
+        : (item.members || null);
+
+      const { congregations, groups, members, ...itemWithoutPlurals } = item;
+
+      return {
+        ...itemWithoutPlurals,
+        congregation: normalizedCongregation,
+        group: normalizedGroup,
+        responsible_member: normalizedMember,
+        start_date: new Date(item.start_date),
+        end_date: item.end_date ? new Date(item.end_date) : null,
+        recurrence_end_date: item.recurrence_end_date ? new Date(item.recurrence_end_date) : null,
+        created_at: new Date(item.created_at),
+        updated_at: new Date(item.updated_at)
+      };
     });
+
+    const nonRecurringItems = normalizedItems.filter((item) => {
+      if (item.is_recurring && item.recurrence_pattern) {
+        return false;
+      }
+      const itemStart = new Date(item.start_date);
+      const itemEnd = item.end_date ? new Date(item.end_date) : itemStart;
+      return itemStart <= endDate && itemEnd >= startDate;
+    });
+
+    const recurringItems = normalizedItems.filter(
+      (item) => item.is_recurring && item.recurrence_pattern
+    );
+
+    const expandedRecurringItems = recurringItems.flatMap((item) =>
+      expandRecurringItem(item, startDate, endDate)
+    );
+
+    const monthItems = [...nonRecurringItems, ...expandedRecurringItems].sort(
+      (a, b) => a.start_date.getTime() - b.start_date.getTime()
+    );
+
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: 40, bottom: 40, left: 40, right: 40 }
+    });
+
+    const filename = `calendario-${targetYear}-${String(targetMonth).padStart(2, '0')}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    doc.pipe(res);
+
+    doc
+      .fontSize(18)
+      .font('Helvetica-Bold')
+      .text(churchData?.name || 'Igreja', { align: 'center' })
+      .moveDown(0.3);
+
+    doc
+      .fontSize(14)
+      .font('Helvetica')
+      .text(`Calendário - ${String(targetMonth).padStart(2, '0')}/${targetYear}`, { align: 'center' })
+      .moveDown(0.3);
+
+    doc
+      .fontSize(9)
+      .fillColor('#6B7280')
+      .text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, { align: 'center' })
+      .text(`Total de ocorrências: ${monthItems.length}`, { align: 'center' })
+      .fillColor('#000000')
+      .moveDown(1);
+
+    if (monthItems.length === 0) {
+      doc
+        .fontSize(11)
+        .font('Helvetica')
+        .text('Nenhum item encontrado para o período e filtros selecionados.', { align: 'center' })
+        .moveDown(1);
+    } else {
+      monthItems.forEach((item) => {
+        if (doc.y > 730) {
+          doc.addPage();
+        }
+
+        const start = new Date(item.start_date);
+        const end = item.end_date ? new Date(item.end_date) : null;
+        const startDateLabel = start.toLocaleDateString('pt-BR');
+        const startTimeLabel = start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const endDateLabel = end ? end.toLocaleDateString('pt-BR') : null;
+        const endTimeLabel = end ? end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null;
+
+        doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .text(item.title || '(Sem título)');
+
+        doc
+          .fontSize(10)
+          .font('Helvetica')
+          .text(`Tipo: ${item.type}`)
+          .text(`Data/Hora início: ${startDateLabel} às ${startTimeLabel}`);
+
+        if (endDateLabel && endTimeLabel) {
+          doc.text(`Data/Hora fim: ${endDateLabel} às ${endTimeLabel}`);
+        }
+
+        doc
+          .text(`Congregação: ${item.congregation?.name || 'Sede'}`)
+          .text(`Grupo: ${item.group?.name || '-'}`)
+          .text(`Responsável: ${item.responsible_member?.name || '-'}`);
+
+        if (item.location) {
+          doc.text(`Local: ${item.location}`);
+        }
+
+        if (item.description) {
+          doc.text(`Descrição: ${item.description}`);
+        }
+
+        if (item.is_recurring) {
+          doc.text('Recorrente: Sim');
+        }
+
+        doc
+          .moveDown(0.3)
+          .strokeColor('#E5E7EB')
+          .lineWidth(1)
+          .moveTo(40, doc.y)
+          .lineTo(doc.page.width - 40, doc.y)
+          .stroke()
+          .moveDown(0.7);
+      });
+    }
+
+    doc.end();
+    return;
   } catch (error) {
     logError('Erro ao exportar calendário PDF:', error);
+    if (res.headersSent) {
+      return;
+    }
     return res.status(500).json({
       error: 'Erro ao exportar calendário PDF',
       details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'

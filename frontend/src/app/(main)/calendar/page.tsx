@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Modal } from '@/components/ui/Modal';
@@ -11,7 +11,7 @@ import { CalendarListView } from '@/components/calendar/CalendarListView';
 import { CalendarFiltersHorizontal } from '@/components/calendar/CalendarFiltersHorizontal';
 import { Tabs } from '@/components/ui/Tabs';
 import { CalendarItem, CreateCalendarItemData, CalendarFilters as CalendarFiltersType, typeColors } from '@/types/calendar';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -47,8 +47,11 @@ export default function CalendarPage() {
   const [activeTab, setActiveTab] = useState<'calendar' | 'list'>('calendar');
   const [birthdayCount, setBirthdayCount] = useState<number>(0);
   const [loadingBirthdays, setLoadingBirthdays] = useState(true);
+  const [birthdayCountError, setBirthdayCountError] = useState<string | null>(null);
   const [participantsPage, setParticipantsPage] = useState(1);
   const [loadingItemDetails, setLoadingItemDetails] = useState(false);
+  const loadItemsRequestIdRef = useRef(0);
+  const viewItemRequestIdRef = useRef(0);
 
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -60,6 +63,7 @@ export default function CalendarPage() {
   const [defaultStartDate, setDefaultStartDate] = useState<string | undefined>();
 
   const loadItems = useCallback(async () => {
+    const requestId = ++loadItemsRequestIdRef.current;
     try {
       setLoading(true);
       setError(null);
@@ -92,13 +96,21 @@ export default function CalendarPage() {
         limit: activeTab === 'list' ? 1000 : 50, // Aumentar limite para lista
       });
 
+      if (requestId !== loadItemsRequestIdRef.current) {
+        return;
+      }
       setItems(response.data);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } };
-      setError(error.response?.data?.error || 'Erro ao carregar itens do calendário');
-      toast.error(error.response?.data?.error || 'Erro ao carregar itens do calendário');
+      if (requestId !== loadItemsRequestIdRef.current) {
+        return;
+      }
+      const message = formatApiError(err);
+      setError(message);
+      toast.error(message);
     } finally {
-      setLoading(false);
+      if (requestId === loadItemsRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [filters, currentMonth, currentYear, activeTab]);
 
@@ -110,6 +122,7 @@ export default function CalendarPage() {
   const loadBirthdaysCount = useCallback(async () => {
     try {
       setLoadingBirthdays(true);
+      setBirthdayCountError(null);
       const month = currentMonth.getMonth() + 1;
       const year = currentMonth.getFullYear();
       const response = await apiService.getBirthdaysCount({
@@ -118,8 +131,9 @@ export default function CalendarPage() {
         congregation_id: filters.congregation_id
       });
       setBirthdayCount(response.count || 0);
-    } catch {
+    } catch (err) {
       setBirthdayCount(0);
+      setBirthdayCountError(formatApiError(err));
     } finally {
       setLoadingBirthdays(false);
     }
@@ -184,17 +198,29 @@ export default function CalendarPage() {
   };
 
   const handleViewItem = async (item: CalendarItem) => {
+    const requestId = ++viewItemRequestIdRef.current;
+    setSelectedItem(item);
+    setParticipantsPage(1);
+    setViewModalOpen(true);
     try {
       setLoadingItemDetails(true);
       // Buscar detalhes completos do item (incluindo participantes)
       const fullItem = await apiService.getCalendarItem(item.id);
+      if (requestId !== viewItemRequestIdRef.current) {
+        return;
+      }
       setSelectedItem(fullItem);
-      setParticipantsPage(1); // Reset para primeira página
-      setViewModalOpen(true);
-    } catch {
-      toast.error('Erro ao carregar detalhes do item');
+    } catch (err) {
+      if (requestId !== viewItemRequestIdRef.current) {
+        return;
+      }
+      setViewModalOpen(false);
+      setSelectedItem(null);
+      toast.error(formatApiError(err));
     } finally {
-      setLoadingItemDetails(false);
+      if (requestId === viewItemRequestIdRef.current) {
+        setLoadingItemDetails(false);
+      }
     }
   };
 
@@ -292,6 +318,8 @@ export default function CalendarPage() {
             onDateChange={setCurrentMonth}
             birthdayCount={birthdayCount}
             loadingBirthdays={loadingBirthdays}
+            birthdayCountError={birthdayCountError}
+            onRetryBirthdays={loadBirthdaysCount}
             congregationId={filters.congregation_id}
             canEdit={canEdit}
           />

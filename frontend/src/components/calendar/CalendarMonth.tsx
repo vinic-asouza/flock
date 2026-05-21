@@ -19,6 +19,8 @@ interface CalendarMonthProps {
   onDateChange?: (date: Date) => void;
   birthdayCount?: number;
   loadingBirthdays?: boolean;
+  birthdayCountError?: string | null;
+  onRetryBirthdays?: () => void;
   congregationId?: string;
   canEdit?: boolean;
 }
@@ -31,6 +33,8 @@ export function CalendarMonth({
   onDateChange,
   birthdayCount = 0,
   loadingBirthdays = false,
+  birthdayCountError = null,
+  onRetryBirthdays,
   congregationId,
   canEdit = true
 }: CalendarMonthProps) {
@@ -254,9 +258,9 @@ export function CalendarMonth({
                     <h3 className="text-sm font-medium text-[#090725] mb-0.5 leading-tight">
                       {stat.title}
                     </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xl font-bold text-[#090725] leading-none">
-                        {stat.value.toLocaleString('pt-BR')}
+                        {isBirthdayCard && birthdayCountError ? '-' : stat.value.toLocaleString('pt-BR')}
                       </span>
                       {isBirthdayCard && stat.value > 0 && (
                         <button
@@ -268,7 +272,21 @@ export function CalendarMonth({
                           Ver
                         </button>
                       )}
+                      {isBirthdayCard && birthdayCountError && onRetryBirthdays && (
+                        <button
+                          onClick={onRetryBirthdays}
+                          className="px-2 py-0.5 text-[10px] font-medium text-amber-700 bg-amber-100 hover:bg-amber-200 rounded transition-colors"
+                          title={birthdayCountError}
+                        >
+                          Tentar
+                        </button>
+                      )}
                     </div>
+                    {isBirthdayCard && birthdayCountError && (
+                      <p className="text-[10px] text-amber-700 mt-1 line-clamp-2" title={birthdayCountError}>
+                        Falha ao carregar contagem
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

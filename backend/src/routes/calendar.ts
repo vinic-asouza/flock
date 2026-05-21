@@ -18,10 +18,10 @@ router.use(requireRole('reader'));
 
 router.get('/', listCalendarItems);
 router.get('/groups', listGroupsWithCalendarItems);
+router.get('/export/pdf', exportCalendarPDF);
 router.get('/:id', getCalendarItem);
 router.post('/', requireRole('editor'), createCalendarItem);
 router.put('/:id', requireRole('editor'), updateCalendarItem);
 router.delete('/:id', requireRole('editor'), deleteCalendarItem);
-router.get('/export/pdf', exportCalendarPDF);
 
 export default router;

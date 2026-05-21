@@ -42,12 +42,12 @@ Inclua no relatório, detalhamente do que o desenvolvimento deve ajustar.
 
 REVALIDAÇÃO
 
-Faça a revalidação de QA do módulo de Autenticação após os ajustes do DEV.
+Faça a revalidação de QA após os ajustes do DEV.
 
 Contexto disponível:
 
-- relatório original de QA: @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao.md 
-- relatório das alterações feitas pelo DEV: @docs/QA/modulo-01-autenticacao/modulo-01-autenticacao-sessao-dev-report.md 
+- relatório original de QA: @docs/QA/modulo-07-calendar/modulo-07-calendar.md
+- relatório das alterações feitas pelo DEV: @docs/QA/modulo-07-calendar/modulo-07-calendar-dev-report.md
 - código atualizado do monorepo
 
 Objetivo:
@@ -82,8 +82,7 @@ Formato de saída:
 5. itens encerrados
 6. itens reabertos
 
-Após analise, crie um novo arquivo em : @docs/QA/modulo-02-onboarding-register 
-
+Após analise, crie um novo arquivo em: @docs/QA/modulo-07-calendar 
 
 ---
 

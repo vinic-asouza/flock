@@ -2,7 +2,7 @@
 
 import { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from 'react';
 import { CalendarParticipant, CreateParticipantData } from '@/types/calendar';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -93,8 +93,8 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       const data = await apiService.listCalendarParticipants(calendarItemId);
       setParticipants(data);
       onParticipantsChange?.(data);
-    } catch {
-      toast.error('Erro ao carregar participantes');
+    } catch (err) {
+      toast.error(formatApiError(err));
     } finally {
       setLoading(false);
     }
@@ -197,8 +197,7 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       // NÃO fechar o formulário, mantê-lo aberto para adicionar outro
       await loadParticipants();
     } catch (error: unknown) {
-      const err = error as {response?: {data?: {details?: string}}};
-      toast.error(err.response?.data?.details || 'Erro ao adicionar participante');
+      toast.error(formatApiError(error));
     } finally {
       setLoading(false);
     }
@@ -243,8 +242,8 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
       await apiService.removeCalendarParticipant(calendarItemId, participantId);
       toast.success('Participante removido');
       await loadParticipants();
-    } catch {
-      toast.error('Erro ao remover participante');
+    } catch (err) {
+      toast.error(formatApiError(err));
     } finally {
       setLoading(false);
     }

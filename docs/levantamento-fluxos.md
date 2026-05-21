@@ -508,7 +508,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 6 — Gestão de Grupos
+### ✅ Módulo 6 — Gestão de Grupos
 
 **Objetivo:** Gerenciar grupos internos da igreja (ministérios, células, departamentos, classes) e sua composição.
 
@@ -567,7 +567,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 7 — Calendário e Eventos
+### ✅ Módulo 7 — Calendário e Eventos
 
 **Objetivo:** Gerenciar a agenda de eventos, cultos, reuniões e atividades da igreja, com visualização mensal e anual, filtros e controle de participantes.
 
