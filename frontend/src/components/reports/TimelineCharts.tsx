@@ -13,6 +13,8 @@ interface TimelineChartsProps {
   loading?: boolean;
   showCongregationColumn?: boolean;
   integrationTimeline?: IntegrationTimeline;
+  integrationUnavailable?: boolean;
+  integrationErrorMessage?: string;
 }
 
 export function TimelineCharts({
@@ -20,6 +22,8 @@ export function TimelineCharts({
   loading = false,
   showCongregationColumn: _showCongregationColumn = true,
   integrationTimeline,
+  integrationUnavailable = false,
+  integrationErrorMessage,
 }: TimelineChartsProps) {
   // showCongregationColumn não é usado atualmente, mas mantido para compatibilidade com a interface
   void _showCongregationColumn;
@@ -513,7 +517,18 @@ export function TimelineCharts({
         </div>
 
         <div className="bg-white rounded-lg border border-[#090725]/10 p-4">
-          {integrationTimeline ? (
+          {integrationUnavailable ? (
+            <div className="py-6 px-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+              <h3 className="text-base font-medium text-amber-900">Integração</h3>
+              <p className="text-sm text-amber-800">
+                Não foi possível carregar os dados de integração. O restante do painel permanece
+                disponível.
+              </p>
+              {integrationErrorMessage && (
+                <p className="text-xs text-amber-700">{integrationErrorMessage}</p>
+              )}
+            </div>
+          ) : integrationTimeline ? (
             <div className="space-y-4">
               <div>
                 <h3 className="text-base font-medium text-gray-900">

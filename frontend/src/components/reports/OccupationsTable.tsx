@@ -184,7 +184,8 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
         </div>
         Ocupações
       </h2>
-      
+      <p className="text-sm text-gray-500 -mt-2">Somente membros ativos</p>
+
       <div className="bg-white rounded-lg border border-[#090725]/10 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
           <div className="flex items-center justify-between">

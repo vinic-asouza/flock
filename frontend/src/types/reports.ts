@@ -122,12 +122,18 @@ export interface TopOccupation {
   count: number;
 }
 
+export interface IntegrationMeta {
+  available: boolean;
+  error?: string;
+}
+
 export interface MemberReports {
   summary: MemberReportsSummary;
   demographics: Demographics;
   churchStructure: ChurchStructure;
   timeline: Timeline;
-  integration: IntegrationReports;
+  integration: IntegrationReports | null;
+  integrationMeta?: IntegrationMeta;
   topOccupations: TopOccupation[];
   filters: {
     congregation_id: string | null;

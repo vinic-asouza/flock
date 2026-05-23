@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { MemberReports, ReportFilters } from '@/types';
 import { Loader, RefreshCw, Download, Building } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -11,7 +11,6 @@ import { Sidebar } from '@/components/main/Sidebar';
 import { Header } from '@/components/main/Header';
 import toast from 'react-hot-toast';
 
-// Componentes que serão criados
 import { SummaryCards } from '@/components/reports/SummaryCards';
 import { DemographicsCharts } from '@/components/reports/DemographicsCharts';
 import { GroupsCharts } from '@/components/reports/GroupsCharts';
@@ -26,21 +25,24 @@ export default function HomePage() {
   const { user, isLoading: isAuthLoading, isAuthenticated } = useAuth();
   const [reportsData, setReportsData] = useState<MemberReports | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [reportsError, setReportsError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [selectedCongregationId, setSelectedCongregationId] = useState<string | undefined>();
   const [selectedCongregationName, setSelectedCongregationName] = useState<string | undefined>();
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [waitingForCongregation, setWaitingForCongregation] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const loadReportsRequestIdRef = useRef(0);
 
-  // Carregar dados dos relatórios
+  const isExportBlocked =
+    waitingForCongregation || (viewMode === 'congregation' && !selectedCongregationId);
+
   const loadReports = async (view: ViewMode, congregationId?: string) => {
+    const requestId = ++loadReportsRequestIdRef.current;
     try {
       setLoading(true);
-      setError(null);
+      setReportsError(null);
 
-      // Construir filtros baseados na visualização selecionada
       const filters: ReportFilters = {};
 
       if (view === 'sede') {
@@ -50,43 +52,46 @@ export default function HomePage() {
       }
 
       const data = await apiService.getMemberReports(filters);
+      if (requestId !== loadReportsRequestIdRef.current) {
+        return;
+      }
       setReportsData(data);
       setLastUpdated(new Date().toLocaleString('pt-BR'));
     } catch (err: unknown) {
-      // Verificar se o erro é relacionado a autenticação
-      const errorWithStatus = err as Error & { status?: number };
-      if (errorWithStatus.status === 401) {
-        // Erro de autenticação - não mostrar erro, deixar ProtectedRoute redirecionar
-        setError(null);
+      if (requestId !== loadReportsRequestIdRef.current) {
         return;
       }
-      
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar relatórios';
+      const errorWithStatus = err as Error & { status?: number };
+      if (errorWithStatus.status === 401) {
+        setReportsError(null);
+        return;
+      }
+
+      const errorMessage = formatApiError(err);
       toast.error(errorMessage);
-      setError(errorMessage);
+      setReportsError(errorMessage);
     } finally {
-      setLoading(false);
+      if (requestId === loadReportsRequestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
-  // Carregar dados iniciais - apenas quando autenticação estiver completa e autenticado
   useEffect(() => {
-    // Não carregar dados se ainda estiver verificando autenticação
     if (isAuthLoading) {
       return;
     }
 
-    // Não carregar dados se não estiver autenticado
     if (!isAuthenticated) {
       setLoading(false);
-      setError(null);
+      setReportsError(null);
       return;
     }
 
-    // Não carregar dados se for congregação específica mas nenhuma congregação estiver selecionada
     if (viewMode === 'congregation' && !selectedCongregationId) {
       setWaitingForCongregation(true);
       setLoading(false);
+      setReportsData(null);
       return;
     }
 
@@ -94,35 +99,34 @@ export default function HomePage() {
     loadReports(viewMode, selectedCongregationId);
   }, [viewMode, selectedCongregationId, isAuthLoading, isAuthenticated]);
 
-
-  // Mudar visualização
   const handleViewChange = (view: ViewMode, congregationId?: string, congregationName?: string) => {
     setViewMode(view);
     setSelectedCongregationId(congregationId);
     setSelectedCongregationName(congregationName);
   };
 
-  // Atualizar dados
   const handleRefresh = () => {
     loadReports(viewMode, selectedCongregationId);
   };
 
-  // Exportar relatórios em PDF
   const handleExportPDF = async () => {
+    if (viewMode === 'congregation' && !selectedCongregationId) {
+      toast.error('Selecione uma congregação antes de exportar o relatório.');
+      return;
+    }
+
     try {
       setExporting(true);
-      
-      // Determinar congregação baseada no viewMode
+
       let congregationParam: string | undefined;
       if (viewMode === 'sede') {
         congregationParam = 'sede';
       } else if (viewMode === 'congregation' && selectedCongregationId) {
         congregationParam = selectedCongregationId;
       }
-      
+
       const blob = await apiService.exportDashboardPDF(congregationParam);
-      
-      // Criar nome do arquivo baseado no filtro
+
       let filename = 'relatorio-geral';
       if (viewMode === 'sede') {
         filename = 'relatorio-sede';
@@ -130,8 +134,7 @@ export default function HomePage() {
         filename = `relatorio-${selectedCongregationName.toLowerCase().replace(/\s+/g, '-')}`;
       }
       filename += `-${new Date().toISOString().split('T')[0]}.pdf`;
-      
-      // Download do arquivo
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -142,240 +145,224 @@ export default function HomePage() {
       window.URL.revokeObjectURL(url);
       toast.success('PDF exportado com sucesso!');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao exportar PDF';
-      toast.error(errorMessage);
-      setError(errorMessage);
+      toast.error(formatApiError(err));
     } finally {
       setExporting(false);
     }
   };
 
-  // Todas as renderizações devem estar dentro do ProtectedRoute
+  const showShell = isAuthenticated && !isAuthLoading;
+  const showInitialSkeleton = loading && !reportsData && !reportsError && !waitingForCongregation;
+  const showDashboardContent =
+    reportsData || waitingForCongregation || (loading && reportsData);
+
   return (
     <ProtectedRoute>
-      {/* Loading inicial - quando não há dados */}
-      {loading && !reportsData && (
+      {showShell && (
         <div className="h-screen bg-app flex flex-col">
           <Header />
           <div className="flex flex-1 overflow-hidden">
             <Sidebar churchName={user?.name || ''} />
             <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-              <ReportsSkeleton />
-            </main>
-          </div>
-        </div>
-      )}
+              {showInitialSkeleton ? (
+                <ReportsSkeleton />
+              ) : (
+                <>
+                  <div className="px-6">
+                    <h1 className="text-xl font-semibold text-gray-900">Relatórios</h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                      Análise detalhada dos membros da igreja
+                      {lastUpdated && (
+                        <span className="ml-2">• Atualizado em {lastUpdated}</span>
+                      )}
+                    </p>
+                  </div>
 
-      {/* Erro */}
-      {error && isAuthenticated && !loading && (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-              <h3 className="text-lg font-medium text-red-800 mb-2">Erro ao carregar relatórios</h3>
-              <p className="text-red-600 mb-4">{error}</p>
-              <Button onClick={handleRefresh} variant="secondary">
-                <RefreshCw size={16} className="mr-2" />
-                Tentar novamente
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sem dados disponíveis */}
-      {!loading && !error && !reportsData && isAuthenticated && (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <p className="text-gray-600">Nenhum dado disponível</p>
-          </div>
-        </div>
-      )}
-
-      {/* Conteúdo principal - mostra sempre que houver dados ou estiver atualizando */}
-      {(reportsData || (loading && reportsData)) && (
-        <div className="h-screen bg-app flex flex-col">
-          <Header />
-          <div className="flex flex-1 overflow-hidden">
-            <Sidebar churchName={user?.name || ''} />
-            <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-              {/* Título da Página */}
-              <div className="px-6">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Relatórios
-                </h1>
-                <p className="text-sm text-gray-500 mt-1">
-                  Análise detalhada dos membros da igreja
-                  {lastUpdated && (
-                    <span className="ml-2">
-                      • Atualizado em {lastUpdated}
-                    </span>
-                  )}
-                </p>
-              </div>
-
-              {/* Header com Controles */}
-              <div className="px-6 py-4">
-                <div className="bg-white rounded-lg border border-[#090725]/10 px-6 py-4">
-                  <div className="flex flex-col lg:flex-row gap-4 items-start">
-                    {/* Coluna 1: Seletor de Visualização */}
-                    <div className="flex-1 min-w-0">
-                      <ViewSelector
-                        selectedView={viewMode}
-                        selectedCongregationId={selectedCongregationId}
-                        onViewChange={handleViewChange}
-                      />
-                    </div>
-
-                    {/* Coluna 2: Botões de Ação */}
-                    <div className="flex items-center justify-end flex-shrink-0">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={handleRefresh}
-                          disabled={loading}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${loading
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-                          Atualizar
-                        </button>
-
-                        <button
-                          onClick={handleExportPDF}
-                          disabled={exporting || loading}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                            exporting || loading
-                              ? 'bg-gray-400 text-white cursor-not-allowed'
-                              : 'bg-primary text-white hover:bg-primary/90'
-                          }`}
-                        >
-                          {exporting ? (
-                            <>
-                              <Loader size={12} className="animate-spin" />
-                              Exportando...
-                            </>
-                          ) : (
-                            <>
-                              <Download size={12} />
-                              Exportar PDF
-                            </>
-                          )}
-                        </button>
+                  {reportsError && !reportsData && (
+                    <div className="px-6 py-6">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-lg">
+                        <h3 className="text-lg font-medium text-red-800 mb-2">
+                          Erro ao carregar relatórios
+                        </h3>
+                        <p className="text-red-600 mb-4">{reportsError}</p>
+                        <Button onClick={handleRefresh} variant="secondary">
+                          <RefreshCw size={16} className="mr-2" />
+                          Tentar novamente
+                        </Button>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
+                  )}
 
-              {/* Conteúdo Principal */}
-              <div className="p-6 space-y-6">
-                {/* Mostrar skeleton durante atualização */}
-                {loading && reportsData ? (
-                  <ReportsSkeleton />
-                ) : (
-                  <>
-                    {/* Aguardando seleção de congregação */}
-                    {waitingForCongregation ? (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
-                        <div className="flex flex-col items-center gap-4">
-                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Building size={32} className="text-blue-600" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-medium text-blue-900 mb-2">
-                              Selecione uma Congregação
-                            </h3>
-                            <p className="text-blue-700">
-                              Escolha uma congregação específica para visualizar os relatórios detalhados.
-                            </p>
+                  {!reportsError && !reportsData && !loading && !waitingForCongregation && (
+                    <div className="px-6 py-12 text-center">
+                      <p className="text-gray-600">Nenhum dado disponível</p>
+                    </div>
+                  )}
+
+                  {showDashboardContent && (
+                    <>
+                      <div className="px-6 py-4">
+                        <div className="bg-white rounded-lg border border-[#090725]/10 px-6 py-4">
+                          <div className="flex flex-col lg:flex-row gap-4 items-start">
+                            <div className="flex-1 min-w-0">
+                              <ViewSelector
+                                selectedView={viewMode}
+                                selectedCongregationId={selectedCongregationId}
+                                onViewChange={handleViewChange}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-end flex-shrink-0">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={handleRefresh}
+                                  disabled={loading || waitingForCongregation}
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                    loading || waitingForCongregation
+                                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                                  Atualizar
+                                </button>
+
+                                <button
+                                  onClick={handleExportPDF}
+                                  disabled={exporting || loading || isExportBlocked}
+                                  title={
+                                    isExportBlocked
+                                      ? 'Selecione uma congregação para exportar'
+                                      : undefined
+                                  }
+                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                    exporting || loading || isExportBlocked
+                                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                                      : 'bg-primary text-white hover:bg-primary/90'
+                                  }`}
+                                >
+                                  {exporting ? (
+                                    <>
+                                      <Loader size={12} className="animate-spin" />
+                                      Exportando...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Download size={12} />
+                                      Exportar PDF
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      reportsData && (
-                        <>
-                          {/* Cards de Resumo */}
-                          <SummaryCards
-                            data={reportsData.summary}
-                            loading={loading}
-                            filterInfo={reportsData.filters}
-                            congregationName={selectedCongregationName}
-                            integrationInProgress={reportsData.integration?.totals.inProgress ?? 0}
-                          />
 
-                          {/* Divisória */}
-                          <div className="border-t border-gray-200"></div>
+                      <div className="p-6 space-y-6">
+                        {loading && reportsData ? (
+                          <ReportsSkeleton />
+                        ) : waitingForCongregation ? (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-8 text-center">
+                            <div className="flex flex-col items-center gap-4">
+                              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Building size={32} className="text-blue-600" />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-medium text-blue-900 mb-2">
+                                  Selecione uma Congregação
+                                </h3>
+                                <p className="text-blue-700">
+                                  Escolha uma congregação específica para visualizar os relatórios
+                                  detalhados.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          reportsData && (
+                            <>
+                              <SummaryCards
+                                data={reportsData.summary}
+                                loading={loading}
+                                filterInfo={reportsData.filters}
+                                congregationName={selectedCongregationName}
+                                integrationInProgress={
+                                  reportsData.integration?.totals.inProgress ?? 0
+                                }
+                                integrationUnavailable={
+                                  reportsData.integrationMeta?.available === false
+                                }
+                                integrationErrorMessage={reportsData.integrationMeta?.error}
+                              />
 
-                          {/* Timeline e Integração */}
-                          <TimelineCharts
-                            data={reportsData.timeline}
-                            loading={loading}
-                            showCongregationColumn={viewMode === 'all'}
-                            integrationTimeline={reportsData.integration?.timeline}
-                          />
+                              <div className="border-t border-gray-200" />
 
-                          {/* Divisória */}
-                          <div className="border-t border-gray-200"></div>
+                              <TimelineCharts
+                                data={reportsData.timeline}
+                                loading={loading}
+                                showCongregationColumn={viewMode === 'all'}
+                                integrationTimeline={reportsData.integration?.timeline}
+                                integrationUnavailable={
+                                  reportsData.integrationMeta?.available === false
+                                }
+                                integrationErrorMessage={reportsData.integrationMeta?.error}
+                              />
 
-                          {/* Gráficos de Demografia */}
-                          <DemographicsCharts
-                            data={reportsData.demographics}
-                            loading={loading}
-                            viewMode={viewMode}
-                            selectedCongregationId={selectedCongregationId}
-                          />
+                              <div className="border-t border-gray-200" />
 
-                          {/* Divisória */}
-                          <div className="border-t border-gray-200"></div>
+                              <DemographicsCharts
+                                data={reportsData.demographics}
+                                loading={loading}
+                                viewMode={viewMode}
+                                selectedCongregationId={selectedCongregationId}
+                              />
 
-                          {/* Grupos/Ministérios */}
-                          <GroupsCharts
-                            loading={loading}
-                            viewMode={viewMode}
-                            selectedCongregationId={selectedCongregationId}
-                            totalMembers={reportsData.summary.totalMembers}
-                          />
+                              <div className="border-t border-gray-200" />
 
-                          {/* Divisória */}
-                          <div className="border-t border-gray-200"></div>
+                              <GroupsCharts
+                                loading={loading}
+                                viewMode={viewMode}
+                                selectedCongregationId={selectedCongregationId}
+                                totalMembers={reportsData.summary.totalMembers}
+                              />
 
-                          {/* Estrutura da Igreja */}
-                          <ChurchStructureCharts
-                            data={reportsData.churchStructure}
-                            loading={loading}
-                            hideCongregations={viewMode === 'sede' || viewMode === 'congregation'}
-                          />
+                              <div className="border-t border-gray-200" />
 
-                          {/* Divisória */}
-                          <div className="border-t border-gray-200"></div>
+                              <ChurchStructureCharts
+                                data={reportsData.churchStructure}
+                                loading={loading}
+                                hideCongregations={
+                                  viewMode === 'sede' || viewMode === 'congregation'
+                                }
+                              />
 
-                          {/* Geografia */}
-                          <GeographySection
-                            cities={reportsData.demographics.cities}
-                            states={reportsData.demographics.states}
-                            loading={loading}
-                            viewMode={viewMode}
-                            selectedCongregationId={selectedCongregationId}
-                          />
+                              <div className="border-t border-gray-200" />
 
-                          {/* Divisória */}
-                          <div className="border-t border-gray-200"></div>
+                              <GeographySection
+                                cities={reportsData.demographics.cities}
+                                states={reportsData.demographics.states}
+                                loading={loading}
+                                viewMode={viewMode}
+                                selectedCongregationId={selectedCongregationId}
+                              />
 
-                          {/* Ocupações */}
-                          <OccupationsTable
-                            data={reportsData.topOccupations}
-                            loading={loading}
-                            viewMode={viewMode}
-                            selectedCongregationId={selectedCongregationId}
-                          />
-                        </>
-                      )
-                    )}
-                  </>
-                )}
-              </div>
+                              <div className="border-t border-gray-200" />
 
+                              <OccupationsTable
+                                data={reportsData.topOccupations}
+                                loading={loading}
+                                viewMode={viewMode}
+                                selectedCongregationId={selectedCongregationId}
+                              />
+                            </>
+                          )
+                        )}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
             </main>
           </div>
         </div>

@@ -88,6 +88,6 @@ Após analise, crie um novo arquivo em: @docs/QA/modulo-07-calendar
 
 DEV:
 
-Com base nas instruções: @docs/prompts/QA/dev-usability-master.mdc 
-Vamos iniciar os ajustes do: @docs/QA/modulo-05-congregacoes/modulo-05-congregacoes.md 
+Com base nas instruções: @docs/prompts/QA/dev-usability-master.mdc
+Vamos iniciar os ajustes reportados no: @docs/QA/modulo-08-dashboard/modulo-08-dashboard.md
 Grave relatório em 

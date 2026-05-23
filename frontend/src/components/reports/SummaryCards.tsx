@@ -11,9 +11,19 @@ interface SummaryCardsProps {
   };
   congregationName?: string;
   integrationInProgress?: number;
+  integrationUnavailable?: boolean;
+  integrationErrorMessage?: string;
 }
 
-export function SummaryCards({ data, loading = false, filterInfo, congregationName, integrationInProgress = 0 }: SummaryCardsProps) {
+export function SummaryCards({
+  data,
+  loading = false,
+  filterInfo,
+  congregationName,
+  integrationInProgress = 0,
+  integrationUnavailable = false,
+  integrationErrorMessage,
+}: SummaryCardsProps) {
   const currentYear = new Date().getFullYear();
   
   const cards = [
@@ -61,8 +71,11 @@ export function SummaryCards({ data, loading = false, filterInfo, congregationNa
     },
     {
       title: 'Em Integração',
-      subtitle: 'Processo ativo',
+      subtitle: integrationUnavailable
+        ? 'Dados indisponíveis'
+        : 'Processo ativo',
       value: integrationInProgress,
+      hideNumericWhenUnavailable: true,
       icon: TrendingUp,
       color: 'text-[#090725]',
       bgColor: 'bg-[#090725]/5',
@@ -157,10 +170,19 @@ export function SummaryCards({ data, loading = false, filterInfo, congregationNa
                 {card.subtitle && (
                   <p className="text-xs text-[#090725] mb-2">{card.subtitle}</p>
                 )}
+                {card.title === 'Em Integração' && integrationUnavailable && integrationErrorMessage && (
+                  <p className="text-xs text-amber-700 mb-2 line-clamp-2">{integrationErrorMessage}</p>
+                )}
                 <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-bold ${card.color} leading-none`}>
-                    {card.value.toLocaleString('pt-BR')}
-                  </span>
+                  {'hideNumericWhenUnavailable' in card &&
+                  card.hideNumericWhenUnavailable &&
+                  integrationUnavailable ? (
+                    <span className="text-xl font-semibold text-amber-700 leading-none">—</span>
+                  ) : (
+                    <span className={`text-2xl font-bold ${card.color} leading-none`}>
+                      {card.value.toLocaleString('pt-BR')}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

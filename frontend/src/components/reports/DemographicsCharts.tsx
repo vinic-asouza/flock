@@ -178,10 +178,11 @@ export function DemographicsCharts({ data, loading = false, viewMode = 'all', se
         selectedCongregationId={selectedCongregationId}
         sideLayout={true}
         customParamsBuilder={(tabValue) => {
-          const ageRange = parseAgeRange(tabValue);
+          const ageBounds = getAgeRangeBounds(tabValue);
           return {
-            birth_date_from: ageRange.birth_date_from,
-            birth_date_to: ageRange.birth_date_to,
+            age_from: ageBounds.age_from,
+            age_to: ageBounds.age_to,
+            active: true,
           };
         }}
       />
@@ -246,41 +247,17 @@ function getAgeRangeLabel(range: string): string {
   return labels[range] || range;
 }
 
-// Função para converter faixa etária em birth_date_from e birth_date_to
-function parseAgeRange(ageRange: string): { birth_date_from: string; birth_date_to: string } {
-  const ageRanges: Record<string, { birth_date_from: string; birth_date_to: string }> = {
-    '0-12': { 
-      birth_date_from: new Date(new Date().getFullYear() - 12, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date().toISOString().split('T')[0]
-    },
-    '13-17': { 
-      birth_date_from: new Date(new Date().getFullYear() - 17, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date(new Date().getFullYear() - 13, 11, 31).toISOString().split('T')[0]
-    },
-    '18-25': { 
-      birth_date_from: new Date(new Date().getFullYear() - 25, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date(new Date().getFullYear() - 18, 11, 31).toISOString().split('T')[0]
-    },
-    '26-35': { 
-      birth_date_from: new Date(new Date().getFullYear() - 35, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date(new Date().getFullYear() - 26, 11, 31).toISOString().split('T')[0]
-    },
-    '36-50': { 
-      birth_date_from: new Date(new Date().getFullYear() - 50, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date(new Date().getFullYear() - 36, 11, 31).toISOString().split('T')[0]
-    },
-    '51-65': { 
-      birth_date_from: new Date(new Date().getFullYear() - 65, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date(new Date().getFullYear() - 51, 11, 31).toISOString().split('T')[0]
-    },
-    '65+': { 
-      birth_date_from: new Date(new Date().getFullYear() - 120, 0, 1).toISOString().split('T')[0],
-      birth_date_to: new Date(new Date().getFullYear() - 65, 11, 31).toISOString().split('T')[0]
-    },
+/** Alinhado aos buckets de getMemberReports (calculateAge). */
+function getAgeRangeBounds(ageRange: string): { age_from: number; age_to: number } {
+  const ageRanges: Record<string, { age_from: number; age_to: number }> = {
+    '0-12': { age_from: 0, age_to: 12 },
+    '13-17': { age_from: 13, age_to: 17 },
+    '18-25': { age_from: 18, age_to: 25 },
+    '26-35': { age_from: 26, age_to: 35 },
+    '36-50': { age_from: 36, age_to: 50 },
+    '51-65': { age_from: 51, age_to: 65 },
+    '65+': { age_from: 66, age_to: 150 },
   };
 
-  return ageRanges[ageRange] || { 
-    birth_date_from: new Date(new Date().getFullYear() - 120, 0, 1).toISOString().split('T')[0], 
-    birth_date_to: new Date().toISOString().split('T')[0] 
-  };
+  return ageRanges[ageRange] ?? { age_from: 0, age_to: 150 };
 }

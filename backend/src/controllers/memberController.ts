@@ -226,7 +226,14 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       return age >= 0 ? age : null;
     };
 
-    let filteredMembers: typeof members;
+    type MemberListRow = {
+      id: string;
+      birth?: string | null;
+      congregations?: unknown;
+      [key: string]: unknown;
+    };
+
+    let filteredMembers: MemberListRow[];
     let actualCount: number;
 
     if (hasAgeFilter) {
@@ -1184,7 +1191,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
           phone
         )
       `)
-      .eq('church_id', churchId);
+      .eq('church_id', churchId)
+      .order('id', { ascending: true });
 
     // Aplica filtro por congregação
     if (congregation_id) {
@@ -1252,6 +1260,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
             )
           `)
           .eq('church_id', churchId)
+          .order('id', { ascending: true })
           .range(offset, offset + CHUNK_SIZE - 1);
 
         // Reaplicar filtro de congregação
@@ -1468,8 +1477,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       return acc;
     }, {} as Record<string, any[]>);
 
-    // Top 10 ocupações
-    const occupationStats = allMembers.reduce((acc, member) => {
+    // Top 10 ocupações (apenas membros ativos, alinhado à demografia)
+    const occupationStats = activeMembersOnly.reduce((acc, member) => {
       const occupation = member.occupation || 'Não informado';
       acc[occupation] = (acc[occupation] || 0) + 1;
       return acc;
@@ -1533,13 +1542,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       error: integrationError
     } = await integrationQuery;
 
-    if (integrationError) {
-      logError('Erro ao buscar integrantes de integração:', integrationError);
-      return res.status(500).json({
-        error: 'Erro ao buscar dados de integração',
-        details: integrationError.message
-      });
-    }
+    let integrationMeta: { available: boolean; error?: string };
 
     interface IntegrationStatusCounts {
       inProgress: number;
@@ -1555,6 +1558,16 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       expected_congregation?: { id: string; name: string | null } | null;
       mentor?: { id: string; name: string | null } | null;
     }
+
+    let integrationPayload: {
+      totals: IntegrationStatusCounts & { total: number };
+      timeline: {
+        totalsByYear: Record<string, IntegrationStatusCounts>;
+        totalsByMonth: Record<string, IntegrationStatusCounts>;
+        membersByYear: Record<string, IntegrationMemberSummary[]>;
+        membersByMonth: Record<string, IntegrationMemberSummary[]>;
+      };
+    } | null = null;
 
     const createEmptyCounts = (): IntegrationStatusCounts => ({
       inProgress: 0,
@@ -1577,6 +1590,15 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       integrado: 'integrated',
       descartado: 'discarded'
     } as const;
+
+    if (integrationError) {
+      logError('Erro ao buscar integrantes de integração:', integrationError);
+      integrationMeta = {
+        available: false,
+        error: integrationError.message
+      };
+    } else {
+      integrationMeta = { available: true };
 
     const integrationTotals: IntegrationStatusCounts = createEmptyCounts();
     const integrationTotalsByYear: Record<string, IntegrationStatusCounts> = {};
@@ -1663,6 +1685,20 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       integrationMembersByMonth[yearMonth] = sortByCreatedDesc(integrationMembersByMonth[yearMonth]);
     });
 
+    integrationPayload = {
+      totals: {
+        ...integrationTotals,
+        total: integrationMembers.length
+      },
+      timeline: {
+        totalsByYear: integrationTotalsByYear,
+        totalsByMonth: integrationTotalsByMonth,
+        membersByYear: integrationMembersByYear,
+        membersByMonth: integrationMembersByMonth
+      }
+    };
+    }
+
     res.json({
       summary: {
         totalMembers,
@@ -1690,18 +1726,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         membersByYear: membersByYear,
         membersByMonth: membersByMonth
       },
-      integration: {
-        totals: {
-          ...integrationTotals,
-          total: integrationMembers.length
-        },
-        timeline: {
-          totalsByYear: integrationTotalsByYear,
-          totalsByMonth: integrationTotalsByMonth,
-          membersByYear: integrationMembersByYear,
-          membersByMonth: integrationMembersByMonth
-        }
-      },
+      integration: integrationPayload,
+      integrationMeta,
       topOccupations,
       filters: {
         congregation_id: congregation_id || null

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Users, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { ExportMembersModal } from '@/components/members/ExportMembersModal';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import toast from 'react-hot-toast';
 
 interface MembersModalProps {
@@ -112,8 +112,7 @@ export function MembersModal({
       setMembers(response.data || []);
       setPagination(response.pagination || null);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao buscar membros';
-      toast.error(errorMessage);
+      toast.error(formatApiError(error));
       setMembers([]);
       setPagination(null);
     } finally {
@@ -159,8 +158,7 @@ export function MembersModal({
       
       toast.success('PDF exportado com sucesso!');
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar PDF';
-      toast.error(errorMessage);
+      toast.error(formatApiError(error));
     }
   };
 
