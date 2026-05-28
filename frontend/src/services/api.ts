@@ -164,6 +164,21 @@ class ApiService {
     return response.data;
   }
 
+  async syncSubscription(): Promise<{ synced: boolean; message?: string }> {
+    const response = await this.api.post('/stripe/sync-subscription', {});
+    return response.data;
+  }
+
+  async createPortalSession(): Promise<{ url: string }> {
+    const response = await this.api.post('/stripe/create-portal-session', {});
+    return response.data;
+  }
+
+  async changePlan(plan: string): Promise<{ message?: string; [key: string]: unknown }> {
+    const response = await this.api.post('/stripe/change-plan', { plan });
+    return response.data;
+  }
+
   // Métodos de autenticação
   async login(data: LoginData): Promise<LoginResponse> {
     const response: AxiosResponse<LoginResponse> = await this.api.post('/auth/login', data);
@@ -764,12 +779,21 @@ class ApiService {
     return response.data;
   }
 
-  async getAuditLogs(params?: { page?: number; limit?: number; entity?: string; action?: string }): Promise<{ data: { id: string;[key: string]: unknown }[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } }> {
+  async getAuditLogs(params?: {
+    page?: number;
+    limit?: number;
+    entity?: string;
+    action?: string;
+    member_status_change?: 'activate' | 'deactivate';
+  }): Promise<{ data: { id: string;[key: string]: unknown }[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } }> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.entity) queryParams.append('entity', params.entity);
     if (params?.action) queryParams.append('action', params.action);
+    if (params?.member_status_change) {
+      queryParams.append('member_status_change', params.member_status_change);
+    }
 
     const response = await this.api.get(`/account/logs?${queryParams.toString()}`);
     return response.data;

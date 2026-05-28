@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Loader, ArrowRight, CheckCircle2, ArrowLeft, Mail } from 'lucide-react';
 import { waitlistService } from '@/services/waitlist';
 import toast from 'react-hot-toast';
+import { readPlanFromLocation, parseWaitlistPlanParam } from '@/utils/waitlistPlan';
 import { useIbgeData } from '@/hooks/useIbgeData';
 
 const waitlistSchema = z.object({
@@ -40,14 +41,15 @@ const formatPhone = (value: string): string => {
 interface WaitlistFormProps {
   onSubmit?: (data: WaitlistFormData) => Promise<void>;
   isLoading?: boolean;
+  initialPlan?: string;
 }
 
-export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistFormProps) {
+export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan }: WaitlistFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [phoneValue, setPhoneValue] = useState('');
   const [isHovered, setIsHovered] = useState(false);
-  const { states, cities, loadingStates, loadingCities, fetchCities } = useIbgeData();
+  const { states, cities, loadingStates, loadingCities, errorStates, errorCities, fetchCities } = useIbgeData();
   const [selectedStateId, setSelectedStateId] = useState<string>('');
 
   const {
@@ -63,49 +65,24 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
 
   const watchedState = watch('state');
 
-  // Verificar se há um plano na URL e definir automaticamente
   useEffect(() => {
-    const checkAndSetPlanFromURL = () => {
-      if (typeof window !== 'undefined') {
-        const hash = window.location.hash;
-        const urlParams = new URLSearchParams(hash.split('?')[1]);
-        const planParam = urlParams.get('plan');
-        
-        if (planParam) {
-          // Mapear o número de membros ou 'personalizado' para o valor do plano
-          const planMap: Record<string, '200' | '500' | '800' | 'personalizado'> = {
-            '200': '200',
-            '500': '500',
-            '800': '800',
-            'personalizado': 'personalizado',
-          };
-          
-          const planValue = planMap[planParam] || null;
-          if (planValue) {
-            setValue('plan', planValue, { shouldValidate: true });
-          }
-          
-          // Limpar o parâmetro da URL após definir o plano
-          const newHash = hash.split('?')[0];
-          window.history.replaceState(null, '', newHash || window.location.pathname);
-        }
+    const applyPlanFromUrl = () => {
+      const planValue =
+        parseWaitlistPlanParam(initialPlan) ?? readPlanFromLocation();
+      if (planValue) {
+        setValue('plan', planValue, { shouldValidate: true });
+      }
+
+      if (typeof window !== 'undefined' && window.location.hash.includes('?')) {
+        const newHash = window.location.hash.split('?')[0];
+        window.history.replaceState(null, '', newHash || window.location.pathname + window.location.search);
       }
     };
 
-    // Verificar ao carregar
-    checkAndSetPlanFromURL();
-
-    // Ouvir mudanças no hash da URL
-    const handleHashChange = () => {
-      checkAndSetPlanFromURL();
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, [setValue]);
+    applyPlanFromUrl();
+    window.addEventListener('hashchange', applyPlanFromUrl);
+    return () => window.removeEventListener('hashchange', applyPlanFromUrl);
+  }, [setValue, initialPlan]);
 
   // Buscar cidades quando o estado mudar
   useEffect(() => {
@@ -140,7 +117,10 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
         await onSubmit(data);
         setIsSubmitted(true);
       } else {
-        await waitlistService.subscribe(data);
+        await waitlistService.subscribe({
+          ...data,
+          email: data.email.trim().toLowerCase(),
+        });
         setIsSubmitted(true);
         reset();
         setPhoneValue('');
@@ -182,7 +162,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
               Solicitação Enviada com Sucesso!
             </h3>
             <p className="text-gray-600 max-w-md mx-auto leading-relaxed">
-              Obrigado por enviar sua solicitação. Nossa equipe entrará em contato em breve para apresentar o sistema e tirar suas dúvidas.
+              Obrigado pelo contato. Nossa equipe retornará em breve. Se receber um e-mail de confirmação, guarde-o como comprovante do envio.
             </p>
           </div>
           <button
@@ -289,6 +269,11 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
           {loadingStates && (
             <p className="mt-1 text-xs text-gray-500">Carregando estados...</p>
           )}
+          {errorStates && !loadingStates && (
+            <p className="mt-1 text-xs text-amber-700">
+              Não foi possível carregar estados pela API do IBGE. Usando lista padrão de UFs.
+            </p>
+          )}
           {errors.state && (
             <p className="mt-1 text-xs text-red-600">{errors.state.message}</p>
           )}
@@ -316,6 +301,11 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
           )}
           {loadingCities && (
             <p className="mt-1 text-xs text-gray-500">Carregando cidades...</p>
+          )}
+          {errorCities && watchedState && !loadingCities && (
+            <p className="mt-1 text-xs text-amber-700">
+              Não foi possível carregar cidades. Tente selecionar o estado novamente.
+            </p>
           )}
           {errors.city && (
             <p className="mt-1 text-xs text-red-600">{errors.city.message}</p>
@@ -400,7 +390,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading }: WaitlistF
       <div className="pt-3">
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || (errorStates !== null && states.length === 0)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className="group w-full bg-primary text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 relative overflow-hidden"

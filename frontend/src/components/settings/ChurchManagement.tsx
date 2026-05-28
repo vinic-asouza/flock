@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/context/AuthContext';
+import apiService, { formatApiError } from '@/services/api';
 import { Church } from '@/types';
 import { DENOMINATIONS, formatPhone } from '@/utils';
 import { validateCNPJ, validatePhone } from '@/utils/validations';
@@ -121,31 +122,40 @@ export function ChurchManagement() {
     email_church: '',
     phone_church: ''
   });
+  const [churchBaseline, setChurchBaseline] = useState<ChurchFormData>(formData);
 
-  // Carregar dados da igreja
+  const applyChurchToForm = (church: Church) => {
+    const data: ChurchFormData = {
+      name: church.name || '',
+      denomination: church.denomination || '',
+      address: church.address || '',
+      city: church.city || '',
+      state: church.state || '',
+      cnpj: church.cnpj || '',
+      email_church: church.email_church || '',
+      phone_church: church.phone_church || ''
+    };
+    setFormData(data);
+    setChurchBaseline(data);
+  };
+
+  // Carregar dados da igreja via API (ACHADO 02)
   useEffect(() => {
     const loadChurchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        // Usar dados do contexto ou buscar da API
-        if (user) {
-          setFormData({
-            name: user.name || '',
-            denomination: user.denomination || '',
-            address: user.address || '',
-            city: user.city || '',
-            state: user.state || '',
-            cnpj: user.cnpj || '',
-            email_church: user.email_church || '',
-            phone_church: user.phone_church || ''
-          });
-        }
+
+        const church = await apiService.getChurchData();
+        applyChurchToForm(church);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar dados da igreja';
+        const errorMessage = formatApiError(error);
         toast.error(errorMessage);
         setError(errorMessage);
+
+        if (user) {
+          applyChurchToForm(user);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -183,8 +193,7 @@ export function ChurchManagement() {
       const changedFields: Partial<ChurchFormData> = {};
       Object.keys(formData).forEach(key => {
         const field = key as keyof ChurchFormData;
-        const userValue = user?.[field as keyof Church] || '';
-        if (formData[field] !== userValue) {
+        if (formData[field] !== churchBaseline[field]) {
           changedFields[field] = formData[field];
         }
       });
@@ -197,15 +206,15 @@ export function ChurchManagement() {
 
       // Chamar API para atualizar via contexto
       await updateChurch(changedFields);
+
+      const refreshed = await apiService.getChurchData();
+      applyChurchToForm(refreshed);
       
       setSuccess('Dados da igreja atualizados com sucesso!');
       setIsEditing(false);
       
     } catch (error: unknown) {
-      const errorObj = error as { details?: string | string[]; message?: string };
-      const errorMessage = errorObj.details 
-        ? (Array.isArray(errorObj.details) ? errorObj.details.join(', ') : errorObj.details)
-        : (errorObj.message || 'Erro ao salvar dados');
+      const errorMessage = formatApiError(error);
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
@@ -214,19 +223,7 @@ export function ChurchManagement() {
   };
 
   const handleCancel = () => {
-    // Restaurar dados originais
-    if (user) {
-      setFormData({
-        name: user.name || '',
-        denomination: user.denomination || '',
-        address: user.address || '',
-        city: user.city || '',
-        state: user.state || '',
-        cnpj: user.cnpj || '',
-        email_church: user.email_church || '',
-        phone_church: user.phone_church || ''
-      });
-    }
+    setFormData(churchBaseline);
     setIsEditing(false);
     setError(null);
     setSuccess(null);
@@ -475,7 +472,7 @@ export function ChurchManagement() {
               {/* CNPJ */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  CNPJ *
+                  CNPJ <span className="text-gray-400 font-normal">(opcional)</span>
                 </label>
                 <Input
                   value={formatCNPJ(formData.cnpj)}

@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { resolveCheckoutPath, persistSelectedPlan, clearPersistedPlan, isPaidPlanId } from '@/utils/planFunnel';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -74,7 +76,7 @@ const formatPhone = (value: string): string => {
 
 const removePhoneFormatting = (value: string): string => value.replace(/\D/g, '');
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   // ACHADO 02: estado local apenas — sem variáveis de módulo
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
@@ -91,6 +93,16 @@ export default function RegisterPage() {
   const [phoneChurchDisplay, setPhoneChurchDisplay] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register: registerChurch, login, isOperationLoading } = useAuth();
+  const searchParams = useSearchParams();
+  const planFromUrl = searchParams.get('plan');
+
+  useEffect(() => {
+    if (isPaidPlanId(planFromUrl)) {
+      persistSelectedPlan(planFromUrl);
+    } else {
+      clearPersistedPlan();
+    }
+  }, [planFromUrl]);
 
   const {
     register,
@@ -218,7 +230,7 @@ export default function RegisterPage() {
     try {
       await login({ email: cleanData.email, password: cleanData.password });
       sessionStorage.setItem('redirectingToCheckout', 'true');
-      window.location.href = '/checkout';
+      window.location.href = resolveCheckoutPath(planFromUrl);
     } catch (loginErr: unknown) {
       const msg = loginErr instanceof Error ? loginErr.message.toLowerCase() : '';
       const isEmailNotConfirmed = msg.includes('email não confirmado') || msg.includes('not confirmed') || msg.includes('confirm');
@@ -461,5 +473,18 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 bg-gray-200 rounded w-1/2 mx-auto" />
+        <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto" />
+      </div>
+    }>
+      <RegisterPageContent />
+    </Suspense>
   );
 }

@@ -8,7 +8,7 @@ interface DemoItem {
   id: string;
   title: string;
   description: string;
-  image: string; // URL ou path da imagem do sistema
+  image: string;
 }
 
 const demoItems: DemoItem[] = [
@@ -40,7 +40,7 @@ const demoItems: DemoItem[] = [
     id: 'functions',
     title: 'Controle de Cargos',
     description: 'Gerencie os cargos e funções da sua igreja de forma eficiente. Organize a estrutura hierárquica e atribua responsabilidades de forma clara e organizada.',
-    image: '/demo/fuctions.png',
+    image: '/demo/functions.png',
   },
   {
     id: 'reports',
@@ -54,8 +54,8 @@ export function DemoSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  // Pré-carregar imagens
   useEffect(() => {
     demoItems.forEach((item) => {
       if (item.image) {
@@ -65,12 +65,11 @@ export function DemoSection() {
     });
   }, []);
 
-  // Resetar estado de imagem quando o índice mudar
   useEffect(() => {
     setIsTransitioning(true);
     setImageLoaded(false);
-    
-    // Pequeno delay para sincronizar com a transição do texto
+    setImageFailed(false);
+
     const timer = setTimeout(() => {
       setIsTransitioning(false);
     }, 200);
@@ -95,7 +94,6 @@ export function DemoSection() {
   return (
     <section id="demo" className="py-20 px-4 bg-[#f5f5f5fe]">
       <div className="max-w-7xl mx-auto">
-        {/* Título e Subtítulo */}
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Veja o Flock em Ação
@@ -105,11 +103,9 @@ export function DemoSection() {
           </p>
         </div>
 
-        {/* Bloco Principal */}
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
           <div className="grid lg:grid-cols-10 gap-0">
-            {/* Card de Informações (30%) */}
-            <div 
+            <div
               className="lg:col-span-3 p-6 md:p-8 bg-gradient-to-br from-primary to-[#0d0a3a] text-white flex flex-col justify-start"
               style={{
                 backgroundColor: '#090725',
@@ -139,7 +135,6 @@ export function DemoSection() {
                 </p>
               </div>
 
-              {/* Navegação Mobile */}
               <div className="flex gap-3 mt-auto lg:hidden">
                 <button
                   onClick={prevSlide}
@@ -158,10 +153,8 @@ export function DemoSection() {
               </div>
             </div>
 
-            {/* Imagem do Sistema (70%) */}
             <div className="lg:col-span-7 p-4 sm:p-6 md:p-8 lg:p-12 bg-white flex items-center justify-center">
               <div className="relative w-full max-w-5xl">
-                {/* Botão Anterior - Lateral Esquerda da Imagem */}
                 <button
                   onClick={prevSlide}
                   className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 z-10 p-2 sm:p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
@@ -170,7 +163,6 @@ export function DemoSection() {
                   <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
-                {/* Botão Próximo - Lateral Direita da Imagem */}
                 <button
                   onClick={nextSlide}
                   className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 z-10 p-2 sm:p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
@@ -179,9 +171,8 @@ export function DemoSection() {
                   <ChevronRight size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
-                {/* Imagem do sistema ou placeholder */}
                 <div className="w-full bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video relative">
-                  {currentItem.image ? (
+                  {currentItem.image && !imageFailed ? (
                     <>
                       <Image
                         key={`${currentIndex}-${currentItem.id}`}
@@ -193,31 +184,23 @@ export function DemoSection() {
                         }`}
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 70vw"
                         priority={currentIndex < 2}
-                        onLoad={() => {
+                        onLoad={() => setImageLoaded(true)}
+                        onError={() => {
+                          setImageFailed(true);
                           setImageLoaded(true);
                         }}
                       />
-                      {/* Placeholder durante transição */}
                       {isTransitioning && (
                         <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 animate-pulse" />
                       )}
                     </>
                   ) : (
-                    /* Placeholder animado */
-                    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8">
-                      <div className="w-full space-y-3 animate-pulse">
-                        <div className="text-sm text-gray-500 mb-4 font-medium text-center">
-                          {currentItem.title}
-                        </div>
-                        <div className="h-3 bg-gray-200 rounded w-full" />
-                        <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto" />
-                        <div className="h-3 bg-gray-200 rounded w-5/6 mx-auto" />
-                        <div className="grid grid-cols-3 gap-4 mt-6">
-                          <div className="h-24 bg-gray-200 rounded" />
-                          <div className="h-24 bg-gray-200 rounded" />
-                          <div className="h-24 bg-gray-200 rounded" />
-                        </div>
-                      </div>
+                    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-8 text-center">
+                      <BookOpen className="w-12 h-12 text-gray-300 mb-4" aria-hidden />
+                      <p className="text-sm font-medium text-gray-600 mb-1">Preview indisponível</p>
+                      <p className="text-xs text-gray-500 max-w-sm">
+                        A captura de tela de {currentItem.title} ainda não está disponível. Explore a descrição ao lado ou solicite uma demonstração.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -226,7 +209,6 @@ export function DemoSection() {
           </div>
         </div>
 
-        {/* Botões de Ação */}
         <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
             href="#waitlist"
@@ -249,16 +231,8 @@ export function DemoSection() {
             <Video size={18} className="sm:w-5 sm:h-5" />
             <span className="text-sm sm:text-base">Agende uma Demonstração Online</span>
           </a>
-          {/* <a
-            href="#"
-            className="inline-flex items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-50 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-xl w-full sm:w-auto"
-          >
-            <BookOpen size={18} className="sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Confira nossos tutoriais</span>
-          </a> */}
         </div>
       </div>
     </section>
   );
 }
-

@@ -644,7 +644,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 8 — Relatórios e Dashboard Analytics
+### ✅ Módulo 8 — Relatórios e Dashboard Analytics
 
 **Objetivo:** Fornecer visão analítica completa da membresia: demografia, crescimento, estrutura, geografia, grupos, ocupações e tendências temporais.
 
@@ -706,7 +706,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 9 — Configurações e Administração
+### ✅ Módulo 9 — Configurações e Administração
 
 **Objetivo:** Permitir o gerenciamento da conta de usuário, dados da igreja, equipe de usuários, plano de assinatura e auditoria de ações.
 

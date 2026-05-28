@@ -3,11 +3,15 @@ import { WaitlistForm } from "@/components/WaitlistForm";
 import { Footer } from "@/components/Footer";
 
 export const metadata = {
-  title: "Lista de Espera - Flock",
-  description: "Cadastre-se na lista de espera e seja notificado quando o Flock estiver disponível para sua igreja.",
+  title: "Fale Conosco - Flock",
+  description: "Solicite contato com a equipe Flock. O sistema já está disponível para cadastro e assinatura.",
 };
 
-export default function WaitlistPage() {
+export default function WaitlistPage({
+  searchParams,
+}: {
+  searchParams?: { plan?: string };
+}) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -15,17 +19,16 @@ export default function WaitlistPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-primary mb-2">
-              Junte-se à Lista de Espera
+              Fale Conosco
             </h1>
             <p className="text-muted">
-              Seja notificado quando o Flock estiver disponível para sua igreja
+              O Flock já está disponível. Envie sua solicitação e nossa equipe entrará em contato.
             </p>
           </div>
-          <WaitlistForm />
+          <WaitlistForm initialPlan={searchParams?.plan} />
         </div>
       </main>
       <Footer />
     </div>
   );
 }
-

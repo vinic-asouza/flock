@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { formatWaitlistError } from '@/utils/formatWaitlistError';
 
 export interface WaitlistData {
   name: string;
@@ -13,26 +12,23 @@ export interface WaitlistData {
   message?: string;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+
 class WaitlistService {
   async subscribe(data: WaitlistData): Promise<void> {
     try {
-      await axios.post(`${API_URL}/waitlist`, data, {
+      await axios.post(`${API_URL}/waitlist`, {
+        ...data,
+        email: data.email.trim().toLowerCase(),
+      }, {
         headers: {
           'Content-Type': 'application/json',
         },
       });
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const message =
-          error.response?.data?.error ||
-          error.response?.data?.details ||
-          'Erro ao cadastrar na lista de espera';
-        throw new Error(message);
-      }
-      throw error;
+      throw new Error(formatWaitlistError(error));
     }
   }
 }
 
 export const waitlistService = new WaitlistService();
-

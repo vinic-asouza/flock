@@ -6,6 +6,10 @@ import { getWaitlistConfirmationTemplate, getWaitlistNotificationTemplate } from
 
 export const subscribe = async (req: Request, res: Response) => {
   try {
+    if (req.body?.email) {
+      req.body.email = String(req.body.email).trim().toLowerCase();
+    }
+
     // Validar dados da requisição
     const { error: validationError } = validateWaitlist(req.body);
     if (validationError) {
@@ -17,11 +21,11 @@ export const subscribe = async (req: Request, res: Response) => {
 
     const { name, email, phone, churchName, city, state, plan, message } = req.body;
 
-    // Verificar se já existe um cadastro com este email
+    const normalizedEmail = String(email).trim().toLowerCase();
     const { data: existingEntry, error: checkError } = await supabase
       .from('waitlist')
       .select('id')
-      .eq('email', email)
+      .eq('email', normalizedEmail)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
@@ -45,7 +49,7 @@ export const subscribe = async (req: Request, res: Response) => {
       .insert([
         {
           name,
-          email,
+          email: normalizedEmail,
           phone,
           church_name: churchName,
           city,
@@ -68,11 +72,11 @@ export const subscribe = async (req: Request, res: Response) => {
     try {
       // Email de confirmação para o usuário
       await sendEmail({
-        to: email,
+        to: normalizedEmail,
         subject: 'Solicitação Recebida - Flock',
         html: getWaitlistConfirmationTemplate({
           userName: name,
-          userEmail: email,
+          userEmail: normalizedEmail,
         }),
       });
 
@@ -83,7 +87,7 @@ export const subscribe = async (req: Request, res: Response) => {
         subject: `Novo Cadastro na Waitlist: ${name}`,
         html: getWaitlistNotificationTemplate({
           userName: name,
-          userEmail: email,
+          userEmail: normalizedEmail,
           phone: phone || undefined,
           churchName: churchName || undefined,
           city: city || undefined,

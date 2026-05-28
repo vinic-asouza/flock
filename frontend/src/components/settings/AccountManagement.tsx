@@ -6,15 +6,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 import { formatPhone } from '@/utils';
 import { validatePhone } from '@/utils/validations';
 import { Edit, Key, Trash2, Mail, Phone, ExternalLink, RefreshCw } from 'lucide-react';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { z } from 'zod';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 interface AccountData {
   id: string;
@@ -95,7 +92,8 @@ const deleteAccountSchema = z.object({
 });
 
 export function AccountManagement() {
-  const { logout, user, refreshChurch } = useAuth();
+  const { logout, user, refreshChurch, currentRole } = useAuth();
+  const isOwner = currentRole === 'owner';
   const [accountData, setAccountData] = useState<AccountData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -151,13 +149,7 @@ export function AccountManagement() {
       setIsSyncing(true);
       setDeleteError(null);
       
-      await axios.post(
-        `${API_URL}/stripe/sync-subscription`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+      await apiService.syncSubscription();
       
       // Atualizar dados da igreja após sincronização
       if (refreshChurch) {
@@ -168,11 +160,7 @@ export function AccountManagement() {
       setSuccess('Assinatura sincronizada com sucesso! Se você cancelou sua assinatura, os campos de exclusão aparecerão automaticamente.');
       toast.success('Assinatura sincronizada com sucesso!');
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-          (err as { message?: string }).message
-        : undefined;
-      const finalMessage = errorMessage || 'Erro ao sincronizar assinatura. Tente novamente.';
+      const finalMessage = formatApiError(err) || 'Erro ao sincronizar assinatura. Tente novamente.';
       toast.error(finalMessage);
       setDeleteError(finalMessage);
     } finally {
@@ -184,15 +172,7 @@ export function AccountManagement() {
     try {
       setDeleteError(null);
       
-      const response = await axios.post(
-        `${API_URL}/stripe/create-portal-session`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-      
-      const { url } = response.data;
+      const { url } = await apiService.createPortalSession();
       
       if (!url) {
         throw new Error('URL do portal não recebida');
@@ -201,11 +181,7 @@ export function AccountManagement() {
       // Abrir portal do Stripe em nova guia
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-          (err as { message?: string }).message
-        : undefined;
-      const finalMessage = errorMessage || 'Erro ao acessar o portal de pagamento. Tente novamente.';
+      const finalMessage = formatApiError(err) || 'Erro ao acessar o portal de pagamento. Tente novamente.';
       toast.error(finalMessage);
       setDeleteError(finalMessage);
     }
@@ -222,10 +198,7 @@ export function AccountManagement() {
         const data = await apiService.getAccountData();
         setAccountData(data as unknown as AccountData);
       } catch (error: unknown) {
-        const errorObj = error as { details?: string | string[]; message?: string };
-        const errorMessage = errorObj.details 
-          ? (Array.isArray(errorObj.details) ? errorObj.details.join(', ') : errorObj.details)
-          : (errorObj.message || 'Erro ao carregar dados da conta');
+        const errorMessage = formatApiError(error);
         toast.error(errorMessage);
         setError(errorMessage);
       } finally {
@@ -255,6 +228,12 @@ export function AccountManagement() {
       }
 
       await apiService.changeEmail(emailData);
+
+      const refreshed = await apiService.getAccountData();
+      setAccountData({
+        ...(refreshed as unknown as AccountData),
+        email: emailData.newEmail,
+      });
       
       setSuccess('Email alterado com sucesso! Verifique sua caixa de entrada para confirmar o novo email.');
       toast.success('Email alterado com sucesso! Verifique sua caixa de entrada.');
@@ -262,10 +241,7 @@ export function AccountManagement() {
       setEmailData({ newEmail: '', password: '' });
       
     } catch (error: unknown) {
-      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
-      const errorMessage = errorObj.response?.data?.details 
-        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
-        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar email');
+      const errorMessage = formatApiError(error);
       toast.error(errorMessage);
       setEmailError(errorMessage);
     } finally {
@@ -302,10 +278,7 @@ export function AccountManagement() {
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
       
     } catch (error: unknown) {
-      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
-      const errorMessage = errorObj.response?.data?.details 
-        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
-        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar senha');
+      const errorMessage = formatApiError(error);
       toast.error(errorMessage);
       setPasswordError(errorMessage);
     } finally {
@@ -370,10 +343,7 @@ export function AccountManagement() {
       setPhoneData({ newPhone: '', password: '' });
       
     } catch (error: unknown) {
-      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
-      const errorMessage = errorObj.response?.data?.details 
-        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
-        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao alterar telefone');
+      const errorMessage = formatApiError(error);
       toast.error(errorMessage);
       setPhoneError(errorMessage);
     } finally {
@@ -411,10 +381,7 @@ export function AccountManagement() {
       }, 2000);
       
     } catch (error: unknown) {
-      const errorObj = error as { response?: { data?: { details?: string | string[]; error?: string } }; message?: string };
-      const errorMessage = errorObj.response?.data?.details 
-        ? (Array.isArray(errorObj.response.data.details) ? errorObj.response.data.details.join(', ') : errorObj.response.data.details)
-        : (errorObj.response?.data?.error || errorObj.message || 'Erro ao excluir conta');
+      const errorMessage = formatApiError(error);
       toast.error(errorMessage);
       setDeleteError(errorMessage);
     } finally {
@@ -700,14 +667,18 @@ export function AccountManagement() {
               ⚠️ ATENÇÃO: Esta ação é irreversível!
             </p>
             <p className="text-sm text-red-700 mb-2">
-              Ao excluir sua conta, todos os dados serão permanentemente removidos, incluindo:
+              {isOwner
+                ? 'Ao excluir sua conta como proprietário(a), todos os dados da igreja serão permanentemente removidos, incluindo:'
+                : 'Ao excluir sua conta, seu acesso a esta igreja será removido permanentemente. Os dados da igreja (membros, relatórios e configurações) permanecerão intactos.'}
             </p>
+            {isOwner && (
             <ul className="text-sm text-red-700 ml-4 list-disc">
               <li>Dados da igreja</li>
               <li>Lista de membros</li>
               <li>Cargos e congregações</li>
               <li>Relatórios e histórico</li>
             </ul>
+            )}
           </div>
 
           {/* Aviso sobre plano ativo */}

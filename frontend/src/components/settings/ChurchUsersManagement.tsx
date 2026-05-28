@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 import type { ChurchUserListItem, ChurchUserRole } from '@/types';
 import toast from 'react-hot-toast';
 import { UserPlus, Shield, Loader2, Trash2 } from 'lucide-react';
@@ -64,8 +64,7 @@ export function ChurchUsersManagement() {
       const { data } = await apiService.listChurchUsers();
       setList(data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao carregar usuários';
-      toast.error(msg);
+      toast.error(formatApiError(err));
       setList([]);
     } finally {
       setLoading(false);
@@ -92,8 +91,7 @@ export function ChurchUsersManagement() {
       setIsAddModalOpen(false);
       fetchList();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao adicionar usuário';
-      toast.error(msg);
+      toast.error(formatApiError(err));
     } finally {
       setAdding(false);
     }
@@ -117,8 +115,7 @@ export function ChurchUsersManagement() {
       setEditingUser(null);
       fetchList();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao atualizar';
-      toast.error(msg);
+      toast.error(formatApiError(err));
     } finally {
       setSavingEdit(false);
     }
@@ -140,8 +137,7 @@ export function ChurchUsersManagement() {
       setDeletingUser(null);
       fetchList();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao remover';
-      toast.error(msg);
+      toast.error(formatApiError(err));
     } finally {
       setRemoving(false);
     }

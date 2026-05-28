@@ -53,8 +53,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: `${siteUrl}/og-image.jpg`,
-        width: 1200,
-        height: 630,
+        width: 746,
+        height: 1000,
         alt: "Flock - Sistema de Gerenciamento de Membros de Igrejas",
       },
     ],
@@ -100,12 +100,7 @@ export default function RootLayout({
       "@type": "Offer",
       "price": "0",
       "priceCurrency": "BRL",
-      "availability": "https://schema.org/PreOrder"
-    },
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": "4.8",
-      "ratingCount": "50"
+      "availability": "https://schema.org/InStock"
     },
     "description": "Sistema completo para gestão eclesiástica. Gerencie membros, cargos e congregações da sua igreja de forma simples e eficiente.",
     "url": siteUrl,

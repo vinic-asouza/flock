@@ -1,56 +1,36 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader, CreditCard } from 'lucide-react';
-import { stripeService } from '@/services/stripe';
 import toast from 'react-hot-toast';
+import {
+  buildRegisterUrl,
+  type PaidPlanId,
+} from '@/utils/planFunnel';
 
 interface CheckoutButtonProps {
-  plan: '200' | '500' | '800';
-  email?: string;
-  name?: string;
+  plan: PaidPlanId;
   className?: string;
   children?: React.ReactNode;
-  isAuthenticated?: boolean;
 }
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
 
 export function CheckoutButton({
   plan,
-  email,
-  name,
   className = '',
   children,
-  isAuthenticated = false,
 }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     try {
       setIsLoading(true);
-
-      // Se não estiver autenticado, redirecionar para registro primeiro
-      if (!isAuthenticated) {
-        // Redirecionar para página de registro no frontend (sem parâmetro de plano)
-        window.location.href = `${FRONTEND_URL}/register`;
-        return;
-      }
-
-      // Cliente autenticado, criar checkout diretamente
-      const { url } = await stripeService.createCheckoutSession({
-        plan,
-        email,
-        name,
-      });
-
-      // Redirecionar para checkout do Stripe
-      window.location.href = url;
-    } catch (error: any) {
-      console.error('Erro ao iniciar checkout:', error);
-      toast.error(error.message || 'Erro ao iniciar processo de pagamento');
+      window.location.href = buildRegisterUrl(plan, FRONTEND_URL);
+    } catch (error) {
+      console.error('Erro ao redirecionar para registro:', error);
+      toast.error('Não foi possível iniciar o cadastro. Tente novamente.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -85,4 +65,3 @@ export function CheckoutButton({
     </button>
   );
 }
-

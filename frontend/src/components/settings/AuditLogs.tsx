@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { apiService } from '@/services/api';
+import { apiService, formatApiError } from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
 import toast from 'react-hot-toast';
 import { 
@@ -65,9 +65,14 @@ const ACTION_LABELS = {
   deactivate: 'Inativado',
 };
 
-const ENTITY_LABELS = {
+const ENTITY_LABELS: Record<string, string> = {
   member: 'Membro',
   congregation: 'Congregação',
+  church: 'Igreja',
+  account: 'Conta',
+  group: 'Grupo',
+  calendar_item: 'Calendário',
+  integration_member: 'Integração',
 };
 
 export default function AuditLogs() {
@@ -82,6 +87,7 @@ export default function AuditLogs() {
   });
   const [filters, setFilters] = useState({
     action: '',
+    entity: '',
   });
   const [expandedLogs, setExpandedLogs] = useState<Set<string>>(new Set());
 
@@ -89,17 +95,18 @@ export default function AuditLogs() {
     try {
       setLoading(true);
       setError(null);
-      
-      // Para ativação/inativação, buscar logs de 'update' e filtrar no frontend
-      const apiAction = (filters.action === 'activate' || filters.action === 'deactivate') 
-        ? 'update' 
-        : filters.action || undefined;
-      
+
+      const isStatusChangeFilter =
+        filters.action === 'activate' || filters.action === 'deactivate';
+
       const response = await apiService.getAuditLogs({
         page,
         limit: pagination.limit,
-        entity: 'member', // Apenas membros
-        action: apiAction,
+        entity: filters.entity || undefined,
+        action: isStatusChangeFilter ? undefined : filters.action || undefined,
+        member_status_change: isStatusChangeFilter
+          ? (filters.action as 'activate' | 'deactivate')
+          : undefined,
       });
       
       const typedResponse: AuditLogsResponse = {
@@ -112,23 +119,10 @@ export default function AuditLogs() {
         },
       };
 
-      let filteredLogs = typedResponse.data;
-      
-      // Filtrar ativação/inativação no frontend
-      if (filters.action === 'activate' || filters.action === 'deactivate') {
-        filteredLogs = typedResponse.data.filter(log => {
-          const realAction = getRealAction(log);
-          return realAction === filters.action;
-        });
-      }
-
-      setLogs(filteredLogs);
-      setPagination({
-        ...typedResponse.pagination,
-        total: filteredLogs.length
-      });
+      setLogs(typedResponse.data);
+      setPagination(typedResponse.pagination);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar logs';
+      const errorMessage = formatApiError(err);
       toast.error(errorMessage);
       setError(errorMessage);
     } finally {
@@ -216,6 +210,14 @@ export default function AuditLogs() {
   };
 
   const getMemberName = (log: AuditLog): string => {
+    if (log.entity === 'church') {
+      const name = log.changes_after?.name ?? log.changes_before?.name;
+      return name ? String(name) : 'Igreja';
+    }
+    if (log.entity === 'account') {
+      const email = log.changes_after?.email ?? log.changes_before?.email;
+      return email ? String(email) : 'Conta';
+    }
     if (log.action === 'create' && log.changes_after?.name) {
       return formatMemberName(String(log.changes_after.name));
     }
@@ -270,8 +272,12 @@ export default function AuditLogs() {
     return String(value);
   };
 
+  const getEntityRecordLabel = (entity: string): string =>
+    ENTITY_LABELS[entity] || 'Registro';
+
   const renderChanges = (log: AuditLog, isExpanded: boolean) => {
     const memberName = getMemberName(log);
+    const entityLabel = getEntityRecordLabel(log.entity);
     const realAction = getRealAction(log);
     const isActivation = isActivationChange(log);
     const changedFields = (log.action === 'update' || isActivation) ? getChangedFields(log.changes_before, log.changes_after) : [];
@@ -280,7 +286,7 @@ export default function AuditLogs() {
       return (
         <div className="text-sm text-gray-500">
           <div className="mb-2">
-            <span className="font-medium text-gray-700">Membro: {memberName}</span>
+            <span className="font-medium text-gray-700">{entityLabel}: {memberName}</span>
             {(log.action === 'update' || isActivation) && changedFields.length > 0 && (
               <div className="mt-1 text-xs text-gray-600">
                 Campos alterados: {changedFields.map(f => formatFieldName(f.field)).join(', ')}
@@ -486,8 +492,23 @@ export default function AuditLogs() {
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Filter className="w-4 h-4 text-gray-500" />
+            <Select
+              value={filters.entity}
+              onChange={(value) => handleFilterChange('entity', value)}
+              options={[
+                { value: '', label: 'Todas as entidades' },
+                { value: 'member', label: 'Membros' },
+                { value: 'church', label: 'Igreja' },
+                { value: 'account', label: 'Conta' },
+                { value: 'congregation', label: 'Congregações' },
+                { value: 'group', label: 'Grupos' },
+                { value: 'calendar_item', label: 'Calendário' },
+                { value: 'integration_member', label: 'Integração' },
+              ]}
+              className="w-44"
+            />
             <Select
               value={filters.action}
               onChange={(value) => handleFilterChange('action', value)}

@@ -103,10 +103,34 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { data: existingList } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
-    const existingUser = (existingList?.users || []).find(
-      (u) => u.email?.toLowerCase() === normalizedEmail
-    );
+    let existingUser: { id: string; email?: string } | undefined;
+    let page = 1;
+    const perPage = 1000;
+
+    while (!existingUser) {
+      const { data: existingList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage
+      });
+
+      if (listError) {
+        logError('Erro ao buscar usuário por email:', listError);
+        return res.status(500).json({
+          error: 'Erro ao verificar email',
+          details: listError.message
+        });
+      }
+
+      existingUser = (existingList?.users || []).find(
+        (u) => u.email?.toLowerCase() === normalizedEmail
+      );
+
+      if (!existingList?.users?.length || existingList.users.length < perPage) {
+        break;
+      }
+
+      page += 1;
+    }
 
     if (existingUser) {
       userId = existingUser.id;

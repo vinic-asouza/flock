@@ -131,7 +131,6 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
             </Link>
             <Link
               href={`${FRONTEND_URL}/login`}
-              target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 text-white/90 hover:text-white transition-colors font-medium"
               onClick={() => setMobileMenuOpen(false)}

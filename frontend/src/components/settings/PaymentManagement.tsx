@@ -17,19 +17,17 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import apiService, { formatApiError } from '@/services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-
 // Carregar planos da API (com fallback)
 const loadPlanNames = async (): Promise<Record<string, string>> => {
   try {
-    const response = await axios.get(`${API_URL}/plans`);
+    const { plans } = await apiService.getPlans();
     const names: Record<string, string> = {};
-    response.data.plans.forEach((plan: { id: string; name: string }) => {
+    plans.forEach((plan) => {
       names[plan.id] = plan.name;
     });
     return names;
@@ -46,9 +44,9 @@ const loadPlanNames = async (): Promise<Record<string, string>> => {
 
 const loadPlanPrices = async (): Promise<Record<string, string>> => {
   try {
-    const response = await axios.get(`${API_URL}/plans`);
+    const { plans } = await apiService.getPlans();
     const prices: Record<string, string> = {};
-    response.data.plans.forEach((plan: { id: string; priceFormatted: string }) => {
+    plans.forEach((plan) => {
       prices[plan.id] = plan.priceFormatted;
     });
     return prices;
@@ -101,6 +99,7 @@ export function PaymentManagement() {
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [autoSyncFailed, setAutoSyncFailed] = useState(false);
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -215,16 +214,11 @@ export function PaymentManagement() {
         setIsSyncing(true);
         setError(null);
         setSyncMessage(null);
+        setAutoSyncFailed(false);
 
-        const response = await axios.post(
-          `${API_URL}/stripe/sync-subscription`,
-          {},
-          {
-            withCredentials: true,
-          }
-        );
+        const response = await apiService.syncSubscription();
 
-        if (response.data.synced) {
+        if (response.synced) {
           // Atualizar dados do usuário silenciosamente (sem mostrar mensagem)
           // Como hasSyncedRef.current já é true, mesmo que refreshChurch atualize user,
           // o useEffect não será executado novamente
@@ -233,9 +227,7 @@ export function PaymentManagement() {
           }
         }
       } catch {
-        // Não mostrar erro na sincronização automática, apenas logar
-        // Sincronização automática falhou silenciosamente
-        // Não mostrar erro ao usuário para não poluir a interface
+        setAutoSyncFailed(true);
       } finally {
         setIsSyncing(false);
       }
@@ -250,15 +242,7 @@ export function PaymentManagement() {
       setIsLoadingPortal(true);
       setError(null);
 
-      const response = await axios.post(
-        `${API_URL}/stripe/create-portal-session`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
-
-      const { url } = response.data;
+      const { url } = await apiService.createPortalSession();
 
       if (!url) {
         throw new Error('URL do portal não recebida');
@@ -268,11 +252,7 @@ export function PaymentManagement() {
       window.open(url, '_blank', 'noopener,noreferrer');
       setIsLoadingPortal(false);
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-          (err as { message?: string }).message
-        : undefined;
-      const finalMessage = errorMessage || 'Erro ao acessar o portal de pagamento. Tente novamente.';
+      const finalMessage = formatApiError(err) || 'Erro ao acessar o portal de pagamento. Tente novamente.';
       toast.error(finalMessage);
       setError(finalMessage);
       setIsLoadingPortal(false);
@@ -294,15 +274,11 @@ export function PaymentManagement() {
       setError(null);
       setSyncMessage(null);
 
-      const response = await axios.post(
-        `${API_URL}/stripe/sync-subscription`,
-        {},
-        {
-          withCredentials: true,
-        }
-      );
+      setAutoSyncFailed(false);
 
-      if (response.data.synced) {
+      const response = await apiService.syncSubscription();
+
+      if (response.synced) {
         setSyncMessage('Assinatura sincronizada com sucesso!');
         setSuccessMessage('Dados atualizados com sucesso!');
         
@@ -326,15 +302,9 @@ export function PaymentManagement() {
         setCachedSyncResult();
       }
     } catch (err: unknown) {
-      // Erro já tratado pelo toast
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-          (err as { message?: string }).message
-        : undefined;
-      setError(
-        errorMessage ||
-        'Erro ao sincronizar assinatura. Tente novamente.'
-      );
+      const errorMessage = formatApiError(err);
+      toast.error(errorMessage);
+      setError(errorMessage || 'Erro ao sincronizar assinatura. Tente novamente.');
     } finally {
       setIsSyncing(false);
     }
@@ -357,15 +327,7 @@ export function PaymentManagement() {
         setIsLoadingPortal(true);
         setError(null);
 
-        const response = await axios.post(
-          `${API_URL}/stripe/create-portal-session`,
-          {},
-          {
-            withCredentials: true,
-          }
-        );
-
-        const { url } = response.data;
+        const { url } = await apiService.createPortalSession();
 
         if (!url) {
           throw new Error('URL do portal não recebida');
@@ -380,11 +342,7 @@ export function PaymentManagement() {
         setIsLoadingPortal(false);
         return;
       } catch (err: unknown) {
-        const errorMessage = err && typeof err === 'object' && 'response' in err
-          ? (err as { response?: { data?: { error?: string } }; message?: string }).response?.data?.error ||
-            (err as { message?: string }).message
-          : undefined;
-        const finalMessage = errorMessage || 'Erro ao acessar o portal de pagamento. Tente novamente.';
+        const finalMessage = formatApiError(err) || 'Erro ao acessar o portal de pagamento. Tente novamente.';
         toast.error(finalMessage);
         setError(finalMessage);
         setIsLoadingPortal(false);
@@ -422,13 +380,7 @@ export function PaymentManagement() {
       setError(null);
       setSyncMessage(null);
 
-      await axios.post(
-        `${API_URL}/stripe/change-plan`,
-        { plan: selectedPlan },
-        {
-          withCredentials: true,
-        }
-      );
+      await apiService.changePlan(selectedPlan);
 
       setSuccessMessage('Plano alterado com sucesso!');
       setSyncMessage(null);
@@ -448,12 +400,7 @@ export function PaymentManagement() {
         setSuccessMessage(null);
         }, 5000);
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'response' in err
-        ? (err as { response?: { data?: { error?: string; details?: string } }; message?: string }).response?.data?.error ||
-          (err as { response?: { data?: { details?: string } } }).response?.data?.details ||
-          (err as { message?: string }).message
-        : undefined;
-      const finalMessage = errorMessage || 'Erro ao trocar plano. Tente novamente.';
+      const finalMessage = formatApiError(err) || 'Erro ao trocar plano. Tente novamente.';
       toast.error(finalMessage);
       setError(finalMessage);
       setShowConfirmModal(false);
@@ -489,6 +436,30 @@ export function PaymentManagement() {
           Gerencie seu plano, assinatura e pagamentos.
         </p>
       </div>
+
+      {autoSyncFailed && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-900">
+                Não foi possível sincronizar a assinatura automaticamente
+              </p>
+              <p className="text-sm text-amber-800 mt-1">
+                Os dados exibidos podem estar desatualizados. Use o botão abaixo para tentar novamente.
+              </p>
+              <Button
+                onClick={() => handleSyncSubscription(true)}
+                variant="secondary"
+                className="mt-3"
+                disabled={isSyncing}
+              >
+                {isSyncing ? 'Sincronizando...' : 'Sincronizar agora'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">

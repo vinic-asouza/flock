@@ -554,39 +554,42 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     const offset = (page - 1) * limit;
     const entity = req.query.entity as string;
     const action = req.query.action as string;
+    const memberStatusChange = req.query.member_status_change as string;
 
     // Construir query
     let query = supabase
       .from('audit_logs')
       .select('*', { count: 'exact' })
       .eq('church_id', churchId)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('created_at', { ascending: false });
 
-    // Aplicar filtros
-    if (entity) {
-      query = query.eq('entity', entity);
-    }
-    if (action) {
-      query = query.eq('action', action);
+    // Filtro server-side de ativação/inativação de membros (ACHADO 06)
+    if (memberStatusChange === 'activate' || memberStatusChange === 'deactivate') {
+      query = query
+        .eq('entity', 'member')
+        .eq('action', 'update');
+
+      if (memberStatusChange === 'activate') {
+        query = query
+          .filter('changes_before->>active', 'eq', 'false')
+          .filter('changes_after->>active', 'eq', 'true');
+      } else {
+        query = query
+          .filter('changes_before->>active', 'eq', 'true')
+          .filter('changes_after->>active', 'eq', 'false');
+      }
+    } else {
+      if (entity) {
+        query = query.eq('entity', entity);
+      }
+      if (action) {
+        query = query.eq('action', action);
+      }
     }
 
-    console.log('🔍 Query de logs:', {
-      church_id: churchId,
-      entity,
-      action,
-      page,
-      limit,
-      offset
-    });
+    query = query.range(offset, offset + limit - 1);
 
     const { data: logs, error: logsError, count } = await query;
-
-    console.log('📊 Resultado da query:', {
-      logsCount: logs?.length || 0,
-      totalCount: count,
-      error: logsError?.message
-    });
 
     if (logsError) {
       return res.status(500).json({
