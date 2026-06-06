@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -29,8 +29,9 @@ export default function CheckoutPage() {
     initialPlan && ['100', '200', '500', '800'].includes(initialPlan) ? initialPlan : null
   );
   const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
+  const [plansLoadError, setPlansLoadError] = useState(false);
+  const checkoutInFlightRef = useRef(false);
 
-  // ACHADO 04: usar apiService.getPlans() — inclui interceptor de 401 automaticamente
   useEffect(() => {
     const loadPlans = async () => {
       try {
@@ -43,13 +44,10 @@ export default function CheckoutPage() {
           members: plan.members,
         }));
         setPlanOptions(plans);
+        setPlansLoadError(false);
       } catch {
-        setPlanOptions([
-          { value: '100', name: 'Plano 100 Membros', price: 'Gratuito', description: 'Ideal para começar', members: 100 },
-          { value: '200', name: 'Plano 200 Membros', price: 'R$ 29,99/mês', description: 'Para igrejas pequenas', members: 200 },
-          { value: '500', name: 'Plano 500 Membros', price: 'R$ 59,99/mês', description: 'Para igrejas médias', members: 500 },
-          { value: '800', name: 'Plano 800 Membros', price: 'R$ 89,99/mês', description: 'Para igrejas grandes', members: 800 },
-        ]);
+        setPlanOptions([]);
+        setPlansLoadError(true);
       } finally {
         setIsLoadingPlans(false);
       }
@@ -76,21 +74,23 @@ export default function CheckoutPage() {
       setError('Por favor, selecione um plano antes de continuar');
       return;
     }
+    if (checkoutInFlightRef.current) {
+      return;
+    }
+    checkoutInFlightRef.current = true;
 
     try {
       setIsLoading(true);
       setError(null);
 
       if (selectedPlan === '100') {
-        // ACHADO 04: usar apiService (inclui withCredentials + interceptor de 401)
-        // ACHADO 09: backend agora retorna 200 quando plano já está ativo (idempotente)
         await apiService.activateFreePlan();
         await refreshChurch();
+        checkoutInFlightRef.current = false;
         router.push('/');
         return;
       }
 
-      // ACHADO 04: usar apiService para criar sessão de checkout
       const { url } = await apiService.createCheckoutSession(selectedPlan);
 
       if (!url) {
@@ -114,16 +114,43 @@ export default function CheckoutPage() {
 
       setError(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
       setIsLoading(false);
+      checkoutInFlightRef.current = false;
     }
   };
 
   // ACHADO 03: exibir loading durante inicialização do AuthContext
-  if (isAuthLoading || isLoadingPlans) {
+  if (isAuthLoading || isLoadingPlans || plansLoadError) {
     return (
       <div className="flex items-center justify-center w-full">
         <div className="text-center">
           <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-sm text-gray-600">Carregando planos...</p>
+          <p className="text-sm text-gray-600">
+            {plansLoadError ? 'Não foi possível carregar os planos.' : 'Carregando planos...'}
+          </p>
+          {plansLoadError && (
+            <Button
+              className="mt-4"
+              variant="secondary"
+              onClick={() => {
+                setIsLoadingPlans(true);
+                setPlansLoadError(false);
+                void apiService.getPlans().then((data) => {
+                  setPlanOptions(
+                    data.plans.map((plan) => ({
+                      value: plan.id,
+                      name: plan.name,
+                      price: plan.priceFormatted + (plan.id !== '100' ? '/mês' : ''),
+                      description: plan.description,
+                      members: plan.members,
+                    }))
+                  );
+                  setPlansLoadError(false);
+                }).catch(() => setPlansLoadError(true)).finally(() => setIsLoadingPlans(false));
+              }}
+            >
+              Tentar novamente
+            </Button>
+          )}
         </div>
       </div>
     );

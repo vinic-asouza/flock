@@ -1,10 +1,17 @@
 import { Request, Response } from 'express';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { validateChurchUpdate } from '../validators/churchValidator';
 import { AuthRequest } from '../types';
 import { checkMemberLimit } from '../utils/planLimits';
 import { logAudit } from '../utils/auditLogger';
 import { logError } from '../utils/logger';
+import {
+  listChurchMembershipsForUser,
+  resolveChurchContextForUser,
+} from '../services/churchContext';
+import { sanitizeChurchForRole } from '../utils/churchDto';
+import { getActiveChurchIdFromRequest } from '../services/churchContext';
+import { setActiveChurchId } from '../utils/cookieUtils';
 
 /**
  * Buscar dados da igreja do usuário autenticado
@@ -40,9 +47,10 @@ export const getChurch = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const role = req.church!.role;
     res.json({
       message: 'Dados da igreja recuperados com sucesso',
-      church: churchData
+      church: sanitizeChurchForRole(churchData, role),
     });
 
   } catch (error) {
@@ -181,7 +189,9 @@ export const getMemberLimit = async (req: AuthRequest, res: Response) => {
       planType: limitCheck.planType,
       subscriptionStatus: limitCheck.subscriptionStatus,
       hasActiveSubscription: limitCheck.hasActiveSubscription,
+      isPastDue: limitCheck.isPastDue ?? false,
       canAdd: limitCheck.canAdd,
+      message: limitCheck.message,
       percentage: limitCheck.limit === Infinity ? 0 : (limitCheck.currentCount / limitCheck.limit) * 100,
     });
 
@@ -190,6 +200,70 @@ export const getMemberLimit = async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
+    });
+  }
+};
+
+export const listMemberships = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+    const memberships = await listChurchMembershipsForUser(req.user.id);
+    const activeChurchId = getActiveChurchIdFromRequest(req);
+    res.json({ memberships, activeChurchId: activeChurchId || null });
+  } catch (err) {
+    console.error('Erro ao listar memberships:', err);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: err instanceof Error ? err.message : 'Erro desconhecido',
+    });
+  }
+};
+
+export const setActiveChurch = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Não autorizado' });
+    }
+
+    const { churchId } = req.body as { churchId?: string };
+    if (!churchId) {
+      return res.status(400).json({
+        error: 'churchId é obrigatório',
+      });
+    }
+
+    const context = await resolveChurchContextForUser(req.user.id, churchId);
+    if (!context) {
+      return res.status(403).json({
+        error: 'Sem acesso a esta igreja',
+      });
+    }
+
+    setActiveChurchId(res, churchId);
+
+    const { data: churchData, error: churchError } = await supabase
+      .from('churches')
+      .select('*')
+      .eq('id', churchId)
+      .single();
+
+    if (churchError || !churchData) {
+      return res.status(404).json({ error: 'Igreja não encontrada' });
+    }
+
+    res.json({
+      message: 'Igreja ativa definida',
+      church: sanitizeChurchForRole(churchData, context.role),
+      role: context.role,
+      activeChurchId: churchId,
+    });
+  } catch (err) {
+    console.error('Erro ao definir igreja ativa:', err);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: err instanceof Error ? err.message : 'Erro desconhecido',
     });
   }
 };

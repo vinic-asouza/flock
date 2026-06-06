@@ -27,8 +27,15 @@ import groupsRoutes from './routes/groups';
 import calendarRoutes from './routes/calendar';
 import calendarParticipantsRoutes from './routes/calendarParticipants';
 import churchUsersRoutes from './routes/churchUsers';
+import { requestIdMiddleware } from './middlewares/requestId';
+import { requireInternalToken } from './middlewares/internalToken';
+import { runTrackedJob } from './utils/jobRuns';
+import { initSentryBilling } from './utils/sentryBilling';
+import { getMetricsText, getMetricsContentType } from './utils/billingMetrics';
+import { getBillingStats } from './controllers/billingStatsController';
 
 dotenv.config();
+initSentryBilling();
 
 const app = express();
 
@@ -42,6 +49,9 @@ if (process.env.NODE_ENV === 'production') {
 // Configuração de segurança básica
 app.use(helmet());
 
+// Correlation ID para logs (X-Request-Id)
+app.use(requestIdMiddleware);
+
 // Configuração do CORS - permitir múltiplas origens (frontend e landing)
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:3001',
@@ -50,8 +60,12 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requisições sem origin (mobile apps, Postman, etc)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      if (process.env.NODE_ENV === 'production') {
+        return callback(new Error('Origin required'));
+      }
+      return callback(null, true);
+    }
     
     // Permitir se estiver na lista de origens permitidas
     if (allowedOrigins.includes(origin)) {
@@ -67,7 +81,7 @@ app.use(cors({
   },
   credentials: true, // Permitir cookies
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Church-Id'],
   optionsSuccessStatus: 200 // Para suporte a navegadores legados
 }));
 
@@ -85,9 +99,7 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   // Pular rate limiting para health checks
-  skip: (req) => {
-    return req.path === '/health' || req.path === '/api/health/stripe';
-  },
+  skip: (req) => req.path === '/health',
 });
 
 // Aplicar rate limiting geral
@@ -129,16 +141,40 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Rota de healthcheck do Stripe
-app.get('/api/health/stripe', async (_req, res) => {
+// Prometheus metrics (protegido por METRICS_TOKEN quando definido)
+app.get('/metrics', requireInternalToken('METRICS_TOKEN'), async (_req, res) => {
+  try {
+    res.set('Content-Type', getMetricsContentType());
+    res.send(await getMetricsText());
+  } catch (err) {
+    console.error('Erro ao exportar métricas:', err);
+    res.status(500).send('metrics_error');
+  }
+});
+
+// Stats operacionais de billing (protegido por INTERNAL_BILLING_TOKEN)
+app.get(
+  '/api/internal/billing/stats',
+  requireInternalToken('INTERNAL_BILLING_TOKEN'),
+  getBillingStats
+);
+
+// Health Stripe: mínimo, sem chamada à API; opcional HEALTH_CHECK_TOKEN
+app.get('/api/health/stripe', async (req, res) => {
+  const expected = process.env.HEALTH_CHECK_TOKEN;
+  if (expected) {
+    const provided =
+      (typeof req.headers['x-health-token'] === 'string' && req.headers['x-health-token']) ||
+      (typeof req.query.token === 'string' && req.query.token);
+    if (provided !== expected) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+  }
   try {
     const { checkStripeHealth } = require('./controllers/stripeController');
-    await checkStripeHealth(_req, res);
-  } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      error: 'Erro ao verificar saúde do Stripe',
-    });
+    await checkStripeHealth(req, res);
+  } catch {
+    res.status(503).json({ status: 'unhealthy' });
   }
 });
 
@@ -157,26 +193,46 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 if (process.env.ENABLE_CRON_JOBS !== 'false') {
   const { runCleanupJob } = require('./jobs/cleanupPendingSubscriptions');
   const { runExpirationCheckJob } = require('./jobs/checkSubscriptionExpiration');
-  
+  const { runWebhookCleanupJob } = require('./jobs/cleanupWebhookEvents');
+  const { runDowngradeExpiredSubscriptionsJob } = require('./jobs/downgradeExpiredSubscriptions');
+  const { runSubscriptionIntegrityJob } = require('./jobs/validateSubscriptionIntegrity');
+
+  const scheduleJob = (name: string, fn: () => Promise<number>) => {
+    return () => runTrackedJob(name, fn).catch((err) => {
+      console.error(`[cron] Falha no job ${name}:`, err);
+    });
+  };
+
   // Executar limpeza diariamente às 2h da manhã
-  cron.schedule('0 2 * * *', async () => {
-    console.log('🕐 Executando limpeza automática de assinaturas pendentes expiradas...');
-    await runCleanupJob();
-  }, {
+  cron.schedule('0 2 * * *', scheduleJob('cleanup_pending_subscriptions', runCleanupJob), {
+    timezone: 'America/Sao_Paulo'
+  });
+
+  // SL04: Downgrade de assinaturas expiradas sem webhook — diariamente às 3h
+  cron.schedule('0 3 * * *', scheduleJob('downgrade_expired_subscriptions', runDowngradeExpiredSubscriptionsJob), {
+    timezone: 'America/Sao_Paulo'
+  });
+
+  // OB08: Validação de integridade Stripe ↔ banco — diariamente às 5h
+  cron.schedule('0 5 * * *', scheduleJob('validate_subscription_integrity', runSubscriptionIntegrityJob), {
     timezone: 'America/Sao_Paulo'
   });
   
   // Executar verificação de expiração diariamente às 9h da manhã
-  cron.schedule('0 9 * * *', async () => {
-    console.log('🕐 Executando verificação de assinaturas próximas do vencimento...');
-    await runExpirationCheckJob();
-  }, {
+  cron.schedule('0 9 * * *', scheduleJob('check_subscription_expiration', runExpirationCheckJob), {
+    timezone: 'America/Sao_Paulo'
+  });
+
+  cron.schedule('0 4 * * 0', scheduleJob('cleanup_webhook_events', runWebhookCleanupJob), {
     timezone: 'America/Sao_Paulo'
   });
   
   console.log('✅ Jobs agendados configurados:');
   console.log('   - Limpeza de assinaturas pendentes: diariamente às 2h');
+  console.log('   - Downgrade de assinaturas expiradas: diariamente às 3h');
+  console.log('   - Validação integridade Stripe: diariamente às 5h');
   console.log('   - Verificação de expiração: diariamente às 9h');
+  console.log('   - Limpeza de webhooks processados: domingos às 4h');
 }
 
 // Iniciar servidor

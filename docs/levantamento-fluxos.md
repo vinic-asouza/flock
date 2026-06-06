@@ -961,7 +961,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 12 — Landing / Aquisição
+### ✅ Módulo 12 — Landing / Aquisição
 
 **Objetivo:** Apresentar o produto, converter visitantes em leads (waitlist) ou novos clientes (registro direto), e comunicar proposta de valor.
 

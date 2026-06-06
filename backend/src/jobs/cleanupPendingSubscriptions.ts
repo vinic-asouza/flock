@@ -1,4 +1,5 @@
-import supabase from '../services/supabase';
+import { supabaseAdmin } from '../services/supabase';
+import { billingLog } from '../utils/structuredLogger';
 
 /**
  * Limpa assinaturas pendentes expiradas (mais de 7 dias)
@@ -6,7 +7,7 @@ import supabase from '../services/supabase';
  */
 export async function cleanupExpiredPendingSubscriptions(): Promise<number> {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('pending_subscriptions')
       .delete()
       .lt('expires_at', new Date().toISOString())
@@ -35,10 +36,7 @@ export async function cleanupExpiredPendingSubscriptions(): Promise<number> {
  * Executa limpeza de assinaturas pendentes expiradas
  * Pode ser chamado manualmente ou via cron job
  */
-export async function runCleanupJob() {
-  console.log('🔄 Iniciando limpeza de assinaturas pendentes expiradas...');
-  const count = await cleanupExpiredPendingSubscriptions();
-  console.log(`✅ Limpeza concluída. ${count} registro(s) removido(s).`);
-  return count;
+export async function runCleanupJob(): Promise<number> {
+  return cleanupExpiredPendingSubscriptions();
 }
 

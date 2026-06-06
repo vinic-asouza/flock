@@ -1,7 +1,13 @@
 import { Request, Response } from 'express';
-import supabase from '../services/supabase';
-import { getChurchContextForUser } from '../services/churchContext';
-import { setAccessToken, setRefreshToken, setSessionCookie, clearAuthCookies, cookieConfig } from '../utils/cookieUtils';
+import supabase, { supabaseAdmin } from '../services/supabase';
+import {
+  listChurchMembershipsForUser,
+  resolveChurchContextForUser,
+  getActiveChurchIdFromRequest,
+} from '../services/churchContext';
+import { setAccessToken, setRefreshToken, setSessionCookie, clearAuthCookies, cookieConfig, setActiveChurchId } from '../utils/cookieUtils';
+import { sanitizeChurchForRole } from '../utils/churchDto';
+import { AuthRequest } from '../types';
 
 /**
  * Renova o token de acesso usando o refresh token
@@ -58,7 +64,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 /**
  * Verifica se o usuário está autenticado (usado para verificar estado no frontend)
  */
-export const checkAuth = async (req: Request, res: Response) => {
+export const checkAuth = async (req: AuthRequest, res: Response) => {
   try {
     let accessToken = req.cookies[cookieConfig.names.accessToken];
     let user: any | null = null;
@@ -116,16 +122,46 @@ export const checkAuth = async (req: Request, res: Response) => {
       });
     }
 
-    // 4) Obter contexto (igreja + papel) do usuário
-    const context = await getChurchContextForUser(user.id);
-    if (!context) {
+    req.user = { id: user.id, email: user.email || '' };
+
+    const memberships = await listChurchMembershipsForUser(user.id);
+    if (memberships.length === 0) {
       return res.status(200).json({
         authenticated: false,
-        message: 'Usuário não vinculado a nenhuma igreja'
+        message: 'Usuário não vinculado a nenhuma igreja',
       });
     }
 
-    const { data: churchData, error: churchError } = await supabase
+    let activeChurchId = getActiveChurchIdFromRequest(req);
+    if (!activeChurchId && memberships.length === 1) {
+      activeChurchId = memberships[0].churchId;
+      setActiveChurchId(res, activeChurchId);
+    }
+
+    if (memberships.length > 1 && !activeChurchId) {
+      return res.status(200).json({
+        authenticated: true,
+        user: { id: user.id, email: user.email },
+        memberships,
+        activeChurchId: null,
+        code: 'CHURCH_SELECTION_REQUIRED',
+        message: 'Seleção de igreja obrigatória',
+      });
+    }
+
+    const context = await resolveChurchContextForUser(user.id, activeChurchId);
+    if (!context) {
+      return res.status(200).json({
+        authenticated: true,
+        user: { id: user.id, email: user.email },
+        memberships,
+        activeChurchId: activeChurchId || null,
+        code: 'CHURCH_SELECTION_REQUIRED',
+        message: 'Igreja ativa inválida ou não selecionada',
+      });
+    }
+
+    const { data: churchData, error: churchError } = await supabaseAdmin
       .from('churches')
       .select('*')
       .eq('id', context.churchId)
@@ -134,18 +170,17 @@ export const checkAuth = async (req: Request, res: Response) => {
     if (churchError || !churchData) {
       return res.status(200).json({
         authenticated: false,
-        message: 'Igreja não encontrada'
+        message: 'Igreja não encontrada',
       });
     }
 
     res.json({
       authenticated: true,
-      user: {
-        id: user.id,
-        email: user.email
-      },
-      church: churchData,
-      role: context.role
+      user: { id: user.id, email: user.email },
+      church: sanitizeChurchForRole(churchData, context.role),
+      role: context.role,
+      memberships,
+      activeChurchId: context.churchId,
     });
 
   } catch (error) {

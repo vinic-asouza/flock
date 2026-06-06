@@ -1,7 +1,7 @@
 import { parseCSV, mapColumns, normalizeRow, CSVRow } from '../utils/csvParser';
 import { validateMember } from '../validators/memberValidator';
 import { Member } from '../types';
-import supabase from './supabase';
+import { supabaseAdmin as supabase } from './supabase';
 
 export interface ValidationError {
   row: number;

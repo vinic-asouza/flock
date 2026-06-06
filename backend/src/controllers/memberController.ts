@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { reportFiltersSchema } from '../validators/reportValidator';
@@ -1735,11 +1735,11 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       generatedAt: new Date().toISOString()
     });
 
-    // Log da operação de geração de relatório
+    // Log da operação de geração de relatório (escopo igreja — sem membro individual)
     await logAudit(req, {
-      entity: 'member',
-      entityId: null,
-      action: 'import', // Usar 'import' como ação genérica para relatórios
+      entity: 'church',
+      entityId: req.church!.churchId,
+      action: 'import',
       changesAfter: {
         filters: validatedFilters,
         summary: {

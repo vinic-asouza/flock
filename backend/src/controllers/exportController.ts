@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { AuthRequest } from '../types';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { getMemberReports } from './memberController';
 
 export const exportMemberPDF = async (req: AuthRequest, res: Response) => {

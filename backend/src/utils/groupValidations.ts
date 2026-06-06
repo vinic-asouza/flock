@@ -1,4 +1,4 @@
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { logError } from './logger';
 
 /**

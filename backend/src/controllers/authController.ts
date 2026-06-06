@@ -1,9 +1,27 @@
 import { Request, Response } from 'express';
 import supabase, { supabaseAdmin } from '../services/supabase';
-import { getChurchContextForUser } from '../services/churchContext';
+
+// Para queries de banco de dados usa service_role (bypassa RLS)
+// supabase (anon) mantido apenas para supabase.auth.* (signUp, signIn, getUser)
+const db = supabaseAdmin;
+import { insertSubscriptionEvent } from '../services/stripeWebhookService';
+import { sendOpsAlert } from '../services/opsAlertService';
+import { billingLog } from '../utils/structuredLogger';
+import { recordSubscriptionLinkFailed } from '../utils/billingMetrics';
 import { validateChurch } from '../validators/churchValidator';
 import { ChurchRegistrationData, AuthRequest } from '../types';
-import { setAccessToken, setRefreshToken, setSessionCookie, clearAuthCookies, cookieConfig } from '../utils/cookieUtils';
+import {
+  setAccessToken,
+  setRefreshToken,
+  setSessionCookie,
+  clearAuthCookies,
+  cookieConfig,
+  setActiveChurchId,
+  clearPendingLinkToken,
+} from '../utils/cookieUtils';
+import { stripe } from '../services/stripe';
+import { listChurchMembershipsForUser, resolveChurchContextForUser } from '../services/churchContext';
+import { sanitizeChurchForRole } from '../utils/churchDto';
 import { sendEmail } from '../services/emailService';
 import { getWelcomeEmailTemplate, getNewUserNotificationTemplate } from '../templates/emailTemplates';
 
@@ -18,10 +36,26 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       });
     }
 
-    const { email, password, phone, cnpj, ...churchData } = req.body;
+    const { email, password, phone, cnpj, link_token: linkTokenBody, checkout_session_id, ...churchData } =
+      req.body;
+
+    let link_token =
+      linkTokenBody ||
+      req.cookies?.[cookieConfig.names.pendingLinkToken];
+
+    if (!link_token && checkout_session_id) {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(checkout_session_id);
+        if (session.metadata?.link_token) {
+          link_token = session.metadata.link_token;
+        }
+      } catch (sessionErr) {
+        console.warn('[Register] Não foi possível resolver link_token pela sessão Stripe:', sessionErr);
+      }
+    }
 
     // Verificar se já existe uma igreja com o CNPJ informado
-    const { data: existingChurch, error: cnpjCheckError } = await supabase
+    const { data: existingChurch, error: cnpjCheckError } = await db
       .from('churches')
       .select('id')
       .eq('cnpj', cnpj)
@@ -73,7 +107,7 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
     }
 
     // Inserir dados da igreja
-    const { data: churchRecord, error: churchError } = await supabase
+    const { data: churchRecord, error: churchError } = await db
       .from('churches')
       .insert([{
         user_id: authData.user.id,
@@ -92,39 +126,68 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       });
     }
 
-    // Verificar se há assinatura pendente vinculada ao email
-    const { data: pendingSubscription, error: pendingError } = await supabase
-      .from('pending_subscriptions')
-      .select('*')
-      .eq('email', email)
-      .gt('expires_at', new Date().toISOString()) // Apenas assinaturas não expiradas
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    let pendingSubscription: Record<string, unknown> | null = null;
+    let pendingError: { message: string } | null = null;
+    let subscriptionLinkFailed = false;
+
+    if (link_token) {
+      const { data, error: tokenErr } = await db
+        .from('pending_subscriptions')
+        .select('*')
+        .eq('link_token', link_token)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      pendingError = tokenErr;
+      pendingSubscription = data;
+
+      if (pendingSubscription && pendingSubscription.email !== email) {
+        await supabase.auth.admin.deleteUser(authData.user.id);
+        return res.status(400).json({
+          error: 'Email não corresponde ao checkout',
+          details: 'Use o mesmo email informado no pagamento',
+        });
+      }
+    }
 
     if (!pendingError && pendingSubscription) {
-      // Vincular assinatura pendente à igreja criada
-      const { error: linkError } = await supabase
-        .from('churches')
-        .update({
-          stripe_customer_id: pendingSubscription.stripe_customer_id,
-          stripe_subscription_id: pendingSubscription.stripe_subscription_id,
-          subscription_status: pendingSubscription.subscription_status,
-          plan_type: pendingSubscription.plan_type,
-          subscription_start_date: pendingSubscription.subscription_start_date,
-        })
-        .eq('id', churchRecord.id);
+      // DB07/DB04: RPC atômica — UPDATE churches (incluindo last_stripe_event_created) +
+      // DELETE pending em uma única transação. Pending só é removida após confirmação do update.
+      const { data: rpcResult, error: rpcError } = await db.rpc('link_pending_to_church', {
+        p_pending_id: pendingSubscription.id as string,
+        p_church_id: churchRecord.id,
+      });
 
-      if (!linkError) {
-        // Remover da tabela de pendentes após vincular com sucesso
-        await supabase
-          .from('pending_subscriptions')
-          .delete()
-          .eq('id', pendingSubscription.id);
-        
-        console.log(`✅ Assinatura pendente vinculada à igreja ${churchRecord.id}`);
+      const rpcOk = !rpcError && (rpcResult as Record<string, unknown>)?.ok === true;
+      if (rpcOk) {
+        billingLog({
+          event: 'link_pending',
+          church_id: churchRecord.id,
+          outcome: 'success',
+        });
+        await insertSubscriptionEvent({
+          church_id: churchRecord.id,
+          event_type: 'link_pending',
+          new_plan: (pendingSubscription.plan_type as string) ?? null,
+          new_status: (pendingSubscription.subscription_status as string) ?? null,
+          source: 'api',
+          payload: { pending_id: pendingSubscription.id },
+        });
       } else {
-        console.error('Erro ao vincular assinatura pendente:', linkError);
+        const reason = (rpcResult as Record<string, unknown>)?.error ?? rpcError?.message ?? 'unknown';
+        billingLog({
+          event: 'link_pending',
+          church_id: churchRecord.id,
+          outcome: 'failed',
+          error: String(reason),
+        });
+        subscriptionLinkFailed = true;
+        recordSubscriptionLinkFailed();
+        sendOpsAlert('Falha ao vincular assinatura pendente no registro', {
+          church_id: churchRecord.id,
+          pending_id: pendingSubscription.id,
+          reason,
+        });
       }
     }
 
@@ -164,11 +227,15 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       }
     })(); // IIFE - executa imediatamente sem bloquear
 
-    // Retornar resposta imediatamente, sem esperar emails
+    setActiveChurchId(res, churchRecord.id);
+    clearPendingLinkToken(res);
+
     res.status(201).json({
       message: 'Igreja registrada com sucesso',
       church: churchRecord,
-      subscriptionLinked: !!pendingSubscription
+      subscriptionLinked: !!pendingSubscription && !subscriptionLinkFailed,
+      subscriptionLinkFailed,
+      activeChurchId: churchRecord.id,
     });
 
   } catch (error) {
@@ -205,16 +272,26 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
       });
     }
 
-    // Resolver igreja: church_users (convidados) ou churches.user_id (owner)
-    const context = await getChurchContextForUser(authData.user.id);
-    if (!context) {
+    const memberships = await listChurchMembershipsForUser(authData.user.id);
+    if (memberships.length === 0) {
       return res.status(404).json({
         error: 'Igreja não encontrada',
-        details: 'Usuário não está vinculado a nenhuma igreja.'
+        details: 'Usuário não está vinculado a nenhuma igreja.',
       });
     }
 
-    const { data: churchData, error: churchError } = await supabase
+    const activeChurchId = memberships[0].churchId;
+    setActiveChurchId(res, activeChurchId);
+
+    const context = await resolveChurchContextForUser(authData.user.id, activeChurchId);
+    if (!context) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: 'Não foi possível resolver a igreja ativa.',
+      });
+    }
+
+    const { data: churchData, error: churchError } = await db
       .from('churches')
       .select('*')
       .eq('id', context.churchId)
@@ -223,24 +300,24 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
     if (churchError || !churchData) {
       return res.status(404).json({
         error: 'Igreja não encontrada',
-        details: churchError?.message ?? 'Igreja não encontrada.'
+        details: churchError?.message ?? 'Igreja não encontrada.',
       });
     }
 
-    // Definir cookies seguros
     setAccessToken(res, authData.session.access_token);
     setRefreshToken(res, authData.session.refresh_token);
     setSessionCookie(res, {
       user: authData.user,
-      expires_at: authData.session.expires_at
+      expires_at: authData.session.expires_at,
     });
 
-    // ACHADO 06: role + email no response eliminam as chamadas extras getCheckAuth() e getAccountData()
     res.json({
       message: 'Login realizado com sucesso',
-      church: churchData,
+      church: sanitizeChurchForRole(churchData, context.role),
       role: context.role,
       email: authData.user.email,
+      memberships,
+      activeChurchId,
     });
 
   } catch (error) {

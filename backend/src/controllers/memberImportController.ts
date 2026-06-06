@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { validateCSV, importMembers } from '../services/memberImportService';
 import { logAudit } from '../utils/auditLogger';
 import { checkMemberLimit } from '../utils/planLimits';
@@ -151,8 +151,8 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
     // Log de auditoria para a importação
     if (importResult.importedRows > 0) {
       await logAudit(req, {
-        entity: 'member',
-        entityId: null,
+        entity: 'church',
+        entityId: req.church!.churchId,
         action: 'import',
         changesAfter: {
           importedRows: importResult.importedRows,

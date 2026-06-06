@@ -381,7 +381,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     }
 
     // Verificar se há assinatura ativa antes de permitir exclusão
-    const { data: church, error: churchError } = await supabase
+    const { data: church, error: churchError } = await supabaseAdmin
       .from('churches')
       .select('id, subscription_status, plan_type, subscription_end_date')
       .eq('id', req.church!.churchId)
@@ -557,7 +557,7 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
     const memberStatusChange = req.query.member_status_change as string;
 
     // Construir query
-    let query = supabase
+    let query = supabaseAdmin
       .from('audit_logs')
       .select('*', { count: 'exact' })
       .eq('church_id', churchId)

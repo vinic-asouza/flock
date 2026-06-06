@@ -98,9 +98,10 @@ Webhooks são notificações que o Stripe envia para o servidor quando eventos i
 
 ### Segurança dos Webhooks
 
-- **Validação de IP**: Sistema verifica se o webhook vem de um IP autorizado do Stripe
-- **Assinatura**: Cada webhook tem uma assinatura criptográfica validada
-- **Idempotência**: Eventos duplicados são ignorados (não processados duas vezes)
+- **Assinatura**: Cada webhook é validado com `stripe.webhooks.constructEvent` e `STRIPE_WEBHOOK_SECRET`
+- **Idempotência**: Claim atômico em `processed_webhook_events` antes do processamento; duplicatas retornam `{ skipped: true }`
+- **Retry**: Em falha de processamento, o claim é removido e o endpoint responde 500 para o Stripe reenviar
+- **IP (opcional na infra)**: Allowlist de IPs do Stripe pode ser configurada no proxy/firewall; a aplicação não bloqueia por IP
 
 ### Onde Configurar
 
@@ -511,23 +512,29 @@ Todas as configurações do Stripe são feitas via variáveis de ambiente. Consu
 **Endpoint:** `GET /api/health/stripe`
 
 **O que verifica:**
-- Se todas as variáveis estão configuradas
-- Se há conectividade com API do Stripe
-- Status geral da integração
+- Se todas as variáveis obrigatórias estão configuradas (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs)
+- Conectividade com a API Stripe (`stripe.balance.retrieve`)
+- Timestamp do último webhook processado (`processed_webhook_events`)
+
+**Proteção (opcional):** defina `HEALTH_CHECK_TOKEN` e envie via header `x-health-token` ou query `?token=`.
 
 **Uso:**
 ```bash
 curl http://localhost:4000/api/health/stripe
 ```
 
-**Resposta esperada:**
+**Resposta esperada (saudável):**
 ```json
 {
-  "status": "healthy",
+  "status": "ok",
   "stripe_configured": true,
-  "timestamp": "2024-01-01T12:00:00.000Z"
+  "stripe_reachable": true,
+  "last_webhook_processed_at": "2026-06-05T12:00:00.000Z",
+  "timestamp": "2026-06-05T12:00:00.000Z"
 }
 ```
+
+**Resposta degradada (env OK, Stripe inacessível):** HTTP 503 com `"status": "degraded"` e `"stripe_reachable": false`.
 
 ### Limpeza Automática
 
@@ -668,9 +675,9 @@ Assinaturas pendentes (quando checkout feito antes de criar conta):
 
 ### Validações Implementadas
 
-1. **IP de Webhooks**: Apenas IPs autorizados do Stripe podem enviar webhooks
-2. **Assinatura de Webhooks**: Cada webhook tem assinatura criptográfica validada
-3. **Idempotência**: Eventos duplicados são ignorados
+1. **Assinatura de Webhooks**: Cada webhook tem assinatura criptográfica validada (`constructEvent`)
+2. **Idempotência**: Claim atômico + deduplicação por `stripe_event_id`
+3. **Ordenação**: Campo `last_stripe_event_created` ignora eventos Stripe atrasados
 4. **Validação de Limites**: Downgrade bloqueado se ultrapassar limite
 
 ### Boas Práticas

@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { PublicRegistrationRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { normalizeMemberDates } from '../utils/dateNormalizer';

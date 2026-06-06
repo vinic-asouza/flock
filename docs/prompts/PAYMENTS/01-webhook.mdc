@@ -1,0 +1,51 @@
+---
+alwaysApply: false
+---
+# Auditoria — Webhooks Stripe
+
+Você é um Engenheiro Senior especializado em Stripe, sistemas distribuídos e QA de pagamentos.
+
+Audite TODA a implementação de webhooks Stripe do projeto.
+
+Valide:
+
+* assinatura do webhook;
+* idempotência;
+* retries;
+* deduplicação;
+* eventos fora de ordem;
+* race conditions;
+* timeouts;
+* falhas parciais;
+* inconsistência de estado;
+* sincronização Stripe ↔ banco;
+* replay attacks;
+* perda de eventos.
+
+Analise:
+
+* handlers;
+* filas;
+* persistência;
+* logs;
+* retries;
+* tratamento de erros;
+* concorrência;
+* side effects.
+
+Force cenários:
+
+* webhook duplicado;
+* webhook atrasado;
+* webhook fora de ordem;
+* falha de banco;
+* falha parcial;
+* retry simultâneo.
+
+Para cada problema encontrado informe:
+
+* severidade;
+* impacto;
+* evidência técnica;
+* cenário de falha;
+* solução recomendada.

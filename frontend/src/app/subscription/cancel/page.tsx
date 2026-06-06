@@ -3,9 +3,20 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { XCircle, CreditCard } from 'lucide-react';
+import { resolveCheckoutPath } from '@/utils/planFunnel';
+import { useAuth } from '@/context/AuthContext';
 
 export default function SubscriptionCancelPage() {
   const router = useRouter();
+  const { user } = useAuth();
+
+  const checkoutPath = () => {
+    const paidPlan =
+      user?.plan_type && ['200', '500', '800'].includes(user.plan_type)
+        ? user.plan_type
+        : null;
+    return resolveCheckoutPath(paidPlan);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -44,7 +55,7 @@ export default function SubscriptionCancelPage() {
 
         <div className="space-y-3">
           <Button
-            onClick={() => router.push('/checkout')}
+            onClick={() => router.push(checkoutPath())}
             className="w-full"
           >
             <CreditCard className="w-5 h-5 mr-2" />

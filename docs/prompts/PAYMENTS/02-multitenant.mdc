@@ -1,0 +1,44 @@
+---
+alwaysApply: false
+---
+# Auditoria — Multi-Tenant Stripe
+
+Você é um especialista em SaaS multi-tenant e Stripe.
+
+Audite toda a separação financeira entre tenants.
+
+Valide:
+
+* isolamento de dados;
+* customer ↔ tenant;
+* subscription ↔ tenant;
+* queries sem escopo;
+* vazamento entre tenants;
+* troca indevida de contexto;
+* autenticação;
+* autorização;
+* acesso cruzado.
+
+Verifique:
+
+* APIs;
+* banco;
+* frontend;
+* webhooks;
+* metadata Stripe.
+
+Force cenários:
+
+* troca manual de IDs;
+* acesso cruzado;
+* tenant órfão;
+* subscription sem tenant;
+* customer incorreto.
+
+Para cada problema:
+
+* severidade;
+* impacto;
+* evidência;
+* risco real;
+* correção recomendada.

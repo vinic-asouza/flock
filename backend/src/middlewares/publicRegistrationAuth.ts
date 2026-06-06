@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { PublicRegistrationRequest } from '../types';
 
 /**

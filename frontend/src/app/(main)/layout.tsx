@@ -6,6 +6,7 @@ import { Sidebar } from '@/components/main/Sidebar';
 import { Header } from '@/components/main/Header';
 import { Footer } from '@/components/main/Footer';
 import { useAuth } from '@/context/AuthContext';
+import { ChurchSelectionGate } from '@/components/auth/ChurchSelectionGate';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface MainLayoutProps {
@@ -13,17 +14,17 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, churchSelectionRequired } = useAuth();
   const router = useRouter();
 
   // ACHADO 16: redirecionar para /login se o usuário não estiver autenticado.
   // Sem essa proteção, todas as rotas /members, /groups, /calendar etc. ficavam
   // expostas — o usuário via a "casca" do app antes de qualquer erro aparecer.
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated && !churchSelectionRequired) {
       router.push('/login');
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, churchSelectionRequired, router]);
 
   if (isLoading) {
     return (
@@ -37,11 +38,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }
 
   // Evitar flash de conteúdo enquanto o redirect ainda não ocorreu
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !churchSelectionRequired) {
     return null;
   }
 
+  if (churchSelectionRequired) {
+    return <ChurchSelectionGate>{null}</ChurchSelectionGate>;
+  }
+
   return (
+    <ChurchSelectionGate>
     <div className="h-screen bg-app flex flex-col overflow-hidden">
       <Header />
       <div className="flex flex-1 min-h-0">
@@ -56,5 +62,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </main>
       </div>
     </div>
+    </ChurchSelectionGate>
   );
 }

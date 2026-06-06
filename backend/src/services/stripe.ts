@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import { supabaseAdmin } from './supabase';
 
 dotenv.config();
 
@@ -91,9 +92,100 @@ export async function withRetry<T>(
   throw lastError!;
 }
 
+export type GetOrCreateCustomerForChurchParams = {
+  churchId: string;
+  email: string;
+  name: string;
+  userId?: string;
+  linkToken?: string;
+};
+
 /**
- * Criar ou recuperar cliente no Stripe
- * Previne criação de múltiplos customers para o mesmo email
+ * Um Stripe Customer por igreja (ou por tentativa de checkout pending).
+ */
+export async function getOrCreateCustomerForChurch(
+  params: GetOrCreateCustomerForChurchParams
+): Promise<Stripe.Customer> {
+  const { churchId, email, name, userId, linkToken } = params;
+
+  if (churchId === 'pending') {
+    return createPendingCheckoutCustomer(email, name, linkToken);
+  }
+
+  const { data: church, error } = await supabaseAdmin
+    .from('churches')
+    .select('id, stripe_customer_id')
+    .eq('id', churchId)
+    .single();
+
+  if (error || !church) {
+    throw new Error(`Igreja não encontrada: ${churchId}`);
+  }
+
+  if (church.stripe_customer_id) {
+    const existing = await stripe.customers.retrieve(church.stripe_customer_id);
+    if (existing.deleted) {
+      throw new Error(`Stripe customer ${church.stripe_customer_id} foi removido`);
+    }
+    return existing;
+  }
+
+  let customer: Stripe.Customer | null = null;
+
+  try {
+    const search = await stripe.customers.search({
+      query: `metadata['church_id']:'${churchId}'`,
+      limit: 1,
+    });
+    if (search.data.length > 0) {
+      customer = search.data[0];
+    }
+  } catch (searchErr) {
+    console.warn('Stripe customer search indisponível, criando novo customer:', searchErr);
+  }
+
+  if (!customer) {
+    const metadata: Record<string, string> = { church_id: churchId };
+    if (userId) metadata.user_id = userId;
+    customer = await stripe.customers.create({ email, name, metadata });
+  }
+
+  const { error: updateError } = await supabaseAdmin
+    .from('churches')
+    .update({ stripe_customer_id: customer.id })
+    .eq('id', churchId);
+
+  if (updateError) {
+    if (updateError.code === '23505') {
+      throw new Error(
+        `stripe_customer_id já vinculado a outra igreja (${customer.id})`
+      );
+    }
+    throw new Error(`Erro ao salvar stripe_customer_id: ${updateError.message}`);
+  }
+
+  return customer;
+}
+
+/**
+ * Customer dedicado por checkout landing (sem reuso por e-mail).
+ */
+export async function createPendingCheckoutCustomer(
+  email: string,
+  name: string,
+  linkToken?: string
+): Promise<Stripe.Customer> {
+  const metadata: Record<string, string> = {
+    church_id: 'pending',
+  };
+  if (linkToken) {
+    metadata.link_token = linkToken;
+  }
+  return stripe.customers.create({ email, name, metadata });
+}
+
+/**
+ * @deprecated Use getOrCreateCustomerForChurch — reuso por e-mail quebra multi-tenant.
  */
 export async function getOrCreateCustomer(
   email: string,

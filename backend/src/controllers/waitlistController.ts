@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { validateWaitlist } from '../validators/waitlistValidator';
 import { sendEmail } from '../services/emailService';
 import { getWaitlistConfirmationTemplate, getWaitlistNotificationTemplate } from '../templates/emailTemplates';

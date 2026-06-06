@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest, Group } from '../types';
 import { createGroupSchema, updateGroupSchema } from '../validators/groupValidator';
 import { logAudit } from '../utils/auditLogger';

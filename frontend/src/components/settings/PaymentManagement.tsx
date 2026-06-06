@@ -18,6 +18,11 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import apiService, { formatApiError } from '@/services/api';
+import {
+  getCachedStripeSync,
+  setCachedStripeSync,
+} from '@/utils/stripeSyncCache';
+import { captureBillingError } from '@/utils/billingTelemetry';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
@@ -88,11 +93,17 @@ const statusLabels: Record<string, { label: string; color: string; bgColor: stri
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
+const eventTypeLabels: Record<string, string> = {
+  subscription_created: 'Assinatura criada',
+  plan_changed: 'Plano alterado',
+  activate_free: 'Plano gratuito ativado',
+  downgrade_job: 'Downgrade automático',
+};
+
 export function PaymentManagement() {
-  const { user, refreshChurch, currentRole } = useAuth();
+  const { user, refreshChurch, currentRole, activeChurchId } = useAuth();
   const canManagePlan = currentRole === 'admin' || currentRole === 'owner';
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
@@ -106,12 +117,14 @@ export function PaymentManagement() {
   
   // Flag para garantir que a sincronização aconteça apenas uma vez
   const hasSyncedRef = useRef(false);
+  const lastSyncedChurchIdRef = useRef<string | null>(null);
   const [planNamesState, setPlanNamesState] = useState(planNames);
   const [planPricesState, setPlanPricesState] = useState(planPrices);
-  
-  // Cache para sincronização (5 minutos)
-  const SYNC_CACHE_KEY = 'stripe_sync_cache';
-  const SYNC_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  const [subscriptionEvents, setSubscriptionEvents] = useState<
+    Awaited<ReturnType<typeof apiService.getSubscriptionEvents>>['events']
+  >([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [eventsError, setEventsError] = useState<string | null>(null);
 
   // Carregar planos da API ao montar componente
   useEffect(() => {
@@ -124,41 +137,8 @@ export function PaymentManagement() {
     loadPlans();
   }, []);
 
-  // Verificar se há cache válido de sincronização
-  const getCachedSyncResult = (): { cached: boolean; timestamp: number } | null => {
-    try {
-      const cached = localStorage.getItem(SYNC_CACHE_KEY);
-      if (!cached) return null;
-
-      const { timestamp } = JSON.parse(cached);
-      const now = Date.now();
-      
-      // Se cache ainda é válido (menos de 5 minutos)
-      if (now - timestamp < SYNC_CACHE_DURATION) {
-        return { cached: true, timestamp };
-      }
-      
-      // Cache expirado, remover
-      localStorage.removeItem(SYNC_CACHE_KEY);
-      return null;
-    } catch {
-      return null;
-    }
-  };
-
-  // Salvar resultado de sincronização no cache
-  const setCachedSyncResult = () => {
-    try {
-      localStorage.setItem(SYNC_CACHE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-      }));
-    } catch {
-      // Ignorar erros de localStorage (pode estar desabilitado)
-      // Não mostrar erro ao usuário, apenas logar silenciosamente
-    }
-  };
-
   const subscriptionStatus = user?.subscription_status;
+  const isPastDue = subscriptionStatus === 'past_due';
   const planType = user?.plan_type;
   const subscriptionStartDate = user?.subscription_start_date;
   const subscriptionEndDate = user?.subscription_end_date;
@@ -193,41 +173,45 @@ export function PaymentManagement() {
     router.push(`/checkout?plan=${planToReactivate}`);
   };
 
+  // FB12: resetar auto-sync ao trocar igreja ativa
   useEffect(() => {
-    // Simular carregamento inicial
-    setIsLoading(false);
-  }, []);
+    const churchKey = activeChurchId ?? user?.id ?? null;
+    if (lastSyncedChurchIdRef.current !== churchKey) {
+      hasSyncedRef.current = false;
+      lastSyncedChurchIdRef.current = churchKey;
+    }
+  }, [activeChurchId, user?.id]);
 
-  // Sincronizar assinatura automaticamente ao entrar na aba de pagamento (apenas uma vez)
+  // Auto-sync ao abrir aba (uma vez por igreja; respeita cache de 5 min — FB06)
   useEffect(() => {
-    // Verificar se já sincronizou ou se não há usuário para evitar múltiplas requisições
-    if (hasSyncedRef.current || !user) {
+    if (hasSyncedRef.current || !user || !canManagePlan) {
       return;
     }
-    
+
+    const churchKey = activeChurchId ?? user.id;
+
     const syncOnMount = async () => {
-      // Marcar como sincronizado ANTES de fazer a requisição para evitar múltiplas execuções
-      // mesmo que refreshChurch atualize o user e dispare o useEffect novamente
       hasSyncedRef.current = true;
-      
+
+      if (getCachedStripeSync(churchKey)) {
+        return;
+      }
+
       try {
         setIsSyncing(true);
-        setError(null);
-        setSyncMessage(null);
         setAutoSyncFailed(false);
-
         const response = await apiService.syncSubscription();
-
-        if (response.synced) {
-          // Atualizar dados do usuário silenciosamente (sem mostrar mensagem)
-          // Como hasSyncedRef.current já é true, mesmo que refreshChurch atualize user,
-          // o useEffect não será executado novamente
-          if (refreshChurch) {
-            await refreshChurch();
-          }
+        if (response.synced && refreshChurch) {
+          await refreshChurch();
         }
-      } catch {
+        setCachedStripeSync(churchKey);
+      } catch (err: unknown) {
         setAutoSyncFailed(true);
+        captureBillingError('billing_sync_failed', {
+          church_id: churchKey,
+          error_code: formatApiError(err) || 'auto_sync_failed',
+          source: 'auto_sync_on_mount',
+        });
       } finally {
         setIsSyncing(false);
       }
@@ -235,7 +219,38 @@ export function PaymentManagement() {
 
     syncOnMount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]); // Executar quando user estiver disponível, mas apenas uma vez devido ao ref
+  }, [user?.stripe_customer_id, activeChurchId, canManagePlan]);
+
+  useEffect(() => {
+    if (!canManagePlan || !activeChurchId) return;
+
+    const loadEvents = async () => {
+      setIsLoadingEvents(true);
+      setEventsError(null);
+      try {
+        const { events } = await apiService.getSubscriptionEvents({ limit: 10 });
+        setSubscriptionEvents(events);
+      } catch (err: unknown) {
+        setEventsError(formatApiError(err) || 'Não foi possível carregar o histórico');
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, activeChurchId]);
+
+  // FB05: atualizar dados ao voltar da aba do portal Stripe
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && refreshChurch) {
+        void refreshChurch();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refreshChurch]);
 
   const handleManageSubscription = async () => {
     try {
@@ -260,13 +275,11 @@ export function PaymentManagement() {
   };
 
   const handleSyncSubscription = async (force: boolean = false) => {
-    // Verificar cache antes de sincronizar (se não for forçado)
-    if (!force) {
-      const cache = getCachedSyncResult();
-      if (cache?.cached) {
-        setSyncMessage('Dados já sincronizados recentemente. Recarregue a página para forçar a atualização.');
-        return;
-      }
+    const churchKey = activeChurchId ?? user?.id;
+
+    if (!force && churchKey && getCachedStripeSync(churchKey)) {
+      setSyncMessage('Dados já sincronizados recentemente. Use "Sincronizar agora" no aviso acima ou aguarde alguns minutos.');
+      return;
     }
 
     try {
@@ -282,8 +295,9 @@ export function PaymentManagement() {
         setSyncMessage('Assinatura sincronizada com sucesso!');
         setSuccessMessage('Dados atualizados com sucesso!');
         
-        // Salvar no cache
-        setCachedSyncResult();
+        if (churchKey) {
+          setCachedStripeSync(churchKey);
+        }
         
         // Atualizar dados do usuário
         if (refreshChurch) {
@@ -298,11 +312,17 @@ export function PaymentManagement() {
         }, 5000);
       } else {
         setSyncMessage('Nenhuma assinatura encontrada no Stripe.');
-        // Salvar no cache mesmo quando não há assinatura (evita requisições desnecessárias)
-        setCachedSyncResult();
+        if (churchKey) {
+          setCachedStripeSync(churchKey);
+        }
       }
     } catch (err: unknown) {
       const errorMessage = formatApiError(err);
+      captureBillingError('billing_sync_failed', {
+        church_id: activeChurchId ?? undefined,
+        error_code: errorMessage || 'manual_sync_failed',
+        source: 'manual_sync',
+      });
       toast.error(errorMessage);
       setError(errorMessage || 'Erro ao sincronizar assinatura. Tente novamente.');
     } finally {
@@ -321,33 +341,12 @@ export function PaymentManagement() {
       return;
     }
 
-    // Se o plano selecionado for o plano gratuito (100), redirecionar para o Customer Portal
+    // FB04: plano gratuito — confirmar no modal e usar activate-free-plan (igual ao checkout)
     if (selectedPlan === '100') {
-      try {
-        setIsLoadingPortal(true);
-        setError(null);
-
-        const { url } = await apiService.createPortalSession();
-
-        if (!url) {
-          throw new Error('URL do portal não recebida');
-        }
-
-        // Fechar modal e redirecionar para o portal
-        setShowChangePlanModal(false);
-        setSelectedPlan(null);
-        
-        // Abrir portal do Stripe em nova guia
-        window.open(url, '_blank', 'noopener,noreferrer');
-        setIsLoadingPortal(false);
-        return;
-      } catch (err: unknown) {
-        const finalMessage = formatApiError(err) || 'Erro ao acessar o portal de pagamento. Tente novamente.';
-        toast.error(finalMessage);
-        setError(finalMessage);
-        setIsLoadingPortal(false);
-        return;
-      }
+      setShowChangePlanModal(false);
+      setShowConfirmModal(true);
+      setError(null);
+      return;
     }
 
     // Para outros planos, fechar modal de seleção e abrir modal de confirmação
@@ -362,27 +361,22 @@ export function PaymentManagement() {
       return;
     }
 
-    // Confirmação adicional antes de trocar plano
-    const currentPlanName = planNamesState[planType || ''] || planType || 'atual';
-    const newPlanName = planNamesState[selectedPlan] || selectedPlan;
-    
-    const confirmed = window.confirm(
-      `Tem certeza que deseja alterar de "${currentPlanName}" para "${newPlanName}"?\n\n` +
-      'A alteração será aplicada imediatamente e você será cobrado proporcionalmente.'
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setIsChangingPlan(true);
       setError(null);
       setSyncMessage(null);
 
-      await apiService.changePlan(selectedPlan);
+      if (selectedPlan === '100') {
+        await apiService.activateFreePlan();
+      } else {
+        await apiService.changePlan(selectedPlan);
+      }
 
-      setSuccessMessage('Plano alterado com sucesso!');
+      setSuccessMessage(
+        selectedPlan === '100'
+          ? 'Plano gratuito ativado com sucesso!'
+          : 'Plano alterado com sucesso!'
+      );
       setSyncMessage(null);
       setShowConfirmModal(false);
       setShowChangePlanModal(false);
@@ -419,7 +413,7 @@ export function PaymentManagement() {
     }
   };
 
-  if (isLoading) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader className="w-8 h-8 animate-spin text-primary" />
@@ -436,6 +430,33 @@ export function PaymentManagement() {
           Gerencie seu plano, assinatura e pagamentos.
         </p>
       </div>
+
+      {isPastDue && (
+        <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-yellow-900">Pagamento pendente</p>
+                <p className="text-sm text-yellow-800 mt-1">
+                  Atualize sua forma de pagamento no portal Stripe para evitar interrupção do serviço.
+                  Novos membros não podem ser adicionados até a regularização.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={handleManageSubscription}
+              disabled={isLoadingPortal || !canManagePlan}
+              title={!canManagePlan ? READER_TOOLTIP : undefined}
+              className="shrink-0"
+              isLoading={isLoadingPortal}
+            >
+              <CreditCard className="w-4 h-4 mr-2" />
+              Atualizar pagamento
+            </Button>
+          </div>
+        </div>
+      )}
 
       {autoSyncFailed && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -769,6 +790,55 @@ export function PaymentManagement() {
         </div>
       )}
 
+      {/* Histórico de assinatura (admin/owner) */}
+      {canManagePlan && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-700">Histórico de assinatura</h3>
+            <span className="text-xs text-gray-500">Criações e alterações de plano</span>
+          </div>
+
+          {isLoadingEvents ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : eventsError ? (
+            <p className="text-sm text-amber-700">{eventsError}</p>
+          ) : subscriptionEvents.length === 0 ? (
+            <p className="text-sm text-gray-500">Nenhum evento registrado ainda.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {subscriptionEvents.map((evt) => (
+                <li key={evt.id} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {eventTypeLabels[evt.event_type] ?? evt.event_type}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {evt.old_plan && evt.new_plan && evt.old_plan !== evt.new_plan
+                          ? `Plano ${evt.old_plan} → ${evt.new_plan}`
+                          : evt.new_plan
+                          ? `Plano ${evt.new_plan}`
+                          : evt.old_plan
+                          ? `Plano ${evt.old_plan}`
+                          : '—'}
+                        {evt.old_status || evt.new_status
+                          ? ` · ${evt.old_status ?? '—'} → ${evt.new_status ?? '—'}`
+                          : ''}
+                      </p>
+                    </div>
+                    <time className="text-xs text-gray-400 shrink-0">
+                      {formatDate(evt.created_at)}
+                    </time>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* Informações Adicionais */}
       <div className="bg-blue-50 rounded-lg p-4">
         <div className="flex items-start">
@@ -843,11 +913,11 @@ export function PaymentManagement() {
 
           {/* Observação para plano gratuito */}
           {selectedPlan === '100' && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
               <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-800">
-                  Para alterar para o plano gratuito você precisa cancelar a assinatura atual, clique e continuar para ser redirecionado para o gerenciamento de assinatura e faça o cancelamento.
+                <AlertCircle className="w-5 h-5 text-amber-600 mr-2 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-800">
+                  O plano gratuito cancelará sua assinatura paga no Stripe imediatamente. Você passará ao limite de 100 membros.
                 </p>
               </div>
             </div>
@@ -900,7 +970,7 @@ export function PaymentManagement() {
           setShowConfirmModal(false);
           setShowChangePlanModal(true);
         }}
-        title="Confirmar Troca de Plano"
+        title={selectedPlan === '100' ? 'Confirmar Plano Gratuito' : 'Confirmar Troca de Plano'}
         size="md"
       >
         <div className="p-6 space-y-4">
@@ -908,11 +978,23 @@ export function PaymentManagement() {
             <div className="flex items-start">
               <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-yellow-800">
-                <p className="font-medium mb-1">Atenção: Alteração Imediata</p>
-                <p>
-                  A troca de plano será aplicada imediatamente. Você será cobrado proporcionalmente 
-                  pelo período restante do plano atual e pelo novo plano.
-                </p>
+                {selectedPlan === '100' ? (
+                  <>
+                    <p className="font-medium mb-1">Atenção: cancelamento da assinatura paga</p>
+                    <p>
+                      Sua assinatura no Stripe será cancelada e o plano gratuito (100 membros) será ativado
+                      imediatamente.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium mb-1">Atenção: Alteração Imediata</p>
+                    <p>
+                      A troca de plano será aplicada imediatamente. Você será cobrado proporcionalmente
+                      pelo período restante do plano atual e pelo novo plano.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -956,13 +1038,14 @@ export function PaymentManagement() {
             </div>
           </div>
 
-          {/* Informação sobre cobrança */}
-          <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-            <p className="text-xs text-blue-800">
-              <strong>Como funciona a cobrança:</strong> O Stripe calculará automaticamente o valor proporcional 
-              do plano atual e aplicará o novo plano. Você receberá uma fatura ajustada.
-            </p>
-          </div>
+          {selectedPlan !== '100' && (
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+              <p className="text-xs text-blue-800">
+                <strong>Como funciona a cobrança:</strong> O Stripe calculará automaticamente o valor proporcional
+                do plano atual e aplicará o novo plano. Você receberá uma fatura ajustada.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -995,7 +1078,7 @@ export function PaymentManagement() {
               ) : (
                 <>
                   <CheckCircle2 className="w-5 h-5 mr-2" />
-                  Confirmar Troca
+                  {selectedPlan === '100' ? 'Ativar Plano Gratuito' : 'Confirmar Troca'}
                 </>
               )}
             </Button>

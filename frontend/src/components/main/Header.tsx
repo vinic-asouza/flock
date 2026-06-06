@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '@/services/api';
+import { ChurchSwitcher } from '@/components/main/ChurchSwitcher';
 interface MemberLimitInfo {
   currentCount: number;
   limit: number;
   remaining: number;
   planType?: string | null;
+  subscriptionStatus?: string | null;
   percentage: number;
   canAdd: boolean;
+  isPastDue?: boolean;
 }
 
 export function Header() {
@@ -80,6 +83,16 @@ export function Header() {
 
       {/* Dados do Usuário e Botão Sair */}
       <div className="flex items-center gap-4">
+        <ChurchSwitcher />
+        {user?.subscription_status === 'past_due' && (
+          <Link
+            href="/settings?tab=payment"
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-yellow-50 text-yellow-800 border border-yellow-300 hover:bg-yellow-100"
+          >
+            <AlertCircle size={16} className="text-yellow-600 shrink-0" />
+            <span>Pagamento pendente — atualizar</span>
+          </Link>
+        )}
         {/* Alerta de Limite de Membros */}
         {memberLimit && memberLimit.limit !== Infinity && memberLimit.percentage >= 80 && (
           <div

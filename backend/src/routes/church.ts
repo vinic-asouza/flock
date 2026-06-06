@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import rateLimit from 'express-rate-limit';
-import { getChurch, getMemberLimit, updateChurch } from '../controllers/churchController';
-import authMiddleware from '../middlewares/auth';
+import {
+  getChurch,
+  getMemberLimit,
+  updateChurch,
+  listMemberships,
+  setActiveChurch,
+} from '../controllers/churchController';
+import authMiddleware, { authUserOnly } from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
@@ -18,6 +24,10 @@ const churchLimiter = rateLimit({
 });
 
 router.use(churchLimiter);
+
+router.get('/memberships', authUserOnly, listMemberships);
+router.post('/active', authUserOnly, setActiveChurch);
+
 router.use(authMiddleware);
 router.use(requireRole('reader'));
 

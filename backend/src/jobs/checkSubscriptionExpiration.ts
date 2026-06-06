@@ -1,5 +1,7 @@
-import supabase, { supabaseAdmin } from '../services/supabase';
+import { supabaseAdmin } from '../services/supabase';
 import { sendEmail } from '../services/emailService';
+import { redactEmail } from '../utils/redact';
+import { billingLog } from '../utils/structuredLogger';
 import { getSubscriptionExpiringWarningTemplate } from '../templates/stripeEmailTemplates';
 import { getPlanName, getPlanConfig } from '../config/plans';
 
@@ -9,20 +11,13 @@ import { getPlanName, getPlanConfig } from '../config/plans';
 async function getUserEmailFromChurch(churchId: string): Promise<string | null> {
   try {
     // Buscar user_id da igreja
-    const { data: church, error: churchError } = await supabase
+    const { data: church, error: churchError } = await supabaseAdmin
       .from('churches')
       .select('user_id')
       .eq('id', churchId)
       .single();
 
     if (churchError || !church || !church.user_id) {
-      console.error('Erro ao buscar user_id da igreja:', churchError);
-      return null;
-    }
-
-    // Buscar email do usuário através do user_id
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin não configurado');
       return null;
     }
 
@@ -107,12 +102,12 @@ export async function checkSubscriptionExpiration(): Promise<number> {
     oneDayFromNow.setDate(now.getDate() + 1);
     oneDayFromNow.setHours(23, 59, 59, 999);
 
-    // Buscar igrejas com assinaturas que expiram em 7, 3 ou 1 dia
-    // Apenas assinaturas canceladas com data de término definida
-    const { data: churches, error } = await supabase
+    // SL13: incluir igrejas com status 'canceled' OU 'active' com subscription_end_date
+    // (status 'active' + end_date = cancelamento agendado via portal cancel_at_period_end)
+    const { data: churches, error } = await supabaseAdmin
       .from('churches')
       .select('id, name, plan_type, subscription_status, subscription_end_date')
-      .eq('subscription_status', 'canceled')
+      .in('subscription_status', ['canceled', 'active'])
       .not('subscription_end_date', 'is', null)
       .lte('subscription_end_date', sevenDaysFromNow.toISOString())
       .gte('subscription_end_date', now.toISOString());
@@ -221,9 +216,19 @@ export async function checkSubscriptionExpiration(): Promise<number> {
           expirationWarningCache.set(cacheKey, nowTimestamp);
           emailsSent++;
 
-          console.log(`✅ Aviso de expiração enviado para ${userEmail} (${thresholdToNotify} dias antes)`);
+          billingLog({
+            event: 'expiration_warning_sent',
+            church_id: church.id,
+            to: redactEmail(userEmail),
+            days_before: thresholdToNotify,
+          });
         } catch (emailError) {
-          console.error(`Erro ao enviar aviso de expiração para ${userEmail}:`, emailError);
+          billingLog({
+            event: 'expiration_warning_failed',
+            church_id: church.id,
+            to: redactEmail(userEmail),
+            error: emailError instanceof Error ? emailError.message : String(emailError),
+          });
         }
       }
     }
@@ -245,9 +250,6 @@ export async function checkSubscriptionExpiration(): Promise<number> {
  * Executa verificação de expiração de assinaturas
  * Pode ser chamado manualmente ou via cron job
  */
-export async function runExpirationCheckJob() {
-  console.log('🔄 Iniciando verificação de assinaturas próximas do vencimento...');
-  const count = await checkSubscriptionExpiration();
-  console.log(`✅ Verificação concluída. ${count} aviso(s) enviado(s).`);
-  return count;
+export async function runExpirationCheckJob(): Promise<number> {
+  return checkSubscriptionExpiration();
 }

@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest, CalendarItem, Group } from '../types';
 import { 
   createCalendarItemSchema, 

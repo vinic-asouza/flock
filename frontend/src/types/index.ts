@@ -72,9 +72,10 @@ export interface Session {
 export interface LoginResponse {
   message: string;
   church: Church;
-  /** ACHADO 06: role e email retornados pelo backend eliminam chamadas extras ao getCheckAuth() e getAccountData() */
   role?: ChurchUserRole;
   email?: string;
+  memberships?: ChurchMembership[];
+  activeChurchId?: string;
 }
 
 export interface RegisterData {
@@ -86,6 +87,14 @@ export interface RegisterData {
   city: string;
   state: string;
   cnpj: string;
+  link_token?: string;
+  checkout_session_id?: string;
+}
+
+export interface ChurchMembership {
+  churchId: string;
+  role: ChurchUserRole;
+  churchName: string;
 }
 
 export interface RegisterResponse {
@@ -121,6 +130,10 @@ export interface CheckAuthResponse {
   user?: { id: string; email: string };
   church?: Church;
   role?: ChurchUserRole;
+  memberships?: ChurchMembership[];
+  activeChurchId?: string | null;
+  code?: 'CHURCH_SELECTION_REQUIRED';
+  message?: string;
 }
 
 /** Item da listagem de usuários da igreja */
@@ -153,6 +166,10 @@ export interface AuthContextType {
   resetPassword: (data: ResetPasswordData) => Promise<void>;
   updateChurch: (data: Partial<Church>) => Promise<Church>;
   refreshChurch: () => Promise<void>;
+  memberships: ChurchMembership[];
+  activeChurchId: string | null;
+  churchSelectionRequired: boolean;
+  switchChurch: (churchId: string) => Promise<void>;
 }
 
 // Tipos para componentes de formulário

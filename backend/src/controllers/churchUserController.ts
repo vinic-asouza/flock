@@ -1,6 +1,5 @@
 import { Response } from 'express';
-import supabase from '../services/supabase';
-import { supabaseAdmin } from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest } from '../types';
 import { ChurchUserRole } from '../types';
 import { sendEmail } from '../services/emailService';
@@ -38,9 +37,9 @@ export const listChurchUsers = async (req: AuthRequest, res: Response) => {
     const userIds = [...new Set((rows || []).map((r: { user_id: string }) => r.user_id))];
     const emails: Record<string, string> = {};
 
-    if (supabaseAdmin && userIds.length > 0) {
+    if (userIds.length > 0) {
       for (const uid of userIds) {
-        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(uid);
+        const { data: userData } = await supabase.auth.admin.getUserById(uid);
         if (userData?.user?.email) emails[uid] = userData.user.email;
       }
     }
@@ -96,19 +95,12 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
 
     let userId: string;
 
-    if (!supabaseAdmin) {
-      return res.status(503).json({
-        error: 'Serviço indisponível',
-        details: 'Operação de usuário não configurada'
-      });
-    }
-
     let existingUser: { id: string; email?: string } | undefined;
     let page = 1;
     const perPage = 1000;
 
     while (!existingUser) {
-      const { data: existingList, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+      const { data: existingList, error: listError } = await supabase.auth.admin.listUsers({
         page,
         perPage
       });
@@ -136,7 +128,7 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
       userId = existingUser.id;
     } else {
       const randomPassword = `Flock${Date.now()}${Math.random().toString(36).slice(2, 10)}!`;
-      const { data: createData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      const { data: createData, error: createError } = await supabase.auth.admin.createUser({
         email: normalizedEmail,
         password: randomPassword,
         email_confirm: true

@@ -1,4 +1,7 @@
-import supabase, { supabaseAdmin } from '../services/supabase';
+import { supabaseAdmin } from '../services/supabase';
+
+// Todas as queries de DB usam service_role (bypassa RLS)
+const supabase = supabaseAdmin;
 import { sendEmail } from '../services/emailService';
 import { getMemberLimitWarningTemplate } from '../templates/emailTemplates';
 import { getPlanName, getPlanConfig } from '../config/plans';
@@ -21,11 +24,6 @@ async function getUserEmailFromChurch(churchId: string): Promise<string | null> 
     }
 
     // Buscar email do usuário através do user_id
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin não configurado');
-      return null;
-    }
-
     const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(church.user_id);
     
     if (userError || !user || !user.email) {
@@ -82,6 +80,7 @@ export interface MemberLimitCheck {
   planType?: string | null;
   subscriptionStatus?: string | null;
   hasActiveSubscription: boolean;
+  isPastDue?: boolean;
   message?: string;
 }
 
@@ -130,11 +129,13 @@ export async function checkMemberLimit(
       };
     }
 
-    // Verificar se a assinatura está ativa
-    const hasActiveSubscription = subscriptionStatus === 'active';
+    // SL05: assinatura "com direito" inclui active e trialing; past_due entra em grace period
+    const hasActiveSubscription =
+      subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
 
-    // Se não tem assinatura ativa, ainda permitir (pode ser período de teste ou cancelamento futuro)
-    // Mas vamos verificar o limite mesmo assim
+    // SL05: past_due = grace period — mantém limites do plano mas bloqueia adição de novos membros
+    const isPastDue = subscriptionStatus === 'past_due';
+
     const limit = PLAN_LIMITS[planType] ?? Infinity;
 
     // Se o limite é infinito (plano não definido), permitir sempre
@@ -173,14 +174,19 @@ export async function checkMemberLimit(
 
     const totalCount = currentCount || 0;
     const remaining = Math.max(0, limit - totalCount);
-    // Se quantityToAdd é 0, verificar se ainda há espaço disponível (remaining > 0)
-    // Se quantityToAdd > 0, verificar se a adição não ultrapassa o limite
-    const canAdd = quantityToAdd === 0 
-      ? remaining > 0 
-      : totalCount + quantityToAdd <= limit;
+
+    // SL05: past_due = grace period — bloqueia adição independente de limite numérico
+    const blockedByPastDue = isPastDue && quantityToAdd > 0;
+
+    const withinLimit =
+      quantityToAdd === 0 ? remaining > 0 : totalCount + quantityToAdd <= limit;
+
+    const canAdd = !blockedByPastDue && withinLimit;
 
     let message: string | undefined;
-    if (!canAdd) {
+    if (blockedByPastDue) {
+      message = `Pagamento pendente. Regularize sua assinatura para adicionar novos membros.`;
+    } else if (!canAdd) {
       if (!hasActiveSubscription) {
         message = `Limite de membros atingido. Você possui ${totalCount} de ${limit} membros permitidos no plano ${planType}. Ative sua assinatura para continuar adicionando membros.`;
       } else {
@@ -292,6 +298,7 @@ export async function checkMemberLimit(
       planType,
       subscriptionStatus,
       hasActiveSubscription,
+      isPastDue,
       message,
     };
   } catch (error) {

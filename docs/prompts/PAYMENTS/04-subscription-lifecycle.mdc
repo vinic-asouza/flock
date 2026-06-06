@@ -1,0 +1,50 @@
+---
+alwaysApply: false
+---
+# Auditoria — Subscription Lifecycle Stripe
+
+Audite todo o ciclo de vida de assinaturas Stripe.
+
+Valide:
+
+* criação;
+* trial;
+* renovação;
+* cancelamento;
+* reativação;
+* upgrade;
+* downgrade;
+* falha de pagamento;
+* expiração;
+* retry.
+
+Verifique:
+
+* sincronização Stripe ↔ banco;
+* estados inválidos;
+* inconsistências;
+* race conditions;
+* side effects;
+* billing incorreto.
+
+Force cenários:
+
+* cancelamento durante retry;
+* upgrade simultâneo;
+* webhook atrasado;
+* pagamento falho;
+* refresh durante checkout.
+
+Mapeie:
+
+* todos os estados possíveis;
+* transições inválidas;
+* pontos frágeis.
+
+Para cada problema:
+
+* severidade;
+* impacto financeiro;
+* evidência;
+* correção recomendada.
+

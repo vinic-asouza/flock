@@ -1,13 +1,34 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import Stripe from 'stripe';
-import { stripe, STRIPE_PRICE_IDS, getOrCreateCustomer, createCheckoutSession, createCustomerPortalSession, updateSubscription } from '../services/stripe';
-import supabase, { supabaseAdmin } from '../services/supabase';
+import {
+  stripe,
+  STRIPE_PRICE_IDS,
+  getOrCreateCustomerForChurch,
+  createCheckoutSession,
+  createCustomerPortalSession,
+  updateSubscription,
+} from '../services/stripe';
+import { setPendingLinkToken } from '../utils/cookieUtils';
+import { supabaseAdmin } from '../services/supabase';
+import { insertSubscriptionEvent } from '../services/stripeWebhookService';
+
+// alias para legibilidade — todas as queries de DB usam service_role
+const supabase = supabaseAdmin;
 import { AuthRequest } from '../types';
 import { formatErrorResponse, getFriendlyErrorMessage } from '../utils/errorMessages';
 import { PLAN_CONFIG, getPlanConfig, getAllPlans, getPlanName, getPlanPrice } from '../config/plans';
-import { error, warn, debug, info } from '../utils/logger';
+import { error as logError, warn, debug } from '../utils/logger';
+import { billingLog } from '../utils/structuredLogger';
+import { recordCheckoutCreated, recordSyncSubscription } from '../utils/billingMetrics';
 import { sendEmail } from '../services/emailService';
-import { getPaymentSuccessTemplate, getPaymentFailedTemplate, getSubscriptionCanceledTemplate, getRenewalSuccessTemplate, getPlanChangedTemplate, getSubscriptionReactivatedTemplate } from '../templates/stripeEmailTemplates';
+import { getPlanChangedTemplate } from '../templates/stripeEmailTemplates';
+import {
+  processStripeWebhook,
+  getUserEmailFromChurch,
+  shouldSetToFreePlan,
+  getSubscriptionEndDate,
+} from '../services/stripeWebhookService';
 
 /**
  * Criar sessão de checkout
@@ -17,7 +38,6 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
   try {
     const { plan } = req.body;
 
-    // Validar plano (100 não precisa de checkout, é gratuito)
     if (!plan || !['200', '500', '800'].includes(plan)) {
       return res.status(400).json({
         error: 'Plano inválido',
@@ -25,10 +45,9 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Obter price_id do plano
     const priceId = STRIPE_PRICE_IDS[plan as keyof typeof STRIPE_PRICE_IDS];
     if (!priceId) {
-      error(`Price ID não configurado para o plano: ${plan}`, {
+      logError(`Price ID não configurado para o plano: ${plan}`, {
         userId: req.user?.id,
         planType: plan,
       });
@@ -38,51 +57,25 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Tentar autenticar novamente se não estiver autenticado mas houver cookies
-    if (!req.user && req.cookies) {
-      const { cookieConfig } = require('../utils/cookieUtils');
-      const accessToken = req.cookies[cookieConfig.names.accessToken];
-
-      if (accessToken) {
-        try {
-          const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-          if (!error && user) {
-            req.user = {
-              id: user.id,
-              email: user.email || ''
-            };
-          } else if (error) {
-            // Tentar renovar token
-            const refreshToken = req.cookies[cookieConfig.names.refreshToken];
-            if (refreshToken) {
-              const { data: authData } = await supabase.auth.refreshSession({
-                refresh_token: refreshToken
-              });
-              if (authData?.user) {
-                req.user = {
-                  id: authData.user.id,
-                  email: authData.user.email || ''
-                };
-              }
-            }
-          }
-        } catch (authError) {
-          console.error('❌ Erro ao tentar autenticar:', authError);
-        }
-      }
-    }
-
-    // Se usuário autenticado, buscar dados da igreja
     let customerId: string;
-    let churchId: string | undefined;
+    let churchId: string;
     let customerEmail: string;
     let customerName: string;
+    let linkToken: string | undefined;
+    const landingUrl = process.env.LANDING_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
 
-    if (req.user && req.church) {
+    if (req.user) {
+      if (req.body.church_id) {
+        return res.status(400).json({
+          error: 'Parâmetro não permitido',
+          details: 'church_id não pode ser enviado no checkout autenticado',
+        });
+      }
+
       const { data: church, error: churchError } = await supabase
         .from('churches')
-        .select('id, name, email_church, user_id, stripe_customer_id')
-        .eq('id', req.church.churchId)
+        .select('id, name')
+        .eq('id', req.church!.churchId)
         .single();
 
       if (churchError || !church) {
@@ -93,94 +86,103 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
       }
 
       churchId = church.id;
-      // Sempre usar o email principal da conta (req.user.email) para o checkout do Stripe
-      // O email_church é apenas opcional e não deve ser usado para pagamentos
       customerEmail = req.user.email!;
       customerName = church.name;
 
-      // Se já tem customer_id, usar ele
-      if (church.stripe_customer_id) {
-        customerId = church.stripe_customer_id;
-      } else {
-        // Criar ou buscar cliente no Stripe
-        const customer = await getOrCreateCustomer(
-          customerEmail,
-          customerName,
-          {
-            church_id: church.id,
-            user_id: req.user.id,
-          }
-        );
-        customerId = customer.id;
-
-        // Salvar customer_id na igreja
-        await supabase
-          .from('churches')
-          .update({ stripe_customer_id: customerId })
-          .eq('id', church.id);
-      }
+      const customer = await getOrCreateCustomerForChurch({
+        churchId: church.id,
+        email: customerEmail,
+        name: customerName,
+        userId: req.user.id,
+      });
+      customerId = customer.id;
     } else {
-      // Usuário não autenticado (checkout da landing page)
-      const { email, name, church_id } = req.body;
+      if (req.body.church_id) {
+        return res.status(400).json({
+          error: 'Parâmetro não permitido',
+          details: 'church_id não é aceito no checkout público',
+        });
+      }
 
+      const { email, name } = req.body;
       if (!email || !name) {
         return res.status(400).json({
           error: 'Email e nome são obrigatórios',
-          details: 'Para checkout não autenticado, é necessário fornecer email e nome no body da requisição',
+          details: 'Para checkout não autenticado, informe email e nome',
         });
       }
 
       customerEmail = email;
       customerName = name;
-      churchId = church_id;
+      churchId = 'pending';
+      linkToken = crypto.randomUUID();
 
-      // Criar cliente temporário no Stripe
-      const customer = await getOrCreateCustomer(
-        customerEmail,
-        customerName,
-        {
-          church_id: church_id || 'pending',
-        }
-      );
+      const customer = await getOrCreateCustomerForChurch({
+        churchId: 'pending',
+        email: customerEmail,
+        name: customerName,
+        linkToken,
+      });
       customerId = customer.id;
     }
 
-    // URLs de redirecionamento
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    const successUrl = `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${frontendUrl}/subscription/cancel`;
+    const successUrl = req.user
+      ? `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`
+      : `${landingUrl}/register?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = req.user
+      ? `${frontendUrl}/subscription/cancel`
+      : `${landingUrl}/?checkout=cancel`;
 
-    // Criar sessão de checkout
+    const metadata: Record<string, string> = {
+      plan,
+      church_id: churchId,
+      customer_email: customerEmail,
+    };
+    if (linkToken) {
+      metadata.link_token = linkToken;
+    }
+
     const session = await createCheckoutSession(
       customerId,
       priceId,
       successUrl,
       cancelUrl,
-      {
-        plan,
-        church_id: churchId || 'pending',
-        customer_email: customerEmail,
-      }
+      metadata
     );
+
+    if (linkToken) {
+      setPendingLinkToken(res, linkToken);
+    }
+
+    billingLog({
+      event: 'checkout_session_created',
+      session_id: session.id,
+      church_id: churchId !== 'pending' ? churchId : undefined,
+      plan,
+      authenticated: !!req.user,
+      request_id: req.requestId,
+    });
+    recordCheckoutCreated(plan, !!req.user);
 
     res.json({
       session_id: session.id,
       url: session.url,
     });
-  } catch (error: any) {
-    console.error('Erro ao criar checkout:', error);
+  } catch (err: unknown) {
+    logError('Erro ao criar checkout:', err);
 
-    // Log detalhado do erro
-    if (error.type === 'StripeInvalidRequestError') {
-      console.error('Erro do Stripe:', {
-        type: error.type,
-        message: error.message,
-        code: error.code,
-        param: error.param,
+    if (err && typeof err === 'object' && 'type' in err && (err as { type?: string }).type === 'StripeInvalidRequestError') {
+      const stripeErr = err as { type?: string; message?: string; code?: string; param?: string };
+      logError('Erro do Stripe:', {
+        type: stripeErr.type,
+        message: stripeErr.message,
+        code: stripeErr.code,
+        param: stripeErr.param,
       });
     }
 
-    const errorResponse = formatErrorResponse(error, 'Erro ao criar sessão de checkout');
+    const errorResponse = formatErrorResponse(err, 'Erro ao criar sessão de checkout');
     res.status(500).json(errorResponse);
   }
 };
@@ -231,781 +233,14 @@ export const createPortalSession = async (req: AuthRequest, res: Response) => {
       url: portalSession.url,
     });
   } catch (error: any) {
-    console.error('Erro ao criar portal session:', error);
+    logError('Erro ao criar portal session:', error);
     const errorResponse = formatErrorResponse(error, 'Erro ao criar sessão do portal');
     res.status(500).json(errorResponse);
   }
 };
 
-/**
- * Verifica se um evento do Stripe já foi processado
- */
-async function isEventProcessed(eventId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase
-      .from('processed_webhook_events')
-      .select('id')
-      .eq('stripe_event_id', eventId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-      console.error('Erro ao verificar evento processado:', error);
-      return false; // Em caso de erro, processar para não perder evento
-    }
-
-    return !!data;
-  } catch (error) {
-    console.error('Erro ao verificar evento processado:', error);
-    return false; // Em caso de erro, processar para não perder evento
-  }
-}
-
-/**
- * Marca um evento como processado
- */
-async function markEventAsProcessed(eventId: string, eventType: string): Promise<void> {
-  try {
-    const { error } = await supabase
-      .from('processed_webhook_events')
-      .insert({
-        stripe_event_id: eventId,
-        event_type: eventType,
-      });
-
-    if (error) {
-      // Se erro for de duplicação, ignorar (já foi processado)
-      if (error.code === '23505') { // Unique violation
-        console.log(`Evento ${eventId} já estava marcado como processado`);
-        return;
-      }
-      console.error('Erro ao marcar evento como processado:', error);
-    }
-  } catch (error) {
-    console.error('Erro ao marcar evento como processado:', error);
-    // Não lançar erro para não falhar o webhook
-  }
-}
-
-/**
- * Lista de IPs do Stripe para validação de webhooks
- * Fonte: https://stripe.com/docs/ips
- * Nota: Em produção, considerar usar range de IPs ou validação no nível de infraestrutura
- */
-const STRIPE_WEBHOOK_IPS = [
-  '3.18.12.63',
-  '3.130.192.231',
-  '13.235.14.237',
-  '13.235.122.149',
-  '18.211.135.69',
-  '35.154.171.200',
-  '52.15.183.88',
-  '54.187.174.169',
-  '54.187.205.235',
-  '54.187.216.72',
-  '54.241.31.99',
-  '54.241.31.102',
-  '54.241.34.107',
-];
-
-/**
- * Verifica se o IP de origem é válido (vem do Stripe)
- */
-function isValidStripeIP(ip: string | undefined): boolean {
-  if (!ip) {
-    return false;
-  }
-
-  // Em desenvolvimento, permitir localhost
-  if (process.env.NODE_ENV === 'development' && (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('::ffff:127.0.0.1'))) {
-    return true;
-  }
-
-  return STRIPE_WEBHOOK_IPS.includes(ip);
-}
-
-/**
- * Webhook do Stripe
- * POST /api/stripe/webhook
- */
-export const handleWebhook = async (req: Request, res: Response) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!webhookSecret) {
-    console.error('❌ STRIPE_WEBHOOK_SECRET não configurado');
-    return res.status(500).json({ error: 'Webhook secret não configurado' });
-  }
-
-  // Validar IP de origem (segurança adicional)
-  const clientIP = req.ip ||
-    (req.socket.remoteAddress) ||
-    (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-    req.headers['x-real-ip'] as string;
-
-  if (!isValidStripeIP(clientIP)) {
-    warn('Webhook recebido de IP não autorizado', {
-      clientIP,
-      endpoint: '/stripe/webhook',
-    });
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({ error: 'IP não autorizado' });
-    }
-  }
-
-  let event: any;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
-  } catch (err: any) {
-    console.error('❌ Erro ao verificar webhook:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Verificar se evento já foi processado (idempotência)
-  if (await isEventProcessed(event.id)) {
-    debug(`Evento ${event.id} (${event.type}) já foi processado, ignorando`, {
-      stripeEventId: event.id,
-      stripeEventType: event.type,
-    });
-    return res.json({ received: true, skipped: true });
-  }
-
-  try {
-    // Processar evento
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
-        await handleCheckoutCompleted(session);
-        break;
-      }
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object;
-        await handleSubscriptionUpdated(subscription);
-        break;
-      }
-
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object;
-        await handleSubscriptionDeleted(subscription);
-        break;
-      }
-
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        await handlePaymentSucceeded(invoice);
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        await handlePaymentFailed(invoice);
-        break;
-      }
-
-      default:
-        warn(`Evento não tratado: ${event.type}`, {
-          stripeEventId: event.id,
-          stripeEventType: event.type,
-        });
-    }
-
-    // Marcar evento como processado após sucesso
-    await markEventAsProcessed(event.id, event.type);
-    // Log de evento Stripe processado
-    debug(`Evento Stripe processado: ${event.type}`, {
-      stripeEventId: event.id,
-      processed: true,
-    });
-
-    res.json({ received: true });
-  } catch (error: any) {
-    console.error('❌ Erro ao processar webhook:', error);
-    error('Erro ao processar webhook', {
-      stripeEventId: event?.id,
-      stripeEventType: event?.type,
-      error: error as Error,
-    });
-    res.status(500).json({ error: 'Erro ao processar webhook' });
-  }
-};
-
-/**
- * Função auxiliar para buscar o email do usuário a partir do user_id da igreja
- */
-async function getUserEmailFromChurch(churchId: string): Promise<string | null> {
-  try {
-    // Buscar user_id da igreja
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .select('user_id')
-      .eq('id', churchId)
-      .single();
-
-    if (churchError || !church || !church.user_id) {
-      console.error('Erro ao buscar user_id da igreja:', churchError);
-      return null;
-    }
-
-    // Buscar email do usuário através do user_id
-    if (!supabaseAdmin) {
-      console.error('supabaseAdmin não configurado');
-      return null;
-    }
-
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.admin.getUserById(church.user_id);
-
-    if (userError || !user || !user.email) {
-      console.error('Erro ao buscar email do usuário:', userError);
-      return null;
-    }
-
-    return user.email;
-  } catch (error) {
-    console.error('Erro ao buscar email do usuário:', error);
-    return null;
-  }
-}
-
-/**
- * Formata data para exibição em português brasileiro
- */
-function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return '';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-/**
- * Handler para checkout completado
- */
-async function handleCheckoutCompleted(session: any) {
-  const customerId = session.customer;
-  const subscriptionId = session.subscription;
-  const plan = session.metadata?.plan;
-
-  if (!customerId || !subscriptionId) {
-    console.error('Dados incompletos no checkout:', session);
-    return;
-  }
-
-  // Buscar assinatura para obter mais detalhes
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const priceId = subscription.items.data[0].price.id;
-
-  // Determinar tipo de plano baseado no price_id
-  const planType = Object.entries(STRIPE_PRICE_IDS).find(
-    ([_, id]) => id === priceId
-  )?.[0] || plan || null;
-
-  // Acessar propriedades com type assertion (Stripe SDK pode ter tipos incompletos)
-  const sub = subscription as any;
-  const currentPeriodStart = sub.current_period_start as number | null;
-  const cancelAt = sub.cancel_at as number | null;
-
-  // Buscar igreja pelo customer_id ou metadata
-  const churchId = session.metadata?.church_id;
-  const customerEmail = session.metadata?.customer_email || session.customer_email;
-
-  if (churchId && churchId !== 'pending') {
-    // Igreja existe, vincular diretamente
-    const { data: church } = await supabase
-      .from('churches')
-      .update({
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscriptionId,
-        subscription_status: subscription.status,
-        plan_type: planType,
-        subscription_start_date: currentPeriodStart
-          ? new Date(currentPeriodStart * 1000).toISOString()
-          : null,
-        subscription_end_date: cancelAt
-          ? new Date(cancelAt * 1000).toISOString()
-          : null,
-      })
-      .eq('id', churchId)
-      .select('name')
-      .single();
-
-    // Buscar email do usuário e enviar email de confirmação de pagamento
-    if (church) {
-      const userEmail = await getUserEmailFromChurch(churchId);
-      if (userEmail) {
-        const planConfig = getPlanConfig(planType);
-        const planName = planConfig?.name || `Plano ${planType}`;
-        const amount = planConfig?.priceFormatted || 'N/A';
-        const currentPeriodEnd = (subscription as any).current_period_end as number | null;
-        const nextBillingDate = currentPeriodEnd
-          ? formatDate(new Date(currentPeriodEnd * 1000))
-          : undefined;
-
-        await sendEmail({
-          to: userEmail,
-          subject: 'Pagamento Confirmado - Flock',
-          html: getPaymentSuccessTemplate({
-            churchName: church.name,
-            planName,
-            amount,
-            nextBillingDate,
-          }),
-        });
-      }
-    }
-  } else {
-    // Tentar buscar igreja por customer_id (caso já exista)
-    const { data: existingChurch } = await supabase
-      .from('churches')
-      .select('id')
-      .eq('stripe_customer_id', customerId)
-      .single();
-
-    if (existingChurch) {
-      // Igreja encontrada por customer_id, vincular
-      const { data: church } = await supabase
-        .from('churches')
-        .update({
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          subscription_status: subscription.status,
-          plan_type: planType,
-          subscription_start_date: currentPeriodStart
-            ? new Date(currentPeriodStart * 1000).toISOString()
-            : null,
-          subscription_end_date: cancelAt
-            ? new Date(cancelAt * 1000).toISOString()
-            : null,
-        })
-        .eq('id', existingChurch.id)
-        .select('name')
-        .single();
-
-      // Buscar email do usuário e enviar email de confirmação de pagamento
-      if (church) {
-        const userEmail = await getUserEmailFromChurch(existingChurch.id);
-        if (userEmail) {
-          const planConfig = getPlanConfig(planType);
-          const planName = planConfig?.name || `Plano ${planType}`;
-          const amount = planConfig?.priceFormatted || 'N/A';
-          const currentPeriodEnd = (subscription as any).current_period_end as number | null;
-          const nextBillingDate = currentPeriodEnd
-            ? formatDate(new Date(currentPeriodEnd * 1000))
-            : undefined;
-
-          await sendEmail({
-            to: userEmail,
-            subject: 'Pagamento Confirmado - Flock',
-            html: getPaymentSuccessTemplate({
-              churchName: church.name,
-              planName,
-              amount,
-              nextBillingDate,
-            }),
-          });
-        }
-      }
-    } else if (customerEmail) {
-      // Igreja não existe, salvar como assinatura pendente vinculada ao email
-      await supabase
-        .from('pending_subscriptions')
-        .insert({
-          email: customerEmail,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscriptionId,
-          plan_type: planType,
-          subscription_status: subscription.status,
-          subscription_start_date: currentPeriodStart
-            ? new Date(currentPeriodStart * 1000).toISOString()
-            : null,
-        });
-    } else {
-      warn('Não foi possível vincular assinatura: email não encontrado', {
-        customerEmail,
-        stripeSubscriptionId: subscription.id,
-      });
-    }
-  }
-}
-
-/**
- * Determina se uma assinatura cancelada deve resultar em plano gratuito
- * @param status Status da assinatura
- * @param endDate Data de término da assinatura (ou null)
- * @returns true se deve ser alterado para plano gratuito
- */
-function shouldSetToFreePlan(
-  status: string,
-  endDate: Date | null
-): boolean {
-  if (status !== 'canceled') {
-    return false;
-  }
-
-  if (!endDate) {
-    // Se cancelada mas sem data de término, considerar expirada
-    return true;
-  }
-
-  // Se data de término está no passado, está expirada
-  return endDate < new Date();
-}
-
-/**
- * Extrai a data de término de uma assinatura do Stripe
- */
-function getSubscriptionEndDate(subscription: any): Date | null {
-  const cancelAt = subscription.cancel_at as number | null;
-  const canceledAt = subscription.canceled_at as number | null;
-  const currentPeriodEnd = subscription.current_period_end as number | null;
-
-  if (cancelAt) {
-    return new Date(cancelAt * 1000);
-  }
-  if (canceledAt) {
-    return new Date(canceledAt * 1000);
-  }
-  if (currentPeriodEnd) {
-    return new Date(currentPeriodEnd * 1000);
-  }
-  return null;
-}
-
-/**
- * Handler para assinatura atualizada
- */
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  try {
-    const customerId = typeof subscription.customer === 'string'
-      ? subscription.customer
-      : subscription.customer?.id || subscription.customer;
-
-    if (!customerId) {
-      console.error('❌ customerId não encontrado');
-      return;
-    }
-
-    const subscriptionId = subscription.id;
-    const priceId = subscription.items.data[0].price.id;
-
-    // Determinar tipo de plano
-    const planType = Object.entries(STRIPE_PRICE_IDS).find(
-      ([_, id]) => id === priceId
-    )?.[0] || null;
-
-    // Acessar propriedades com type assertion para evitar erros de tipo
-    const currentPeriodStart = (subscription as any).current_period_start as number;
-    const endDate = getSubscriptionEndDate(subscription);
-
-    // Verificar se deve alterar para plano gratuito
-    const finalPlanType = shouldSetToFreePlan(subscription.status, endDate)
-      ? '100'
-      : planType;
-
-    // Buscar status anterior da igreja ANTES de atualizar para detectar reativação
-    const { data: churchBeforeUpdate } = await supabase
-      .from('churches')
-      .select('id, name, subscription_status, plan_type, subscription_end_date, stripe_subscription_id')
-      .eq('stripe_customer_id', customerId)
-      .single();
-
-    // Atualizar igreja
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .update({
-        stripe_subscription_id: subscriptionId,
-        subscription_status: subscription.status,
-        plan_type: finalPlanType,
-        subscription_start_date: currentPeriodStart
-          ? new Date(currentPeriodStart * 1000).toISOString()
-          : null,
-        subscription_end_date: endDate ? endDate.toISOString() : null,
-      })
-      .eq('stripe_customer_id', customerId)
-      .select('id, name')
-      .single();
-
-    if (!church || churchError) {
-      return;
-    }
-
-    // Verificar se a assinatura foi reativada após cancelamento
-    // Condições para reativação:
-    // 1. Status atual é 'active'
-    // 2. cancel_at_period_end é false (foi removido o cancelamento)
-    // 3. Havia uma assinatura anterior que estava cancelada/expirada
-    const isNowActive = subscription.status === 'active';
-    const cancelAtPeriodEnd = (subscription as any).cancel_at_period_end === false;
-
-    // Verificar se realmente havia uma assinatura anterior cancelada/expirada
-    // NÃO considerar null como cancelado, pois null pode significar "nunca teve assinatura"
-    const hadPreviousSubscription = churchBeforeUpdate?.stripe_subscription_id !== null &&
-      churchBeforeUpdate?.stripe_subscription_id !== undefined;
-
-    const wasCanceled = hadPreviousSubscription && (
-      churchBeforeUpdate?.subscription_status === 'canceled' ||
-      (churchBeforeUpdate?.subscription_end_date !== null &&
-        churchBeforeUpdate?.subscription_end_date !== undefined &&
-        new Date(churchBeforeUpdate.subscription_end_date) < new Date())
-    );
-
-    const isReactivated = isNowActive && cancelAtPeriodEnd && wasCanceled;
-
-    // Se a assinatura foi reativada, enviar email de reativação
-    if (isReactivated) {
-      const userEmail = await getUserEmailFromChurch(church.id);
-
-      if (userEmail) {
-        const planConfig = getPlanConfig(planType);
-        const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
-        const amount = planConfig?.priceFormatted || 'N/A';
-        const currentPeriodEnd = (subscription as any).current_period_end as number | null;
-        const nextBillingDate = currentPeriodEnd
-          ? formatDate(new Date(currentPeriodEnd * 1000))
-          : formatDate(new Date());
-
-        await sendEmail({
-          to: userEmail,
-          subject: 'Assinatura Reativada - Flock',
-          html: getSubscriptionReactivatedTemplate({
-            churchName: church.name,
-            planName,
-            amount,
-            nextBillingDate,
-          }),
-        });
-
-        console.log('✅ Email de reativação enviado para:', userEmail);
-        return; // Não processar cancelamento se foi reativação
-      }
-    }
-
-    // Se a assinatura foi cancelada, enviar email de cancelamento
-    // Verificar se foi cancelada: status 'canceled' OU cancel_at_period_end OU canceled_at
-    const isCanceled = subscription.status === 'canceled' ||
-      (subscription as any).cancel_at_period_end === true ||
-      (subscription as any).canceled_at !== null ||
-      (subscription as any).cancel_at !== null;
-
-    if (isCanceled) {
-      const userEmail = await getUserEmailFromChurch(church.id);
-
-      if (userEmail) {
-        const planConfig = getPlanConfig(planType);
-        const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
-        const endDateFormatted = endDate ? formatDate(endDate) : 'N/A';
-
-        await sendEmail({
-          to: userEmail,
-          subject: 'Assinatura Cancelada - Flock',
-          html: getSubscriptionCanceledTemplate({
-            churchName: church.name,
-            planName,
-            endDate: endDateFormatted,
-          }),
-        });
-
-        console.log('✅ Email de cancelamento enviado para:', userEmail);
-      }
-    }
-  } catch (error) {
-    console.error('❌ Erro ao processar atualização de assinatura:', error);
-  }
-}
-
-/**
- * Handler para assinatura cancelada
- */
-async function handleSubscriptionDeleted(subscription: any) {
-  try {
-    const customerId = typeof subscription.customer === 'string'
-      ? subscription.customer
-      : subscription.customer?.id || subscription.customer;
-
-    if (!customerId) {
-      console.error('❌ customerId não encontrado no evento de assinatura deletada');
-      return;
-    }
-
-    const endDate = getSubscriptionEndDate(subscription) || new Date();
-
-    // Buscar informações do plano antes de atualizar
-    const priceId = subscription.items?.data?.[0]?.price?.id;
-    const planType = priceId
-      ? Object.entries(STRIPE_PRICE_IDS).find(([_, id]) => id === priceId)?.[0] || null
-      : null;
-
-    // Quando a assinatura é deletada, sempre alterar para plano gratuito
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .update({
-        subscription_status: 'canceled',
-        subscription_end_date: endDate.toISOString(),
-        plan_type: '100', // Plano gratuito quando cancelada
-      })
-      .eq('stripe_customer_id', customerId)
-      .select('id, name')
-      .single();
-
-    if (churchError || !church) {
-      if (churchError) {
-        console.error('❌ Erro ao buscar igreja para cancelamento:', churchError);
-      }
-      return;
-    }
-
-    // Buscar email do usuário e enviar email de assinatura cancelada
-    const userEmail = await getUserEmailFromChurch(church.id);
-
-    if (userEmail) {
-      const planConfig = getPlanConfig(planType);
-      const planName = planConfig?.name || `Plano ${planType || 'anterior'}`;
-      const endDateFormatted = formatDate(endDate);
-
-      await sendEmail({
-        to: userEmail,
-        subject: 'Assinatura Cancelada - Flock',
-        html: getSubscriptionCanceledTemplate({
-          churchName: church.name,
-          planName,
-          endDate: endDateFormatted,
-        }),
-      });
-
-      console.log('✅ Email de cancelamento enviado para:', userEmail);
-    }
-  } catch (error) {
-    console.error('❌ Erro ao processar cancelamento de assinatura:', error);
-  }
-}
-
-/**
- * Handler para pagamento bem-sucedido
- */
-async function handlePaymentSucceeded(invoice: any) {
-  try {
-    const customerId = typeof invoice.customer === 'string'
-      ? invoice.customer
-      : invoice.customer?.id || invoice.customer;
-    const subscriptionId = invoice.subscription;
-
-    if (!customerId || !subscriptionId) {
-      return;
-    }
-
-    // Buscar assinatura para obter informações do plano
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
-    const priceId = subscription.items.data[0].price.id;
-    const planType = Object.entries(STRIPE_PRICE_IDS).find(
-      ([_, id]) => id === priceId
-    )?.[0] || null;
-
-    // Atualizar data de renovação
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .update({
-        subscription_status: 'active',
-      })
-      .eq('stripe_customer_id', customerId)
-      .select('id, name')
-      .single();
-
-    if (churchError || !church) {
-      return;
-    }
-
-    // Buscar email do usuário e enviar email de renovação bem-sucedida
-    const userEmail = await getUserEmailFromChurch(church.id);
-
-    if (userEmail) {
-      const planConfig = getPlanConfig(planType);
-      const planName = planConfig?.name || `Plano ${planType}`;
-      const amount = planConfig?.priceFormatted || 'N/A';
-      const currentPeriodEnd = (subscription as any).current_period_end as number | null;
-      const nextBillingDate = currentPeriodEnd
-        ? formatDate(new Date(currentPeriodEnd * 1000))
-        : formatDate(new Date());
-
-      await sendEmail({
-        to: userEmail,
-        subject: 'Renovação Confirmada - Flock',
-        html: getRenewalSuccessTemplate({
-          churchName: church.name,
-          planName,
-          amount,
-          nextBillingDate,
-        }),
-      });
-
-      console.log('✅ Email de renovação enviado para:', userEmail);
-    }
-  } catch (error) {
-    console.error('❌ Erro ao processar pagamento bem-sucedido:', error);
-  }
-}
-
-/**
- * Handler para pagamento falhado
- */
-async function handlePaymentFailed(invoice: any) {
-  try {
-    const customerId = typeof invoice.customer === 'string'
-      ? invoice.customer
-      : invoice.customer?.id || invoice.customer;
-    const subscriptionId = invoice.subscription;
-
-    if (!customerId || !subscriptionId) {
-      return;
-    }
-
-    // Buscar assinatura para obter informações do plano
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId as string);
-    const priceId = subscription.items.data[0].price.id;
-    const planType = Object.entries(STRIPE_PRICE_IDS).find(
-      ([_, id]) => id === priceId
-    )?.[0] || null;
-
-    // Atualizar status para past_due
-    const { data: church, error: churchError } = await supabase
-      .from('churches')
-      .update({
-        subscription_status: 'past_due',
-      })
-      .eq('stripe_customer_id', customerId)
-      .select('id, name')
-      .single();
-
-    if (churchError || !church) {
-      return;
-    }
-
-    // Buscar email do usuário e enviar email de pagamento falhado
-    const userEmail = await getUserEmailFromChurch(church.id);
-
-    if (userEmail) {
-      const planConfig = getPlanConfig(planType);
-      const planName = planConfig?.name || `Plano ${planType}`;
-      const amount = planConfig?.priceFormatted || 'N/A';
-      const retryDate = invoice.next_payment_attempt
-        ? formatDate(new Date(invoice.next_payment_attempt * 1000))
-        : undefined;
-
-      await sendEmail({
-        to: userEmail,
-        subject: 'Pagamento Não Processado - Flock',
-        html: getPaymentFailedTemplate({
-          churchName: church.name,
-          planName,
-          amount,
-          retryDate,
-        }),
-      });
-
-      console.log('✅ Email de pagamento falhado enviado para:', userEmail);
-    }
-  } catch (error) {
-    console.error('❌ Erro ao processar pagamento falhado:', error);
-  }
-}
+/** POST /api/stripe/webhook */
+export const handleWebhook = processStripeWebhook;
 
 /**
  * Sincronizar assinatura do Stripe com o banco de dados
@@ -1023,7 +258,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     // Buscar igreja do usuário
     const { data: church, error: churchError } = await supabase
       .from('churches')
-      .select('id, stripe_customer_id, stripe_subscription_id')
+      .select('id, stripe_customer_id, stripe_subscription_id, plan_type, subscription_status, last_stripe_event_created')
       .eq('id', req.church!.churchId)
       .single();
 
@@ -1049,17 +284,44 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     });
 
     if (subscriptions.data.length === 0) {
-      // Nenhuma assinatura encontrada, alterar para plano gratuito
-      await supabase
+      const { error: freePlanError } = await supabase
         .from('churches')
         .update({
           stripe_subscription_id: null,
           subscription_status: null,
-          plan_type: '100', // Plano gratuito quando não há assinatura
+          plan_type: '100',
           subscription_start_date: null,
           subscription_end_date: null,
         })
         .eq('id', church.id);
+
+      if (freePlanError) {
+        logError('Erro ao definir plano gratuito no sync:', freePlanError);
+        return res.status(500).json({
+          error: 'Erro ao atualizar assinatura',
+          details: freePlanError.message,
+        });
+      }
+
+      await insertSubscriptionEvent({
+        church_id: church.id,
+        event_type: 'sync_subscription',
+        old_plan: church.plan_type ?? null,
+        new_plan: '100',
+        old_status: church.subscription_status ?? null,
+        new_status: null,
+        source: 'api',
+        payload: { reason: 'no_stripe_subscription' },
+      });
+
+      billingLog({
+        event: 'sync_subscription',
+        church_id: church.id,
+        outcome: 'skipped',
+        reason: 'no_stripe_subscription',
+        request_id: req.requestId,
+      });
+      recordSyncSubscription('skipped');
 
       return res.json({
         message: 'Nenhuma assinatura encontrada no Stripe',
@@ -1067,35 +329,32 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Filtrar assinaturas ativas primeiro (prioridade: active, trialing, past_due)
-    const activeSubscriptions = subscriptions.data.filter(
-      sub => ['active', 'trialing', 'past_due'].includes(sub.status)
+    const tenantScoped = subscriptions.data.filter(
+      (sub) =>
+        sub.id === church.stripe_subscription_id ||
+        sub.metadata?.church_id === church.id
+    );
+
+    if (tenantScoped.length === 0) {
+      recordSyncSubscription('no_tenant_subscription');
+      return res.json({
+        message: 'Nenhuma assinatura desta igreja encontrada no Stripe',
+        synced: false,
+      });
+    }
+
+    const activeSubscriptions = tenantScoped.filter((sub) =>
+      ['active', 'trialing', 'past_due'].includes(sub.status)
     );
 
     let subscription: Stripe.Subscription;
 
     if (activeSubscriptions.length > 0) {
-      // Ordenar por data de criação (mais recente primeiro)
-      activeSubscriptions.sort((a, b) =>
-        (b.created as number) - (a.created as number)
-      );
+      activeSubscriptions.sort((a, b) => (b.created as number) - (a.created as number));
       subscription = activeSubscriptions[0];
-
-      if (activeSubscriptions.length > 1) {
-        console.warn(
-          `⚠️ Múltiplas assinaturas ativas encontradas para customer ${church.stripe_customer_id}. Usando a mais recente (${subscription.id}).`
-        );
-      }
     } else {
-      // Se não há ativas, usar a primeira (cancelada/expirada)
-      // Ordenar por data de criação (mais recente primeiro)
-      subscriptions.data.sort((a, b) =>
-        (b.created as number) - (a.created as number)
-      );
-      subscription = subscriptions.data[0];
-      console.log(
-        `ℹ️ Nenhuma assinatura ativa encontrada para customer ${church.stripe_customer_id}. Usando a mais recente (${subscription.id}, status: ${subscription.status}).`
-      );
+      tenantScoped.sort((a, b) => (b.created as number) - (a.created as number));
+      subscription = tenantScoped[0];
     }
     const subscriptionId = subscription.id;
     const priceId = subscription.items.data[0].price.id;
@@ -1115,6 +374,10 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       ? '100'
       : planType;
 
+    // SL07: setar last_stripe_event_created com timestamp atual do sync para evitar que
+    // webhooks antigos (atrasados) sobrescrevam o estado mais recente lido da API Stripe.
+    const syncTimestamp = Math.floor(Date.now() / 1000);
+
     // Atualizar dados da igreja
     const { error: updateError } = await supabase
       .from('churches')
@@ -1127,16 +390,39 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
           : null,
         subscription_end_date: endDate ? endDate.toISOString() : null,
         subscription_updated_at: new Date().toISOString(),
+        last_stripe_event_created: syncTimestamp,
       })
       .eq('id', church.id);
 
     if (updateError) {
-      console.error('Erro ao atualizar assinatura:', updateError);
+      logError('Erro ao atualizar assinatura:', updateError);
       return res.status(500).json({
         error: 'Erro ao atualizar assinatura',
         details: updateError.message,
       });
     }
+
+    await insertSubscriptionEvent({
+      church_id: church.id,
+      event_type: 'sync_subscription',
+      old_plan: church.plan_type ?? null,
+      new_plan: finalPlanType,
+      old_status: church.subscription_status ?? null,
+      new_status: subscription.status,
+      source: 'api',
+      stripe_event_id: subscriptionId,
+      payload: { subscription_id: subscriptionId },
+    });
+
+    billingLog({
+      event: 'sync_subscription',
+      church_id: church.id,
+      outcome: 'success',
+      plan_type: finalPlanType,
+      subscription_status: subscription.status,
+      request_id: req.requestId,
+    });
+    recordSyncSubscription('success');
 
     res.json({
       message: 'Assinatura sincronizada com sucesso',
@@ -1149,9 +435,10 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
         end_date: endDate ? endDate.toISOString() : null,
       },
     });
-  } catch (error: any) {
-    console.error('Erro ao sincronizar assinatura:', error);
-    const errorResponse = formatErrorResponse(error, 'Erro ao sincronizar assinatura');
+  } catch (err: unknown) {
+    recordSyncSubscription('error');
+    logError('Erro ao sincronizar assinatura:', err);
+    const errorResponse = formatErrorResponse(err, 'Erro ao sincronizar assinatura');
     res.status(500).json(errorResponse);
   }
 };
@@ -1277,6 +564,19 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
       })
       .eq('id', church.id);
 
+    // DB05: histórico de billing para troca de plano via API
+    await insertSubscriptionEvent({
+      church_id: church.id,
+      event_type: 'plan_changed',
+      old_plan: church.plan_type ?? null,
+      new_plan: planType ?? null,
+      old_status: church.stripe_subscription_id ? 'active' : null,
+      new_status: updatedSubscription.status,
+      source: 'api',
+      stripe_event_id: updatedSubscription.id,
+      payload: { old_plan: church.plan_type, new_plan: planType, subscription_id: updatedSubscription.id },
+    });
+
     // Buscar informações completas da igreja para o email
     const { data: churchData } = await supabase
       .from('churches')
@@ -1332,7 +632,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
         }
       } catch (emailError) {
         // Logar erro mas não quebrar o fluxo de troca de plano
-        console.error('Erro ao enviar email de confirmação de troca de plano:', emailError);
+        logError('Erro ao enviar email de confirmação de troca de plano:', emailError);
       }
     }
 
@@ -1345,7 +645,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error: any) {
-    console.error('Erro ao trocar plano:', error);
+    logError('Erro ao trocar plano:', error);
     const errorResponse = formatErrorResponse(error, 'Erro ao trocar plano');
     res.status(500).json(errorResponse);
   }
@@ -1355,48 +655,50 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
  * Health check do Stripe
  * GET /health/stripe
  */
-export const checkStripeHealth = async (req: Request, res: Response) => {
-  try {
-    // Verificar se consegue listar customers (operação leve)
-    await stripe.customers.list({ limit: 1 });
+export const checkStripeHealth = async (_req: Request, res: Response) => {
+  const stripe_configured =
+    !!process.env.STRIPE_SECRET_KEY &&
+    !!process.env.STRIPE_WEBHOOK_SECRET &&
+    !!process.env.STRIPE_PRICE_ID_M200 &&
+    !!process.env.STRIPE_PRICE_ID_M500 &&
+    !!process.env.STRIPE_PRICE_ID_M800;
 
-    res.json({
-      status: 'healthy',
-      stripe: {
-        connected: true,
-        apiVersion: '2025-11-17.clover', // Versão configurada no stripe.ts
-      },
-      config: {
-        hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
-        hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
-        hasPriceIds: {
-          m200: !!process.env.STRIPE_PRICE_ID_M200,
-          m500: !!process.env.STRIPE_PRICE_ID_M500,
-          m800: !!process.env.STRIPE_PRICE_ID_M800,
-        },
-      },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    console.error('Erro no health check do Stripe:', error);
-    res.status(503).json({
+  if (!stripe_configured) {
+    return res.status(503).json({
       status: 'unhealthy',
-      stripe: {
-        connected: false,
-        error: error.message,
-      },
-      config: {
-        hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
-        hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
-        hasPriceIds: {
-          m200: !!process.env.STRIPE_PRICE_ID_M200,
-          m500: !!process.env.STRIPE_PRICE_ID_M500,
-          m800: !!process.env.STRIPE_PRICE_ID_M800,
-        },
-      },
+      stripe_configured: false,
       timestamp: new Date().toISOString(),
     });
   }
+
+  let stripe_reachable = false;
+  try {
+    await stripe.balance.retrieve();
+    stripe_reachable = true;
+  } catch {
+    stripe_reachable = false;
+  }
+
+  const { data: lastWebhook } = await supabaseAdmin
+    .from('processed_webhook_events')
+    .select('processed_at')
+    .order('processed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const payload = {
+    status: stripe_reachable ? 'ok' : 'degraded',
+    stripe_configured: true,
+    stripe_reachable,
+    last_webhook_processed_at: lastWebhook?.processed_at ?? null,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (!stripe_reachable) {
+    return res.status(503).json(payload);
+  }
+
+  res.json(payload);
 };
 
 /**
@@ -1405,6 +707,13 @@ export const checkStripeHealth = async (req: Request, res: Response) => {
  */
 export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
   try {
+    if (!req.user || !req.church) {
+      return res.status(401).json({
+        confirmed: false,
+        error: 'Não autenticado',
+      });
+    }
+
     const sessionId = req.query.session_id as string;
 
     if (!sessionId) {
@@ -1414,7 +723,6 @@ export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar sessão no Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (!session) {
@@ -1424,7 +732,14 @@ export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se o pagamento foi concluído
+    const sessionChurchId = session.metadata?.church_id;
+    if (sessionChurchId !== req.church.churchId) {
+      return res.json({
+        confirmed: false,
+        message: 'Sessão não pertence à igreja ativa',
+      });
+    }
+
     if (session.payment_status !== 'paid') {
       return res.json({
         confirmed: false,
@@ -1433,7 +748,6 @@ export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se há subscription_id
     if (!session.subscription) {
       return res.json({
         confirmed: false,
@@ -1442,14 +756,36 @@ export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar assinatura no banco de dados para confirmar que foi processada
+    const sessionCustomerId =
+      typeof session.customer === 'string' ? session.customer : session.customer?.id;
+
     const { data: church } = await supabase
       .from('churches')
-      .select('id, stripe_subscription_id, plan_type, subscription_status')
-      .eq('stripe_subscription_id', session.subscription as string)
+      .select('id, stripe_customer_id, stripe_subscription_id, plan_type, subscription_status')
+      .eq('id', req.church.churchId)
       .single();
 
-    if (church && church.subscription_status === 'active') {
+    if (!church) {
+      return res.json({ confirmed: false, message: 'Igreja não encontrada' });
+    }
+
+    if (
+      church.stripe_customer_id &&
+      sessionCustomerId &&
+      church.stripe_customer_id !== sessionCustomerId
+    ) {
+      return res.json({
+        confirmed: false,
+        message: 'Customer da sessão não corresponde à igreja',
+      });
+    }
+
+    const confirmedStatuses = ['active', 'trialing'];
+    if (
+      church.stripe_subscription_id === session.subscription &&
+      church.subscription_status &&
+      confirmedStatuses.includes(church.subscription_status)
+    ) {
       return res.json({
         confirmed: true,
         payment_status: session.payment_status,
@@ -1459,7 +795,6 @@ export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Se pagamento foi pago mas ainda não processado no banco
     return res.json({
       confirmed: false,
       payment_status: session.payment_status,
@@ -1467,7 +802,7 @@ export const checkCheckoutStatus = async (req: AuthRequest, res: Response) => {
       message: 'Pagamento confirmado, aguardando processamento...',
     });
   } catch (error: any) {
-    console.error('Erro ao verificar status do checkout:', error);
+    logError('Erro ao verificar status do checkout:', error);
     const errorResponse = formatErrorResponse(error, 'Erro ao verificar status do checkout');
     res.status(500).json({
       confirmed: false,
@@ -1492,7 +827,7 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
     // Buscar igreja do usuário
     const { data: church, error: churchError } = await supabase
       .from('churches')
-      .select('id, plan_type')
+      .select('id, plan_type, stripe_subscription_id')
       .eq('id', req.church!.churchId)
       .single();
 
@@ -1503,8 +838,7 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // ACHADO 09: retornar 200 quando plano já está ativo — comportamento idempotente.
-    // Antes retornava 400, fazendo o frontend tratar como erro de formulário.
+    // Idempotência: plano gratuito já está ativo
     if (church.plan_type === '100') {
       return res.json({
         message: 'Plano gratuito já está ativo',
@@ -1512,20 +846,43 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Atualizar igreja com plano gratuito
+    // SL01: se existir assinatura paga ativa no Stripe, cancelar imediatamente
+    // para evitar cobrança após downgrade para plano gratuito
+    if (church.stripe_subscription_id) {
+      try {
+        await stripe.subscriptions.cancel(church.stripe_subscription_id);
+      } catch (stripeErr: any) {
+        // Subscription pode já estar cancelada no Stripe — não bloquear o downgrade
+        if (stripeErr?.code !== 'resource_missing') {
+          logError('Erro ao cancelar assinatura Stripe no activate-free-plan', {
+            churchId: church.id,
+            subscriptionId: church.stripe_subscription_id,
+            err: stripeErr?.message,
+          });
+          return res.status(500).json({
+            error: 'Erro ao cancelar assinatura Stripe',
+            details: process.env.NODE_ENV === 'development'
+              ? stripeErr?.message
+              : 'Não foi possível cancelar a assinatura paga. Tente novamente.',
+          });
+        }
+      }
+    }
+
+    // Atualizar igreja com plano gratuito, limpando campos de assinatura paga
     const { error: updateError } = await supabase
       .from('churches')
       .update({
         plan_type: '100',
-        subscription_status: 'active',
-        subscription_start_date: new Date().toISOString(),
+        subscription_status: 'canceled',
+        stripe_subscription_id: null,
+        subscription_end_date: new Date().toISOString(),
         subscription_updated_at: new Date().toISOString(),
       })
       .eq('id', church.id);
 
     if (updateError) {
-      console.error('Erro ao atualizar plano gratuito:', updateError);
-      console.error('Detalhes do erro:', JSON.stringify(updateError, null, 2));
+      logError('Erro ao atualizar plano gratuito:', updateError);
       return res.status(500).json({
         error: 'Erro ao ativar plano gratuito',
         details: process.env.NODE_ENV === 'development'
@@ -1534,14 +891,78 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // DB05: histórico de billing para downgrade para plano gratuito
+    await insertSubscriptionEvent({
+      church_id: church.id,
+      event_type: 'activate_free',
+      old_plan: church.plan_type ?? null,
+      new_plan: '100',
+      new_status: 'canceled',
+      source: 'api',
+      payload: { old_plan: church.plan_type, subscription_id: church.stripe_subscription_id },
+    });
+
     res.json({
       message: 'Plano gratuito ativado com sucesso',
       plan_type: '100',
     });
   } catch (error: any) {
-    console.error('Erro ao ativar plano gratuito:', error);
+    logError('Erro ao ativar plano gratuito:', error);
     const errorResponse = formatErrorResponse(error, 'Erro ao ativar plano gratuito');
     res.status(500).json(errorResponse);
+  }
+};
+
+/** Tipos exibidos no histórico da UI (criação + mudanças de plano; sem sync/pagamentos). */
+const SUBSCRIPTION_HISTORY_EVENT_TYPES = [
+  'subscription_created',
+  'plan_changed',
+  'activate_free',
+  'downgrade_job',
+] as const;
+
+/**
+ * Histórico de eventos de assinatura da igreja ativa
+ * GET /api/stripe/subscription-events?limit=20&offset=0
+ */
+export const getSubscriptionEvents = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || !req.church) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+
+    const limit = Math.min(Math.max(parseInt(String(req.query.limit ?? '20'), 10) || 20, 1), 50);
+    const offset = Math.max(parseInt(String(req.query.offset ?? '0'), 10) || 0, 0);
+    const churchId = req.church.churchId;
+
+    const { data, error, count } = await supabase
+      .from('church_subscription_events')
+      .select(
+        'id, event_type, old_plan, new_plan, old_status, new_status, source, stripe_event_id, payload, created_at',
+        { count: 'exact' }
+      )
+      .eq('church_id', churchId)
+      .in('event_type', [...SUBSCRIPTION_HISTORY_EVENT_TYPES])
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      logError('Erro ao buscar subscription events', error);
+      return res.status(500).json({ error: 'Erro ao buscar histórico de assinatura' });
+    }
+
+    res.json({
+      events: data ?? [],
+      pagination: {
+        limit,
+        offset,
+        total: count ?? 0,
+        has_more: (count ?? 0) > offset + limit,
+      },
+    });
+  } catch (err: unknown) {
+    logError('Erro ao buscar subscription events', err);
+    res.status(500).json({ error: 'Erro ao buscar histórico de assinatura' });
   }
 };
 

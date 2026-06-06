@@ -1,4 +1,4 @@
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { logError } from './logger';
 import { AuthRequest } from '../types';
 
@@ -23,6 +23,11 @@ export const logAudit = async (req: AuthRequest, data: AuditLogData) => {
 
     if (!churchId) {
       logError('Audit log: church_id não encontrado');
+      return;
+    }
+
+    if (!data.entityId) {
+      logError('Audit log: entity_id é obrigatório');
       return;
     }
 

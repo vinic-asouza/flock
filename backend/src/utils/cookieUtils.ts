@@ -6,7 +6,9 @@ export const cookieConfig = {
   names: {
     accessToken: 'flock_access_token',
     refreshToken: 'flock_refresh_token',
-    session: 'flock_session'
+    session: 'flock_session',
+    activeChurchId: 'flock_active_church_id',
+    pendingLinkToken: 'flock_pending_link_token',
   },
   
   // Configurações de segurança
@@ -23,8 +25,33 @@ export const cookieConfig = {
   expiration: {
     accessToken: 15 * 60 * 1000, // 15 minutos
     refreshToken: 7 * 24 * 60 * 60 * 1000, // 7 dias
-    session: 24 * 60 * 60 * 1000 // 24 horas
-  }
+    session: 24 * 60 * 60 * 1000, // 24 horas
+    activeChurchId: 30 * 24 * 60 * 60 * 1000, // 30 dias
+    pendingLinkToken: 7 * 24 * 60 * 60 * 1000, // 7 dias (alinhado a pending_subscriptions)
+  },
+};
+
+export const setPendingLinkToken = (res: Response, token: string): void => {
+  res.cookie(cookieConfig.names.pendingLinkToken, token, {
+    ...cookieConfig.security,
+    maxAge: cookieConfig.expiration.pendingLinkToken,
+  });
+};
+
+export const clearPendingLinkToken = (res: Response): void => {
+  res.clearCookie(cookieConfig.names.pendingLinkToken, {
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
+};
+
+export const setActiveChurchId = (res: Response, churchId: string): void => {
+  res.cookie(cookieConfig.names.activeChurchId, churchId, {
+    ...cookieConfig.security,
+    maxAge: cookieConfig.expiration.activeChurchId,
+  });
 };
 
 // Função para definir cookie de acesso

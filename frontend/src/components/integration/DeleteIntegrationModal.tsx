@@ -25,7 +25,7 @@ export function DeleteIntegrationModal({
   title = 'Descartar integrante',
   message,
   buttonLabel = 'Descartar integrante',
-  errorMessage = 'Erro ao descartar integrante'
+  errorMessage: defaultErrorMessage = 'Erro ao descartar integrante'
 }: DeleteIntegrationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function DeleteIntegrationModal({
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      const errorMsg = formatApiError(err);
+      const errorMsg = formatApiError(err) || defaultErrorMessage;
       setError(errorMsg);
     } finally {
       setIsLoading(false);

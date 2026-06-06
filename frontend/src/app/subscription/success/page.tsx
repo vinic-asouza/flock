@@ -12,29 +12,36 @@ import apiService from '@/services/api';
 function SubscriptionSuccessContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [missingSessionId, setMissingSessionId] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading: isAuthLoading, refreshChurch } = useAuth();
   const sessionId = searchParams.get('session_id');
+  const userId = user?.id;
 
   useEffect(() => {
     // P01: aguardar AuthContext inicializar antes de verificar autenticação
     if (isAuthLoading) return;
 
+    // Evita reiniciar polling após confirmação (refreshChurch atualiza user)
+    if (isConfirmed) return;
+
     // P01: redirecionar para login se não autenticado
-    if (!user) {
+    if (!userId) {
       setIsLoading(false);
       return;
     }
 
     if (!sessionId) {
+      setMissingSessionId(true);
       setIsLoading(false);
       return;
     }
 
     let attempts = 0;
-    const maxAttempts = 15;
-    const pollInterval = 2000;
+    const maxAttempts = 12;
+    const baseDelayMs = 2000;
     // ACHADO 06: flags para cleanup e prevenção de state updates em componente desmontado
     let timeoutId: ReturnType<typeof setTimeout>;
     let isMounted = true;
@@ -48,6 +55,7 @@ function SubscriptionSuccessContent() {
 
         if (data.confirmed) {
           if (isMounted) {
+            setIsConfirmed(true);
             setIsLoading(false);
             if (refreshChurch) await refreshChurch();
           }
@@ -56,7 +64,8 @@ function SubscriptionSuccessContent() {
 
         attempts++;
         if (attempts < maxAttempts && isMounted) {
-          timeoutId = setTimeout(checkSubscriptionStatus, pollInterval);
+          const delay = Math.min(baseDelayMs * Math.pow(1.5, attempts), 15000);
+          timeoutId = setTimeout(checkSubscriptionStatus, delay);
         } else if (isMounted) {
           setIsLoading(false);
           setError('Não foi possível confirmar o pagamento automaticamente. Verifique sua assinatura nas configurações ou tente sincronizar manualmente.');
@@ -64,7 +73,8 @@ function SubscriptionSuccessContent() {
       } catch (err: unknown) {
         attempts++;
         if (attempts < maxAttempts && isMounted) {
-          timeoutId = setTimeout(checkSubscriptionStatus, pollInterval);
+          const delay = Math.min(baseDelayMs * Math.pow(1.5, attempts), 15000);
+          timeoutId = setTimeout(checkSubscriptionStatus, delay);
         } else if (isMounted) {
           setIsLoading(false);
           const errorMessage = err && typeof err === 'object' && 'response' in err
@@ -79,14 +89,14 @@ function SubscriptionSuccessContent() {
     };
 
     // ACHADO 06: aguardar 2s antes do primeiro check (dar tempo para webhook processar)
-    timeoutId = setTimeout(checkSubscriptionStatus, pollInterval);
+    timeoutId = setTimeout(checkSubscriptionStatus, baseDelayMs);
 
     // ACHADO 06: cleanup — cancela timeout pendente e evita state updates após unmount
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [sessionId, user, isAuthLoading, refreshChurch]);
+  }, [sessionId, userId, isAuthLoading, isConfirmed, refreshChurch]);
 
   // P01: ainda inicializando o AuthContext — mostrar loading
   if (isAuthLoading || isLoading) {
@@ -113,7 +123,19 @@ function SubscriptionSuccessContent() {
 
         {/* ACHADO 05: heading e ícone condicionados ao estado de erro */}
         <div className="text-center mb-8">
-          {error ? (
+          {missingSessionId ? (
+            <>
+              <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
+                <XCircle className="h-8 w-8 text-gray-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Sessão de pagamento não encontrada
+              </h1>
+              <p className="text-gray-600">
+                Não foi possível validar seu pagamento nesta página. Verifique sua assinatura nas configurações.
+              </p>
+            </>
+          ) : error ? (
             <>
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
                 <Clock className="h-8 w-8 text-yellow-600" />
@@ -122,7 +144,7 @@ function SubscriptionSuccessContent() {
                 Verificação Pendente
               </h1>
               <p className="text-gray-600">
-                Seu pagamento foi recebido, mas a confirmação está demorando.
+                Seu pagamento pode ter sido recebido, mas a confirmação automática está demorando.
               </p>
             </>
           ) : (
@@ -140,20 +162,24 @@ function SubscriptionSuccessContent() {
           )}
         </div>
 
-        {error && (
+        {(error || missingSessionId) && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-start">
               <XCircle className="h-5 w-5 text-red-600 mr-2 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-red-800">{error}</p>
+                <p className="text-sm font-medium text-red-800">
+                  {missingSessionId
+                    ? 'Acesse Configurações → Plano para sincronizar ou confirmar sua assinatura.'
+                    : error}
+                </p>
               </div>
             </div>
           </div>
         )}
 
         <div className="space-y-4 mb-8">
-          {/* R01: card verde exibido apenas no estado de sucesso */}
-          {!error && (
+          {/* Card verde apenas após confirmação via polling */}
+          {!error && !missingSessionId && (
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-800">
                 <strong>Obrigado pela sua assinatura!</strong>
@@ -165,20 +191,19 @@ function SubscriptionSuccessContent() {
           )}
 
           {/* R01: orientação específica de suporte no estado de erro */}
-          {error && (
+          {(error || missingSessionId) && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
                 <strong>O que fazer agora?</strong>
               </p>
               <p className="text-sm text-yellow-700 mt-1">
-                Acesse <strong>Configurações → Plano</strong> para verificar se sua assinatura foi ativada. Se o problema persistir, entre em contato com o suporte.
+                Acesse <strong>Configurações → Plano</strong> para verificar se sua assinatura foi ativada ou use{' '}
+                <strong>Sincronizar Assinatura</strong>. Se o problema persistir, entre em contato com o suporte.
               </p>
             </div>
           )}
 
-          {/* ACHADO 13: removido bloco com ID de sessão Stripe — informação técnica sem valor para o usuário */}
-
-          {!error && (
+          {!error && !missingSessionId && (
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm text-blue-800">
                 <strong>Próximos passos:</strong>
@@ -193,6 +218,11 @@ function SubscriptionSuccessContent() {
         </div>
 
         <div className="space-y-3">
+          {(error || missingSessionId) && (
+            <Button onClick={() => router.push('/settings?tab=payment')} variant="secondary" className="w-full">
+              Ir para Configurações → Plano
+            </Button>
+          )}
           <Button onClick={() => router.push('/')} className="w-full">
             Ir para o Sistema
             <ArrowRight className="w-5 h-5 ml-2" />

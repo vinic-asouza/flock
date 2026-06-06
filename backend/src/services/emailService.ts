@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import { redactRecipients } from '../utils/redact';
+import { billingWarn, billingLog, billingError } from '../utils/structuredLogger';
 
 /**
  * Cliente Resend (singleton)
@@ -55,9 +57,10 @@ export interface SendEmailOptions {
 export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
   // Se não estiver configurado, apenas logar e retornar (não quebrar o fluxo)
   if (!isEmailConfigured()) {
-    console.warn('⚠️ Email não configurado. Email não será enviado.');
-    console.log('📧 Email que seria enviado:', {
-      to: options.to,
+    billingWarn({
+      event: 'email_skipped',
+      reason: 'not_configured',
+      to: redactRecipients(options.to),
       subject: options.subject,
     });
     return;
@@ -99,27 +102,20 @@ export const sendEmail = async (options: SendEmailOptions): Promise<void> => {
       throw new Error(`Resend API Error: ${JSON.stringify(error)}`);
     }
 
-    console.log('✅ Email enviado com sucesso:', {
-      messageId: data?.id,
-      to: options.to,
+    billingLog({
+      event: 'email_sent',
+      message_id: data?.id,
+      to: redactRecipients(options.to),
       subject: options.subject,
     });
-  } catch (error: any) {
-    console.error('❌ Erro ao enviar email:', error);
-    
-    // Mensagens de erro mais amigáveis
-    if (error?.message?.includes('API key') || error?.message?.includes('Unauthorized')) {
-      console.error('💡 Erro de autenticação. Verifique se RESEND_API_KEY está correta.');
-    } else if (error?.message?.includes('domain') || error?.message?.includes('Domain')) {
-      console.error('💡 Erro de domínio. Verifique se o domínio está verificado no Resend.');
-    } else if (error?.message?.includes('rate limit') || error?.message?.includes('Rate limit')) {
-      console.error('💡 Limite de taxa excedido. Aguarde antes de tentar novamente.');
-    } else {
-      console.error('💡 Erro ao enviar email via Resend. Verifique logs para mais detalhes.');
-    }
-    
-    // Não lançar erro para não quebrar o fluxo principal
-    // Apenas logar o erro
+  } catch (error: unknown) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    billingError({
+      event: 'email_failed',
+      to: redactRecipients(options.to),
+      subject: options.subject,
+      error: errMsg,
+    });
   }
 };
 

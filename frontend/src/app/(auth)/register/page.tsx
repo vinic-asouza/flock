@@ -95,6 +95,8 @@ function RegisterPageContent() {
   const { register: registerChurch, login, isOperationLoading } = useAuth();
   const searchParams = useSearchParams();
   const planFromUrl = searchParams.get('plan');
+  const checkoutSessionIdFromUrl = searchParams.get('session_id');
+  const linkTokenFromUrl = searchParams.get('link_token');
 
   useEffect(() => {
     if (isPaidPlanId(planFromUrl)) {
@@ -187,6 +189,8 @@ function RegisterPageContent() {
       phone: removePhoneFormatting(dataToSend.phone),
       email_church: dataToSend.email_church || undefined,
       phone_church: dataToSend.phone_church ? removePhoneFormatting(dataToSend.phone_church) : undefined,
+      ...(checkoutSessionIdFromUrl ? { checkout_session_id: checkoutSessionIdFromUrl } : {}),
+      ...(linkTokenFromUrl ? { link_token: linkTokenFromUrl } : {}),
     };
 
     setIsSubmitting(true);

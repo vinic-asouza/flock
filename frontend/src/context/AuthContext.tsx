@@ -3,7 +3,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { 
   AuthContextType, 
-  Church, 
+  Church,
+  ChurchMembership,
   ChurchUserRole,
   Session, 
   LoginData, 
@@ -14,6 +15,7 @@ import {
   ResetPasswordData 
 } from '@/types';
 import apiService from '@/services/api';
+import { clearStripeSyncCache } from '@/utils/stripeSyncCache';
 
 // Função utilitária para preservar propriedades customizadas do erro
 const preserveErrorProperties = (error: unknown): Error => {
@@ -45,17 +47,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Church | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [currentRole, setCurrentRole] = useState<ChurchUserRole | null>(null);
+  const [memberships, setMemberships] = useState<ChurchMembership[]>([]);
+  const [activeChurchId, setActiveChurchId] = useState<string | null>(null);
+  const [churchSelectionRequired, setChurchSelectionRequired] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const { authenticated, church, role } = await apiService.getCheckAuth();
+        const auth = await apiService.getCheckAuth();
 
-        if (authenticated && church) {
-          setUser(church);
-          setCurrentRole((role as ChurchUserRole) ?? 'reader');
+        if (auth.authenticated && auth.code === 'CHURCH_SELECTION_REQUIRED') {
+          setMemberships(auth.memberships || []);
+          setChurchSelectionRequired(true);
+          setUser(null);
+          setCurrentRole(null);
+          setActiveChurchId(auth.activeChurchId ?? null);
+        } else if (auth.authenticated && auth.church) {
+          setUser(auth.church);
+          setCurrentRole((auth.role as ChurchUserRole) ?? 'reader');
+          setMemberships(auth.memberships || []);
+          setActiveChurchId(auth.activeChurchId ?? auth.church.id);
+          setChurchSelectionRequired(false);
+          if (auth.activeChurchId) {
+            apiService.setActiveChurchIdClient(auth.activeChurchId);
+          }
 
           let userEmail = '';
           try {
@@ -76,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             expires_at: 0,
             refresh_token: 'stored_in_cookie',
             user: {
-              id: church.user_id,
+              id: auth.church.user_id,
               email: userEmail,
               aud: 'authenticated',
               role: 'authenticated',
@@ -85,7 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               confirmed_at: new Date().toISOString(),
               last_sign_in_at: new Date().toISOString(),
               app_metadata: { provider: 'email', providers: ['email'] },
-              user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: church.user_id },
+              user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: auth.church.user_id },
               identities: [],
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -96,6 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setSession(null);
           setCurrentRole(null);
+          setMemberships([]);
+          setActiveChurchId(null);
+          setChurchSelectionRequired(false);
         }
       } catch {
         setUser(null);
@@ -114,10 +134,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsOperationLoading(true);
       const response = await apiService.login(data);
       setUser(response.church);
-
-      // ACHADO 06: role e email agora vêm no response de login — zero chamadas extras.
-      // Fallbacks garantidos: role→'reader', email→data.email (digitado pelo usuário).
       setCurrentRole((response.role as ChurchUserRole) ?? 'reader');
+      const loginRes = response as typeof response & {
+        memberships?: ChurchMembership[];
+        activeChurchId?: string;
+      };
+      if (loginRes.memberships) setMemberships(loginRes.memberships);
+      if (loginRes.activeChurchId) {
+        setActiveChurchId(loginRes.activeChurchId);
+        apiService.setActiveChurchIdClient(loginRes.activeChurchId);
+      }
+      setChurchSelectionRequired(false);
       const userEmail = response.email || data.email;
 
       // ACHADO 17: expires_at fictício removido — o valor real está no cookie session_id
@@ -175,14 +202,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setSession(null);
       setCurrentRole(null);
+      setMemberships([]);
+      setActiveChurchId(null);
+      apiService.setActiveChurchIdClient(null);
+      setChurchSelectionRequired(false);
       setIsOperationLoading(false);
     } catch {
       setIsOperationLoading(false);
       setUser(null);
       setSession(null);
       setCurrentRole(null);
+      setMemberships([]);
+      setActiveChurchId(null);
+      apiService.setActiveChurchIdClient(null);
+      setChurchSelectionRequired(false);
     }
   }, []);
+
+  const switchChurch = useCallback(async (churchId: string): Promise<void> => {
+    const result = await apiService.setActiveChurch(churchId);
+    clearStripeSyncCache(activeChurchId ?? undefined);
+    setUser(result.church);
+    setCurrentRole((result.role as ChurchUserRole) ?? 'reader');
+    setActiveChurchId(churchId);
+    apiService.setActiveChurchIdClient(churchId);
+    setChurchSelectionRequired(false);
+  }, [activeChurchId]);
 
   const forgotPassword = useCallback(async (data: ForgotPasswordData): Promise<void> => {
     try {
@@ -242,7 +287,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const isAuthenticated = useMemo(() => !!user, [user]);
+  const isAuthenticated = useMemo(
+    () => !!user || churchSelectionRequired,
+    [user, churchSelectionRequired]
+  );
   const canEdit = useMemo(() => (currentRole === null ? undefined : currentRole !== 'reader'), [currentRole]);
 
   const value: AuthContextType = useMemo(() => ({
@@ -261,7 +309,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updateChurch,
     refreshChurch,
-  }), [user, session, currentRole, canEdit, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch]);
+    memberships,
+    activeChurchId,
+    churchSelectionRequired,
+    switchChurch,
+  }), [user, session, currentRole, canEdit, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
 
   return (
     <AuthContext.Provider value={value}>

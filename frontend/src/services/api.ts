@@ -32,8 +32,24 @@ import {
   CreateParticipantData
 } from '@/types/calendar';
 
+const ACTIVE_CHURCH_STORAGE_KEY = 'flock_active_church_id';
+
 class ApiService {
   private api: AxiosInstance;
+
+  setActiveChurchIdClient(churchId: string | null): void {
+    if (typeof window === 'undefined') return;
+    if (churchId) {
+      localStorage.setItem(ACTIVE_CHURCH_STORAGE_KEY, churchId);
+    } else {
+      localStorage.removeItem(ACTIVE_CHURCH_STORAGE_KEY);
+    }
+  }
+
+  getActiveChurchIdClient(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(ACTIVE_CHURCH_STORAGE_KEY);
+  }
 
   constructor() {
     const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
@@ -50,7 +66,11 @@ class ApiService {
     // Interceptor para tratamento de erros (cookies são enviados automaticamente)
     this.api.interceptors.request.use(
       (config) => {
-        // Cookies são enviados automaticamente com withCredentials: true
+        const churchId = this.getActiveChurchIdClient();
+        if (churchId) {
+          config.headers = config.headers || {};
+          config.headers['X-Church-Id'] = churchId;
+        }
         return config;
       },
       (error) => {
@@ -179,6 +199,26 @@ class ApiService {
     return response.data;
   }
 
+  async getSubscriptionEvents(params?: { limit?: number; offset?: number }): Promise<{
+    events: Array<{
+      id: string;
+      event_type: string;
+      old_plan: string | null;
+      new_plan: string | null;
+      old_status: string | null;
+      new_status: string | null;
+      source: string | null;
+      stripe_event_id: string | null;
+      created_at: string;
+    }>;
+    pagination: { limit: number; offset: number; total: number; has_more: boolean };
+  }> {
+    const limit = params?.limit ?? 20;
+    const offset = params?.offset ?? 0;
+    const response = await this.api.get(`/stripe/subscription-events?limit=${limit}&offset=${offset}`);
+    return response.data;
+  }
+
   // Métodos de autenticação
   async login(data: LoginData): Promise<LoginResponse> {
     const response: AxiosResponse<LoginResponse> = await this.api.post('/auth/login', data);
@@ -221,17 +261,47 @@ class ApiService {
   }
 
   // Verificar autenticação e obter church + role em uma chamada
-  async getCheckAuth(): Promise<{ authenticated: boolean; church?: Church | null; role?: string }> {
+  async getCheckAuth(): Promise<import('@/types').CheckAuthResponse> {
     try {
       const response = await this.api.get('/refresh/check');
+      const data = response.data;
+      if (data.activeChurchId) {
+        this.setActiveChurchIdClient(data.activeChurchId);
+      }
       return {
-        authenticated: !!response.data.authenticated,
-        church: response.data.church || null,
-        role: response.data.role ?? undefined
+        authenticated: !!data.authenticated,
+        church: data.church || undefined,
+        role: data.role ?? undefined,
+        memberships: data.memberships,
+        activeChurchId: data.activeChurchId ?? null,
+        code: data.code,
+        message: data.message,
+        user: data.user,
       };
     } catch {
-      return { authenticated: false, church: null };
+      return { authenticated: false, church: undefined };
     }
+  }
+
+  async listChurchMemberships(): Promise<{
+    memberships: import('@/types').ChurchMembership[];
+    activeChurchId: string | null;
+  }> {
+    const response = await this.api.get('/church/memberships');
+    if (response.data.activeChurchId) {
+      this.setActiveChurchIdClient(response.data.activeChurchId);
+    }
+    return response.data;
+  }
+
+  async setActiveChurch(churchId: string): Promise<{
+    church: Church;
+    role: string;
+    activeChurchId: string;
+  }> {
+    const response = await this.api.post('/church/active', { churchId });
+    this.setActiveChurchIdClient(churchId);
+    return response.data;
   }
 
   // Verificar se está autenticado
@@ -741,7 +811,9 @@ class ApiService {
     planType?: string | null;
     subscriptionStatus?: string | null;
     hasActiveSubscription: boolean;
+    isPastDue?: boolean;
     canAdd: boolean;
+    message?: string;
     percentage: number;
   }> {
     const response = await this.api.get('/church/member-limit');

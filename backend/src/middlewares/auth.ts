@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import supabase from '../services/supabase';
-import { getChurchContextForUser } from '../services/churchContext';
+import { attachChurchContext } from '../services/churchContext';
 import { AuthRequest } from '../types';
 import { cookieConfig, setAccessToken, setRefreshToken, setSessionCookie } from '../utils/cookieUtils';
 
@@ -56,6 +56,57 @@ const isTokenExpired = (token: string): boolean => {
   } catch (error) {
     // Se não conseguir decodificar, considerar como expirado
     return true;
+  }
+};
+
+/**
+ * Autentica usuário sem exigir igreja ativa (rotas de seleção de igreja).
+ */
+export const authUserOnly = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    let token = req.cookies[cookieConfig.names.accessToken];
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      if (authHeader) {
+        token = authHeader.split(' ')[1];
+      }
+    }
+
+    if (!token || isTokenExpired(token)) {
+      const newToken = await tryRefreshToken(req, res);
+      if (newToken) {
+        token = newToken;
+      } else if (!token) {
+        return res.status(401).json({
+          error: 'Token não fornecido',
+          details: 'Faça login para acessar este recurso',
+        });
+      }
+    }
+
+    if (global.tokenBlacklist?.has(token!)) {
+      return res.status(401).json({
+        error: 'Token revogado',
+        details: 'Este token foi invalidado. Faça login novamente.',
+      });
+    }
+
+    const { data: { user }, error } = await supabase.auth.getUser(token!);
+    if (error || !user) {
+      return res.status(401).json({
+        error: 'Token inválido ou expirado',
+        details: 'Faça login novamente para continuar',
+      });
+    }
+
+    req.user = { id: user.id, email: user.email || '' };
+    next();
+  } catch (err) {
+    console.error('Erro na autenticação (user only):', err);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: err instanceof Error ? err.message : 'Erro desconhecido',
+    });
   }
 };
 
@@ -122,14 +173,20 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
               id: newUserData.user.id,
               email: newUserData.user.email || ''
             };
-            const ctx = await getChurchContextForUser(req.user.id);
-            if (!ctx) {
+            const attached = await attachChurchContext(req, res);
+            if (!attached.ok) {
+              if (attached.reason === 'selection_required') {
+                return res.status(403).json({
+                  error: 'Seleção de igreja obrigatória',
+                  code: 'CHURCH_SELECTION_REQUIRED',
+                  memberships: attached.memberships,
+                });
+              }
               return res.status(403).json({
                 error: 'Sem acesso a nenhuma igreja',
-                details: 'Sua conta não está vinculada a uma igreja.'
+                details: 'Sua conta não está vinculada a uma igreja.',
               });
             }
-            req.church = ctx;
             return next();
           }
         }
@@ -147,14 +204,20 @@ const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunctio
       email: user.email || ''
     };
 
-    const ctx = await getChurchContextForUser(req.user.id);
-    if (!ctx) {
+    const attached = await attachChurchContext(req, res);
+    if (!attached.ok) {
+      if (attached.reason === 'selection_required') {
+        return res.status(403).json({
+          error: 'Seleção de igreja obrigatória',
+          code: 'CHURCH_SELECTION_REQUIRED',
+          memberships: attached.memberships,
+        });
+      }
       return res.status(403).json({
         error: 'Sem acesso a nenhuma igreja',
-        details: 'Sua conta não está vinculada a uma igreja.'
+        details: 'Sua conta não está vinculada a uma igreja.',
       });
     }
-    req.church = ctx;
     next();
 
   } catch (error) {
@@ -209,8 +272,7 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
             id: newUserData.user.id,
             email: newUserData.user.email || ''
           };
-          const ctx = await getChurchContextForUser(req.user.id);
-          if (ctx) req.church = ctx;
+          await attachChurchContext(req, res);
           console.log('✅ optionalAuth: Token renovado e usuário autenticado');
         }
       }
@@ -220,8 +282,7 @@ export const optionalAuth = async (req: AuthRequest, res: Response, next: NextFu
         id: user.id,
         email: user.email || ''
       };
-      const ctx = await getChurchContextForUser(req.user.id);
-      if (ctx) req.church = ctx;
+      await attachChurchContext(req, res);
       console.log('✅ optionalAuth: Usuário autenticado:', user.id);
     }
 

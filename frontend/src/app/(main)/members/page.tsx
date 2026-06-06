@@ -103,6 +103,8 @@ function MembersPageContent() {
     currentCount: number;
     limit: number;
     canAdd: boolean;
+    isPastDue?: boolean;
+    message?: string;
   } | null>(null);
   // ACHADO 08: estado separado para distinguir "ainda carregando" (null) de "falhou" (true)
   const [memberLimitLoadError, setMemberLimitLoadError] = useState(false);
@@ -119,6 +121,8 @@ function MembersPageContent() {
         currentCount: limitData.currentCount,
         limit: limitData.limit,
         canAdd: limitData.canAdd,
+        isPastDue: limitData.isPastDue,
+        message: limitData.message,
       });
       // ACHADO 08: limpar estado de erro se a chamada subsequente tiver sucesso
       setMemberLimitLoadError(false);
@@ -476,8 +480,23 @@ function MembersPageContent() {
               </Button>
             </>
           ) : (
-            <div className="text-sm text-gray-500 italic px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-              Limite de membros atingido ({memberLimit.currentCount} de {memberLimit.limit})
+            <div
+              className={`text-sm italic px-3 py-2 rounded-lg border ${
+                memberLimit.isPastDue
+                  ? 'text-yellow-800 bg-yellow-50 border-yellow-200'
+                  : 'text-gray-500 bg-gray-50 border-gray-200'
+              }`}
+            >
+              {memberLimit.message ||
+                `Limite de membros atingido (${memberLimit.currentCount} de ${memberLimit.limit})`}
+              {memberLimit.isPastDue && (
+                <>
+                  {' '}
+                  <a href="/settings?tab=payment" className="underline font-medium text-yellow-900">
+                    Regularizar pagamento
+                  </a>
+                </>
+              )}
             </div>
           )}
           </div>

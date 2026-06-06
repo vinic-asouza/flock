@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { randomBytes } from 'crypto';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest, PublicIntegrationLink, CreateIntegrationLinkData } from '../types';
 import { logAudit } from '../utils/auditLogger';
 import { debug, error as logError } from '../utils/logger';

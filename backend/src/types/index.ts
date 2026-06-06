@@ -124,6 +124,9 @@ export interface ChurchRegistrationData {
   cnpj: string;
   email_church?: string;
   phone_church?: string;
+  link_token?: string;
+  /** session_id do Stripe Checkout (fluxo landing pós-pagamento) */
+  checkout_session_id?: string;
 }
 
 export interface PublicRegistrationLink {

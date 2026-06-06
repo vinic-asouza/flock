@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { AuthRequest, CreateParticipantData } from '../types';
-import supabase from '../services/supabase';
+import { supabaseAdmin as supabase } from '../services/supabase';
 import { addParticipantSchema } from '../validators/calendarParticipantValidator';
 import { logError } from '../utils/logger';
 import { logAudit } from '../utils/auditLogger';
