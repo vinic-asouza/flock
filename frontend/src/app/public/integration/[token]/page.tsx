@@ -1,13 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import axios from 'axios';
 import { PublicIntegrationForm } from '@/components/public/PublicIntegrationForm';
 import { Loader, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import { IntegrationMemberPayload } from '@/types';
 import apiService, { formatApiError } from '@/services/api';
+
+type LinkInfo = {
+  church_name: string;
+  expires_at: string;
+  max_uses?: number | null;
+  current_uses: number;
+  remaining_uses?: number | null;
+  congregations?: { id: string; name: string }[];
+};
+
+function isLimitError(err: unknown): boolean {
+  if (!axios.isAxiosError(err)) return false;
+  const status = err.response?.status;
+  const message = formatApiError(err).toLowerCase();
+  return status === 403 || status === 409 || message.includes('limite');
+}
 
 export default function PublicIntegrationPage() {
   const params = useParams();
@@ -19,14 +36,23 @@ export default function PublicIntegrationPage() {
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<'link' | 'submission' | null>(null);
   const [success, setSuccess] = useState(false);
-  const [linkInfo, setLinkInfo] = useState<{
-    church_name: string;
-    expires_at: string;
-    max_uses?: number | null;
-    current_uses: number;
-    remaining_uses?: number | null;
-    congregations?: { id: string; name: string }[];
-  } | null>(null);
+  const [linkInfo, setLinkInfo] = useState<LinkInfo | null>(null);
+
+  const refreshLinkInfo = useCallback(async () => {
+    try {
+      const response = await apiService.validateIntegrationLink(token);
+      setLinkInfo(response);
+      setIsValid(true);
+      setErrorType(null);
+      setError(null);
+      return response;
+    } catch (err: unknown) {
+      setIsValid(false);
+      setErrorType('link');
+      setError(formatApiError(err));
+      return null;
+    }
+  }, [token]);
 
   useEffect(() => {
     const validateLink = async () => {
@@ -34,16 +60,7 @@ export default function PublicIntegrationPage() {
         setIsValidating(true);
         setError(null);
         setErrorType(null);
-        
-        const response = await apiService.validateIntegrationLink(token);
-        
-        setIsValid(true);
-        setLinkInfo(response);
-      } catch (err: unknown) {
-        const errorMessage = formatApiError(err);
-        setError(errorMessage);
-        setErrorType('link');
-        setIsValid(false);
+        await refreshLinkInfo();
       } finally {
         setIsValidating(false);
       }
@@ -52,26 +69,38 @@ export default function PublicIntegrationPage() {
     if (token) {
       validateLink();
     }
-  }, [token]);
+  }, [token, refreshLinkInfo]);
 
   const handleSubmit = async (data: IntegrationMemberPayload) => {
     try {
       setIsSubmitting(true);
       setError(null);
       setErrorType(null);
-      
+
       await apiService.createIntegrationMemberViaPublicLink(token, data as { name: string; [key: string]: unknown });
-      
+
       setSuccess(true);
+      await refreshLinkInfo();
     } catch (err: unknown) {
       const errorMessage = formatApiError(err);
       setError(errorMessage);
       setErrorType('submission');
+
+      if (isLimitError(err)) {
+        await refreshLinkInfo();
+      }
+
       throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const linkExhausted =
+    linkInfo?.max_uses != null &&
+    linkInfo.remaining_uses !== null &&
+    linkInfo.remaining_uses !== undefined &&
+    linkInfo.remaining_uses <= 0;
 
   if (isValidating) {
     return (
@@ -182,9 +211,16 @@ export default function PublicIntegrationPage() {
                     window.location.reload();
                   }}
                   variant="primary"
+                  disabled={linkExhausted}
                 >
                   Realizar Novo Cadastro
                 </Button>
+
+                {linkExhausted && (
+                  <p className="text-xs text-amber-700">
+                    Este link atingiu o limite de cadastros permitidos.
+                  </p>
+                )}
                 
                 <p className="text-xs text-gray-500">
                   Ou você já pode fechar esta página.
@@ -225,7 +261,7 @@ export default function PublicIntegrationPage() {
                 Preencha o formulário abaixo para se cadastrar no processo de integração da {linkInfo.church_name}
               </p>
             )}
-            {linkInfo?.max_uses && linkInfo.remaining_uses !== null && linkInfo.remaining_uses !== undefined && (
+            {linkInfo?.max_uses != null && linkInfo.remaining_uses !== null && linkInfo.remaining_uses !== undefined && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
                   <AlertCircle className="inline mr-2" size={16} />
@@ -245,6 +281,7 @@ export default function PublicIntegrationPage() {
             isLoading={isSubmitting}
             churchName={linkInfo?.church_name}
             congregations={linkInfo?.congregations ?? []}
+            submitDisabled={linkExhausted}
           />
           
           {error && errorType === 'submission' && (

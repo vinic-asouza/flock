@@ -4,14 +4,24 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-// ACHADO 05: importado Clock para estado de verificação pendente
 import { CheckCircle2, Loader, XCircle, ArrowRight, Clock } from 'lucide-react';
-// ACHADO 04: usar apiService para garantir interceptor de 401
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
+
+const WAITING_STATUS_MESSAGES = [
+  'Pagamento ainda não foi processado',
+  'Assinatura ainda não foi criada',
+  'Pagamento confirmado, aguardando processamento',
+];
+
+function isTerminalCheckoutMessage(message: string | undefined): boolean {
+  if (!message) return false;
+  return !WAITING_STATUS_MESSAGES.some((fragment) => message.includes(fragment));
+}
 
 function SubscriptionSuccessContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshWarning, setRefreshWarning] = useState<string | null>(null);
   const [missingSessionId, setMissingSessionId] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const router = useRouter();
@@ -21,13 +31,9 @@ function SubscriptionSuccessContent() {
   const userId = user?.id;
 
   useEffect(() => {
-    // P01: aguardar AuthContext inicializar antes de verificar autenticação
     if (isAuthLoading) return;
-
-    // Evita reiniciar polling após confirmação (refreshChurch atualiza user)
     if (isConfirmed) return;
 
-    // P01: redirecionar para login se não autenticado
     if (!userId) {
       setIsLoading(false);
       return;
@@ -42,7 +48,6 @@ function SubscriptionSuccessContent() {
     let attempts = 0;
     const maxAttempts = 12;
     const baseDelayMs = 2000;
-    // ACHADO 06: flags para cleanup e prevenção de state updates em componente desmontado
     let timeoutId: ReturnType<typeof setTimeout>;
     let isMounted = true;
 
@@ -50,14 +55,29 @@ function SubscriptionSuccessContent() {
       if (!isMounted) return;
 
       try {
-        // ACHADO 04: usar apiService.getCheckoutStatus() em vez de axios direto
         const data = await apiService.getCheckoutStatus(sessionId);
 
         if (data.confirmed) {
           if (isMounted) {
             setIsConfirmed(true);
             setIsLoading(false);
+          }
+          try {
             if (refreshChurch) await refreshChurch();
+          } catch {
+            if (isMounted) {
+              setRefreshWarning(
+                'Plano ativado. Recarregue a página se os dados não atualizarem.'
+              );
+            }
+          }
+          return;
+        }
+
+        if (isTerminalCheckoutMessage(data.message)) {
+          if (isMounted) {
+            setIsLoading(false);
+            setError(data.message || formatApiError(data.error) || 'Não foi possível confirmar o pagamento.');
           }
           return;
         }
@@ -68,7 +88,9 @@ function SubscriptionSuccessContent() {
           timeoutId = setTimeout(checkSubscriptionStatus, delay);
         } else if (isMounted) {
           setIsLoading(false);
-          setError('Não foi possível confirmar o pagamento automaticamente. Verifique sua assinatura nas configurações ou tente sincronizar manualmente.');
+          setError(
+            'Não foi possível confirmar o pagamento automaticamente. Verifique sua assinatura nas configurações ou tente sincronizar manualmente.'
+          );
         }
       } catch (err: unknown) {
         attempts++;
@@ -77,28 +99,22 @@ function SubscriptionSuccessContent() {
           timeoutId = setTimeout(checkSubscriptionStatus, delay);
         } else if (isMounted) {
           setIsLoading(false);
-          const errorMessage = err && typeof err === 'object' && 'response' in err
-            ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-            : undefined;
           setError(
-            errorMessage ||
+            formatApiError(err) ||
             'Erro ao verificar status do pagamento. Tente sincronizar manualmente nas configurações.'
           );
         }
       }
     };
 
-    // ACHADO 06: aguardar 2s antes do primeiro check (dar tempo para webhook processar)
     timeoutId = setTimeout(checkSubscriptionStatus, baseDelayMs);
 
-    // ACHADO 06: cleanup — cancela timeout pendente e evita state updates após unmount
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
   }, [sessionId, userId, isAuthLoading, isConfirmed, refreshChurch]);
 
-  // P01: ainda inicializando o AuthContext — mostrar loading
   if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -111,9 +127,11 @@ function SubscriptionSuccessContent() {
     );
   }
 
-  // P01: usuário não autenticado após carregamento — redirecionar para login
   if (!user) {
-    router.push('/login');
+    const redirectPath = sessionId
+      ? `/subscription/success?session_id=${encodeURIComponent(sessionId)}`
+      : '/subscription/success';
+    router.push(`/login?redirect=${encodeURIComponent(redirectPath)}`);
     return null;
   }
 
@@ -121,7 +139,6 @@ function SubscriptionSuccessContent() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
 
-        {/* ACHADO 05: heading e ícone condicionados ao estado de erro */}
         <div className="text-center mb-8">
           {missingSessionId ? (
             <>
@@ -177,8 +194,13 @@ function SubscriptionSuccessContent() {
           </div>
         )}
 
+        {refreshWarning && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800">{refreshWarning}</p>
+          </div>
+        )}
+
         <div className="space-y-4 mb-8">
-          {/* Card verde apenas após confirmação via polling */}
           {!error && !missingSessionId && (
             <div className="p-4 bg-green-50 rounded-lg">
               <p className="text-sm text-green-800">
@@ -190,7 +212,6 @@ function SubscriptionSuccessContent() {
             </div>
           )}
 
-          {/* R01: orientação específica de suporte no estado de erro */}
           {(error || missingSessionId) && (
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">

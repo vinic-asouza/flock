@@ -4,9 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
-import { Loader, CreditCard, CheckCircle2, Check } from 'lucide-react';
-// ACHADO 04: removido import direto de axios — usar apiService com interceptor de 401
-import apiService from '@/services/api';
+import { Loader, CreditCard, CheckCircle2, Check, AlertCircle } from 'lucide-react';
+import apiService, { formatApiError } from '@/services/api';
 
 interface PlanOption {
   value: string;
@@ -16,14 +15,16 @@ interface PlanOption {
   members: number;
 }
 
+const READER_TOOLTIP = 'Apenas administradores podem contratar ou alterar planos. Entre em contato com a administração da igreja.';
+
 export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  // ACHADO 03: desestruturar isLoading do AuthContext
-  const { user, isLoading: isAuthLoading, refreshChurch } = useAuth();
+  const { user, isLoading: isAuthLoading, refreshChurch, currentRole } = useAuth();
+  const canManagePlan = currentRole === 'admin' || currentRole === 'owner';
   const initialPlan = searchParams.get('plan') as '100' | '200' | '500' | '800' | null;
   const [selectedPlan, setSelectedPlan] = useState<'100' | '200' | '500' | '800' | null>(
     initialPlan && ['100', '200', '500', '800'].includes(initialPlan) ? initialPlan : null
@@ -31,6 +32,26 @@ export default function CheckoutPage() {
   const [planOptions, setPlanOptions] = useState<PlanOption[]>([]);
   const [plansLoadError, setPlansLoadError] = useState(false);
   const checkoutInFlightRef = useRef(false);
+
+  useEffect(() => {
+    const resetCheckoutState = () => {
+      checkoutInFlightRef.current = false;
+      setIsLoading(false);
+    };
+
+    window.addEventListener('pagehide', resetCheckoutState);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        resetCheckoutState();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.removeEventListener('pagehide', resetCheckoutState);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -56,20 +77,21 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    // ACHADO 03: aguardar AuthContext inicializar antes de verificar autenticação.
-    // Sem esse guard, user=null durante isAuthLoading=true causava redirect prematuro
-    // para /login mesmo quando o usuário estava autenticado.
     if (isAuthLoading) return;
 
     if (!user) {
       const planToRedirect = initialPlan || selectedPlan;
-      // ACHADO 11: encode correto do redirect URL — segundo '?' deve ser encodeURIComponent
       const redirectPath = planToRedirect ? `/checkout?plan=${planToRedirect}` : '/checkout';
       router.push(`/login?redirect=${encodeURIComponent(redirectPath)}`);
     }
   }, [isAuthLoading, user, router, initialPlan, selectedPlan]);
 
   const handleCheckout = async () => {
+    if (!canManagePlan) {
+      setError(READER_TOOLTIP);
+      return;
+    }
+
     if (!selectedPlan) {
       setError('Por favor, selecione um plano antes de continuar');
       return;
@@ -99,26 +121,12 @@ export default function CheckoutPage() {
 
       window.location.href = url;
     } catch (err: unknown) {
-      let errorMessage = 'Erro ao processar sua solicitação. Tente novamente.';
-      let errorDetails = '';
-
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosError = err as { response?: { data?: { error?: string; details?: string } } };
-        if (axiosError.response?.data) {
-          errorMessage = axiosError.response.data.error || errorMessage;
-          errorDetails = axiosError.response.data.details || '';
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-
-      setError(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+      setError(formatApiError(err));
       setIsLoading(false);
       checkoutInFlightRef.current = false;
     }
   };
 
-  // ACHADO 03: exibir loading durante inicialização do AuthContext
   if (isAuthLoading || isLoadingPlans || plansLoadError) {
     return (
       <div className="flex items-center justify-center w-full">
@@ -171,6 +179,13 @@ export default function CheckoutPage() {
           <p className="text-sm text-gray-600">Selecione o plano ideal para sua igreja</p>
         </div>
 
+        {!canManagePlan && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800">{READER_TOOLTIP}</p>
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800">{error}</p>
@@ -185,11 +200,12 @@ export default function CheckoutPage() {
               <button
                 key={plan.value}
                 onClick={() => setSelectedPlan(plan.value as '100' | '200' | '500' | '800')}
+                disabled={!canManagePlan}
                 className={`relative p-3 rounded-lg border transition-all ${
                   isSelected
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-gray-200 hover:border-primary/40 hover:bg-gray-50'
-                }`}
+                } ${!canManagePlan ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 {isSelected && (
                   <div className="absolute -top-1.5 -right-1.5">
@@ -245,7 +261,8 @@ export default function CheckoutPage() {
 
         <Button
           onClick={handleCheckout}
-          disabled={isLoading || !selectedPlan}
+          disabled={isLoading || !selectedPlan || !canManagePlan}
+          title={!canManagePlan ? READER_TOOLTIP : undefined}
           className="w-full"
         >
           {isLoading ? (

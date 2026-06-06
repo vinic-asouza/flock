@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { X } from 'lucide-react';
-import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
 import { apiService } from '@/services/api';
@@ -105,6 +104,9 @@ interface PublicMemberFormProps {
   isLoading?: boolean;
   churchName?: string;
   error?: string | null;
+  congregations?: { id: string; name: string }[];
+  registrationToken?: string;
+  submitDisabled?: boolean;
 }
 
 // Funções auxiliares (idênticas ao MemberForm)
@@ -143,10 +145,12 @@ export function PublicMemberForm({
   onCancel,
   isLoading = false,
   churchName,
-  error
+  error,
+  congregations = [],
+  registrationToken,
+  submitDisabled = false,
 }: PublicMemberFormProps) {
-  const { congregations, loading: filtersLoading } = useFiltersData();
-  const { states, cities, loadingCities, fetchCities } = useIbgeData();
+  const { states, cities, loadingStates, loadingCities, errorStates, errorCities, fetchCities } = useIbgeData();
   const { professions, loading: professionsLoading } = useProfessions();
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
@@ -162,6 +166,7 @@ export function PublicMemberForm({
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
+  const [groupsLoadFailed, setGroupsLoadFailed] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -202,25 +207,32 @@ export function PublicMemberForm({
   // Carregar grupos disponíveis quando congregação mudar
   useEffect(() => {
     const loadGroups = async () => {
+      if (!registrationToken) {
+        setAvailableGroups([]);
+        return;
+      }
+
       const congregationIdToUse = selectedCongregationId || null;
+      const congregationParam =
+        congregationIdToUse === '' || congregationIdToUse === undefined || !congregationIdToUse
+          ? 'sede'
+          : congregationIdToUse;
+
       try {
         setLoadingGroups(true);
-        // Se congregação vazia ou null, buscar grupos da sede
-        const congregationParam = congregationIdToUse === '' || congregationIdToUse === undefined || !congregationIdToUse ? 'sede' : congregationIdToUse;
-        const response = await apiService.listGroups({ congregation_id: congregationParam });
+        setGroupsLoadFailed(false);
+        const response = await apiService.listPublicRegistrationGroups(registrationToken, congregationParam);
         setAvailableGroups(response);
       } catch {
-        // Silenciar erro - não crítico, apenas para carregar grupos
+        setGroupsLoadFailed(true);
         setAvailableGroups([]);
       } finally {
         setLoadingGroups(false);
       }
     };
 
-    // Carregar grupos sempre (sede por padrão quando congregação estiver vazia ou undefined)
-    // Isso garante que grupos da sede sejam carregados ao abrir o formulário
     loadGroups();
-  }, [selectedCongregationId]);
+  }, [selectedCongregationId, registrationToken]);
 
   // Carregar cidades quando estado mudar
   useEffect(() => {
@@ -732,10 +744,15 @@ export function PublicMemberForm({
                 label: state.nome
               }))
             ]}
-            disabled={isLoading}
+            disabled={isLoading || submitDisabled}
             searchable={true}
             error={errors.state?.message}
           />
+          {errorStates && !loadingStates && (
+            <p className="mt-1 text-xs text-amber-700">
+              Não foi possível carregar estados pela API do IBGE. Usando lista padrão de UFs.
+            </p>
+          )}
 
           <Select
             label="Cidade (obrigatório)"
@@ -755,10 +772,15 @@ export function PublicMemberForm({
                 label: city.nome
               }))
             ]}
-            disabled={!selectedState || loadingCities || isLoading}
+            disabled={!selectedState || loadingCities || isLoading || submitDisabled}
             searchable={true}
             error={errors.city?.message}
           />
+          {errorCities && selectedState && !loadingCities && (
+            <p className="mt-1 text-xs text-amber-700">
+              Não foi possível carregar cidades deste estado. Tente selecionar o estado novamente.
+            </p>
+          )}
 
           <Input
             label="CEP"
@@ -875,7 +897,7 @@ export function PublicMemberForm({
                 label: congregation.name
               }))
             ]}
-            disabled={filtersLoading || isLoading}
+            disabled={isLoading || submitDisabled}
           />
 
           {/* Campo de Grupos */}
@@ -883,6 +905,11 @@ export function PublicMemberForm({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Grupos / Ministérios
             </label>
+            {groupsLoadFailed && (
+              <p className="mb-2 text-xs text-amber-700">
+                Não foi possível carregar os grupos. Você ainda pode enviar o cadastro sem selecionar grupos.
+              </p>
+            )}
             <div className="border border-gray-300 rounded-md p-3 bg-gray-50 max-h-80 overflow-y-auto">
               {loadingGroups ? (
                 <div className="flex items-center justify-center py-8">
@@ -978,6 +1005,7 @@ export function PublicMemberForm({
         <Button
           type="submit"
           isLoading={isLoading}
+          disabled={isLoading || submitDisabled}
         >
           Enviar Cadastro
         </Button>

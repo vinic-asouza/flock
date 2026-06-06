@@ -11,7 +11,7 @@ import {
 } from '../services/stripe';
 import { setPendingLinkToken } from '../utils/cookieUtils';
 import { supabaseAdmin } from '../services/supabase';
-import { insertSubscriptionEvent } from '../services/stripeWebhookService';
+import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate } from '../services/stripeWebhookService';
 
 // alias para legibilidade — todas as queries de DB usam service_role
 const supabase = supabaseAdmin;
@@ -23,12 +23,7 @@ import { billingLog } from '../utils/structuredLogger';
 import { recordCheckoutCreated, recordSyncSubscription } from '../utils/billingMetrics';
 import { sendEmail } from '../services/emailService';
 import { getPlanChangedTemplate } from '../templates/stripeEmailTemplates';
-import {
-  processStripeWebhook,
-  getUserEmailFromChurch,
-  shouldSetToFreePlan,
-  getSubscriptionEndDate,
-} from '../services/stripeWebhookService';
+import { checkMemberLimit } from '../utils/planLimits';
 
 /**
  * Criar sessão de checkout
@@ -74,7 +69,7 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
 
       const { data: church, error: churchError } = await supabase
         .from('churches')
-        .select('id, name')
+        .select('id, name, stripe_subscription_id, subscription_status, plan_type')
         .eq('id', req.church!.churchId)
         .single();
 
@@ -82,6 +77,18 @@ export const createCheckout = async (req: AuthRequest, res: Response) => {
         return res.status(404).json({
           error: 'Igreja não encontrada',
           details: 'Usuário não possui igreja cadastrada',
+        });
+      }
+
+      const activeStatuses = ['active', 'trialing', 'past_due'];
+      if (
+        church.stripe_subscription_id &&
+        activeStatuses.includes(church.subscription_status || '')
+      ) {
+        return res.status(409).json({
+          error: 'Assinatura já ativa',
+          details:
+            'Sua igreja já possui uma assinatura ativa. Use Configurações → Plano para trocar de plano ou gerenciar no portal Stripe.',
         });
       }
 
@@ -222,7 +229,7 @@ export const createPortalSession = async (req: AuthRequest, res: Response) => {
 
     // Criar sessão do portal
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-    const returnUrl = `${frontendUrl}/settings/subscription`;
+    const returnUrl = `${frontendUrl}/settings?tab=payment`;
 
     const portalSession = await createCustomerPortalSession(
       church.stripe_customer_id,
@@ -547,7 +554,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
     const cancelAt = sub.cancel_at as number | null;
     const canceledAt = sub.canceled_at as number | null;
 
-    await supabase
+    const { error: updateError } = await supabase
       .from('churches')
       .update({
         plan_type: planType,
@@ -563,6 +570,15 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
         subscription_updated_at: new Date().toISOString(),
       })
       .eq('id', church.id);
+
+    if (updateError) {
+      logError('Erro ao atualizar plano no banco após Stripe:', updateError);
+      return res.status(500).json({
+        error: 'Plano alterado no Stripe, mas falhou ao atualizar localmente',
+        details:
+          'Use "Sincronizar assinatura" em Configurações → Plano para alinhar os dados.',
+      });
+    }
 
     // DB05: histórico de billing para troca de plano via API
     await insertSubscriptionEvent({
@@ -843,6 +859,19 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       return res.json({
         message: 'Plano gratuito já está ativo',
         plan_type: '100',
+      });
+    }
+
+    const FREE_PLAN_LIMIT = 100;
+    const limitCheck = await checkMemberLimit(church.id, 0);
+    if (limitCheck.currentCount > FREE_PLAN_LIMIT) {
+      const membersToRemove = limitCheck.currentCount - FREE_PLAN_LIMIT;
+      return res.status(400).json({
+        error: 'Não é possível ativar plano gratuito',
+        details: `Você possui ${limitCheck.currentCount} membros, mas o plano gratuito permite apenas ${FREE_PLAN_LIMIT}. Remova ${membersToRemove} membro(s) antes de fazer o downgrade.`,
+        currentCount: limitCheck.currentCount,
+        newLimit: FREE_PLAN_LIMIT,
+        membersToRemove,
       });
     }
 

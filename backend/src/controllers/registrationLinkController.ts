@@ -235,6 +235,13 @@ export const createRegistrationLink = async (
       url: `${frontendUrl}/public/register/${link.token}`
     };
 
+    await logAudit(req, {
+      entity: 'public_registration_link',
+      entityId: link.id,
+      action: 'create',
+      changesAfter: linkWithUrl,
+    });
+
     res.status(201).json(linkWithUrl);
 
   } catch (error) {
@@ -357,6 +364,14 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       ...link,
       url: `${frontendUrl}/public/register/${link.token}`
     };
+
+    await logAudit(req, {
+      entity: 'public_registration_link',
+      entityId: existingLink.id,
+      action: 'update',
+      changesBefore: existingLink,
+      changesAfter: linkWithUrl,
+    });
 
     res.json(linkWithUrl);
 

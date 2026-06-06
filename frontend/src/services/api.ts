@@ -179,7 +179,12 @@ class ApiService {
     return response.data;
   }
 
-  async getCheckoutStatus(sessionId: string): Promise<{ confirmed: boolean }> {
+  async getCheckoutStatus(sessionId: string): Promise<{
+    confirmed: boolean;
+    message?: string;
+    payment_status?: string;
+    error?: string;
+  }> {
     const response = await this.api.get(`/stripe/checkout-status?session_id=${sessionId}`);
     return response.data;
   }
@@ -1017,6 +1022,13 @@ class ApiService {
     return response.data;
   }
 
+  async listPublicRegistrationGroups(token: string, congregationId: string) {
+    const response = await this.api.get(`/public/registration/${token}/groups`, {
+      params: { congregation_id: congregationId },
+    });
+    return response.data;
+  }
+
   // Criar membro via link público
   async createMemberViaPublicLink(token: string, data: { name: string;[key: string]: unknown }) {
     const response = await this.api.post(`/public/registration/${token}`, data);
@@ -1153,4 +1165,23 @@ export function formatApiError(err: unknown): string {
     return `${err.message}: ${detailsText}`;
   }
   return err.message;
+}
+
+export interface DowngradeBlockInfo {
+  membersToRemove?: number;
+  currentCount?: number;
+  newLimit?: number;
+}
+
+export function getDowngradeBlockInfo(err: unknown): DowngradeBlockInfo | null {
+  if (!(err instanceof Error)) return null;
+  const data = (err as Error & { originalError?: Record<string, unknown> }).originalError;
+  if (!data || typeof data !== 'object' || typeof data.membersToRemove !== 'number') {
+    return null;
+  }
+  return {
+    membersToRemove: data.membersToRemove,
+    currentCount: typeof data.currentCount === 'number' ? data.currentCount : undefined,
+    newLimit: typeof data.newLimit === 'number' ? data.newLimit : undefined,
+  };
 }

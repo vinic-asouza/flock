@@ -4,6 +4,7 @@ import { PublicIntegrationRequest, IntegrationMember } from '../types';
 import { validateIntegrationMember } from '../validators/integrationMemberValidator';
 import { error as logError } from '../utils/logger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
+import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
 
 /**
  * Valida um link de integração pública (sem criar integrante)
@@ -112,6 +113,19 @@ export const createIntegrationMemberViaPublicLink = async (
     // Normalizar datas antes de criar o integrante (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(req.body as unknown as Record<string, unknown>);
 
+    if (normalizedData.expected_congregation_id) {
+      const congregationCheck = await validateCongregationBelongsToChurch(
+        normalizedData.expected_congregation_id as string,
+        churchId
+      );
+      if (!congregationCheck.valid) {
+        return res.status(400).json({
+          error: 'Congregação inválida',
+          details: congregationCheck.message,
+        });
+      }
+    }
+
     // Preparar dados do integrante
     const integrationMemberData: Partial<IntegrationMember> = {
       ...normalizedData,
@@ -138,25 +152,30 @@ export const createIntegrationMemberViaPublicLink = async (
       });
     }
 
-    // Incrementar contador com condição no valor atual (proteção contra race condition)
-    // { count: 'exact' } é necessário para que updatedCount seja preenchido pelo PostgREST
-    const { error: updateError, count: updatedCount } = await supabase
-      .from('public_integration_links')
-      .update({ current_uses: integrationLink.current_uses + 1 }, { count: 'exact' })
-      .eq('id', integrationLink.id)
-      .eq('current_uses', integrationLink.current_uses);
+    if (integrationLink.max_uses !== null && integrationLink.max_uses !== undefined) {
+      const { error: updateError, count: updatedCount } = await supabase
+        .from('public_integration_links')
+        .update({ current_uses: integrationLink.current_uses + 1 }, { count: 'exact' })
+        .eq('id', integrationLink.id)
+        .eq('current_uses', integrationLink.current_uses)
+        .lt('current_uses', integrationLink.max_uses);
 
-    if (updateError || updatedCount === 0) {
-      // Outro request já incrementou o contador — desfazer o cadastro
-      await supabase.from('integration_members').delete().eq('id', integrationMember.id);
-      return res.status(409).json({
-        error: 'Limite de usos atingido',
-        details: 'Este link atingiu o número máximo de usos. Seu cadastro não foi registrado.'
-      });
-    }
-    if (updatedCount === null) {
-      // Com { count: 'exact' }, count null indica resposta inesperada do PostgREST — logar para monitoramento
-      logError('Contador de usos retornou null após update com count:exact', { linkId: integrationLink.id });
+      if (updateError || updatedCount === 0) {
+        await supabase.from('integration_members').delete().eq('id', integrationMember.id);
+        return res.status(409).json({
+          error: 'Limite de usos atingido',
+          details: 'Este link atingiu o número máximo de usos. Seu cadastro não foi registrado.'
+        });
+      }
+    } else {
+      const { error: updateError } = await supabase
+        .from('public_integration_links')
+        .update({ current_uses: integrationLink.current_uses + 1 })
+        .eq('id', integrationLink.id);
+
+      if (updateError) {
+        logError('Erro ao atualizar contador de usos (sem limite):', updateError);
+      }
     }
 
     // Buscar informações da igreja para resposta

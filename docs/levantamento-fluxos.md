@@ -887,7 +887,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 11 — Links Públicos
+### ✅ Módulo 11 — Links Públicos
 
 **Objetivo:** Permitir que membros e integrantes sejam captados via links compartilháveis sem necessidade de login, com autenticação por token no path.
 

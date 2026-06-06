@@ -18,7 +18,7 @@ import {
   Power,
   AlertTriangle
 } from 'lucide-react';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 
 interface RegistrationLink {
   id: string;
@@ -72,7 +72,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       const response = await apiService.listRegistrationLinks();
       setLinks(response.data || []);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar links';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -125,7 +125,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       resetForm();
       setEditingLink(null);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao salvar link';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -137,7 +137,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       await apiService.deactivateRegistrationLink(id);
       await loadLinks();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao desativar link';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     }
   };
@@ -161,7 +161,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       await loadLinks();
       setLinkToDelete(null);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao excluir link';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     } finally {
       setIsDeleting(false);
@@ -173,7 +173,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       await apiService.updateRegistrationLink(id, { is_active: true });
       await loadLinks();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao reativar link';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
     }
   };

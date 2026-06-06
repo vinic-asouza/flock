@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, User, AlertCircle, Crown, Gift } from 'lucide-react';
+import { LogOut, User, AlertCircle, Crown, Gift, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
@@ -24,6 +24,8 @@ export function Header() {
   const router = useRouter();
   const { user, session, currentRole, logout } = useAuth();
   const [memberLimit, setMemberLimit] = useState<MemberLimitInfo | null>(null);
+  const [memberLimitLoadFailed, setMemberLimitLoadFailed] = useState(false);
+  const [isRetryingMemberLimit, setIsRetryingMemberLimit] = useState(false);
 
   // Função para carregar informações do limite
   const loadMemberLimit = useCallback(async () => {
@@ -31,15 +33,22 @@ export function Header() {
       try {
         const data = await apiService.getMemberLimit();
         setMemberLimit(data);
+        setMemberLimitLoadFailed(false);
       } catch {
-        // Erro silencioso - não mostrar toast para não poluir a interface
-        // Apenas não mostrar o alerta de limite
         setMemberLimit(null);
+        setMemberLimitLoadFailed(true);
       }
     } else {
       setMemberLimit(null);
+      setMemberLimitLoadFailed(false);
     }
   }, [user]);
+
+  const handleRetryMemberLimit = async () => {
+    setIsRetryingMemberLimit(true);
+    await loadMemberLimit();
+    setIsRetryingMemberLimit(false);
+  };
 
   // Carregar informações do limite quando o usuário estiver autenticado
   useEffect(() => {
@@ -143,7 +152,18 @@ export function Header() {
             </span>
           </div>
         )}
-
+        {memberLimitLoadFailed && (
+          <button
+            type="button"
+            onClick={handleRetryMemberLimit}
+            disabled={isRetryingMemberLimit}
+            title="Não foi possível carregar o limite de membros. Clique para tentar novamente."
+            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-60"
+          >
+            <RefreshCw size={14} className={isRetryingMemberLimit ? 'animate-spin' : ''} />
+            <span>Limite indisponível</span>
+          </button>
+        )}
         {/* Badge do Plano */}
         {user && (
           <Link

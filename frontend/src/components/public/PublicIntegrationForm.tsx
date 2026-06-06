@@ -49,6 +49,7 @@ interface PublicIntegrationFormProps {
   isLoading?: boolean;
   churchName?: string;
   congregations?: { id: string; name: string }[];
+  submitDisabled?: boolean;
 }
 
 const genderOptions: { value: '' | IntegrationGender; label: string }[] = [
@@ -80,7 +81,8 @@ export function PublicIntegrationForm({
   onSubmit, 
   onCancel, 
   isLoading = false,
-  congregations = []
+  congregations = [],
+  submitDisabled = false,
 }: PublicIntegrationFormProps) {
 
   const [phoneDisplay, setPhoneDisplay] = useState('');
@@ -231,7 +233,7 @@ export function PublicIntegrationForm({
             Cancelar
           </Button>
         )}
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" isLoading={isLoading} disabled={isLoading || submitDisabled}>
           Enviar Cadastro
         </Button>
       </div>

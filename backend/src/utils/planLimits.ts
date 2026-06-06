@@ -187,7 +187,9 @@ export async function checkMemberLimit(
     if (blockedByPastDue) {
       message = `Pagamento pendente. Regularize sua assinatura para adicionar novos membros.`;
     } else if (!canAdd) {
-      if (!hasActiveSubscription) {
+      if (planType === '100') {
+        message = `Limite de membros atingido. Você possui ${totalCount} de ${limit} membros permitidos no plano gratuito. Faça upgrade para um plano pago para adicionar mais membros.`;
+      } else if (!hasActiveSubscription) {
         message = `Limite de membros atingido. Você possui ${totalCount} de ${limit} membros permitidos no plano ${planType}. Ative sua assinatura para continuar adicionando membros.`;
       } else {
         message = `Limite de membros atingido. Você possui ${totalCount} de ${limit} membros permitidos no plano ${planType}. Faça upgrade para adicionar mais membros.`;

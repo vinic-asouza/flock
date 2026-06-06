@@ -17,7 +17,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import apiService, { formatApiError } from '@/services/api';
+import apiService, { formatApiError, getDowngradeBlockInfo } from '@/services/api';
 import {
   getCachedStripeSync,
   setCachedStripeSync,
@@ -108,6 +108,11 @@ export function PaymentManagement() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [downgradeBlockInfo, setDowngradeBlockInfo] = useState<{
+    membersToRemove?: number;
+    currentCount?: number;
+    newLimit?: number;
+  } | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [autoSyncFailed, setAutoSyncFailed] = useState(false);
@@ -142,7 +147,10 @@ export function PaymentManagement() {
   const planType = user?.plan_type;
   const subscriptionStartDate = user?.subscription_start_date;
   const subscriptionEndDate = user?.subscription_end_date;
-  const hasSubscription = !!user?.stripe_subscription_id;
+  const hasSubscription = !!(
+    user?.stripe_subscription_id ||
+    (user?.stripe_customer_id && planType && planType !== '100')
+  );
 
   // Verificar se a assinatura está realmente expirada
   const isSubscriptionExpired = () => {
@@ -204,7 +212,9 @@ export function PaymentManagement() {
         if (response.synced && refreshChurch) {
           await refreshChurch();
         }
-        setCachedStripeSync(churchKey);
+        if (response.synced) {
+          setCachedStripeSync(churchKey);
+        }
       } catch (err: unknown) {
         setAutoSyncFailed(true);
         captureBillingError('billing_sync_failed', {
@@ -364,6 +374,7 @@ export function PaymentManagement() {
     try {
       setIsChangingPlan(true);
       setError(null);
+      setDowngradeBlockInfo(null);
       setSyncMessage(null);
 
       if (selectedPlan === '100') {
@@ -382,7 +393,12 @@ export function PaymentManagement() {
       setShowChangePlanModal(false);
       setSelectedPlan(null);
 
-      // Atualizar dados do usuário
+      try {
+        await apiService.syncSubscription();
+      } catch {
+        // fallback silencioso — dados já atualizados via refreshChurch
+      }
+
       if (refreshChurch) {
         await refreshChurch();
       } else {
@@ -394,6 +410,8 @@ export function PaymentManagement() {
         setSuccessMessage(null);
         }, 5000);
     } catch (err: unknown) {
+      const downgradeInfo = getDowngradeBlockInfo(err);
+      setDowngradeBlockInfo(downgradeInfo);
       const finalMessage = formatApiError(err) || 'Erro ao trocar plano. Tente novamente.';
       toast.error(finalMessage);
       setError(finalMessage);
@@ -770,7 +788,7 @@ export function PaymentManagement() {
                     </>
                   ) : (
                     <>
-                      <Loader className="w-5 h-5 mr-2" />
+                      <RefreshCw className="w-5 h-5 mr-2" />
                       Sincronizar Assinatura
                     </>
                   )}
@@ -923,6 +941,19 @@ export function PaymentManagement() {
             </div>
           )}
 
+          {downgradeBlockInfo?.membersToRemove != null && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-900 font-medium">
+                Remova {downgradeBlockInfo.membersToRemove} membro(s) antes do downgrade
+              </p>
+              {downgradeBlockInfo.currentCount != null && downgradeBlockInfo.newLimit != null && (
+                <p className="text-xs text-amber-800 mt-1">
+                  Você possui {downgradeBlockInfo.currentCount} membros; o plano selecionado permite {downgradeBlockInfo.newLimit}.
+                </p>
+              )}
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-800">{error}</p>
@@ -935,6 +966,7 @@ export function PaymentManagement() {
                 setShowChangePlanModal(false);
                 setSelectedPlan(null);
                 setError(null);
+                setDowngradeBlockInfo(null);
               }}
               variant="secondary"
               className="flex-1"
@@ -1009,7 +1041,10 @@ export function PaymentManagement() {
                     {planType ? planNamesState[planType] : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {planType ? planPricesState[planType] : 'N/A'} <span className="text-gray-500">/mês</span>
+                    {planType ? planPricesState[planType] : 'N/A'}
+                    {planType && planType !== '100' && (
+                      <span className="text-gray-500"> /mês</span>
+                    )}
                   </p>
                 </div>
                 <XCircle className="w-5 h-5 text-gray-400" />
@@ -1030,7 +1065,10 @@ export function PaymentManagement() {
                     {selectedPlan ? planNamesState[selectedPlan] : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
-                    {selectedPlan ? planPricesState[selectedPlan] : 'N/A'} <span className="text-gray-500">/mês</span>
+                    {selectedPlan ? planPricesState[selectedPlan] : 'N/A'}
+                    {selectedPlan && selectedPlan !== '100' && (
+                      <span className="text-gray-500"> /mês</span>
+                    )}
                   </p>
                 </div>
                 <CheckCircle2 className="w-5 h-5 text-primary" />
@@ -1044,6 +1082,19 @@ export function PaymentManagement() {
                 <strong>Como funciona a cobrança:</strong> O Stripe calculará automaticamente o valor proporcional
                 do plano atual e aplicará o novo plano. Você receberá uma fatura ajustada.
               </p>
+            </div>
+          )}
+
+          {downgradeBlockInfo?.membersToRemove != null && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm text-amber-900 font-medium">
+                Remova {downgradeBlockInfo.membersToRemove} membro(s) antes do downgrade
+              </p>
+              {downgradeBlockInfo.currentCount != null && downgradeBlockInfo.newLimit != null && (
+                <p className="text-xs text-amber-800 mt-1">
+                  Você possui {downgradeBlockInfo.currentCount} membros; o plano selecionado permite {downgradeBlockInfo.newLimit}.
+                </p>
+              )}
             </div>
           )}
 

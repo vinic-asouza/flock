@@ -185,8 +185,7 @@ function IntegrationPageContent() {
               onClick={() => setIntegrationLinksModalOpen(true)}
               variant="secondary"
               className="inline-flex items-center gap-2"
-              disabled={canEdit === false}
-              title={canEdit === false ? READER_TOOLTIP : undefined}
+              title={canEdit === false ? 'Visualizar e copiar links de autocadastro' : undefined}
             >
               <LinkIcon size={18} />
               Links de Autocadastro

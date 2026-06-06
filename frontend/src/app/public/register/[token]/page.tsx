@@ -1,12 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import axios from 'axios';
 import { PublicMemberForm } from '@/components/public/PublicMemberForm';
 import { Loader, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
+
+type LinkInfo = {
+  church_name: string;
+  expires_at: string;
+  max_uses?: number | null;
+  current_uses: number;
+  remaining_uses?: number | null;
+  congregations?: { id: string; name: string }[];
+  blocked_reason?: string;
+};
+
+function isLimitError(err: unknown): boolean {
+  if (!axios.isAxiosError(err)) return false;
+  const status = err.response?.status;
+  const message = formatApiError(err).toLowerCase();
+  return status === 403 || status === 409 || message.includes('limite');
+}
 
 export default function PublicRegisterPage() {
   const params = useParams();
@@ -18,13 +36,23 @@ export default function PublicRegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<'link' | 'submission' | null>(null);
   const [success, setSuccess] = useState(false);
-  const [linkInfo, setLinkInfo] = useState<{
-    church_name: string;
-    expires_at: string;
-    max_uses?: number | null;
-    current_uses: number;
-    remaining_uses?: number | null;
-  } | null>(null);
+  const [linkInfo, setLinkInfo] = useState<LinkInfo | null>(null);
+
+  const refreshLinkInfo = useCallback(async () => {
+    try {
+      const response = await apiService.validateRegistrationLink(token);
+      setLinkInfo(response);
+      setIsValid(true);
+      setErrorType(null);
+      setError(null);
+      return response;
+    } catch (err: unknown) {
+      setIsValid(false);
+      setErrorType('link');
+      setError(formatApiError(err));
+      return null;
+    }
+  }, [token]);
 
   useEffect(() => {
     const validateLink = async () => {
@@ -32,16 +60,7 @@ export default function PublicRegisterPage() {
         setIsValidating(true);
         setError(null);
         setErrorType(null);
-
-        const response = await apiService.validateRegistrationLink(token);
-
-        setIsValid(true);
-        setLinkInfo(response);
-      } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Link inválido ou expirado';
-        setError(errorMessage);
-        setErrorType('link');
-        setIsValid(false);
+        await refreshLinkInfo();
       } finally {
         setIsValidating(false);
       }
@@ -50,7 +69,7 @@ export default function PublicRegisterPage() {
     if (token) {
       validateLink();
     }
-  }, [token]);
+  }, [token, refreshLinkInfo]);
 
   const handleSubmit = async (data: { name: string; groups?: string[]; [key: string]: unknown }) => {
     try {
@@ -58,24 +77,30 @@ export default function PublicRegisterPage() {
       setError(null);
       setErrorType(null);
 
-      // Separar grupos dos dados do membro (serão processados pelo backend)
       await apiService.createMemberViaPublicLink(token, data);
 
       setSuccess(true);
-
-      // Limpar formulário após sucesso
-      setTimeout(() => {
-        // Opcional: redirecionar ou mostrar mensagem de sucesso
-      }, 3000);
+      await refreshLinkInfo();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao enviar cadastro';
+      const errorMessage = formatApiError(err);
       setError(errorMessage);
       setErrorType('submission');
+
+      if (isLimitError(err)) {
+        await refreshLinkInfo();
+      }
+
       throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const linkExhausted =
+    linkInfo?.max_uses != null &&
+    linkInfo.remaining_uses !== null &&
+    linkInfo.remaining_uses !== undefined &&
+    linkInfo.remaining_uses <= 0;
 
   if (isValidating) {
     return (
@@ -104,7 +129,6 @@ export default function PublicRegisterPage() {
     );
   }
 
-  // Erro de validação do link (link inválido/expirado)
   if (!isValid && errorType === 'link') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
@@ -186,9 +210,16 @@ export default function PublicRegisterPage() {
                     window.location.reload();
                   }}
                   variant="primary"
+                  disabled={linkExhausted}
                 >
                   Realizar Novo Cadastro
                 </Button>
+
+                {linkExhausted && (
+                  <p className="text-xs text-amber-700">
+                    Este link atingiu o limite de cadastros permitidos.
+                  </p>
+                )}
 
                 <p className="text-xs text-gray-500">
                   Ou você já pode fechar esta página.
@@ -219,7 +250,6 @@ export default function PublicRegisterPage() {
 
       <div className="py-8 px-4 pt-[calc(3.5rem+2rem)]">
         <div className="max-w-4xl mx-auto">
-          {/* Header do conteúdo */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Cadastro de Membro
@@ -229,7 +259,7 @@ export default function PublicRegisterPage() {
                 Preencha o formulário abaixo para se cadastrar na {linkInfo.church_name}
               </p>
             )}
-            {linkInfo?.max_uses && linkInfo.remaining_uses !== null && linkInfo.remaining_uses !== undefined && (
+            {linkInfo?.max_uses != null && linkInfo.remaining_uses !== null && linkInfo.remaining_uses !== undefined && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
                   <AlertCircle className="inline mr-2" size={16} />
@@ -242,17 +272,18 @@ export default function PublicRegisterPage() {
             )}
           </div>
 
-          {/* Formulário */}
           <div className="bg-white rounded-lg shadow-md">
             <PublicMemberForm
               onSubmit={handleSubmit}
               isLoading={isSubmitting}
               churchName={linkInfo?.church_name}
               error={error && errorType === 'submission' ? error : null}
+              congregations={linkInfo?.congregations ?? []}
+              registrationToken={token}
+              submitDisabled={linkExhausted}
             />
           </div>
 
-          {/* Footer com informações */}
           <div className="mt-6 text-center text-sm text-gray-500">
             <p>Seus dados serão tratados com confidencialidade e segurança.</p>
           </div>
@@ -261,4 +292,3 @@ export default function PublicRegisterPage() {
     </div>
   );
 }
-

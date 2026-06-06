@@ -4,6 +4,7 @@ import { PublicRegistrationRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
+import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
 
 /**
  * Valida um link de registro público (sem criar membro)
@@ -14,11 +15,9 @@ export const validateRegistrationLink = async (
   res: Response
 ) => {
   try {
-    // O middleware já validou o link e adicionou ao request
     const registrationLink = req.registrationLink!;
     const churchId = req.churchId!;
 
-    // Buscar informações da igreja
     const { data: church, error: churchError } = await supabase
       .from('churches')
       .select('id, name')
@@ -32,22 +31,23 @@ export const validateRegistrationLink = async (
       });
     }
 
-    // Verificar limite de membros
     const limitCheck = await checkMemberLimit(churchId, 1);
     if (!limitCheck.canAdd) {
-      // Desativar o link se o limite foi atingido
-      await supabase
-        .from('public_registration_links')
-        .update({ is_active: false })
-        .eq('id', registrationLink.id);
-
       return res.status(403).json({
         valid: false,
         error: 'Limite de membros atingido',
         details: 'O limite de membros da igreja foi atingido. Entre em contato com a administração.',
         church_name: church.name,
+        blocked_reason: 'plan_limit',
       });
     }
+
+    const { data: congregations } = await supabase
+      .from('congregations')
+      .select('id, name')
+      .eq('church_id', churchId)
+      .eq('active', true)
+      .order('name');
 
     res.json({
       valid: true,
@@ -55,9 +55,10 @@ export const validateRegistrationLink = async (
       expires_at: registrationLink.expires_at,
       max_uses: registrationLink.max_uses,
       current_uses: registrationLink.current_uses,
-      remaining_uses: registrationLink.max_uses 
-        ? registrationLink.max_uses - registrationLink.current_uses 
-        : null
+      remaining_uses: registrationLink.max_uses
+        ? registrationLink.max_uses - registrationLink.current_uses
+        : null,
+      congregations: congregations || [],
     });
 
   } catch (error) {
@@ -70,6 +71,65 @@ export const validateRegistrationLink = async (
 };
 
 /**
+ * Lista grupos disponíveis para autocadastro público (filtrados por congregação)
+ */
+export const listPublicRegistrationGroups = async (
+  req: PublicRegistrationRequest,
+  res: Response
+) => {
+  try {
+    const churchId = req.churchId!;
+    const congregation_id = (req.query.congregation_id as string) || 'sede';
+
+    let query = supabase
+      .from('groups')
+      .select(`
+        id,
+        name,
+        type,
+        congregations (
+          id,
+          name
+        )
+      `)
+      .eq('church_id', churchId)
+      .eq('status', true)
+      .order('type')
+      .order('name');
+
+    if (congregation_id === 'sede') {
+      query = query.is('congregation_id', null);
+    } else {
+      const congregationCheck = await validateCongregationBelongsToChurch(congregation_id, churchId);
+      if (!congregationCheck.valid) {
+        return res.status(400).json({
+          error: 'Congregação inválida',
+          details: congregationCheck.message,
+        });
+      }
+      query = query.eq('congregation_id', congregation_id);
+    }
+
+    const { data: groups, error } = await query;
+
+    if (error) {
+      return res.status(400).json({
+        error: 'Erro ao buscar grupos',
+        details: error.message,
+      });
+    }
+
+    res.json(groups || []);
+  } catch (error) {
+    console.error('Erro ao listar grupos públicos:', error);
+    res.status(500).json({
+      error: 'Erro interno do servidor',
+      details: error instanceof Error ? error.message : 'Erro desconhecido',
+    });
+  }
+};
+
+/**
  * Cria um novo membro através de link público de registro
  */
 export const createMemberViaPublicLink = async (
@@ -77,14 +137,11 @@ export const createMemberViaPublicLink = async (
   res: Response
 ) => {
   try {
-    // O middleware já validou o link e adicionou ao request
     const registrationLink = req.registrationLink!;
     const churchId = req.churchId!;
 
-    // Verificar limite de membros ANTES de validar os dados
     const limitCheck = await checkMemberLimit(churchId, 1);
     if (!limitCheck.canAdd) {
-      // Desativar o link se o limite foi atingido
       await supabase
         .from('public_registration_links')
         .update({ is_active: false })
@@ -96,7 +153,6 @@ export const createMemberViaPublicLink = async (
       });
     }
 
-    // Validar dados do membro
     const { error: validationError } = validateMember(req.body);
     if (validationError) {
       return res.status(400).json({
@@ -105,10 +161,8 @@ export const createMemberViaPublicLink = async (
       });
     }
 
-    // Normalizar datas antes de criar o membro (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(req.body);
 
-    // ACHADO 06: substituído loop O(n) por ilike query — mesma abordagem do memberController autenticado
     if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
       const { data: duplicate, error: checkError } = await supabase
         .from('members')
@@ -125,27 +179,32 @@ export const createMemberViaPublicLink = async (
       }
     }
 
-    // Preparar dados do membro
-    // Converter null para undefined para compatibilidade com o tipo Member
-    const congregationId = (normalizedData.congregation_id as string | null | undefined) || registrationLink.default_congregation_id;
+    const congregationId = (normalizedData.congregation_id as string | null | undefined)
+      || registrationLink.default_congregation_id;
+
+    if (congregationId) {
+      const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
+      if (!congregationCheck.valid) {
+        return res.status(400).json({
+          error: 'Congregação inválida',
+          details: congregationCheck.message,
+        });
+      }
+    }
 
     const memberData: Partial<Member> = {
       ...normalizedData,
       church_id: churchId,
       active: true,
-      // Usar congregação padrão do link se não foi especificada
       congregation_id: congregationId ?? undefined,
-      // Garantir que children seja um array JSON válido
-      children: normalizedData.children && Array.isArray(normalizedData.children) 
-        ? normalizedData.children 
+      children: normalizedData.children && Array.isArray(normalizedData.children)
+        ? normalizedData.children
         : []
     };
 
-    // Separar grupos dos dados do membro
-    const { groups, ...memberDataWithoutGroups } = memberData as any;
+    const { groups, ...memberDataWithoutGroups } = memberData as Record<string, unknown> & { groups?: string[] };
     const finalMemberData = memberDataWithoutGroups;
 
-    // Criar o membro
     const { data: member, error: memberError } = await supabase
       .from('members')
       .insert([finalMemberData])
@@ -160,11 +219,9 @@ export const createMemberViaPublicLink = async (
       });
     }
 
-    // Vincular grupos após criar membro
     if (groups && Array.isArray(groups) && groups.length > 0 && member.id) {
       for (const groupId of groups) {
         try {
-          // Verificar se o grupo existe e pertence à igreja
           const { data: group } = await supabase
             .from('groups')
             .select('id')
@@ -173,7 +230,6 @@ export const createMemberViaPublicLink = async (
             .single();
 
           if (group) {
-            // Verificar se já está vinculado
             const { data: existingLink } = await supabase
               .from('member_groups')
               .select('id')
@@ -192,35 +248,28 @@ export const createMemberViaPublicLink = async (
           }
         } catch (groupError) {
           console.error('Erro ao vincular grupo:', groupError);
-          // Não falhar o processo se houver erro ao vincular grupos
         }
       }
     }
 
-    // ACHADO 02: incremento atômico com optimistic locking (move para APÓS member criado,
-    // mas com condição eq(current_uses) que garante atomicidade:
-    // se outro request já incrementou, esta atualização afeta 0 linhas e retornamos erro).
-    // O incremento ocorre APÓS o insert para garantir que só contabilizamos cadastros reais.
     if (registrationLink.max_uses !== null) {
       const { data: claimed, error: claimError } = await supabase
         .from('public_registration_links')
         .update({ current_uses: registrationLink.current_uses + 1 })
         .eq('id', registrationLink.id)
-        .eq('current_uses', registrationLink.current_uses) // lock otimístico
-        .lt('current_uses', registrationLink.max_uses)     // guarda extra: não ultrapassar
+        .eq('current_uses', registrationLink.current_uses)
+        .lt('current_uses', registrationLink.max_uses)
         .select('current_uses')
         .single();
 
       if (claimError || !claimed) {
-        // Outro request chegou primeiro — desfazer o membro criado (rollback)
         await supabase.from('members').delete().eq('id', member.id);
-        return res.status(400).json({
+        return res.status(409).json({
           error: 'Limite de usos atingido',
           details: 'O limite máximo de cadastros deste link foi atingido. Tente novamente ou contate a igreja.'
         });
       }
     } else {
-      // Sem limite de usos — incremento simples (sem condição)
       const { error: updateError } = await supabase
         .from('public_registration_links')
         .update({ current_uses: registrationLink.current_uses + 1 })
@@ -231,7 +280,6 @@ export const createMemberViaPublicLink = async (
       }
     }
 
-    // Buscar informações da igreja para resposta
     const { data: church } = await supabase
       .from('churches')
       .select('name')
@@ -252,4 +300,3 @@ export const createMemberViaPublicLink = async (
     });
   }
 };
-

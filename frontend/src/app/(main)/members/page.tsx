@@ -453,8 +453,7 @@ function MembersPageContent() {
                 variant="secondary"
                 onClick={() => setRegistrationLinksModalOpen(true)}
                 className="inline-flex items-center gap-2"
-                disabled={canEdit === false}
-                title={canEdit === false ? 'Seu usuário tem permissão apenas de leitura nesta igreja.' : undefined}
+                title={canEdit === false ? 'Visualizar e copiar links de autocadastro' : undefined}
               >
                 <LinkIcon size={18} />
                 Links de Autocadastro
