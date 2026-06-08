@@ -807,7 +807,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 10 — Assinatura e Billing
+### ✅ Módulo 10 — Assinatura e Billing
 
 **Objetivo:** Gerenciar planos, pagamentos, limites de membros e ciclo de vida da assinatura via Stripe.
 
