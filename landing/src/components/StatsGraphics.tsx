@@ -189,7 +189,7 @@ export function StatsGraphics() {
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-sm text-gray-700">Admissões</span>
+                <span className="text-sm text-gray-700">Recebimento</span>
               </div>
               <span className="text-sm font-semibold text-gray-900">8</span>
             </div>

@@ -1114,7 +1114,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
     doc
       .font('Helvetica-Bold')
-      .text(`Admissões em ${currentYear}: `, { continued: true })
+      .text(`Recebimento em ${currentYear}: `, { continued: true })
       .font('Helvetica')
       .text(admissionsThisYear.toString());
 

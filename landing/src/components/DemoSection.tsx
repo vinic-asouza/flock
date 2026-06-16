@@ -15,7 +15,7 @@ const demoItems: DemoItem[] = [
   {
     id: 'dashboard',
     title: 'Painel de Informações',
-    description: 'Visualize estatísticas completas da sua igreja em tempo real. Acompanhe membros, batismos, admissões e muito mais através de gráficos interativos e relatórios detalhados.',
+    description: 'Visualize estatísticas completas da sua igreja em tempo real. Acompanhe membros, batismos, recebimento e muito mais através de gráficos interativos e relatórios detalhados.',
     image: '/demo/painel.png',
   },
   {

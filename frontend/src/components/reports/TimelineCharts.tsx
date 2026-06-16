@@ -366,7 +366,7 @@ export function TimelineCharts({
           <div className="space-y-4">
             <div>
               <h3 className="text-base font-medium text-gray-900">
-                Batismos e Admissões
+                Batismo e Recebimento
               </h3>
             </div>
 
@@ -480,7 +480,7 @@ export function TimelineCharts({
                   </div>
                   <div>
                     <div className="text-xs text-gray-500">
-                      Admissões
+                      Recebimento
                     </div>
                     <div className="text-lg font-semibold text-[#090725]">
                       {selectedTotals.admissions}

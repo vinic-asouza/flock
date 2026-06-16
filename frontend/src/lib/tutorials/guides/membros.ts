@@ -74,7 +74,7 @@ export const membrosGuides: TutorialGuide[] = [
     steps: [
       'Use a barra de busca para nome ou termos gerais.',
       'Aplique filtros rápidos: status (ativo/inativo), congregação, gênero.',
-      'Abra Filtros avançados para faixa etária, datas de batismo/admissão, cidade, etc.',
+      'Abra Filtros avançados para faixa etária, datas de batismo/recebimento, cidade, etc.',
       'Filtros ativos aparecem como chips — clique no X para remover.',
       'Alterne entre visualização em lista ou cards.',
     ],

@@ -49,7 +49,7 @@ export const relatoriosGuides: TutorialGuide[] = [
       'Demografia — distribuição por gênero, faixa etária e estado civil.',
       'Estrutura — membros por congregação.',
       'Grupos — participação em ministérios/células.',
-      'Timeline — evolução de admissões e batismos ao longo do tempo.',
+      'Timeline — evolução de recebimento e batismos ao longo do tempo.',
       'Geografia — mapa por cidade/bairro.',
       'Ocupações — tabela de profissões declaradas.',
     ],
