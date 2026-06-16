@@ -7,11 +7,13 @@ export const metadata = {
   description: "Solicite contato com a equipe Flock. O sistema já está disponível para cadastro e assinatura.",
 };
 
-export default function WaitlistPage({
-  searchParams,
-}: {
-  searchParams?: { plan?: string };
-}) {
+type WaitlistPageProps = {
+  searchParams: Promise<{ plan?: string }>;
+};
+
+export default async function WaitlistPage({ searchParams }: WaitlistPageProps) {
+  const { plan } = await searchParams;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -25,7 +27,7 @@ export default function WaitlistPage({
               O Flock já está disponível. Envie sua solicitação e nossa equipe entrará em contato.
             </p>
           </div>
-          <WaitlistForm initialPlan={searchParams?.plan} />
+          <WaitlistForm initialPlan={plan} />
         </div>
       </main>
       <Footer />
