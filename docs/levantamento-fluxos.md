@@ -1023,7 +1023,7 @@ O modelo de negócio é **multi-tenant**: cada igreja opera em silo isolado por 
 
 ---
 
-### Módulo 13 — Tutoriais
+### ✅ Módulo 13 — Tutoriais
 
 **Objetivo:** Fornecer guias e tutoriais de uso do sistema.
 
