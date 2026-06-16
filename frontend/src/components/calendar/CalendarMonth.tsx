@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { BirthdaysModal, Birthday } from './BirthdaysModal';
 import { apiService } from '@/services/api';
 import toast from 'react-hot-toast';
+import { getCalendarItemDisplayDate } from '@/utils/calendarDate';
 
 interface CalendarMonthProps {
   items: CalendarItem[];
@@ -350,10 +351,10 @@ export function CalendarMonth({
               {/* Itens do dia */}
               <div className="flex-1 space-y-1">
                 {dayItems.map((item) => {
-                  // Determinar se deve mostrar horário (apenas no primeiro dia do evento)
-                  const itemStartDate = startOfDay(new Date(item.start_date));
+                  const displayDate = getCalendarItemDisplayDate(item);
+                  const itemStartDate = startOfDay(displayDate);
                   const showTime = isSameDay(day, itemStartDate);
-                  const timeDisplay = showTime ? `${format(new Date(item.start_date), 'HH:mm')} ` : '';
+                  const timeDisplay = showTime ? `${format(displayDate, 'HH:mm')} ` : '';
 
                   return (
                     <button

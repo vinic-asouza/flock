@@ -5,6 +5,7 @@ import { CalendarItem } from '@/types/calendar';
 import { typeColors } from '@/types/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getCalendarItemDisplayDate } from '@/utils/calendarDate';
 
 interface CalendarItemCardProps {
   item: CalendarItem & { recurrenceDescription?: string };
@@ -12,7 +13,7 @@ interface CalendarItemCardProps {
 }
 
 export function CalendarItemCard({ item, onClick }: CalendarItemCardProps) {
-  const startDate = new Date(item.start_date);
+  const startDate = getCalendarItemDisplayDate(item);
 
   const formatDate = (date: Date) => {
     return format(date, "dd/MM", { locale: ptBR });
