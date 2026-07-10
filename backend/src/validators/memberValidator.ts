@@ -59,14 +59,18 @@ const memberSchema = Joi.object({
     }),
 
   marital_status: Joi.string()
-    .valid('Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro')
+    .valid('Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável')
     .required()
     .messages({
-      'any.only': 'Estado civil deve ser Solteiro, Casado, Divorciado, Viúvo ou Outro',
+      'any.only': 'Estado civil deve ser Solteiro, Casado, Divorciado, Viúvo, Outro ou União Estável',
       'any.required': 'Estado civil é obrigatório'
     }),
 
   nationality: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  hometown: Joi.string()
     .optional()
     .allow(null, ''),
 
@@ -88,6 +92,32 @@ const memberSchema = Joi.object({
     }),
 
   spouse: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  wedding_date: Joi.alternatives()
+    .try(
+      Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).allow('', null),
+      Joi.date().allow(null)
+    )
+    .optional()
+    .allow(null),
+
+  spouse_is_member: Joi.boolean()
+    .optional()
+    .allow(null),
+
+  father_is_member: Joi.string()
+    .valid('sim', 'nao', 'falecido')
+    .optional()
+    .allow(null, ''),
+
+  mother_is_member: Joi.string()
+    .valid('sim', 'nao', 'falecido')
+    .optional()
+    .allow(null, ''),
+
+  address_number: Joi.string()
     .optional()
     .allow(null, ''),
 
@@ -257,6 +287,57 @@ const memberSchema = Joi.object({
 
   active: Joi.boolean()
     .default(true),
+
+  // Informações Eclesiásticas
+  years_evangelical: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  evangelical_family: Joi.boolean()
+    .optional()
+    .allow(null),
+
+  is_baptized: Joi.boolean()
+    .optional()
+    .allow(null),
+
+  baptism_type: Joi.string()
+    .valid('catolica', 'adulto_nesta_igreja', 'adulto_outra_igreja', 'crianca_nesta_igreja', 'crianca_outra_igreja', 'novo_convertido', 'sem_religiao')
+    .optional()
+    .allow(null, ''),
+
+  baptism_other_church_name: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  previous_religion: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  previous_church_active: Joi.boolean()
+    .optional()
+    .allow(null),
+
+  reason_joining: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  time_attending: Joi.string()
+    .optional()
+    .allow(null, ''),
+
+  sunday_attendance: Joi.string()
+    .valid('todos_os_domingos', 'regularmente', 'as_vezes', 'nao')
+    .optional()
+    .allow(null, ''),
+
+  weekly_activities: Joi.boolean()
+    .optional()
+    .allow(null),
+
+  weekly_activities_which: Joi.string()
+    .optional()
+    .allow(null, ''),
 
   // Campo auxiliar para grupos (processado separadamente - não faz parte do tipo Member)
   groups: Joi.array()

@@ -47,11 +47,19 @@ export interface Member {
   name: string;
   birth: Date;
   gender: 'Masculino' | 'Feminino';
-  marital_status: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro';
-  nationality?: string;
-  document?: string;
+  marital_status: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' | 'União Estável';
+  nationality?: string; // depreciado — mantido para leitura de dados legados
+  hometown?: string;
+  document?: string; // depreciado — mantido para leitura de dados legados
   spouse?: string;
+  wedding_date?: Date;
+  spouse_is_member?: boolean;
+  father_name?: string;
+  father_is_member?: 'sim' | 'nao' | 'falecido';
+  mother_name?: string;
+  mother_is_member?: 'sim' | 'nao' | 'falecido';
   address?: string;
+  address_number?: string;
   complement?: string;
   cep?: string;
   neighborhood?: string;
@@ -65,10 +73,21 @@ export interface Member {
   admission?: string;
   admission_date?: Date;
   congregation_id?: string;
-  father_name?: string;
-  mother_name?: string;
   children?: Child[];
   active: boolean;
+  // Informações Eclesiásticas
+  years_evangelical?: string;
+  evangelical_family?: boolean;
+  is_baptized?: boolean;
+  baptism_type?: 'catolica' | 'adulto_nesta_igreja' | 'adulto_outra_igreja' | 'crianca_nesta_igreja' | 'crianca_outra_igreja' | 'novo_convertido' | 'sem_religiao';
+  baptism_other_church_name?: string;
+  previous_religion?: string;
+  previous_church_active?: boolean;
+  reason_joining?: string;
+  time_attending?: string;
+  sunday_attendance?: 'todos_os_domingos' | 'regularmente' | 'as_vezes' | 'nao';
+  weekly_activities?: boolean;
+  weekly_activities_which?: string;
   created_at: Date;
   updated_at: Date;
 }

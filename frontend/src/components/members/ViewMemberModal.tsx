@@ -19,21 +19,27 @@ interface Member {
   birth: string;
   gender: string;
   marital_status: string;
-  nationality: string;
+  nationality?: string;
+  hometown?: string;
   document?: string;
   spouse?: string;
-  occupation: string;
-  address: string;
+  wedding_date?: string;
+  spouse_is_member?: boolean;
+  occupation?: string;
+  address?: string;
+  address_number?: string;
   complement?: string;
   neighborhood?: string;
-  city: string;
-  state: string;
+  city?: string;
+  state?: string;
   cep?: string;
   baptism_date?: string;
   admission?: string;
   admission_date?: string;
   father_name?: string;
+  father_is_member?: 'sim' | 'nao' | 'falecido';
   mother_name?: string;
+  mother_is_member?: 'sim' | 'nao' | 'falecido';
   children?: Array<{
     name: string;
     birth?: string;
@@ -46,12 +52,22 @@ interface Member {
     type: string;
     status: boolean;
     congregation_id?: string | null;
-    congregations?: {
-      id: string;
-      name: string;
-    } | null;
+    congregations?: { id: string; name: string } | null;
   }>;
   active: boolean;
+  // Informações Eclesiásticas
+  years_evangelical?: string;
+  evangelical_family?: boolean;
+  is_baptized?: boolean;
+  baptism_type?: string;
+  baptism_other_church_name?: string;
+  previous_religion?: string;
+  previous_church_active?: boolean;
+  reason_joining?: string;
+  time_attending?: string;
+  sunday_attendance?: string;
+  weekly_activities?: boolean;
+  weekly_activities_which?: string;
 }
 
 interface ViewMemberModalProps {
@@ -253,7 +269,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                   <div className="space-y-3">
                     <div>
                       <span className="text-sm font-medium text-gray-500">Gênero</span>
-                      <p className="text-gray-900">{member.gender}</p>
+                      <p className="text-gray-900">{member.gender || '-'}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Idade</span>
@@ -263,18 +279,30 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                       <span className="text-sm font-medium text-gray-500">Data de Nascimento</span>
                       <p className="text-gray-900">{formatarData(member.birth)}</p>
                     </div>
+                    {member.hometown && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Natural de</span>
+                        <p className="text-gray-900">{member.hometown}</p>
+                      </div>
+                    )}
                     <div>
                       <span className="text-sm font-medium text-gray-500">Estado Civil</span>
-                      <p className="text-gray-900">{member.marital_status}</p>
+                      <p className="text-gray-900">{member.marital_status || '-'}</p>
                     </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Nacionalidade</span>
-                      <p className="text-gray-900">{member.nationality}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500">Profissão</span>
-                      <p className="text-gray-900">{member.occupation}</p>
-                    </div>
+                    {member.wedding_date && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">
+                          {member.marital_status === 'União Estável' ? 'Data da União' : 'Data do Casamento'}
+                        </span>
+                        <p className="text-gray-900">{formatarData(member.wedding_date)}</p>
+                      </div>
+                    )}
+                    {member.occupation && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Profissão</span>
+                        <p className="text-gray-900">{member.occupation}</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Segunda coluna */}
@@ -282,56 +310,80 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     {member.spouse && (
                       <div>
                         <span className="text-sm font-medium text-gray-500">Cônjuge</span>
-                        <p className="text-gray-900">{member.spouse}</p>
-                      </div>
-                    )}
-                    {member.father_name && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Nome do Pai</span>
-                        <p className="text-gray-900">{member.father_name}</p>
-                      </div>
-                    )}
-                    {member.mother_name && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Nome da Mãe</span>
-                        <p className="text-gray-900">{member.mother_name}</p>
-                      </div>
-                    )}
-                    {member.children && member.children.length > 0 && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Filhos</span>
-                        <div className="mt-1 space-y-3">
-                          {member.children.map((child, index) => {
-                            const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
-                            const childAge = birthISO ? calculateAge(birthISO) : null;
-                            return (
-                              <div key={index} className="space-y-1">
-                                <p className="text-gray-900">{child.name}</p>
-                                <div className="flex flex-wrap gap-2">
-                                  {childAge !== null && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                      {childAge} {childAge === 1 ? 'ano' : 'anos'}
-                                    </span>
-                                  )}
-                                  {child.dependent === true && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                      Dependente
-                                    </span>
-                                  )}
-                                  {child.dependent === false && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                      Não dependente
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <p className="text-gray-900">
+                          {member.spouse}
+                          {member.spouse_is_member === true && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
+                          {member.spouse_is_member === false && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
+
+                {(member.father_name || member.mother_name || (member.children && member.children.length > 0)) && (
+                  <div className="space-y-3 pt-2 border-t border-gray-100">
+                    <h5 className="text-sm font-semibold text-gray-800">Família</h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        {member.father_name && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">Nome do Pai</span>
+                            <p className="text-gray-900">
+                              {member.father_name}
+                              {member.father_is_member === 'sim' && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
+                              {member.father_is_member === 'nao' && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
+                              {member.father_is_member === 'falecido' && <span className="ml-2 text-xs text-gray-400 font-medium">(Falecido)</span>}
+                            </p>
+                          </div>
+                        )}
+                        {member.mother_name && (
+                          <div>
+                            <span className="text-sm font-medium text-gray-500">Nome da Mãe</span>
+                            <p className="text-gray-900">
+                              {member.mother_name}
+                              {member.mother_is_member === 'sim' && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
+                              {member.mother_is_member === 'nao' && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
+                              {member.mother_is_member === 'falecido' && <span className="ml-2 text-xs text-gray-400 font-medium">(Falecida)</span>}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {member.children && member.children.length > 0 && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Filhos</span>
+                          <div className="mt-1 space-y-3">
+                            {member.children.map((child, index) => {
+                              const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
+                              const childAge = birthISO ? calculateAge(birthISO) : null;
+                              return (
+                                <div key={index} className="space-y-1">
+                                  <p className="text-gray-900">{child.name}</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {childAge !== null && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        {childAge} {childAge === 1 ? 'ano' : 'anos'}
+                                      </span>
+                                    )}
+                                    {child.dependent === true && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Reside junto
+                                      </span>
+                                    )}
+                                    {child.dependent === false && (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                        Não reside junto
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Contato, Endereço e Informações Eclesiásticas */}
@@ -384,16 +436,18 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     </h4>
 
                     <div className="space-y-2">
-                      <p className="text-gray-900">{member.address}</p>
-                      {member.complement && (
-                        <p className="text-gray-900">{member.complement}</p>
+                      {member.address && (
+                        <p className="text-gray-900">
+                          {member.address}{member.address_number ? `, ${member.address_number}` : ''}
+                        </p>
                       )}
-                      <p className="text-gray-900">
-                        {member.neighborhood && `${member.neighborhood} - `}{member.city}/{member.state}
-                      </p>
-                      {member.cep && (
-                        <p className="text-gray-900">CEP: {member.cep}</p>
+                      {member.complement && <p className="text-gray-900">{member.complement}</p>}
+                      {(member.neighborhood || member.city || member.state) && (
+                        <p className="text-gray-900">
+                          {member.neighborhood && `${member.neighborhood} - `}{member.city}{member.state && `/${member.state}`}
+                        </p>
                       )}
+                      {member.cep && <p className="text-gray-900">CEP: {member.cep}</p>}
                     </div>
                   </div>
                 </div>
@@ -471,6 +525,91 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                   </div>
                 </div>
               </div>
+
+              {/* Histórico Eclesiástico */}
+              {(member.years_evangelical || member.evangelical_family !== undefined || member.is_baptized !== undefined || member.reason_joining || member.time_attending || member.sunday_attendance || member.weekly_activities !== undefined) && (
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <Church size={20} />
+                    Histórico Eclesiástico
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {member.years_evangelical && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Cristão evangélico há</span>
+                        <p className="text-gray-900">{member.years_evangelical} {member.years_evangelical === '1' ? 'ano' : 'anos'}</p>
+                      </div>
+                    )}
+                    {member.evangelical_family !== undefined && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Família cristã evangélica</span>
+                        <p className="text-gray-900">{member.evangelical_family ? 'Sim' : 'Não'}</p>
+                      </div>
+                    )}
+                    {member.is_baptized !== undefined && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Batizado(a)</span>
+                        <p className="text-gray-900">
+                          {member.is_baptized ? 'Sim' : 'Não'}
+                          {member.is_baptized && member.baptism_type && (
+                            <span className="block text-xs text-gray-500 mt-0.5">
+                              {{
+                                'catolica': 'Na igreja católica',
+                                'adulto_nesta_igreja': 'Adulto — nesta igreja',
+                                'adulto_outra_igreja': 'Adulto — em outra igreja',
+                                'crianca_nesta_igreja': 'Criança — nesta igreja',
+                                'crianca_outra_igreja': 'Criança — em outra igreja',
+                                'novo_convertido': 'Novo convertido',
+                                'sem_religiao': 'Novo convertido — sem religião anterior',
+                              }[member.baptism_type] || member.baptism_type}
+                            </span>
+                          )}
+                          {member.baptism_other_church_name && (
+                            <span className="block text-xs text-gray-500">Igreja: {member.baptism_other_church_name}</span>
+                          )}
+                          {member.previous_religion && (
+                            <span className="block text-xs text-gray-500">Religião anterior: {member.previous_religion}</span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                    {member.previous_church_active !== undefined && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Era membro ativo da igreja anterior</span>
+                        <p className="text-gray-900">{member.previous_church_active ? 'Sim' : 'Não'}</p>
+                      </div>
+                    )}
+                    {member.time_attending && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Frequenta a igreja há</span>
+                        <p className="text-gray-900">{member.time_attending}</p>
+                      </div>
+                    )}
+                    {member.sunday_attendance && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Cultos</span>
+                        <p className="text-gray-900">
+                          {{ 'todos_os_domingos': 'Todos os domingos', 'regularmente': 'Regularmente', 'as_vezes': 'Às vezes', 'nao': 'Não' }[member.sunday_attendance] || member.sunday_attendance}
+                        </p>
+                      </div>
+                    )}
+                    {member.weekly_activities !== undefined && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Atividades semanais</span>
+                        <p className="text-gray-900">
+                          {member.weekly_activities ? `Sim${member.weekly_activities_which ? ` — ${member.weekly_activities_which}` : ''}` : 'Não'}
+                        </p>
+                      </div>
+                    )}
+                    {member.reason_joining && (
+                      <div className="md:col-span-2">
+                        <span className="text-sm font-medium text-gray-500">Motivo de tornar-se membro</span>
+                        <p className="text-gray-900 text-sm whitespace-pre-line">{member.reason_joining}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer fixo */}
