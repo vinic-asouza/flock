@@ -4,6 +4,47 @@ import { AuthRequest } from '../types';
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { getMemberReports } from './memberController';
 
+/** Formata YYYY-MM-DD sem offset de fuso (America/Sao_Paulo). */
+function formatDateSafe(date: string | null | undefined): string {
+  if (!date) return '-';
+  const raw = typeof date === 'string' ? date : String(date);
+  const datePart = raw.includes('T') ? raw.split('T')[0] : raw;
+  const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+  }
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) return '-';
+  return parsed.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
+
+/** Calcula idade evitando timezone e retornando null se inválida. */
+function calculateAgeSafe(birth: string | null | undefined): number | null {
+  if (!birth) return null;
+  try {
+    const raw = birth.includes('T') ? birth.split('T')[0] : birth;
+    const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    let date: Date;
+    if (match) {
+      const [, year, month, day] = match;
+      date = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+    } else {
+      date = new Date(birth);
+    }
+    if (isNaN(date.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const monthDiff = today.getMonth() - date.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+      age--;
+    }
+    return age;
+  } catch {
+    return null;
+  }
+}
+
 export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) {
@@ -86,24 +127,8 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
     // Pipe do PDF para a resposta
     doc.pipe(res);
 
-    // Helper para formatar data
-    const formatDate = (date: string | null) => {
-      if (!date) return '-';
-      return new Date(date).toLocaleDateString('pt-BR');
-    };
-
-    // Helper para calcular idade
-    const calculateAge = (birth: string) => {
-      if (!birth) return null;
-      const birthDate = new Date(birth);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      return age;
-    };
+    const formatDate = formatDateSafe;
+    const calculateAge = calculateAgeSafe;
 
     // Helper para formatar telefone
     const formatPhone = (phone: string) => {
@@ -115,6 +140,44 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
         return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
       }
       return phone;
+    };
+
+    const ensureSpace = (needed = 80) => {
+      if (doc.y + needed > doc.page.height - 50) {
+        doc.addPage();
+      }
+    };
+
+    const writeLabelValue = (label: string, value: string) => {
+      doc
+        .font('Helvetica-Bold')
+        .text(label + ': ', { continued: true })
+        .font('Helvetica')
+        .text(value);
+    };
+
+    const memberIsMemberLabel = (value: 'sim' | 'nao' | 'falecido' | null | undefined, feminine = false) => {
+      if (value === 'sim') return ' (Membro)';
+      if (value === 'nao') return ' (Não membro)';
+      if (value === 'falecido') return feminine ? ' (Falecida)' : ' (Falecido)';
+      return '';
+    };
+
+    const baptismTypeLabels: Record<string, string> = {
+      catolica: 'Na igreja católica',
+      adulto_nesta_igreja: 'Adulto — nesta igreja',
+      adulto_outra_igreja: 'Adulto — em outra igreja',
+      crianca_nesta_igreja: 'Criança — nesta igreja',
+      crianca_outra_igreja: 'Criança — em outra igreja',
+      novo_convertido: 'Novo convertido',
+      sem_religiao: 'Novo convertido — sem religião anterior',
+    };
+
+    const sundayAttendanceLabels: Record<string, string> = {
+      todos_os_domingos: 'Todos os domingos',
+      regularmente: 'Regularmente',
+      as_vezes: 'Às vezes',
+      nao: 'Não',
     };
 
     // Cabeçalho
@@ -163,56 +226,170 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       .moveDown(0.5);
 
     const idade = calculateAge(member.birth);
-    const personalInfo = [
-      { label: 'Idade', value: idade !== null ? `${idade} anos` : '-' },
-      { label: 'Data de Nascimento', value: formatDate(member.birth) },
-      { label: 'Gênero', value: member.gender || '-' },
-      { label: 'Estado Civil', value: member.marital_status || '-' },
-      { label: 'Nacionalidade', value: member.nationality || '-' },
+    const weddingDateLabel =
+      member.marital_status === 'União Estável' ? 'Data da União' : 'Data do Casamento';
+
+    const personalInfo: Array<{ label: string; value: string; always?: boolean }> = [
+      { label: 'Gênero', value: member.gender || '-', always: true },
+      { label: 'Idade', value: idade !== null ? `${idade} anos` : '-', always: true },
+      { label: 'Data de Nascimento', value: formatDate(member.birth), always: true },
+      { label: 'Natural de', value: member.hometown || '-' },
+      { label: 'Estado Civil', value: member.marital_status || '-', always: true },
+      { label: weddingDateLabel, value: formatDate(member.wedding_date) },
       { label: 'Profissão', value: member.occupation || '-' },
-      { label: 'Cônjuge', value: member.spouse || '-' },
-      { label: 'Nome do Pai', value: member.father_name || '-' },
-      { label: 'Nome da Mãe', value: member.mother_name || '-' },
+      { label: 'Nacionalidade', value: member.nationality || '-' },
+      { label: 'CPF', value: member.document || '-' },
     ];
 
     doc.fontSize(11).font('Helvetica');
     personalInfo.forEach(info => {
-      if (info.value !== '-' || ['Idade', 'Data de Nascimento', 'Gênero', 'Estado Civil', 'Profissão'].includes(info.label)) {
-        doc
-          .font('Helvetica-Bold')
-          .text(info.label + ': ', { continued: true })
-          .font('Helvetica')
-          .text(info.value);
+      if (info.always || info.value !== '-') {
+        writeLabelValue(info.label, info.value);
       }
     });
 
-    // Filhos
-    if (member.children && Array.isArray(member.children) && member.children.length > 0) {
+    // Família
+    const hasChildren = member.children && Array.isArray(member.children) && member.children.length > 0;
+    const hasFamily = member.spouse || member.father_name || member.mother_name || hasChildren;
+
+    if (hasFamily) {
+      ensureSpace(100);
       doc.moveDown(0.5);
       doc
+        .fontSize(12)
         .font('Helvetica-Bold')
-        .text('Filhos:');
+        .text('Família')
+        .moveDown(0.3);
 
-      member.children.forEach((child: any) => {
-        const childAge = child.birth ? calculateAge(child.birth) : null;
-        let childText = `  • ${child.name}`;
-        if (childAge !== null) {
-          childText += ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`;
-        }
-        if (child.dependent === true) {
-          childText += ' - Dependente';
-        } else if (child.dependent === false) {
-          childText += ' - Não dependente';
-        }
-        doc
-          .font('Helvetica')
-          .text(childText);
-      });
+      doc.fontSize(11).font('Helvetica');
+
+      if (member.spouse) {
+        let spouseText = member.spouse;
+        if (member.spouse_is_member === true) spouseText += ' (Membro)';
+        else if (member.spouse_is_member === false) spouseText += ' (Não membro)';
+        writeLabelValue('Cônjuge', spouseText);
+      }
+
+      if (member.father_name) {
+        writeLabelValue(
+          'Nome do Pai',
+          member.father_name + memberIsMemberLabel(member.father_is_member)
+        );
+      }
+
+      if (member.mother_name) {
+        writeLabelValue(
+          'Nome da Mãe',
+          member.mother_name + memberIsMemberLabel(member.mother_is_member, true)
+        );
+      }
+
+      if (hasChildren) {
+        doc.moveDown(0.3);
+        doc.font('Helvetica-Bold').text('Filhos:');
+        member.children.forEach((child: any) => {
+          const childAge = child.birth ? calculateAge(child.birth) : null;
+          let childText = `  • ${child.name}`;
+          if (childAge !== null) {
+            childText += ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`;
+          }
+          if (child.dependent === true) {
+            childText += ' - Reside junto';
+          } else if (child.dependent === false) {
+            childText += ' - Não reside junto';
+          }
+          doc.font('Helvetica').text(childText);
+        });
+      }
     }
 
     doc.moveDown(1);
 
-    // Informações Eclesiásticas
+    // Contato
+    ensureSpace(80);
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Contato')
+      .moveDown(0.5);
+
+    doc.fontSize(11).font('Helvetica');
+
+    if (member.email) {
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text('Email: ', { continued: true })
+        .font('Helvetica')
+        .fillColor('#3B82F6')
+        .text(member.email, {
+          link: `mailto:${member.email}`,
+          underline: true
+        })
+        .fillColor('#000000');
+    }
+
+    if (member.phone) {
+      writeLabelValue('Telefone', formatPhone(member.phone));
+    }
+
+    if (member.whatsapp) {
+      const whatsappNumber = member.whatsapp.replace(/\D/g, '');
+      doc
+        .font('Helvetica-Bold')
+        .fillColor('#000000')
+        .text('WhatsApp: ', { continued: true })
+        .font('Helvetica')
+        .fillColor('#25D366')
+        .text(formatPhone(member.whatsapp), {
+          link: `https://wa.me/${whatsappNumber}`,
+          underline: true
+        })
+        .fillColor('#000000');
+    }
+
+    if (!member.email && !member.phone && !member.whatsapp) {
+      doc.font('Helvetica').text('-');
+    }
+
+    doc.moveDown(1);
+
+    // Endereço
+    ensureSpace(80);
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Endereço')
+      .moveDown(0.5);
+
+    doc.fontSize(11).font('Helvetica');
+    if (member.address) {
+      const addressLine = member.address_number
+        ? `${member.address}, ${member.address_number}`
+        : member.address;
+      doc.text(addressLine);
+    }
+    if (member.complement) {
+      doc.text(member.complement);
+    }
+    if (member.neighborhood || member.city || member.state) {
+      const locationParts = [
+        member.neighborhood,
+        [member.city, member.state].filter(Boolean).join('/')
+      ].filter(Boolean);
+      doc.text(locationParts.join(' - '));
+    }
+    if (member.cep) {
+      doc.text(`CEP: ${member.cep}`);
+    }
+    if (!member.address && !member.complement && !member.neighborhood && !member.city && !member.state && !member.cep) {
+      doc.text('-');
+    }
+
+    doc.moveDown(1);
+
+    // Informações Eclesiásticas (recebimento)
+    ensureSpace(100);
     doc
       .fontSize(14)
       .font('Helvetica-Bold')
@@ -228,12 +405,8 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
 
     doc.fontSize(11).font('Helvetica');
     churchInfo.forEach(info => {
-      if (info.value !== '-') {
-        doc
-          .font('Helvetica-Bold')
-          .text(info.label + ': ', { continued: true })
-          .font('Helvetica')
-          .text(info.value);
+      if (info.value !== '-' || info.label === 'Congregação') {
+        writeLabelValue(info.label, info.value);
       }
     });
 
@@ -267,81 +440,90 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
         });
         doc.fillColor('#000000');
       }
+    } else {
+      doc.moveDown(0.3);
+      writeLabelValue('Grupos / Ministérios', 'Nenhum grupo vinculado');
     }
 
-    doc.moveDown(1);
+    // Histórico Eclesiástico
+    const hasEcclesiasticalHistory =
+      !!member.years_evangelical ||
+      (member.evangelical_family !== undefined && member.evangelical_family !== null) ||
+      (member.is_baptized !== undefined && member.is_baptized !== null) ||
+      !!member.reason_joining ||
+      !!member.time_attending ||
+      !!member.sunday_attendance ||
+      (member.weekly_activities !== undefined && member.weekly_activities !== null) ||
+      (member.previous_church_active !== undefined && member.previous_church_active !== null);
 
-    // Contato
-    doc
-      .fontSize(14)
-      .font('Helvetica-Bold')
-      .text('Contato')
-      .moveDown(0.5);
-
-    doc.fontSize(11).font('Helvetica');
-
-    // Email (com link)
-    if (member.email) {
+    if (hasEcclesiasticalHistory) {
+      ensureSpace(120);
+      doc.moveDown(1);
       doc
+        .fontSize(14)
         .font('Helvetica-Bold')
-        .fillColor('#000000')
-        .text('Email: ', { continued: true })
-        .font('Helvetica')
-        .fillColor('#3B82F6')
-        .text(member.email, {
-          link: `mailto:${member.email}`,
-          underline: true
-        })
-        .fillColor('#000000');
-    }
+        .text('Histórico Eclesiástico')
+        .moveDown(0.5);
 
-    // Telefone (sem link)
-    if (member.phone) {
-      doc
-        .font('Helvetica-Bold')
-        .text('Telefone: ', { continued: true })
-        .font('Helvetica')
-        .text(formatPhone(member.phone));
-    }
+      doc.fontSize(11).font('Helvetica');
 
-    // WhatsApp (com link clicável)
-    if (member.whatsapp) {
-      const whatsappNumber = member.whatsapp.replace(/\D/g, '');
-      doc
-        .font('Helvetica-Bold')
-        .fillColor('#000000')
-        .text('WhatsApp: ', { continued: true })
-        .font('Helvetica')
-        .fillColor('#25D366')
-        .text(formatPhone(member.whatsapp), {
-          link: `https://wa.me/${whatsappNumber}`,
-          underline: true
-        })
-        .fillColor('#000000');
-    }
+      if (member.years_evangelical) {
+        const yearsLabel = member.years_evangelical === '1' ? 'ano' : 'anos';
+        writeLabelValue('Cristão evangélico há', `${member.years_evangelical} ${yearsLabel}`);
+      }
 
-    doc.moveDown(1);
+      if (member.evangelical_family !== undefined && member.evangelical_family !== null) {
+        writeLabelValue('Família cristã evangélica', member.evangelical_family ? 'Sim' : 'Não');
+      }
 
-    // Endereço
-    doc
-      .fontSize(14)
-      .font('Helvetica-Bold')
-      .text('Endereço')
-      .moveDown(0.5);
+      if (member.is_baptized !== undefined && member.is_baptized !== null) {
+        let baptizedText = member.is_baptized ? 'Sim' : 'Não';
+        if (member.is_baptized && member.baptism_type) {
+          baptizedText += ` — ${baptismTypeLabels[member.baptism_type] || member.baptism_type}`;
+        }
+        writeLabelValue('Batizado(a)', baptizedText);
+        if (member.baptism_other_church_name) {
+          writeLabelValue('Igreja anterior', member.baptism_other_church_name);
+        }
+        if (member.previous_religion) {
+          writeLabelValue('Religião anterior', member.previous_religion);
+        }
+      }
 
-    doc.fontSize(11).font('Helvetica');
-    doc.text(member.address || '-');
-    if (member.complement) {
-      doc.text(member.complement);
-    }
-    doc.text(`${member.neighborhood} - ${member.city}/${member.state}`);
-    if (member.cep) {
-      doc.text(`CEP: ${member.cep}`);
+      if (member.previous_church_active !== undefined && member.previous_church_active !== null) {
+        writeLabelValue(
+          'Era membro ativo da igreja anterior',
+          member.previous_church_active ? 'Sim' : 'Não'
+        );
+      }
+
+      if (member.time_attending) {
+        writeLabelValue('Frequenta a igreja há', member.time_attending);
+      }
+
+      if (member.sunday_attendance) {
+        writeLabelValue(
+          'Cultos',
+          sundayAttendanceLabels[member.sunday_attendance] || member.sunday_attendance
+        );
+      }
+
+      if (member.weekly_activities !== undefined && member.weekly_activities !== null) {
+        const activitiesText = member.weekly_activities
+          ? `Sim${member.weekly_activities_which ? ` — ${member.weekly_activities_which}` : ''}`
+          : 'Não';
+        writeLabelValue('Atividades semanais', activitiesText);
+      }
+
+      if (member.reason_joining) {
+        writeLabelValue('Motivo de tornar-se membro', member.reason_joining);
+      }
     }
 
     doc.moveDown(2);
 
     // Rodapé
+    ensureSpace(40);
     doc
       .fontSize(8)
       .fillColor('#6B7280')
@@ -1731,24 +1913,8 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       console.error('❌ Erro no stream do PDF:', err);
     });
 
-    // Helper para calcular idade
-    const calculateAge = (birth: string) => {
-      if (!birth) return null;
-      const birthDate = new Date(birth);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      return age;
-    };
-
-    // Helper para formatar data
-    const formatDate = (date: string | null) => {
-      if (!date) return '-';
-      return new Date(date).toLocaleDateString('pt-BR');
-    };
+    const calculateAge = calculateAgeSafe;
+    const formatDate = formatDateSafe;
 
     // Helper para formatar telefone
     const formatPhone = (phone: string) => {
@@ -1769,7 +1935,9 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       birth: 'Nascimento',
       gender: 'Gênero',
       marital_status: 'Estado Civil',
-      nationality: 'Nacionalidade',
+      hometown: 'Natural de',
+      nationality: 'Nacionalidade (legado)',
+      wedding_date: 'Data do Casamento',
       spouse: 'Cônjuge',
       father_name: 'Nome do Pai',
       mother_name: 'Nome da Mãe',
@@ -1784,6 +1952,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       admission: 'Recebimento',
       admission_date: 'Data Recebimento',
       address: 'Endereço',
+      address_number: 'Número',
       complement: 'Complemento',
       neighborhood: 'Bairro',
       city: 'Cidade',
@@ -1914,11 +2083,17 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
           case 'marital_status':
             value = member.marital_status || '-';
             break;
+          case 'hometown':
+            value = member.hometown || '-';
+            break;
           case 'nationality':
             value = member.nationality || '-';
             break;
           case 'document':
             value = member.document || '-';
+            break;
+          case 'wedding_date':
+            value = formatDate(member.wedding_date);
             break;
           case 'spouse':
             value = member.spouse || '-';
@@ -1941,9 +2116,9 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
                   text += ` (${childAge} ${childAge === 1 ? 'ano' : 'anos'})`;
                 }
                 if (child.dependent === true) {
-                  text += ' - Dependente';
+                  text += ' - Reside junto';
                 } else if (child.dependent === false) {
-                  text += ' - Não dependente';
+                  text += ' - Não reside junto';
                 }
                 return text;
               }).join('; ');
@@ -1978,6 +2153,9 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
             break;
           case 'address':
             value = member.address || '-';
+            break;
+          case 'address_number':
+            value = member.address_number || '-';
             break;
           case 'complement':
             value = member.complement || '-';

@@ -23,27 +23,30 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: 'birth', label: 'Data de Nascimento', category: 'personal' },
   { id: 'gender', label: 'Gênero', category: 'personal' },
   { id: 'marital_status', label: 'Estado Civil', category: 'personal' },
-  { id: 'nationality', label: 'Nacionalidade', category: 'personal' },
+  { id: 'hometown', label: 'Natural de', category: 'personal' },
+  { id: 'wedding_date', label: 'Data do Casamento', category: 'personal' },
+  { id: 'nationality', label: 'Nacionalidade (legado)', category: 'personal' },
   { id: 'spouse', label: 'Cônjuge', category: 'personal' },
   { id: 'father_name', label: 'Nome do Pai', category: 'personal' },
   { id: 'mother_name', label: 'Nome da Mãe', category: 'personal' },
   { id: 'occupation', label: 'Profissão', category: 'personal' },
   { id: 'children', label: 'Filhos', category: 'personal' },
-  
+
   // Contato
   { id: 'phone', label: 'Telefone', category: 'contact' },
   { id: 'whatsapp', label: 'WhatsApp', category: 'contact' },
   { id: 'email', label: 'Email', category: 'contact' },
-  
-  // Informações Eclesiásticas
+
+  // Informações Eclesiásticas (recebimento — sem questionário sensível)
   { id: 'active', label: 'Status', category: 'ecclesiastical' },
   { id: 'congregation', label: 'Congregação', category: 'ecclesiastical' },
   { id: 'baptism_date', label: 'Data de Batismo', category: 'ecclesiastical' },
   { id: 'admission', label: 'Tipo de Recebimento', category: 'ecclesiastical' },
   { id: 'admission_date', label: 'Data de Recebimento', category: 'ecclesiastical' },
-  
+
   // Endereço
   { id: 'address', label: 'Endereço', category: 'address' },
+  { id: 'address_number', label: 'Número', category: 'address' },
   { id: 'complement', label: 'Complemento', category: 'address' },
   { id: 'neighborhood', label: 'Bairro', category: 'address' },
   { id: 'city', label: 'Cidade', category: 'address' },
