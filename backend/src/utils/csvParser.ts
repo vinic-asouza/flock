@@ -42,18 +42,33 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'marital_status': 'marital_status',
   'civil': 'marital_status',
   
-  // Nacionalidade
+  // Natural de (substitui nationality no formulário)
+  'natural_de': 'hometown',
+  'natural de': 'hometown',
+  'hometown': 'hometown',
+  'cidade_natal': 'hometown',
+  'cidade natal': 'hometown',
+  'naturalidade': 'hometown',
+
+  // Nacionalidade (legado — migração de CSVs antigos + roundtrip do export)
   'nacionalidade': 'nationality',
   'nationality': 'nationality',
   'pais': 'nationality',
   'país': 'nationality',
+  'nacionalidade (legado)': 'nationality',
+  'nacionalidade legado': 'nationality',
   
-  // Documento
+  // Documento (legado — migração de sistemas antigos)
   'documento': 'document',
   'document': 'document',
   'cpf': 'document',
   'rg': 'document',
   'doc': 'document',
+  'cpf/documento (legado)': 'document',
+  'cpf/documento legado': 'document',
+  'cpf documento (legado)': 'document',
+  'documento (legado)': 'document',
+  'documento legado': 'document',
   
   // Cônjuge
   'conjuge': 'spouse',
@@ -61,6 +76,21 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'spouse': 'spouse',
   'esposo': 'spouse',
   'esposa': 'spouse',
+
+  // Cônjuge é membro?
+  'conjuge_e_membro': 'spouse_is_member',
+  'cônjuge é membro': 'spouse_is_member',
+  'cônjuge e membro': 'spouse_is_member',
+  'conjuge e membro': 'spouse_is_member',
+  'spouse_is_member': 'spouse_is_member',
+  'spouse is member': 'spouse_is_member',
+
+  // Data do casamento
+  'data_casamento': 'wedding_date',
+  'data casamento': 'wedding_date',
+  'data do casamento': 'wedding_date',
+  'wedding_date': 'wedding_date',
+  'wedding date': 'wedding_date',
   
   // Endereço
   'endereco': 'address',
@@ -68,6 +98,16 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'address': 'address',
   'rua': 'address',
   'logradouro': 'address',
+
+  // Número do endereço
+  'numero': 'address_number',
+  'número': 'address_number',
+  'address_number': 'address_number',
+  'address number': 'address_number',
+  'nro': 'address_number',
+  'num': 'address_number',
+  'nº': 'address_number',
+  'n°': 'address_number',
   
   // Complemento
   'complemento': 'complement',
@@ -160,6 +200,13 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'father_name': 'father_name',
   'pai': 'father_name',
   'father': 'father_name',
+
+  // Pai é membro?
+  'pai_e_membro': 'father_is_member',
+  'pai é membro': 'father_is_member',
+  'pai e membro': 'father_is_member',
+  'father_is_member': 'father_is_member',
+  'father is member': 'father_is_member',
   
   // Nome da mãe
   'nome_mae': 'mother_name',
@@ -167,6 +214,14 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'mother_name': 'mother_name',
   'mãe': 'mother_name',
   'mother': 'mother_name',
+
+  // Mãe é membro?
+  'mae_e_membro': 'mother_is_member',
+  'mãe é membro': 'mother_is_member',
+  'mãe e membro': 'mother_is_member',
+  'mae e membro': 'mother_is_member',
+  'mother_is_member': 'mother_is_member',
+  'mother is member': 'mother_is_member',
 };
 
 /**
@@ -464,19 +519,19 @@ export function normalizeGender(gender: string | undefined | null): 'Masculino' 
  */
 export function normalizeMaritalStatus(
   status: string | undefined | null
-): 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' | null {
+): 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' | 'União Estável' | null {
   if (!status || status.trim() === '') return null;
   
   const trimmed = status.trim();
   
   // Primeiro verifica se já está no formato correto (case-insensitive, com ou sem acento)
-  const validValuesExact = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro'];
+  const validValuesExact = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável'];
   const trimmedLower = trimmed.toLowerCase();
   
   // Comparação case-insensitive com valores válidos
   for (const validValue of validValuesExact) {
     if (trimmedLower === validValue.toLowerCase()) {
-      return validValue as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro'; // Retorna no formato correto
+      return validValue as 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' | 'União Estável';
     }
   }
   
@@ -486,12 +541,13 @@ export function normalizeMaritalStatus(
     .replace(/[\u0300-\u036f]/g, ''); // Remove diacríticos
   
   // Valores válidos já no formato correto (sem acentos para comparação)
-  const validValues: { [key: string]: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' } = {
+  const validValues: { [key: string]: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' | 'União Estável' } = {
     'solteiro': 'Solteiro',
     'casado': 'Casado',
     'divorciado': 'Divorciado',
     'viuvo': 'Viúvo',
     'outro': 'Outro',
+    'uniao estavel': 'União Estável',
   };
   
   // Se já está no formato correto, retorna direto
@@ -500,7 +556,7 @@ export function normalizeMaritalStatus(
   }
   
   // Mapeamentos de variações (também sem acentos para comparação)
-  const mappings: { [key: string]: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' } = {
+  const mappings: { [key: string]: 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro' | 'União Estável' } = {
     'solteira': 'Solteiro',
     'single': 'Solteiro',
     'casada': 'Casado',
@@ -510,9 +566,56 @@ export function normalizeMaritalStatus(
     'viuva': 'Viúvo',
     'widowed': 'Viúvo',
     'other': 'Outro',
+    'uniaoestavel': 'União Estável',
+    'uniao_estavel': 'União Estável',
+    'stable union': 'União Estável',
+    'stable_union': 'União Estável',
   };
   
   return mappings[normalized] || null;
+}
+
+/**
+ * Normaliza valores booleanos comuns em CSV (sim/não/true/false) para 'true' | 'false'
+ */
+export function normalizeBooleanFlag(value: string | undefined | null): 'true' | 'false' | null {
+  if (!value || value.trim() === '') return null;
+
+  const normalized = value.trim().toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  if (['true', 'sim', 's', 'yes', 'y', '1'].includes(normalized)) {
+    return 'true';
+  }
+  if (['false', 'nao', 'n', 'no', '0'].includes(normalized)) {
+    return 'false';
+  }
+  return null;
+}
+
+/**
+ * Normaliza status de parentesco/membro para sim | nao | falecido
+ */
+export function normalizeMemberRelationStatus(
+  value: string | undefined | null
+): 'sim' | 'nao' | 'falecido' | null {
+  if (!value || value.trim() === '') return null;
+
+  const normalized = value.trim().toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  if (['sim', 's', 'yes', 'y', 'true', '1', 'membro'].includes(normalized)) {
+    return 'sim';
+  }
+  if (['nao', 'n', 'no', 'false', '0'].includes(normalized)) {
+    return 'nao';
+  }
+  if (['falecido', 'falecida', 'morto', 'morta', 'deceased', 'dead'].includes(normalized)) {
+    return 'falecido';
+  }
+  return null;
 }
 
 /**
@@ -599,6 +702,11 @@ export function normalizeRow(row: CSVRow): CSVRow {
     const admissionDate = normalizeDate(normalized.admission_date);
     normalized.admission_date = admissionDate ? admissionDate.toISOString().split('T')[0] : '';
   }
+
+  if (normalized.wedding_date) {
+    const weddingDate = normalizeDate(normalized.wedding_date);
+    normalized.wedding_date = weddingDate ? weddingDate.toISOString().split('T')[0] : '';
+  }
   
   // Normaliza telefones
   if (normalized.phone) {
@@ -684,7 +792,7 @@ export function normalizeRow(row: CSVRow): CSVRow {
     } else {
       // Se não encontrou no mapeamento, verifica se já está no formato correto (case-insensitive)
       const trimmed = normalized.marital_status.trim();
-      const validValues = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro'];
+      const validValues = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável'];
       const trimmedLower = trimmed.toLowerCase();
       const matchedValue = validValues.find(v => v.toLowerCase() === trimmedLower);
       if (matchedValue) {
@@ -709,6 +817,35 @@ export function normalizeRow(row: CSVRow): CSVRow {
   } else {
     // Se não tem valor ou está vazio, remove o campo (será undefined)
     delete normalized.marital_status;
+  }
+
+  // Normaliza cônjuge é membro (boolean como string 'true'/'false')
+  if (normalized.spouse_is_member && normalized.spouse_is_member.trim() !== '') {
+    const flag = normalizeBooleanFlag(normalized.spouse_is_member);
+    if (flag) {
+      normalized.spouse_is_member = flag;
+    }
+  } else {
+    delete normalized.spouse_is_member;
+  }
+
+  // Normaliza pai/mãe é membro
+  if (normalized.father_is_member && normalized.father_is_member.trim() !== '') {
+    const status = normalizeMemberRelationStatus(normalized.father_is_member);
+    if (status) {
+      normalized.father_is_member = status;
+    }
+  } else {
+    delete normalized.father_is_member;
+  }
+
+  if (normalized.mother_is_member && normalized.mother_is_member.trim() !== '') {
+    const status = normalizeMemberRelationStatus(normalized.mother_is_member);
+    if (status) {
+      normalized.mother_is_member = status;
+    }
+  } else {
+    delete normalized.mother_is_member;
   }
   
   // Normaliza estado

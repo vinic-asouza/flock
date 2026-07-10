@@ -151,16 +151,15 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                       📋 Planilha de Exemplo
                     </h4>
                     <p className="text-sm text-blue-800 mb-3">
-                      Use nossa planilha modelo como base para criar seu arquivo CSV. A planilha contém todas as colunas necessárias com exemplos de dados.
+                      Baixe o modelo CSV com as colunas necessárias (incluindo Natural de, Data do Casamento, Número e flags de membro da família) e uma linha de exemplo. Nacionalidade e CPF/Documento permanecem apenas para migração legada.
                     </p>
                     <a
-                      href="https://docs.google.com/spreadsheets/d/1Hdwzg89d0-r7WXF8OGkAYgte8R4kOqgo5MArxcwGTIU/edit?usp=sharing"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href="/templates/importacao-membros.csv"
+                      download="importacao-membros.csv"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
                       <FileText size={16} />
-                      Abrir Planilha de Exemplo
+                      Baixar modelo CSV
                     </a>
                   </div>
                   
@@ -169,12 +168,12 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                       📝 Instruções
                     </h4>
                     <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
-                      <li>Clique no botão acima para abrir a planilha de exemplo</li>
-                      <li>No Google Sheets, clique em <strong>&quot;Arquivo&quot; → &quot;Fazer uma cópia&quot;</strong> para criar sua própria cópia</li>
-                      <li>Preencha os dados dos membros na sua cópia da planilha</li>
-                      <li>Para <strong>Filhos</strong>, use o formato: <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Sim</code> ou <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Não</code>. Para múltiplos filhos, separe por ponto e vírgula: <code className="bg-blue-100 px-1 rounded text-xs">Filho1|01/01/2010|Sim;Filho2|15/03/2012|Não</code></li>
-                      <li>Exporte como CSV: <strong>&quot;Arquivo&quot; → &quot;Fazer download&quot; → &quot;Valores separados por vírgula (.csv)&quot;</strong></li>
-                      <li>Faça upload do arquivo CSV exportado neste modal</li>
+                      <li>Clique no botão acima para baixar o modelo CSV</li>
+                      <li>Abra o arquivo no Excel, Google Sheets ou editor de planilhas e preencha os dados dos membros (pode apagar a linha de exemplo)</li>
+                      <li>Colunas opcionais novas: <strong>Natural de</strong>, <strong>Data do Casamento</strong>, <strong>Número</strong> (do endereço), <strong>Cônjuge é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs">não</code>), <strong>Pai é membro</strong> e <strong>Mãe é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs">nao</code>/<code className="bg-blue-100 px-1 rounded text-xs">falecido</code>)</li>
+                      <li>Para <strong>Filhos</strong>, use o formato: <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Sim</code> ou <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Não</code> (o último valor indica se reside com você). Para múltiplos filhos, separe por ponto e vírgula: <code className="bg-blue-100 px-1 rounded text-xs">Filho1|01/01/2010|Sim;Filho2|15/03/2012|Não</code></li>
+                      <li><strong>Nacionalidade (legado)</strong> e <strong>CPF/Documento (legado)</strong> são opcionais e só para migração de sistemas antigos — não fazem mais parte do formulário de cadastro</li>
+                      <li>Salve/exporte como CSV (valores separados por vírgula) e faça upload neste modal</li>
                     </ol>
                     <div className="mt-3 p-3 bg-blue-100 rounded-md">
                       <p className="text-xs text-blue-900">

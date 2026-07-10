@@ -38,6 +38,94 @@ export interface ImportResult {
   }>;
 }
 
+function parseChildrenFromRow(
+  row: CSVRow,
+  rowNumber: number
+): Array<{ name: string; birth?: string; dependent?: boolean }> | undefined {
+  if (!row.children) return undefined;
+
+  try {
+    if (Array.isArray(row.children)) {
+      return row.children;
+    }
+    if (typeof row.children === 'string' && row.children.trim() !== '') {
+      const parsed = JSON.parse(row.children);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (error) {
+    console.warn('Erro ao processar filhos na linha', rowNumber, ':', error);
+  }
+  return undefined;
+}
+
+function parseSpouseIsMember(value: string | undefined): boolean | string | undefined {
+  if (!value || value.trim() === '') return undefined;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  // Valor preenchido mas inválido: devolve o bruto para o Joi.boolean() rejeitar a linha
+  return value;
+}
+
+function buildMemberFromCSVRow(
+  row: CSVRow,
+  congregationId: string | null,
+  rowNumber: number
+): Partial<Member> {
+  const birthDate = row.birth ? new Date(row.birth) : undefined;
+  const baptismDate = row.baptism_date ? new Date(row.baptism_date) : undefined;
+  const admissionDate = row.admission_date ? new Date(row.admission_date) : undefined;
+  const weddingDate = row.wedding_date ? new Date(row.wedding_date) : undefined;
+
+  const maritalStatus = row.marital_status && row.marital_status.trim() !== ''
+    ? row.marital_status
+    : undefined;
+
+  const fatherIsMember = row.father_is_member && row.father_is_member.trim() !== ''
+    ? (row.father_is_member as 'sim' | 'nao' | 'falecido')
+    : undefined;
+
+  const motherIsMember = row.mother_is_member && row.mother_is_member.trim() !== ''
+    ? (row.mother_is_member as 'sim' | 'nao' | 'falecido')
+    : undefined;
+
+  return {
+    name: row.name || '',
+    birth: birthDate,
+    gender: row.gender as 'Masculino' | 'Feminino' | undefined,
+    marital_status: maritalStatus as Member['marital_status'],
+    hometown: row.hometown || undefined,
+    wedding_date: weddingDate,
+    nationality: row.nationality || '',
+    document: row.document || '',
+    spouse: row.spouse || undefined,
+    spouse_is_member: parseSpouseIsMember(row.spouse_is_member) as any,
+    address: row.address || '',
+    address_number: row.address_number || undefined,
+    complement: row.complement || undefined,
+    cep: row.cep || '',
+    neighborhood: row.neighborhood || '',
+    city: row.city || '',
+    state: row.state || '',
+    phone: row.phone || '',
+    whatsapp: row.whatsapp || undefined,
+    email: row.email || undefined,
+    baptism_date: baptismDate,
+    admission: row.admission || '',
+    admission_date: admissionDate,
+    congregation_id: congregationId || undefined,
+    occupation: row.occupation || undefined,
+    father_name: row.father_name || undefined,
+    father_is_member: fatherIsMember,
+    mother_name: row.mother_name || undefined,
+    mother_is_member: motherIsMember,
+    children: parseChildrenFromRow(row, rowNumber),
+    active: true
+    // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
+  };
+}
+
 /**
  * Valida a estrutura do CSV e retorna preview dos dados
  */
@@ -82,64 +170,7 @@ export async function validateCSV(
       const row = normalizedRows[i];
       const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho e arrays começam em 0
       
-      // Prepara dados do membro para validação (SEM church_id, que é adicionado automaticamente)
-      const birthDate = row.birth ? new Date(row.birth) : undefined;
-      const baptismDate = row.baptism_date ? new Date(row.baptism_date) : undefined;
-      const admissionDate = row.admission_date ? new Date(row.admission_date) : undefined;
-      
-      // Garante que marital_status não seja string vazia (deve ser undefined se vazio)
-      const maritalStatus = row.marital_status && row.marital_status.trim() !== '' 
-        ? row.marital_status 
-        : undefined;
-      
-      // Processar filhos: normalizeRow converte para JSON string, precisamos fazer parse
-      let childrenArray: Array<{ name: string; birth?: string; dependent?: boolean }> | undefined = undefined;
-      if (row.children) {
-        try {
-          // Se já é um array, usar diretamente
-          if (Array.isArray(row.children)) {
-            childrenArray = row.children;
-          } else if (typeof row.children === 'string' && row.children.trim() !== '') {
-            // Se é string JSON, fazer parse
-            const parsed = JSON.parse(row.children);
-            if (Array.isArray(parsed)) {
-              childrenArray = parsed;
-            }
-          }
-        } catch (error) {
-          // Se falhar o parse, ignorar (children ficará undefined)
-          console.warn('Erro ao processar filhos na linha', rowNumber, ':', error);
-        }
-      }
-      
-      const memberData: Partial<Member> = {
-        name: row.name || '',
-        birth: birthDate,
-        gender: row.gender as 'Masculino' | 'Feminino' | undefined,
-        marital_status: maritalStatus as any,
-        nationality: row.nationality || '',
-        document: row.document || '',
-        spouse: row.spouse || undefined,
-        address: row.address || '',
-        complement: row.complement || undefined,
-        cep: row.cep || '',
-        neighborhood: row.neighborhood || '',
-        city: row.city || '',
-        state: row.state || '',
-        phone: row.phone || '',
-        whatsapp: row.whatsapp || undefined,
-        email: row.email || undefined,
-        baptism_date: baptismDate,
-        admission: row.admission || '',
-        admission_date: admissionDate,
-        congregation_id: congregationId || undefined,
-        occupation: row.occupation || undefined,
-        father_name: row.father_name || undefined,
-        mother_name: row.mother_name || undefined,
-        children: childrenArray,
-        active: true
-        // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
-      };
+      const memberData = buildMemberFromCSVRow(row, congregationId, rowNumber);
 
       memberDataList.push({ data: memberData, rowNumber });
       
@@ -389,64 +420,7 @@ export async function importMembers(
       const row = normalizedRows[i];
       const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho
       
-      // Prepara dados do membro (SEM church_id, que é adicionado automaticamente)
-      const birthDate = row.birth ? new Date(row.birth) : undefined;
-      const baptismDate = row.baptism_date ? new Date(row.baptism_date) : undefined;
-      const admissionDate = row.admission_date ? new Date(row.admission_date) : undefined;
-      
-      // Garante que marital_status não seja string vazia (deve ser undefined se vazio)
-      const maritalStatus = row.marital_status && row.marital_status.trim() !== '' 
-        ? row.marital_status 
-        : undefined;
-      
-      // Processar filhos: normalizeRow converte para JSON string, precisamos fazer parse
-      let childrenArray: Array<{ name: string; birth?: string; dependent?: boolean }> | undefined = undefined;
-      if (row.children) {
-        try {
-          // Se já é um array, usar diretamente
-          if (Array.isArray(row.children)) {
-            childrenArray = row.children;
-          } else if (typeof row.children === 'string' && row.children.trim() !== '') {
-            // Se é string JSON, fazer parse
-            const parsed = JSON.parse(row.children);
-            if (Array.isArray(parsed)) {
-              childrenArray = parsed;
-            }
-          }
-        } catch (error) {
-          // Se falhar o parse, ignorar (children ficará undefined)
-          console.warn('Erro ao processar filhos na linha', rowNumber, ':', error);
-        }
-      }
-      
-      const memberData: Partial<Member> = {
-        name: row.name || '',
-        birth: birthDate,
-        gender: row.gender as 'Masculino' | 'Feminino' | undefined,
-        marital_status: maritalStatus as any,
-        nationality: row.nationality || '',
-        document: row.document || '',
-        spouse: row.spouse || undefined,
-        address: row.address || '',
-        complement: row.complement || undefined,
-        cep: row.cep || '',
-        neighborhood: row.neighborhood || '',
-        city: row.city || '',
-        state: row.state || '',
-        phone: row.phone || '',
-        whatsapp: row.whatsapp || undefined,
-        email: row.email || undefined,
-        baptism_date: baptismDate,
-        admission: row.admission || '',
-        admission_date: admissionDate,
-        congregation_id: congregationId || undefined,
-        occupation: row.occupation || undefined,
-        father_name: row.father_name || undefined,
-        mother_name: row.mother_name || undefined,
-        children: childrenArray,
-        active: true
-        // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
-      };
+      const memberData = buildMemberFromCSVRow(row, congregationId, rowNumber);
 
       // Valida dados
       const { error: validationError } = validateMember(memberData);
@@ -491,6 +465,7 @@ export async function importMembers(
         birth: member.birth ? member.birth.toISOString() : null,
         baptism_date: member.baptism_date ? member.baptism_date.toISOString() : null,
         admission_date: member.admission_date ? member.admission_date.toISOString() : null,
+        wedding_date: member.wedding_date ? member.wedding_date.toISOString() : null,
         // Garante que children seja um array JSON válido
         children: member.children && Array.isArray(member.children) 
           ? member.children 

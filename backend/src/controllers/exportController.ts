@@ -3149,7 +3149,9 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       birth: 'Data de Nascimento',
       gender: 'Gênero',
       marital_status: 'Estado Civil',
-      nationality: 'Nacionalidade',
+      hometown: 'Natural de',
+      wedding_date: 'Data do Casamento',
+      nationality: 'Nacionalidade (legado)',
       document: 'Documento',
       spouse: 'Cônjuge',
       occupation: 'Profissão',
@@ -3164,6 +3166,7 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       admission: 'Tipo de Recebimento',
       admission_date: 'Data de Recebimento',
       address: 'Endereço',
+      address_number: 'Número',
       complement: 'Complemento',
       neighborhood: 'Bairro',
       city: 'Cidade',
@@ -3204,6 +3207,12 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
             break;
           case 'marital_status':
             value = member.marital_status || '';
+            break;
+          case 'hometown':
+            value = member.hometown || '';
+            break;
+          case 'wedding_date':
+            value = formatDate(member.wedding_date);
             break;
           case 'nationality':
             value = member.nationality || '';
@@ -3249,6 +3258,9 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
             break;
           case 'address':
             value = member.address || '';
+            break;
+          case 'address_number':
+            value = member.address_number || '';
             break;
           case 'complement':
             value = member.complement || '';
