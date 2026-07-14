@@ -8,7 +8,7 @@ total_termos: 72
 
 # Glossário do Domínio — Flock
 
-> Caminho canônico na knowledge base: `docs/01_produto/glossario.md` _(vault Obsidian equivalente: `obsidian/01_produto/glossario.md`)_.
+> Caminho canônico na knowledge base: `docs/01_produto/glossario.md` _(vault docs equivalente: `docs/01_produto/glossario.md`)_.
 
 ---
 

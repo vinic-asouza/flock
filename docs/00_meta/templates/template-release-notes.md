@@ -12,8 +12,8 @@ autor:
 # Release Notes — {{versao}}
 
 > 📁 **Onde salvar**
-> - Este **template** vive em: `docs/00_meta/templates/template-release-notes.md` (vault Obsidian: `obsidian/00_meta/templates/`)
-> - Cada **release preenchida** deve ser salva em: `docs/releases/[VERSAO]-[DATA].md` _(ex.: `docs/releases/v1.2.3-2026-07-13.md`)_ — equivalente Obsidian: `obsidian/releases/[VERSAO]-[DATA].md`
+> - Este **template** vive em: `docs/00_meta/templates/template-release-notes.md` (vault docs: `docs/00_meta/templates/`)
+> - Cada **release preenchida** deve ser salva em: `docs/releases/[VERSAO]-[DATA].md` _(ex.: `docs/releases/v1.2.3-2026-07-13.md`)_ — equivalente docs: `docs/releases/[VERSAO]-[DATA].md`
 
 ---
 
