@@ -1,127 +1,88 @@
 ---
+type: template-permanente
+destino: docs/releases/
+ultima_atualizacao: 2026-07-14
+---
+
+# Template — Release Notes
+
+> Artefato **permanente** (não é histórico de uma Issue).  
+> Salvar em: `docs/releases/[VERSAO]-[DATA].md`  
+> Ex.: `docs/releases/v1.2.3-2026-07-14.md`  
+> Issues da release: referencie IDs Linear; o detalhe operacional continua no Linear.
+
+```yaml
+---
 type: release-notes
-versao: # ex.: v1.2.3 — SemVer obrigatório
+versao: # v1.2.3
 data_release:
 ambiente: # staging | production
 status: Draft # Draft | Em Revisão | Publicado
-issues: [] # IDs das issues incluídas nesta release
+issues: [] # IDs Linear
 breaking_changes: false
 autor:
 ---
+```
 
 # Release Notes — {{versao}}
 
-> 📁 **Onde salvar**
-> - Este **template** vive em: `docs/00_meta/templates/template-release-notes.md` (vault docs: `docs/00_meta/templates/`)
-> - Cada **release preenchida** deve ser salva em: `docs/releases/[VERSAO]-[DATA].md` _(ex.: `docs/releases/v1.2.3-2026-07-13.md`)_ — equivalente docs: `docs/releases/[VERSAO]-[DATA].md`
-
----
-
-## SemVer — como ler a versão
+## SemVer
 
 | Tipo | Formato | Significado |
 | --- | --- | --- |
-| **MAJOR** | `v**X**.0.0` | Breaking changes — incompatível com a versão anterior |
-| **MINOR** | `v1.**X**.0` | Nova funcionalidade — compatível com a versão anterior |
-| **PATCH** | `v1.2.**X**` | Correção de bug — compatível com a versão anterior |
+| MAJOR | v**X**.0.0 | Breaking |
+| MINOR | v1.**X**.0 | Nova funcionalidade |
+| PATCH | v1.2.**X** | Correção |
 
----
+## Sumário da Release
 
-## 🚀 Sumário da Release
+_Uma ou duas frases para usuário não técnico._
 
-<!-- Escreva para um usuário não técnico entender -->
-
-_Uma ou duas frases sobre o que esta versão entrega e por que importa._
-
-
-
----
-
-## ⭐ Destaques
-
-<!-- Máximo 5 itens — o que mais importa para o usuário -->
+## Destaques
 
 -
 -
 -
 
----
-
-## ✨ Novas Funcionalidades
-
-<!-- Descreva o benefício, não a implementação -->
+## Novas Funcionalidades
 
 | Funcionalidade | Descrição | Issue ID |
 | --- | --- | --- |
 | | | |
 
-_Se não houver novas funcionalidades, escreva: "Nenhuma nesta versão."_
-
----
-
-## 📈 Melhorias
+## Melhorias
 
 | Melhoria | Impacto | Issue ID |
 | --- | --- | --- |
 | | | |
 
-_Se não houver melhorias, escreva: "Nenhuma nesta versão."_
+## Correções de Bug
 
----
-
-## 🐛 Correções de Bug
-
-| Bug Corrigido | Módulo Afetado | Issue ID |
+| Bug Corrigido | Módulo | Issue ID |
 | --- | --- | --- |
 | | | |
 
-_Se não houver correções, escreva: "Nenhuma nesta versão."_
+## Breaking Changes
 
----
+> Somente se `breaking_changes: true`. Caso contrário: **Nenhum.**
 
-## 💥 Breaking Changes
-
-<!-- Se vazio, escreva 'Nenhum breaking change nesta versão' -->
-
-> Preencha **somente** se `breaking_changes: true` no frontmatter. Caso contrário: **Nenhum breaking change nesta versão.**
-
-**O que muda:**
-
-
-
-**O que é removido:**
-
-
-
+**O que muda:**  
+**O que é removido:**  
 **Guia de migração:**
 
-1.
-2.
-3.
+## Mudanças Técnicas
 
----
+- Infraestrutura:
+- Dependências:
+- Outras:
 
-## 🔧 Mudanças Técnicas
-
-_Público-alvo: desenvolvedores e DevOps._
-
-- **Infraestrutura:**
-- **Dependências atualizadas:**
-- **Outras mudanças técnicas:**
-
-_Se não houver, escreva: "Nenhuma mudança técnica relevante."_
-
----
-
-## 📋 Notas de Deploy
-
-<!-- Tudo que o time de deploy precisa saber antes de rodar -->
+## Notas de Deploy
 
 ### Pré-requisitos
 
-- [ ] Migrations SQL (Supabase) a aplicar:
-- [ ] Seeds necessários:
-- [ ] Ordem de operações _(ex.: migration → backend → frontend):_
+- [ ] Migrations SQL (Supabase)
+- [ ] Seeds
+- [ ] Ordem: migration → backend → frontend
 
 ### Variáveis de ambiente
 
@@ -129,23 +90,8 @@ _Se não houver, escreva: "Nenhuma mudança técnica relevante."_
 | --- | --- | --- | --- |
 | | | Sim / Não | |
 
-### Checklist pós-deploy _(opcional)_
+### Checklist pós-deploy
 
 - [ ]
-- [ ]
 
----
-
-## 🔭 Próximos Passos _(opcional)_
-
-O que está planejado para a próxima versão:
-
-
-
----
-
-## Histórico de Revisões
-
-| Data | Autor | Descrição da Alteração |
-| --- | --- | --- |
-| | | Versão inicial (Draft) |
+## Próximos Passos _(opcional)_

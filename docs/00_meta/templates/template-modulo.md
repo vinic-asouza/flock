@@ -67,7 +67,7 @@ dependencias: [] # módulos que este módulo consome
 
 # Módulo — {{nome}}
 
-> Documento-base em `docs/04_modulos/[nome-do-modulo]/overview.md`. Atualize quando a estrutura ou contratos mudarem.
+> Documento-base em `docs/04_modulos/[nome-do-modulo].md`. Atualize quando a estrutura ou contratos mudarem.
 
 ---
 
@@ -299,6 +299,8 @@ cd backend && npm test
 
 ## Referências rápidas
 
-- Refinamentos / arquitetura de issues relacionadas: `docs/00_meta/templates/`
+- Destino deste doc: `docs/04_modulos/[nome].md` (KB permanente)
+- Refinamento / análise técnica da Issue: **Linear** (templates em `docs/00_meta/templates/`)
 - Schema DB: `backend/bd-structure.sql`
 - Montagem de rotas: `backend/src/app.ts`
+- Workflow: `docs/00_meta/linear-cursor-workflow.md`

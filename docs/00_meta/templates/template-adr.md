@@ -153,4 +153,6 @@ Links externos, experimentos, PRs, issues ou contexto adicional:
 
 ---
 
-> 📚 Para listar todas as ADRs, consulte o índice de decisões técnicas: [[07_decisoes-tecnicas/index]]
+> 📚 Índice: [[07_decisoes-tecnicas/index]]  
+> Destino ao publicar: `docs/07_decisoes-tecnicas/ADR-NNN-titulo-curto.md`  
+> ADRs são conhecimento permanente — o histórico operacional da decisão na demanda fica no Linear.

@@ -1,148 +1,74 @@
 ---
-type: refinamento
-issue_id:
-titulo:
-status: Draft # Draft | Em Revisão | Aprovado
-data:
-versao: "1.0"
+type: template-linear
+agente: Product Analyst
+destino: Issue Linear via MCP
+ultima_atualizacao: 2026-07-14
 ---
 
-# Refinamento — {{titulo}}
+# Template — Refinamento de Produto (Linear)
 
-> Preencha este documento durante o Refinement da issue. O resultado deve permitir que engenheiros e QA entendam **o que** será desenvolvido e **por que**, sem ambiguidade.
+> **Não salve este conteúdo como arquivo no repositório.**  
+> Cole / publique na **própria Issue do Linear** via MCP.  
+> Workflow: `docs/00_meta/linear-cursor-workflow.md`
 
----
+Use como estrutura da seção:
 
-## 📋 Resumo Executivo
+```markdown
+## Product Analyst — Refinamento de Produto
 
-<!-- Descreva o que muda e qual problema resolve -->
-
+### Resumo
 _Uma ou duas frases: o que será feito e por quê._
 
-
-
----
-
-## 🧭 Contexto de Negócio
-
-<!-- Por que isso é importante agora? -->
-
+### Contexto de Negócio
 **Motivação:**
-
-
-
 **Problema que resolve:**
+**Oportunidade:**
 
+### Escopo
+#### Inclui
+- 
 
+#### Não inclui
+- 
 
-**Oportunidade de negócio:**
+### Critérios de Aceite
+- [ ] **CA-01:** Given … / When … / Then …
+- [ ] **CA-02:** Given … / When … / Then …
 
-
-
----
-
-## 🔲 Escopo
-
-<!-- Seja explícito sobre o que está FORA do escopo -->
-
-### ✅ Inclui
-
--
--
-
-### ❌ Não Inclui
-
--
--
-
----
-
-## ✅ Critérios de Aceite
-
-<!-- Cada critério deve ser verificável pelo QA -->
-
-Critérios mensuráveis e testáveis. Prefira o formato Gherkin (Given / When / Then).
-
-- [ ] **CA-01:**
-  - **Given** _(contexto inicial)_
-  - **When** _(ação do usuário ou sistema)_
-  - **Then** _(resultado esperado, observável)_
-
-- [ ] **CA-02:**
-  - **Given** _(contexto inicial)_
-  - **When** _(ação do usuário ou sistema)_
-  - **Then** _(resultado esperado, observável)_
-
-- [ ] **CA-03:**
-  - **Given** _(contexto inicial)_
-  - **When** _(ação do usuário ou sistema)_
-  - **Then** _(resultado esperado, observável)_
-
----
-
-## ⚙️ Regras de Negócio Afetadas
-
-<!-- Referencie os docs em [[02_regras-de-negocio/]] -->
-
+### Regras de Negócio Afetadas
 | Regra | Módulo | Tipo | Observação |
 | --- | --- | --- | --- |
 | | | Novo / Alterado / Removido | |
 
----
+Consulte: `docs/02_regras-de-negocio/`
 
-## 👥 Impacto nos Usuários
-
-<!-- Referencie as personas em [[01_produto/personas-e-usuarios]] -->
-
-| Persona | Como é afetada | Benefício percebido |
+### Impacto nos Usuários
+| Persona | Como é afetada | Benefício |
 | --- | --- | --- |
 | | | |
 
----
+Consulte: `docs/01_produto/personas-e-usuarios.md`
 
-## 🔗 Dependências de Produto
+### Dependências de Produto
+- Issues Linear relacionadas:
+- 
 
-<!-- Inclua IDs de issues do Linear quando relevante -->
-
-Features ou issues que impactam ou são impactadas por este trabalho:
-
--
--
-
----
-
-## ⚠️ Riscos de Negócio
-
-<!-- Considere riscos de UX, adoção, legal e operacional -->
-
+### Riscos de Produto
 | Risco | Probabilidade | Impacto | Mitigação |
 | --- | --- | --- | --- |
 | | Alta / Média / Baixa | | |
 
----
+### Perguntas em Aberto
+- [ ] 
+_(Bloqueantes devem estar resolvidas antes de To-Do.)_
 
-## ❓ Perguntas em Aberto
+### Próximo Passo
+Software Architect — Análise Técnica
 
-<!-- Estas perguntas devem ser zeradas antes de mover para To-Do -->
-
-Dúvidas a resolver **antes** do desenvolvimento. Todas devem estar marcadas como resolvidas para o refinamento ser considerado Aprovado.
-
-- [ ]
-- [ ]
-- [ ]
-
----
-
-## 📎 Referências
-
-- **Linear Issue:**
-- **Documentos relacionados:** `[[]]`
-- **Protótipos/Figma** _(opcional):_
-
----
-
-## Histórico de Revisões
-
-| Data | Autor | Descrição da Alteração |
-| --- | --- | --- |
-| | | Versão inicial (Draft) |
+## Handoff
+**Status:** concluído | requer ajustes | bloqueado
+**Próximo agente recomendado:** Software Architect
+**Motivo:**
+**Pontos de atenção:**
+- 
+```

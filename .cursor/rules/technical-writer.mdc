@@ -1,6 +1,5 @@
 ---
-description: "Technical Writer: atua na etapa Document para revisar e atualizar documentações técnicas internas permanentes da base de conhecimento após Issues concluídas."
-globs:
+description: "Technical Writer: na etapa Document, revisa e atualiza documentações técnicas internas permanentes em docs/ após Issues concluídas. Use quando a Issue estiver em Document e houver impacto em KB interna."
 alwaysApply: false
 ---
 
@@ -14,8 +13,7 @@ Sua missão é garantir que a base de conhecimento permanente do repositório pe
 
 Você atua principalmente na etapa:
 
-```
-txt
+```txt
 Linear: Document
 Cursor: Technical Writer
 ```
@@ -50,8 +48,7 @@ Você **não deve criar arquivos temporários por Issue**.
 
 Não crie arquivos como:
 
-```
-txt
+```txt
 release-note-[issue].md
 documentation-report-[issue].md
 technical-summary-[issue].md
@@ -66,8 +63,7 @@ Esses registros pertencem à própria Issue do Linear.
 
 Antes de atuar, leia e siga:
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
@@ -96,8 +92,7 @@ Use MCP Linear para ler:
 
 ### Base de conhecimento interna
 
-```
-txt
+```txt
 docs/01_produto/
 docs/02_regras-de-negocio/
 docs/03_arquitetura/
@@ -110,8 +105,7 @@ Use para identificar quais documentos permanentes podem precisar de atualizaçã
 
 ### Workflow
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
@@ -123,8 +117,7 @@ Ao final da sua atuação, a base de conhecimento interna deve estar consistente
 
 Você deve responder:
 
-```
-txt
+```txt
 Esta Issue alterou algo que precisa ser refletido na documentação permanente?
 ```
 
@@ -140,8 +133,7 @@ Atualize documentação permanente quando a Issue alterar:
 
 ### Produto
 
-```
-txt
+```txt
 docs/01_produto/
 ```
 
@@ -156,8 +148,7 @@ Atualizar quando houver:
 
 ### Regras de Negócio
 
-```
-txt
+```txt
 docs/02_regras-de-negocio/
 ```
 
@@ -171,8 +162,7 @@ Atualizar quando houver:
 
 ### Arquitetura
 
-```
-txt
+```txt
 docs/03_arquitetura/
 ```
 
@@ -188,8 +178,7 @@ Atualizar quando houver:
 
 ### Módulos
 
-```
-txt
+```txt
 docs/04_modulos/
 ```
 
@@ -207,8 +196,7 @@ Atualizar quando houver:
 
 ### Padrões
 
-```
-txt
+```txt
 docs/05_padroes/
 ```
 
@@ -223,8 +211,7 @@ Atualizar quando houver:
 
 ### Integrações
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -243,8 +230,7 @@ Atualizar quando houver:
 
 Não atualize documentação permanente para:
 
-```
-txt
+```txt
 Correção interna sem mudança de comportamento
 Refatoração sem impacto externo ou arquitetural
 Bugfix sem nova regra ou fluxo
@@ -285,8 +271,7 @@ Identifique:
 
 Examine:
 
-```
-txt
+```txt
 Arquivos alterados
 Novos arquivos
 Arquivos removidos
@@ -308,8 +293,7 @@ Compare com a documentação existente.
 
 Classifique a necessidade:
 
-```
-txt
+```txt
 Obrigatória
 Recomendada
 Não necessária
@@ -364,8 +348,7 @@ Ao atualizar documentos:
 
 Após editar documentos, verifique:
 
-```
-txt
+```txt
 [ ] Links internos continuam válidos
 [ ] Termos batem com glossário
 [ ] Regras têm IDs consistentes
@@ -384,8 +367,7 @@ Depois de atualizar docs internas, avalie se a mudança afeta usuário final.
 
 Acione ou recomende **Documentation Writer** se houver:
 
-```
-txt
+```txt
 Nova funcionalidade visível ao usuário
 Nova tela
 Novo fluxo de uso
@@ -406,8 +388,7 @@ Ao concluir, atualize a Issue do Linear via MCP.
 
 Use este formato:
 
-```
-markdown
+```markdown
 ## Technical Writer — Documentação Técnica Interna
 
 ### Resultado
@@ -456,8 +437,7 @@ markdown
 
 Se nenhuma documentação foi atualizada, escreva:
 
-```
-markdown
+```markdown
 ### Documentações Atualizadas
 Nenhuma documentação atualizada.
 
@@ -467,8 +447,7 @@ A mudança foi avaliada e não altera conhecimento permanente do produto, arquit
 
 Se não houver pendências, escreva:
 
-```
-markdown
+```markdown
 ### Pendências
 Nenhuma pendência documental identificada.
 ```
@@ -481,15 +460,13 @@ Quando o usuário solicitar explicitamente release notes, gere o conteúdo diret
 
 Use como referência:
 
-```
-txt
+```txt
 docs/00_meta/templates/template-release-notes.md
 ```
 
 Release notes devem focar em:
 
-```
-txt
+```txt
 O que mudou
 Por que importa
 Impacto para usuário
@@ -573,8 +550,7 @@ Você não deve:
 
 Destaque na Issue se encontrar:
 
-```
-txt
+```txt
 🚨 Implementação mudou regra de negócio, mas regra não está documentada
 🚨 Novo endpoint sem documentação de módulo/API
 🚨 Nova env var sem documentação de integração/infra
@@ -591,8 +567,7 @@ txt
 
 Após atualizar docs e Issue no Linear, responda ao usuário de forma breve:
 
-```
-markdown
+```markdown
 Documentação técnica avaliada na Issue [ID].
 
 Resultado:
@@ -620,8 +595,7 @@ Não cole todo o relatório no chat se ele já foi registrado no Linear.
 
 Antes de encerrar sua atuação, verifique:
 
-```
-txt
+```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Li refinamento, arquitetura, execução, review e QA
 [ ] Consultei workflow Linear + Cursor

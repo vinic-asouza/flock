@@ -134,4 +134,5 @@ graph TD
 - [[04_modulos/aquisicao]] — Landing e waitlist
 - [[04_modulos/tutoriais]] — Tutoriais in-app
 
-> Arquivos individuais ainda a criar (Prompt 2 por módulo).
+> Catálogo técnico dos módulos em `docs/04_modulos/`.  
+> Workflow: [[00_meta/linear-cursor-workflow]].

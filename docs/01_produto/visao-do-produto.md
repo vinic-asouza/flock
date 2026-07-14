@@ -126,16 +126,10 @@ Este é um SaaS de **gestão eclesiástica (church management)** que ajuda igrej
 
 ---
 
-## Arquivos analisados
+## Arquivos e fontes analisadas
 
 - `README.md`
-- `docs/FEATURES_V1.0.md`
-- `docs/levantamento-fluxos.md`
-- `docs/ENVIRONMENT-VARIABLES.md`
-- `docs/BACKEND_DOCUMENTATION.md` _(referenciado; contexto cruzado)_
-- `docs/FRONTEND_DOCUMENTATION.md` _(referenciado)_
-- `docs/planejamento-reformulacao-formulario-membro.md`
-- `docs/EMAIL_CONFIG.md` / `docs/STRIPE-MAINTENANCE.md` _(escopo de integrações)_
+- `docs/01_produto/` · `docs/02_regras-de-negocio/` · `docs/04_modulos/` · `docs/06_integracoes/`
 - `backend/package.json`, `frontend/package.json`, `landing/package.json`
 - `backend/src/config/plans.ts`, `backend/src/utils/planLimits.ts`
 - `backend/bd-structure.sql`
@@ -144,4 +138,4 @@ Este é um SaaS de **gestão eclesiástica (church management)** que ajuda igrej
 - `frontend/src/components/main/Sidebar.tsx`
 - `frontend/src/app/(main)/tutorials/page.tsx`, `frontend/src/lib/tutorials/`
 - `landing/README.md`, `landing/src/components/Hero.tsx`, `Features.tsx`, `Pricing.tsx`
-- `.env.example` / `env.example`: **não encontrados** — variáveis documentadas em `docs/ENVIRONMENT-VARIABLES.md` e exemplos nos READMEs
+- Variáveis de ambiente: ver `docs/03_arquitetura/infraestrutura.md` e docs em `docs/06_integracoes/`

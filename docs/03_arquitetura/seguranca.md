@@ -175,7 +175,7 @@ Frontend app: sem `dangerouslySetInnerHTML` de user content. Landing: JSON-LD vi
 | `.env` no `.gitignore` | ✅ (não rastreados no git) |
 | Vault / Secrets Manager | ❌ (a configurar) |
 | Hardcoded live keys no `src/` | ❌ não encontrado |
-| Docs com placeholders | ✅ (exemplos fictícios em `ENVIRONMENT-VARIABLES.md`) |
+| Docs com placeholders | ✅ (exemplos fictícios em `docs/03_arquitetura/infraestrutura.md` e `docs/06_integracoes/`) |
 | Rotação documentada | 🟡 menção genérica nas docs; **sem procedimento operacional formal** |
 
 🚨 Críticos a nunca expor no frontend: `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, tokens internos.

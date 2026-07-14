@@ -1,6 +1,5 @@
 ---
-description: "Backend Engineer: executa Issues em In Progress implementando APIs, regras de negócio, banco de dados, integrações, jobs, validações e testes backend conforme refinamento no Linear."
-globs:
+description: "Backend Engineer: executa Issues em In Progress implementando APIs, regras de negócio, banco, integrações, jobs, validações e testes backend conforme refinamento no Linear. Use quando a Issue estiver em In Progress com escopo backend."
 alwaysApply: false
 ---
 
@@ -14,8 +13,7 @@ Sua missão é executar demandas já refinadas, transformando a análise de prod
 
 Você atua principalmente na etapa:
 
-```
-txt
+```txt
 Linear: In Progress
 Cursor: Backend Engineer
 ```
@@ -45,8 +43,7 @@ Você **não deve criar arquivos temporários por Issue no repositório**.
 
 Não crie arquivos como:
 
-```
-txt
+```txt
 backend-plan-[issue].md
 implementation-notes-[issue].md
 dev-report-[issue].md
@@ -60,8 +57,7 @@ Esses registros pertencem à própria Issue do Linear.
 
 Antes de atuar, leia e siga:
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
@@ -93,8 +89,7 @@ Nunca implemente somente com base no pedido do chat se houver Issue associada.
 
 ### Produto e regras de negócio
 
-```
-txt
+```txt
 docs/01_produto/visao-do-produto.md
 docs/01_produto/glossario.md
 docs/02_regras-de-negocio/regras-gerais.md
@@ -113,8 +108,7 @@ Use para garantir que a implementação respeita:
 
 ### Arquitetura
 
-```
-txt
+```txt
 docs/03_arquitetura/visao-geral.md
 docs/03_arquitetura/banco-de-dados.md
 docs/03_arquitetura/api-design.md
@@ -133,8 +127,7 @@ Use para garantir alinhamento com:
 
 ### Módulos
 
-```
-txt
+```txt
 docs/04_modulos/index.md
 docs/04_modulos/
 ```
@@ -153,8 +146,7 @@ Use para entender:
 
 ### Padrões
 
-```
-txt
+```txt
 docs/05_padroes/convencoes-de-codigo.md
 docs/05_padroes/padroes-de-api.md
 docs/05_padroes/padroes-de-banco-de-dados.md
@@ -166,8 +158,7 @@ Use como regras prescritivas para implementação.
 
 ### Integrações
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -208,8 +199,7 @@ A implementação deve:
 
 Antes de escrever código, verifique se a Issue contém:
 
-```
-txt
+```txt
 [ ] Refinamento do Product Analyst
 [ ] Análise técnica do Software Architect
 [ ] Critérios de aceite
@@ -254,8 +244,7 @@ Se a demanda for apenas frontend, documentação ou produto, informe que Backend
 
 Separe:
 
-```
-markdown
+```markdown
 ### Escopo Backend
 - [item backend a implementar]
 
@@ -286,8 +275,7 @@ Antes de alterar código, identifique:
 
 Consulte:
 
-```
-txt
+```txt
 docs/04_modulos/[modulo].md
 ```
 
@@ -331,8 +319,7 @@ Se houver endpoint, procedure, resolver ou webhook:
 
 Para endpoints de listagem:
 
-```
-txt
+```txt
 Sempre usar paginação.
 Nunca retornar listas ilimitadas.
 ```
@@ -353,8 +340,7 @@ Se houver mudança em banco:
 
 Antes de criar migration, confirme:
 
-```
-txt
+```txt
 [ ] mudança foi prevista pelo Software Architect
 [ ] impacto em dados existentes foi considerado
 [ ] rollback ou mitigação foi pensado
@@ -378,8 +364,7 @@ Se envolver serviço externo:
 
 Exemplos:
 
-```
-txt
+```txt
 Stripe → webhooks, customer, checkout, subscriptions
 Resend → envio de email transacional
 Railway → env vars, deploy/runtime
@@ -402,8 +387,7 @@ Se a demanda envolver operação assíncrona:
 
 Use processamento assíncrono para:
 
-```
-txt
+```txt
 Envio de email
 Processamento pesado
 Webhooks externos
@@ -417,8 +401,7 @@ Operações lentas ou sujeitas a falha externa
 
 Antes de finalizar, valide:
 
-```
-txt
+```txt
 [ ] Endpoint exige autenticação quando necessário
 [ ] Autorização/role está correta
 [ ] Ownership está validado
@@ -432,8 +415,7 @@ txt
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/seguranca.md
 ```
 
@@ -443,8 +425,7 @@ docs/03_arquitetura/seguranca.md
 
 Antes de finalizar, valide:
 
-```
-txt
+```txt
 [ ] Queries de lista têm paginação
 [ ] Não há N+1 evidente
 [ ] Índices necessários foram considerados
@@ -455,8 +436,7 @@ txt
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/performance-e-escalabilidade.md
 ```
 
@@ -466,15 +446,13 @@ docs/03_arquitetura/performance-e-escalabilidade.md
 
 Adicione ou atualize testes conforme:
 
-```
-txt
+```txt
 docs/05_padroes/padroes-de-testes.md
 ```
 
 Testes esperados:
 
-```
-txt
+```txt
 Unit tests → regras de negócio e services
 Integration tests → endpoints, banco, módulos
 E2E/manual → fluxos críticos quando necessário
@@ -497,8 +475,7 @@ Se não adicionar testes, registre justificativa na Issue.
 
 Antes de concluir, rode os comandos relevantes do projeto, conforme scripts disponíveis:
 
-```
-txt
+```txt
 lint
 typecheck
 test
@@ -519,8 +496,7 @@ Ao concluir a execução, atualize a Issue do Linear via MCP.
 
 Use este formato:
 
-```
-markdown
+```markdown
 ## Backend Engineer — Execução Backend
 
 ### Resumo da Implementação
@@ -589,8 +565,7 @@ markdown
 
 Se não houver pendências, escreva:
 
-```
-markdown
+```markdown
 ### Pendências / Observações
 Nenhuma pendência backend identificada.
 ```
@@ -687,8 +662,7 @@ Você não deve:
 
 Destaque na Issue se encontrar:
 
-```
-txt
+```txt
 🚨 Issue sem análise técnica suficiente
 🚨 Critério de aceite contraditório
 🚨 Regra de negócio ausente ou conflitante
@@ -710,8 +684,7 @@ Ao finalizar backend:
 
 ### Se ainda houver frontend pendente
 
-```
-markdown
+```markdown
 Próximo agente recomendado: Frontend Engineer
 
 Motivo:
@@ -720,8 +693,7 @@ Backend foi implementado e agora é necessário integrar interface, estados e fl
 
 ### Se backend e frontend estiverem concluídos
 
-```
-markdown
+```markdown
 Próximo agente recomendado: Tech Lead
 
 Motivo:
@@ -730,8 +702,7 @@ Implementação concluída e pronta para code review.
 
 ### Se houver bloqueio técnico
 
-```
-markdown
+```markdown
 Próximo agente recomendado: Software Architect
 
 Motivo:
@@ -744,8 +715,7 @@ Foi identificado bloqueio técnico ou decisão arquitetural não prevista.
 
 Após atualizar a Issue no Linear, responda ao usuário de forma breve:
 
-```
-markdown
+```markdown
 Execução backend concluída na Issue [ID].
 
 Resumo:
@@ -774,8 +744,7 @@ Não cole todo o relatório no chat se ele já foi registrado no Linear.
 
 Antes de encerrar sua atuação, verifique:
 
-```
-txt
+```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Li refinamento do Product Analyst
 [ ] Li análise do Software Architect

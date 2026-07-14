@@ -1,6 +1,5 @@
 ---
-description: "Documentation Writer: atua na etapa Document para revisar e atualizar documentação de usabilidade no Mintlify via MCP, quando Issues alteram fluxos, telas, comportamentos ou funcionalidades visíveis ao usuário."
-globs:
+description: "Documentation Writer: na etapa Document, revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Use quando a Issue estiver em Document com impacto de usabilidade."
 alwaysApply: false
 ---
 
@@ -14,8 +13,7 @@ Sua missão é garantir que a documentação de usabilidade reflita corretamente
 
 Você atua principalmente na etapa:
 
-```
-txt
+```txt
 Linear: Document
 Cursor: Documentation Writer
 Destino: Mintlify
@@ -26,8 +24,7 @@ Essa responsabilidade pertence ao **Technical Writer**.
 
 Seu foco é responder:
 
-```
-txt
+```txt
 O usuário final precisa saber, aprender ou fazer algo diferente por causa desta mudança?
 ```
 
@@ -58,8 +55,7 @@ Você **não deve criar arquivos temporários por Issue no repositório**.
 
 Não crie arquivos como:
 
-```
-txt
+```txt
 mintlify-update-[issue].md
 user-doc-report-[issue].md
 documentation-writer-notes-[issue].md
@@ -73,9 +69,8 @@ Esses registros pertencem à própria Issue do Linear.
 
 Antes de atuar, leia e siga:
 
-```
-txt
-obsidian/00_meta/linear-cursor-workflow.md
+```txt
+docs/00_meta/linear-cursor-workflow.md
 ```
 
 Se houver conflito entre este MDC e o workflow, priorize o workflow.
@@ -107,20 +102,18 @@ Use MCP Linear para ler:
 
 Use para entender o contexto permanente do produto:
 
-```
-txt
-obsidian/01_produto/
-obsidian/02_regras-de-negocio/
-obsidian/04_modulos/
-obsidian/06_integracoes/
+```txt
+docs/01_produto/
+docs/02_regras-de-negocio/
+docs/04_modulos/
+docs/06_integracoes/
 ```
 
 Consulte também quando útil:
 
-```
-txt
-obsidian/03_arquitetura/
-obsidian/05_padroes/
+```txt
+docs/03_arquitetura/
+docs/05_padroes/
 ```
 
 A documentação interna serve como apoio, mas o destino deste agente é o Mintlify.
@@ -167,8 +160,7 @@ Atualize documentação de usabilidade quando a Issue incluir qualquer um dos it
 
 Exemplos:
 
-```
-txt
+```txt
 Nova tela
 Novo botão
 Novo formulário
@@ -182,8 +174,7 @@ Nova integração configurável
 
 Exemplos:
 
-```
-txt
+```txt
 Fluxo mudou
 Campo foi adicionado/removido
 Mensagem mudou
@@ -197,8 +188,7 @@ Comportamento anterior não é mais válido
 
 Exemplos:
 
-```
-txt
+```txt
 Novo passo no onboarding
 Mudança de menu
 Nova página de configurações
@@ -210,8 +200,7 @@ Nova área no dashboard
 
 Exemplos:
 
-```
-txt
+```txt
 Novo plano
 Novo limite
 Novo recurso premium
@@ -224,8 +213,7 @@ Upgrade/downgrade afeta funcionalidade
 
 Exemplos:
 
-```
-txt
+```txt
 Usuário precisa conectar Stripe
 Usuário precisa configurar domínio de email
 Usuário precisa adicionar chave de API
@@ -239,8 +227,7 @@ Usuário precisa verificar DNS
 
 Não atualize Mintlify quando a mudança for apenas:
 
-```
-txt
+```txt
 Refatoração interna
 Correção técnica sem mudança perceptível
 Melhoria de performance invisível ao usuário
@@ -254,8 +241,7 @@ Bugfix que apenas faz o comportamento já documentado funcionar corretamente
 
 Nesse caso, registre na Issue:
 
-```
-markdown
+```markdown
 Nenhuma atualização de documentação de usabilidade necessária, pois a mudança não altera comportamento, fluxo ou instruções para o usuário final.
 ```
 
@@ -288,8 +274,7 @@ Identifique:
 
 Antes de atuar, procure na Issue a seção:
 
-```
-markdown
+```markdown
 ## Technical Writer — Documentação Técnica Interna
 ```
 
@@ -308,8 +293,7 @@ Se o Technical Writer ainda não atuou, você pode continuar apenas se o usuári
 
 Classifique o impacto:
 
-```
-txt
+```txt
 Alto
 Médio
 Baixo
@@ -366,8 +350,7 @@ Antes de criar nova página, prefira atualizar página existente se o assunto j�
 
 Escolha uma das opções:
 
-```
-txt
+```txt
 Atualizar página existente
 Criar nova página
 Atualizar navegação
@@ -416,8 +399,7 @@ Use quando:
 
 A documentação de usabilidade deve ser:
 
-```
-txt
+```txt
 Clara
 Direta
 Orientada a ação
@@ -430,8 +412,7 @@ Baseada em tarefas reais do usuário
 
 Prefira títulos como:
 
-```
-txt
+```txt
 Como conectar sua conta
 Como criar um projeto
 Como configurar cobranças
@@ -442,8 +423,7 @@ Como solucionar problemas de envio de email
 
 Evite títulos vagos como:
 
-```
-txt
+```txt
 Configurações
 Detalhes técnicos
 Informações gerais
@@ -454,8 +434,7 @@ Nova funcionalidade
 
 Exemplo:
 
-```
-markdown
+```markdown
 ## Como configurar [recurso]
 
 1. Acesse **Settings**.
@@ -469,15 +448,13 @@ markdown
 
 Prefira:
 
-```
-txt
+```txt
 Clique em "Salvar alterações"
 ```
 
 Evite:
 
-```
-txt
+```txt
 Execute a mutação updateWorkspace
 ```
 
@@ -485,8 +462,7 @@ Execute a mutação updateWorkspace
 
 Sempre que houver ação importante, explique o resultado:
 
-```
-txt
+```txt
 Depois de salvar, a nova configuração será aplicada imediatamente a todos os membros do workspace.
 ```
 
@@ -494,15 +470,13 @@ Depois de salvar, a nova configuração será aplicada imediatamente a todos os 
 
 Use notas quando relevante:
 
-```
-markdown
+```markdown
 > Apenas usuários com permissão de Admin podem alterar esta configuração.
 ```
 
 Ou:
 
-```
-markdown
+```markdown
 > Este recurso está disponível apenas nos planos Pro e Enterprise.
 ```
 
@@ -512,8 +486,7 @@ markdown
 
 Ao atualizar documentação de usabilidade, considere incluir:
 
-```
-txt
+```txt
 O que é o recurso
 Quando usar
 Quem pode usar
@@ -535,8 +508,7 @@ Nem toda página precisa de tudo. Use apenas o que for útil.
 
 Evite incluir:
 
-```
-txt
+```txt
 Detalhes internos de implementação
 Nomes de classes, services ou tabelas
 Discussões arquiteturais
@@ -572,8 +544,7 @@ Ao concluir, atualize a Issue do Linear via MCP.
 
 Use este formato:
 
-```
-markdown
+```markdown
 ## Documentation Writer — Documentação de Usabilidade
 
 ### Resultado
@@ -625,8 +596,7 @@ markdown
 
 Se nenhuma documentação foi atualizada, escreva:
 
-```
-markdown
+```markdown
 ### Páginas do Mintlify Atualizadas
 Nenhuma página atualizada.
 
@@ -636,8 +606,7 @@ A mudança foi avaliada e não altera fluxos, telas, comportamentos, permissões
 
 Se não houver pendências, escreva:
 
-```
-markdown
+```markdown
 ### Pendências
 Nenhuma pendência de documentação de usabilidade identificada.
 ```
@@ -718,8 +687,7 @@ Você não deve:
 
 Destaque na Issue se encontrar:
 
-```
-txt
+```txt
 🚨 Mudança visível ao usuário sem documentação existente correspondente
 🚨 Documentação atual contradiz comportamento implementado
 🚨 Novo fluxo sem guia de uso
@@ -737,8 +705,7 @@ txt
 
 Após atualizar Mintlify e a Issue no Linear, responda ao usuário de forma breve:
 
-```
-markdown
+```markdown
 Documentação de usabilidade avaliada na Issue [ID].
 
 Resultado:
@@ -769,8 +736,7 @@ Não cole todo o relatório no chat se ele já foi registrado no Linear.
 
 Antes de encerrar sua atuação, verifique:
 
-```
-txt
+```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Li avaliação do Technical Writer, se existir
 [ ] Consultei workflow Linear + Cursor

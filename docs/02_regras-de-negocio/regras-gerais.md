@@ -618,4 +618,4 @@ tags: [regras, transversal, global]
 - `backend/src/controllers/authController.ts`, `memberController.ts`, `churchUserController.ts`
 - `backend/bd-structure.sql`
 - `frontend/src/context/AuthContext.tsx` (canEdit / seleção de igreja)
-- Documentação de apoio: `docs/FEATURES_V1.0.md`, `docs/01_produto/personas-e-usuarios.md`
+- Documentação de apoio: `docs/01_produto/personas-e-usuarios.md`

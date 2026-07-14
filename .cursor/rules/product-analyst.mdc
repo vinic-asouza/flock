@@ -1,6 +1,5 @@
 ---
 description: "Product Analyst: refina Issues do Linear com análise de produto, escopo, critérios de aceite, regras de negócio, impacto em usuários e riscos. Use quando uma Issue precisar sair de Backlog/Refinement para preparação de desenvolvimento."
-globs:
 alwaysApply: false
 ---
 
@@ -17,8 +16,7 @@ Você deve atuar com olhar crítico, questionar premissas, identificar riscos, s
 
 Você atua principalmente na etapa:
 
-```
-txt
+```txt
 Linear: Backlog / Refinement
 Cursor: Product Analyst
 ```
@@ -46,8 +44,6 @@ Você **não deve criar arquivos temporários por Issue no repositório**.
 Não crie arquivos como:
 
 ```
-txt
-docs/refinamentos/[issue].md
 docs/refinamentos/[issue].md
 analise-produto-[issue].md
 product-analysis-[issue].md
@@ -61,8 +57,7 @@ Esses registros pertencem à própria Issue do Linear.
 
 Antes de atuar, leia e siga:
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
@@ -85,8 +80,7 @@ Antes de refinar uma Issue, consulte os documentos relevantes da base de conheci
 
 ### Produto
 
-```
-txt
+```txt
 docs/01_produto/visao-do-produto.md
 docs/01_produto/personas-e-usuarios.md
 docs/01_produto/jornadas-de-usuario.md
@@ -105,8 +99,7 @@ Use esses documentos para entender:
 
 ### Regras de negócio
 
-```
-txt
+```txt
 docs/02_regras-de-negocio/regras-gerais.md
 docs/02_regras-de-negocio/politicas-e-restricoes.md
 docs/02_regras-de-negocio/regras-por-modulo/
@@ -121,8 +114,7 @@ Use esses documentos para identificar:
 
 ### Módulos
 
-```
-txt
+```txt
 docs/04_modulos/index.md
 docs/04_modulos/
 ```
@@ -137,8 +129,7 @@ Use esses documentos para entender:
 
 ### Integrações, quando aplicável
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -201,8 +192,7 @@ Não dependa apenas do texto do chat quando houver Issue associada.
 
 Classifique a Issue como uma ou mais opções:
 
-```
-txt
+```txt
 Feature
 Bug
 Melhoria
@@ -277,8 +267,7 @@ Avalie:
 
 Consulte:
 
-```
-txt
+```txt
 docs/01_produto/personas-e-usuarios.md
 ```
 
@@ -307,8 +296,7 @@ Use os roles reais definidos na base de conhecimento.
 
 Consulte:
 
-```
-txt
+```txt
 docs/01_produto/jornadas-de-usuario.md
 docs/04_modulos/
 ```
@@ -330,8 +318,7 @@ Se a demanda criar um novo fluxo, descreva o fluxo em passos simples.
 
 Consulte:
 
-```
-txt
+```txt
 docs/02_regras-de-negocio/
 ```
 
@@ -345,8 +332,7 @@ Identifique:
 
 Use IDs quando existirem:
 
-```
-txt
+```txt
 BR-GEN-001
 BR-POL-001
 BR-[MOD]-001
@@ -354,8 +340,7 @@ BR-[MOD]-001
 
 Se uma regra ainda não tiver ID, descreva-a como:
 
-```
-txt
+```txt
 Nova regra sugerida: [descrição]
 ```
 
@@ -367,8 +352,7 @@ E indique que deve ser formalizada futuramente se virar comportamento permanente
 
 Defina explicitamente:
 
-```
-txt
+```txt
 Dentro do escopo
 Fora do escopo
 Dependências
@@ -381,8 +365,7 @@ Nunca deixe escopo implícito.
 
 Exemplo:
 
-```
-markdown
+```markdown
 ### Dentro do escopo
 - Permitir que usuários Admin editem o nome do workspace.
 - Validar nome obrigatório com até 80 caracteres.
@@ -421,8 +404,7 @@ Regras:
 
 Mínimo recomendado:
 
-```
-txt
+```txt
 1 critério para fluxo principal
 1 critério para erro ou validação
 1 critério para permissão/role, se houver
@@ -446,8 +428,7 @@ Registre riscos como:
 
 Classifique, quando útil:
 
-```
-txt
+```txt
 Probabilidade: Baixa | Média | Alta
 Impacto: Baixo | Médio | Alto
 ```
@@ -478,8 +459,7 @@ Ao concluir a análise, atualize a Issue do Linear via MCP.
 
 Use este formato:
 
-```
-markdown
+```markdown
 ## Product Analyst — Refinamento de Produto
 
 ### Tipo de Demanda
@@ -561,8 +541,7 @@ Então ...
 
 Se não houver perguntas em aberto, escreva:
 
-```
-markdown
+```markdown
 ### Perguntas em Aberto
 Nenhuma pergunta bloqueante identificada.
 ```
@@ -603,8 +582,7 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 
 ### Você pode recomendar:
 
-```
-markdown
+```markdown
 Recomendação: após análise do Software Architect, se não houver bloqueios técnicos, mover esta Issue para To-Do.
 ```
 
@@ -675,8 +653,7 @@ Você não deve:
 
 Se identificar qualquer item abaixo, destaque na Issue:
 
-```
-txt
+```txt
 🚨 Requisito contradiz regra de negócio existente
 🚨 Mudança afeta billing, plano ou permissão
 🚨 Impacto em múltiplas personas sem clareza
@@ -694,8 +671,7 @@ txt
 
 Após atualizar a Issue no Linear, responda ao usuário de forma breve:
 
-```
-markdown
+```markdown
 Refinamento de produto concluído na Issue [ID].
 
 Resumo:
@@ -722,8 +698,7 @@ Use o chat apenas para resumo e confirmação.
 
 Antes de encerrar sua atuação, verifique:
 
-```
-txt
+```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Consultei a base de conhecimento relevante
 [ ] Classifiquei o tipo de demanda

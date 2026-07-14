@@ -9,8 +9,8 @@ tags: [integrações, serviços-externos, índice]
 
 > Mapa de **serviços externos** (conta, config fora do código e/ou custo).  
 > Não inclui pacotes npm puros (Express, Joi, PDFKit, etc.).  
-> Detalhe por serviço: arquivos `docs/06_integracoes/[servico].md` (Prompt 2).  
-> Env legado: [[ENVIRONMENT-VARIABLES]] · Infra: [[03_arquitetura/infraestrutura]] · Billing: [[04_modulos/billing]].
+> Detalhe por serviço: arquivos `docs/06_integracoes/[servico].md`.  
+> Infra / env: [[03_arquitetura/infraestrutura]] · Billing: [[04_modulos/billing]].
 
 ---
 

@@ -1,0 +1,69 @@
+---
+description: "Workflow Linear + Cursor: Linear é fonte de verdade operacional; docs/ só para KB permanente; agentes atualizam Issues via MCP com handoff. Aplica-se a toda sessão."
+alwaysApply: true
+---
+
+# Linear + Cursor — Workflow (sempre ativo)
+
+Antes de atuar sobre demandas do Flock, leia e siga:
+
+- `docs/00_meta/linear-cursor-workflow.md`
+- `docs/00_meta/mapa-de-agentes.md`
+- `docs/README.md`
+
+## Fonte de verdade
+
+| Informação | Onde |
+| --- | --- |
+| Status e histórico da Issue | **Linear** (MCP) |
+| Código | Git |
+| Conhecimento permanente | `docs/` |
+| Usabilidade | Mintlify |
+| Deploy | Railway (manual) |
+
+## Regras absolutas
+
+1. Com Issue associada: **ler e atualizar no Linear via MCP** — não depender só do chat.
+2. **Nunca** criar arquivos temporários por Issue (`refinamento-*`, `qa-report-*`, `analise-tecnica-*`, pastas `docs/refinamentos/`, etc.).
+3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente (produto, regra, arquitetura, módulo, integração, padrão, ADR, usabilidade).
+4. Respeitar o papel solicitado; não pular etapas do workflow.
+5. Não fazer deploy automático sem pedido explícito do usuário.
+6. Não mover status Linear sem autorização / critérios do workflow §16.
+
+## Formato mínimo na Issue
+
+Toda atuação em Issue termina com seção estruturada + handoff:
+
+```markdown
+## [Agente] — [Tipo]
+
+### Resumo
+### Decisões / Recomendações
+### Critérios / Checklist
+### Riscos / Pontos de Atenção
+### Próximo Passo
+
+## Handoff
+**Status:** concluído | requer ajustes | bloqueado
+**Próximo agente recomendado:** …
+**Motivo:** …
+**Pontos de atenção:**
+- …
+```
+
+Templates: `docs/00_meta/templates/`.
+
+## Qual MDC carregar
+
+| Situação | Regra |
+| --- | --- |
+| Refinar produto | `product-analyst.mdc` |
+| Análise técnica | `software-architect.mdc` |
+| Implementar API/backend | `backend-engineer.mdc` |
+| Implementar UI | `frontend-engineer.mdc` |
+| Code review | `tech-lead.mdc` |
+| QA | `qa-analyst.mdc` |
+| Docs internas | `technical-writer.mdc` |
+| Docs usabilidade (Mintlify) | `documentation-writer.mdc` |
+
+Se houver conflito entre um MDC de papel e este workflow, **priorize o workflow**.

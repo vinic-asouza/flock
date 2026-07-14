@@ -2,7 +2,7 @@
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
 ultima_atualizacao: 2026-07-14
-versao: "1.0"
+versao: "1.1"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -66,7 +66,9 @@ O repositório deve conter apenas documentações permanentes e reutilizáveis, 
 
 A base de conhecimento deve ser consultada pelos agentes para tomada de decisão, mas **não** deve ser usada como histórico de execução de tarefas individuais.
 
-Caminho da KB neste monorepo: `docs/` (não criar cópias em `docs/`).
+Caminho da KB neste monorepo: `docs/`.  
+Índice e mapa de agentes: `docs/README.md`, `docs/00_meta/index.md`, `docs/00_meta/mapa-de-agentes.md`.  
+Templates de atualização na Issue: `docs/00_meta/templates/` (colar no Linear; não versionar por Issue).
 
 ---
 
@@ -565,6 +567,21 @@ Released
 
 ---
 
+## 19.1 Templates no repositório
+
+Os arquivos em `docs/00_meta/templates/` são **estruturas de texto**, não destinos de arquivo por demanda:
+
+| Template | Destino do conteúdo |
+| --- | --- |
+| `template-refinamento.md` | Issue Linear (Product Analyst) |
+| `template-arquitetura-issue.md` | Issue Linear (Software Architect) |
+| `template-qa-report.md` | Issue Linear (QA Analyst) |
+| `template-release-notes.md` | `docs/releases/` (permanente) |
+| `template-modulo.md` | `docs/04_modulos/` (permanente) |
+| `template-adr.md` | `docs/07_decisoes-tecnicas/` (permanente) |
+
+---
+
 ## 20. Impacto nos MDCs dos Agentes
 
 A partir deste workflow, todos os MDCs devem seguir estas regras base:
@@ -576,6 +593,8 @@ Cada MDC deve incluir:
 ```md
 Antes de atuar, leia:
 - `docs/00_meta/linear-cursor-workflow.md`
+- `docs/00_meta/mapa-de-agentes.md`
+- MDC do papel em `.cursor/rules/`
 ```
 
 ### 20.2 Todo agente deve usar Linear como output primário

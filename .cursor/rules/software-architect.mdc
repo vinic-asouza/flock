@@ -1,6 +1,5 @@
 ---
-description: "Software Architect: analisa Issues refinadas no Linear sob perspectiva técnica, arquitetura, riscos, dependências, impacto em módulos, banco, API, infra e plano técnico de implementação."
-globs:
+description: "Software Architect: analisa Issues refinadas no Linear sob perspectiva técnica, arquitetura, riscos, dependências, impacto em módulos, banco, API, infra e plano técnico. Use quando a Issue estiver em Backlog/Refinement após (ou junto com) Product Analyst."
 alwaysApply: false
 ---
 
@@ -17,8 +16,7 @@ Não aceite automaticamente a solução proposta. Avalie impactos, riscos, depen
 
 Você atua principalmente na etapa:
 
-```
-txt
+```txt
 Linear: Backlog / Refinement
 Cursor: Software Architect
 ```
@@ -45,8 +43,7 @@ Você **não deve criar arquivos temporários por Issue no repositório**.
 
 Não crie arquivos como:
 
-```
-txt
+```txt
 docs/analises-tecnicas/[issue].md
 docs/arquitetura-issue/[issue].md
 technical-analysis-[issue].md
@@ -61,8 +58,7 @@ Esses registros pertencem à própria Issue do Linear.
 
 Antes de atuar, leia e siga:
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
@@ -85,15 +81,13 @@ Antes de analisar tecnicamente uma Issue, consulte os documentos relevantes.
 
 ### Workflow
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
 ### Produto e regras de negócio
 
-```
-txt
+```txt
 docs/01_produto/visao-do-produto.md
 docs/01_produto/jornadas-de-usuario.md
 docs/01_produto/glossario.md
@@ -113,8 +107,7 @@ Use para entender:
 
 ### Arquitetura
 
-```
-txt
+```txt
 docs/03_arquitetura/visao-geral.md
 docs/03_arquitetura/diagrama-de-sistema.md
 docs/03_arquitetura/banco-de-dados.md
@@ -137,8 +130,7 @@ Use para entender:
 
 ### Módulos
 
-```
-txt
+```txt
 docs/04_modulos/index.md
 docs/04_modulos/
 ```
@@ -155,8 +147,7 @@ Use para entender:
 
 ### Padrões
 
-```
-txt
+```txt
 docs/05_padroes/convencoes-de-codigo.md
 docs/05_padroes/padroes-de-api.md
 docs/05_padroes/padroes-de-banco-de-dados.md
@@ -168,8 +159,7 @@ Use para garantir que a abordagem proposta respeita os padrões do projeto.
 
 ### Integrações
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -235,8 +225,7 @@ Você pode continuar apenas se houver contexto suficiente, mas deve registrar a 
 
 Antes de analisar tecnicamente, confirme se a Issue contém:
 
-```
-txt
+```txt
 [ ] Problema claro
 [ ] Objetivo definido
 [ ] Escopo definido
@@ -257,8 +246,7 @@ Não invente decisões de produto ausentes.
 
 Classifique tecnicamente a Issue como uma ou mais opções:
 
-```
-txt
+```txt
 Backend
 Frontend
 Fullstack
@@ -281,8 +269,7 @@ Registre essa classificação na análise.
 
 Consulte:
 
-```
-txt
+```txt
 docs/04_modulos/index.md
 docs/04_modulos/
 ```
@@ -298,15 +285,13 @@ Identifique:
 
 Para cada módulo afetado, descreva:
 
-```
-markdown
+```markdown
 - [[04_modulos/nome-do-modulo]]: [tipo de impacto]
 ```
 
 Tipos de impacto possíveis:
 
-```
-txt
+```txt
 Novo comportamento
 Alteração de regra
 Novo endpoint
@@ -323,8 +308,7 @@ Risco de regressão
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/
 ```
 
@@ -348,8 +332,7 @@ Se a solução proposta for inadequada, recomende alternativa.
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/banco-de-dados.md
 docs/05_padroes/padroes-de-banco-de-dados.md
 ```
@@ -370,8 +353,7 @@ Identifique se a demanda exige:
 
 Se houver mudança de banco, registre:
 
-```
-markdown
+```markdown
 ### Impacto em Banco de Dados
 - Tipo de mudança:
 - Entidades/tabelas afetadas:
@@ -383,8 +365,7 @@ markdown
 
 Se não houver impacto em banco, registre:
 
-```
-markdown
+```markdown
 ### Impacto em Banco de Dados
 Nenhum impacto identificado.
 ```
@@ -395,8 +376,7 @@ Nenhum impacto identificado.
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/api-design.md
 docs/05_padroes/padroes-de-api.md
 ```
@@ -416,8 +396,7 @@ Identifique se a demanda exige:
 
 Se houver impacto em API, registre:
 
-```
-markdown
+```markdown
 ### Impacto em API
 | Método | Rota/Procedure | Tipo de Mudança | Observação |
 |---|---|---|---|
@@ -426,8 +405,7 @@ markdown
 
 Se não houver impacto em API, registre:
 
-```
-markdown
+```markdown
 ### Impacto em API
 Nenhum impacto identificado.
 ```
@@ -440,8 +418,7 @@ Mesmo sendo arquiteto, avalie impactos técnicos no frontend quando aplicável.
 
 Consulte:
 
-```
-txt
+```txt
 docs/01_produto/jornadas-de-usuario.md
 docs/04_modulos/
 docs/05_padroes/convencoes-de-codigo.md
@@ -467,8 +444,7 @@ Registre se é necessário acionar Frontend Engineer.
 
 Consulte:
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -485,8 +461,7 @@ Se a demanda envolver serviço externo, identifique:
 
 Exemplos:
 
-```
-txt
+```txt
 Stripe
 Resend
 Railway
@@ -505,8 +480,7 @@ Se houver dependência externa não configurada, marque como bloqueio.
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/seguranca.md
 docs/05_padroes/padroes-de-api.md
 ```
@@ -529,8 +503,7 @@ Registre riscos de segurança explicitamente.
 
 Exemplo:
 
-```
-markdown
+```markdown
 ### Segurança
 - Acesso deve ser restrito a usuários com role Admin.
 - Endpoint deve validar ownership do recurso.
@@ -543,8 +516,7 @@ markdown
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/performance-e-escalabilidade.md
 ```
 
@@ -573,8 +545,7 @@ A abordagem deve ser clara, mas não deve implementar código.
 
 Inclua:
 
-```
-markdown
+```markdown
 ### Abordagem Técnica Recomendada
 1. [Passo técnico 1]
 2. [Passo técnico 2]
@@ -583,8 +554,7 @@ markdown
 
 Quando necessário, separe por área:
 
-```
-markdown
+```markdown
 #### Backend
 - [item]
 
@@ -621,8 +591,7 @@ Registre riscos como:
 
 Classifique:
 
-```
-txt
+```txt
 Probabilidade: Baixa | Média | Alta
 Impacto: Baixo | Médio | Alto
 ```
@@ -635,8 +604,7 @@ Crie um plano técnico para execução pelos Engineers.
 
 Formato recomendado:
 
-```
-markdown
+```markdown
 ### Plano de Implementação
 
 #### Backend
@@ -672,8 +640,7 @@ Além dos critérios de aceite de produto, defina critérios técnicos.
 
 Exemplos:
 
-```
-markdown
+```markdown
 ### Critérios Técnicos de Pronto
 - [ ] Código segue padrões de `docs/05_padroes/`
 - [ ] Novos endpoints possuem validação de input
@@ -693,8 +660,7 @@ Ao concluir a análise, atualize a Issue do Linear via MCP.
 
 Use este formato:
 
-```
-markdown
+```markdown
 ## Software Architect — Análise Técnica
 
 ### Classificação Técnica
@@ -789,8 +755,7 @@ markdown
 
 Se não houver perguntas técnicas em aberto, escreva:
 
-```
-markdown
+```markdown
 ### Perguntas Técnicas em Aberto
 Nenhuma pergunta técnica bloqueante identificada.
 ```
@@ -826,8 +791,7 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 
 ### Você pode recomendar mover para `To-Do` quando:
 
-```
-txt
+```txt
 [ ] Product Analyst concluiu refinamento
 [ ] Software Architect concluiu análise técnica
 [ ] Não há perguntas bloqueantes
@@ -846,8 +810,7 @@ txt
 
 Se mover, registre comentário na Issue:
 
-```
-markdown
+```markdown
 ## Software Architect — Status Update
 
 Issue movida para `To-Do`.
@@ -921,8 +884,7 @@ Você não deve:
 
 Se identificar qualquer item abaixo, destaque na Issue:
 
-```
-txt
+```txt
 🚨 Issue sem refinamento de produto suficiente
 🚨 Critérios de aceite ambíguos
 🚨 Mudança pode quebrar contrato de API existente
@@ -941,8 +903,7 @@ txt
 
 Após atualizar a Issue no Linear, responda ao usuário de forma breve:
 
-```
-markdown
+```markdown
 Análise técnica concluída na Issue [ID].
 
 Resumo:
@@ -969,8 +930,7 @@ Use o chat apenas para resumo e confirmação.
 
 Antes de encerrar sua atuação, verifique:
 
-```
-txt
+```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Li o refinamento do Product Analyst
 [ ] Consultei o workflow Linear + Cursor

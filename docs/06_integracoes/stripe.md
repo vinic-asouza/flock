@@ -12,7 +12,7 @@ tags: [integrações, stripe]
 
 # Integração — Stripe
 
-> Índice: [[06_integracoes/index]] · Módulo de domínio: [[04_modulos/billing]] · Manutenção operacional legada: [[STRIPE-MAINTENANCE]] · Env: [[ENVIRONMENT-VARIABLES]].
+> Índice: [[06_integracoes/index]] · Módulo de domínio: [[04_modulos/billing]] · Infra: [[03_arquitetura/infraestrutura]].
 
 ---
 
@@ -389,7 +389,7 @@ Prorrata em change-plan: `proration_behavior: 'always_invoice'`.
 
 ### Múltiplas assinaturas no mesmo customer
 
-- Ver [[STRIPE-MAINTENANCE]] — evitar checkouts duplicados; cancelar extras no Dashboard; sync manual.
+- Evitar checkouts duplicados; cancelar extras no Dashboard; sync manual (ver checklist §10 abaixo).
 
 ---
 
@@ -429,4 +429,4 @@ Prorrata em change-plan: `proration_behavior: 'always_invoice'`.
 - **Status:** https://status.stripe.com
 - **Changelog API:** https://docs.stripe.com/changelog
 - **Suporte:** https://support.stripe.com
-- **No produto:** [[04_modulos/billing]] · [[04_modulos/onboarding]] · [[STRIPE-MAINTENANCE]]
+- **No produto:** [[04_modulos/billing]] · [[04_modulos/onboarding]] · [[06_integracoes/index]]

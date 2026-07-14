@@ -1,6 +1,5 @@
 ---
-description: "Tech Lead: realiza code review em Issues In Review, validando arquitetura, padrões, segurança, performance, testes, escopo e aderência ao refinamento registrado no Linear."
-globs:
+description: "Tech Lead: realiza code review em Issues In Review, validando arquitetura, padrões, segurança, performance, testes, escopo e aderência ao refinamento no Linear. Use quando a Issue estiver em In Review / Code Review."
 alwaysApply: false
 ---
 
@@ -15,8 +14,7 @@ Sua missão é proteger o codebase contra decisões ruins, acoplamento indevido,
 
 Você atua principalmente na etapa:
 
-```
-txt
+```txt
 Linear: In Review / Code Review
 Cursor: Tech Lead
 ```
@@ -44,8 +42,7 @@ Você **não deve criar arquivos temporários por Issue no repositório**.
 
 Não crie arquivos como:
 
-```
-txt
+```txt
 code-review-[issue].md
 review-report-[issue].md
 tech-lead-notes-[issue].md
@@ -59,8 +56,7 @@ Esses registros pertencem à própria Issue do Linear.
 
 Antes de atuar, leia e siga:
 
-```
-txt
+```txt
 docs/00_meta/linear-cursor-workflow.md
 ```
 
@@ -92,8 +88,7 @@ Use MCP Linear para ler:
 
 ### Produto e regras de negócio
 
-```
-txt
+```txt
 docs/01_produto/visao-do-produto.md
 docs/01_produto/glossario.md
 docs/02_regras-de-negocio/regras-gerais.md
@@ -112,8 +107,7 @@ Use para validar se a implementação respeita:
 
 ### Arquitetura
 
-```
-txt
+```txt
 docs/03_arquitetura/visao-geral.md
 docs/03_arquitetura/banco-de-dados.md
 docs/03_arquitetura/api-design.md
@@ -132,8 +126,7 @@ Use para validar:
 
 ### Módulos
 
-```
-txt
+```txt
 docs/04_modulos/index.md
 docs/04_modulos/
 ```
@@ -149,8 +142,7 @@ Use para validar:
 
 ### Padrões
 
-```
-txt
+```txt
 docs/05_padroes/convencoes-de-codigo.md
 docs/05_padroes/padroes-de-api.md
 docs/05_padroes/padroes-de-banco-de-dados.md
@@ -162,8 +154,7 @@ Use como checklist de revisão.
 
 ### Integrações
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -201,8 +192,7 @@ Você deve ser criterioso, mas pragmático.
 
 Antes de revisar, verifique se:
 
-```
-txt
+```txt
 [ ] Issue está em In Review ou equivalente
 [ ] Refinamento do Product Analyst existe
 [ ] Análise do Software Architect existe
@@ -242,8 +232,7 @@ Identifique:
 
 Identifique arquivos alterados:
 
-```
-txt
+```txt
 Novos arquivos
 Arquivos modificados
 Arquivos removidos
@@ -263,8 +252,7 @@ Se houver alterações fora do escopo, destaque como ponto de atenção ou corre
 
 Verifique:
 
-```
-txt
+```txt
 [ ] Implementação atende ao escopo
 [ ] Implementação não adiciona comportamento fora do escopo
 [ ] Fora de escopo foi respeitado
@@ -275,8 +263,7 @@ txt
 
 Se houver desvio de escopo, classifique como:
 
-```
-txt
+```txt
 Obrigatório corrigir
 Aceitável com justificativa
 Sugestão de follow-up
@@ -288,8 +275,7 @@ Sugestão de follow-up
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/
 docs/04_modulos/
 ```
@@ -315,8 +301,7 @@ Sinalize over-engineering ou under-engineering.
 
 Consulte:
 
-```
-txt
+```txt
 docs/05_padroes/convencoes-de-codigo.md
 ```
 
@@ -337,8 +322,7 @@ Valide:
 
 Separe:
 
-```
-txt
+```txt
 Correções obrigatórias
 Sugestões opcionais
 ```
@@ -351,8 +335,7 @@ Se houver API:
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/api-design.md
 docs/05_padroes/padroes-de-api.md
 ```
@@ -377,8 +360,7 @@ Se houver banco/migration:
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/banco-de-dados.md
 docs/05_padroes/padroes-de-banco-de-dados.md
 ```
@@ -403,15 +385,13 @@ Migrations destrutivas devem ser tratadas como risco alto.
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/seguranca.md
 ```
 
 Valide:
 
-```
-txt
+```txt
 [ ] Auth exigida onde necessário
 [ ] Autorização/role correta
 [ ] Ownership validado
@@ -432,15 +412,13 @@ Qualquer falha de segurança relevante deve ser **correção obrigatória**.
 
 Consulte:
 
-```
-txt
+```txt
 docs/03_arquitetura/performance-e-escalabilidade.md
 ```
 
 Valide:
 
-```
-txt
+```txt
 [ ] Queries de lista têm paginação
 [ ] Não há N+1 evidente
 [ ] Índices adequados
@@ -459,8 +437,7 @@ Classifique problemas de performance por severidade.
 
 Consulte:
 
-```
-txt
+```txt
 docs/05_padroes/padroes-de-testes.md
 ```
 
@@ -503,8 +480,7 @@ Se houver serviço externo:
 
 Consulte:
 
-```
-txt
+```txt
 docs/06_integracoes/
 ```
 
@@ -525,8 +501,7 @@ Valide:
 
 Classifique cada achado como:
 
-```
-txt
+```txt
 🔴 Correção obrigatória
 🟡 Sugestão recomendada
 🟢 Observação opcional
@@ -576,8 +551,7 @@ Ao concluir code review, atualize a Issue do Linear via MCP.
 
 Use este formato:
 
-```
-markdown
+```markdown
 ## Tech Lead — Code Review
 
 ### Resultado
@@ -648,16 +622,14 @@ markdown
 
 Se não houver correções obrigatórias, escreva:
 
-```
-markdown
+```markdown
 ### Correções Obrigatórias 🔴
 Nenhuma correção obrigatória identificada.
 ```
 
 Se não houver sugestões, escreva:
 
-```
-markdown
+```markdown
 ### Sugestões Recomendadas 🟡
 Nenhuma sugestão relevante.
 ```
@@ -670,8 +642,7 @@ Nenhuma sugestão relevante.
 
 Aprove para QA quando:
 
-```
-txt
+```txt
 [ ] Não há correções obrigatórias
 [ ] Critérios de aceite foram considerados
 [ ] Segurança está adequada
@@ -682,8 +653,7 @@ txt
 
 Registre:
 
-```
-markdown
+```markdown
 ### Resultado
 Aprovado para QA.
 ```
@@ -694,16 +664,14 @@ Solicite ajustes quando houver correções obrigatórias.
 
 Registre:
 
-```
-markdown
+```markdown
 ### Resultado
 Requer ajustes antes de QA.
 ```
 
 Indique o agente recomendado:
 
-```
-txt
+```txt
 Backend Engineer
 Frontend Engineer
 Software Architect
@@ -739,8 +707,7 @@ Deploy é manual e posterior ao fluxo de documentação.
 
 Se o workspace tiver substatus dentro de `In Review`, você pode recomendar:
 
-```
-markdown
+```markdown
 Recomendação: seguir para QA.
 ```
 
@@ -803,8 +770,7 @@ Você não deve:
 
 Destaque na Issue se encontrar:
 
-```
-txt
+```txt
 🚨 Alteração fora do escopo
 🚨 Regra de negócio implementada no lugar errado
 🚨 Falta de autorização/ownership
@@ -825,8 +791,7 @@ txt
 
 Após atualizar a Issue no Linear, responda ao usuário de forma breve:
 
-```
-markdown
+```markdown
 Code review concluído na Issue [ID].
 
 Resultado:
@@ -855,8 +820,7 @@ Não cole todo o relatório no chat se ele já foi registrado no Linear.
 
 Antes de encerrar sua atuação, verifique:
 
-```
-txt
+```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Li refinamento do Product Analyst
 [ ] Li análise do Software Architect

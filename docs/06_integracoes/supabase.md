@@ -12,7 +12,7 @@ tags: [integrações, supabase]
 
 # Integração — Supabase
 
-> Índice: [[06_integracoes/index]] · Schema: [[03_arquitetura/banco-de-dados]] · Auth: [[04_modulos/auth]] · Segurança: [[03_arquitetura/seguranca]] · Env: [[ENVIRONMENT-VARIABLES]].
+> Índice: [[06_integracoes/index]] · Schema: [[03_arquitetura/banco-de-dados]] · Auth: [[04_modulos/auth]] · Segurança: [[03_arquitetura/seguranca]] · Infra: [[03_arquitetura/infraestrutura]].
 
 ---
 

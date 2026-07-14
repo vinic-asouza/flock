@@ -192,7 +192,7 @@ Controle principal = **role** (`owner` > `admin` > `editor` > `reader`), **não*
 ### BR-POL-011: Cancelamento com período até end_date
 - **Declaração:** Cancelamento via portal pode manter acesso até `subscription_end_date`; exclusão de conta Auth é permitida se já há end_date (assinatura só aguardando fim).
 - **Preservado:** Dados da igreja/membros até exclusão; plano pago permanece até job/webhook downgrade.
-- **Implementado em:** webhooks Stripe; `deleteAccount` checagem; docs `STRIPE-MAINTENANCE.md`
+- **Implementado em:** webhooks Stripe; `deleteAccount` checagem; ver [[06_integracoes/stripe]]
 
 ### BR-POL-012: Downgrade compensatório pós-expiração
 - **Declaração:** Se `subscription_end_date` passou e status ∈ {canceled, past_due, unpaid, incomplete_expired} com plano ≠ 100, job diário deve forçar `plan_type=100`, limpar `stripe_subscription_id`.
@@ -333,5 +333,5 @@ Rate limits: BR-POL-004.
 - `backend/src/middlewares/upload.ts`, `stripeSecurity.ts`, `public*Auth.ts`
 - `backend/src/app.ts` (cron)
 - `landing/src/components/Pricing.tsx`
-- `docs/STRIPE-MAINTENANCE.md`, `docs/ENVIRONMENT-VARIABLES.md`
+- [[06_integracoes/stripe]], [[03_arquitetura/infraestrutura]]
 - `docs/02_regras-de-negocio/regras-gerais.md`, `docs/01_produto/glossario.md`

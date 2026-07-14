@@ -12,7 +12,7 @@ tags: [integrações, railway]
 
 # Integração — Railway
 
-> Índice: [[06_integracoes/index]] · Infra: [[03_arquitetura/infraestrutura]] · Env legado: [[ENVIRONMENT-VARIABLES]].  
+> Índice: [[06_integracoes/index]] · Infra: [[03_arquitetura/infraestrutura]].  
 > Snapshot MCP Railway em 2026-07-14 (conta `vinisouza.dev@gmail.com`).
 
 ---

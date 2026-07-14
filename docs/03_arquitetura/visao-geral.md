@@ -156,12 +156,12 @@ Sem workers/filas. Crons no processo da API podem duplicar em multi-réplica (a 
 
 ## 📚 Documentos Relacionados
 
-- Diagrama detalhado: [[03_arquitetura/diagrama-de-sistema]] _(a criar)_
-- Banco de dados: [[03_arquitetura/banco-de-dados]] _(a criar)_
-- API: [[03_arquitetura/api-design]] _(a criar)_
-- Infraestrutura: [[03_arquitetura/infraestrutura]] _(a criar)_
-- Segurança: [[03_arquitetura/seguranca]] _(a criar)_
-- Performance: [[03_arquitetura/performance-e-escalabilidade]] _(a criar)_
+- Diagrama detalhado: [[03_arquitetura/diagrama-de-sistema]]
+- Banco de dados: [[03_arquitetura/banco-de-dados]]
+- API: [[03_arquitetura/api-design]]
+- Infraestrutura: [[03_arquitetura/infraestrutura]]
+- Segurança: [[03_arquitetura/seguranca]]
+- Performance: [[03_arquitetura/performance-e-escalabilidade]]
 - Regras gerais: [[02_regras-de-negocio/regras-gerais]]
 - Políticas SaaS: [[02_regras-de-negocio/politicas-e-restricoes]]
 
@@ -169,4 +169,4 @@ Sem workers/filas. Crons no processo da API podem duplicar em multi-réplica (a 
 
 ## Arquivos analisados
 
-`README.md`, `docker-compose.yml`, `backend/Dockerfile`, `backend/package.json`, `frontend/package.json`, `landing/package.json`, `backend/src/app.ts`, `backend/src/services/supabase.ts`, docs de env/Stripe e estrutura `docs/02_regras-de-negocio/regras-por-modulo/`. Sem `ARCHITECTURE.md` / `CONTRIBUTING.md` / `.env.example` na raiz (env documentado em `docs/ENVIRONMENT-VARIABLES.md`).
+`README.md`, `docker-compose.yml`, `backend/Dockerfile`, `backend/package.json`, `frontend/package.json`, `landing/package.json`, `backend/src/app.ts`, `backend/src/services/supabase.ts`, `docs/03_arquitetura/infraestrutura.md`, `docs/06_integracoes/`, `docs/02_regras-de-negocio/regras-por-modulo/`. Sem `ARCHITECTURE.md` / `CONTRIBUTING.md` / `.env.example` na raiz (env documentado em infra + integrações).

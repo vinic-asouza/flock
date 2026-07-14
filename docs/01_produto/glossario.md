@@ -1,14 +1,14 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-07-14
+versao: "1.1"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 72
 ---
 
 # Glossário do Domínio — Flock
 
-> Caminho canônico na knowledge base: `docs/01_produto/glossario.md` _(vault docs equivalente: `docs/01_produto/glossario.md`)_.
+> Caminho canônico: `docs/01_produto/glossario.md`.
 
 ---
 
@@ -301,4 +301,4 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - `frontend/src/components/settings/ChurchUsersManagement.tsx`
 - `frontend/src/components/integration/*`, `members/ExportMembersModal.tsx`, `public/PublicMemberForm.tsx`
 - `docs/01_produto/visao-do-produto.md`, `personas-e-usuarios.md`, `jornadas-de-usuario.md`
-- `docs/FEATURES_V1.0.md`, `docs/levantamento-fluxos.md`, `README.md`
+- `README.md`

@@ -12,7 +12,7 @@ tags: [integrações, resend]
 
 # Integração — Resend
 
-> Índice: [[06_integracoes/index]] · Config legado: [[EMAIL_CONFIG]] · Env: [[ENVIRONMENT-VARIABLES]] · Billing (e-mails Stripe): [[04_modulos/billing]].
+> Índice: [[06_integracoes/index]] · Billing: [[04_modulos/billing]] · Infra: [[03_arquitetura/infraestrutura]].
 
 ---
 
@@ -99,7 +99,7 @@ ADMIN_EMAIL
   → Reply-To dos envios aponta para cá (recebimento fora do Resend, ex. Umbler)
 ```
 
-Exemplo (`docs/EMAIL_CONFIG.md`):
+Exemplo:
 
 ```env
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -356,4 +356,4 @@ Billing usa `fireAndForgetEmail`: falha de e-mail **não** reverte o webhook Str
 - **Pricing:** https://resend.com/pricing
 - **Status:** https://resend.com/status (ou status page oficial atual)
 - **Suporte:** https://resend.com/docs (contato no Dashboard)
-- **No repo:** [[EMAIL_CONFIG]] · [[04_modulos/billing]] · [[04_modulos/auth]] · [[04_modulos/aquisicao]] · [[06_integracoes/index]]
+- **No repo:** [[06_integracoes/index]] · [[04_modulos/billing]] · [[04_modulos/auth]] · [[04_modulos/aquisicao]] · [[03_arquitetura/infraestrutura]]

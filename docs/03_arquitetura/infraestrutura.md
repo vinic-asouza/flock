@@ -164,7 +164,7 @@ Diagrama “ideal vs real”: gates de qualidade e approve manual **estão a con
 
 ## 6. 🔧 Variáveis de Ambiente
 
-Não há `.env.example` commitado visível (script tenta copiar `backend/.env.example` / `frontend/.env.example`). Lista abaixo = **uso no código + docs** (`docs/ENVIRONMENT-VARIABLES.md`, `EMAIL_CONFIG.md`).
+Não há `.env.example` commitado visível (script tenta copiar `backend/.env.example` / `frontend/.env.example`). Lista abaixo = **uso no código** + docs em `docs/06_integracoes/` e neste arquivo.
 
 ### Database / Auth (Supabase)
 
@@ -303,7 +303,7 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 3. **Crons + webhooks no mesmo processo da API** — reinício/deploy cancela jobs em andamento; sem HA de worker.
 4. **Blacklist de JWT em memória** — multi-réplica Railway invalidaria logout de forma inconsistente (a configurar sticky/single instance ou store compartilhado).
 5. **Sem staging dedicado documentado** — risco de testar Stripe live/migrations direto em prod.
-6. **Docs de env desatualizadas vs código** — faltam Resend, Sentry, tokens internos, Slack, `NEXT_PUBLIC_*` extras no `ENVIRONMENT-VARIABLES.md`.
+6. **Catálogo de env espalhado** — manter este arquivo e `docs/06_integracoes/` sincronizados com o código (Resend, Sentry, tokens internos, Slack, `NEXT_PUBLIC_*`).
 7. **Sem `.env.example` commitado** (script assume existência) — onboarding frágil.
 8. **Frontend Dockerfile backups** vs Railway Nixpacks — duas estratégias; `standalone` desligado.
 9. **Sem CDN/WAF** — assets e DDoS dependem só de Railway + rate limit Express.
@@ -321,8 +321,9 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 | `backend/Dockerfile` | Imagem API multi-stage |
 | `frontend/Dockerfile*.backup` | Referência histório Next standalone |
 | `scripts/deploy.sh` / `.ps1` | Menu Docker local |
-| `docs/ENVIRONMENT-VARIABLES.md` | Catálogo parcial de envs |
-| `docs/EMAIL_CONFIG.md` | Resend + Railway Variables |
+| `docs/03_arquitetura/infraestrutura.md` §6 | Catálogo de envs |
+| `docs/06_integracoes/resend.md` | Resend + variáveis de e-mail |
+| `docs/06_integracoes/stripe.md` | Stripe + variáveis de billing |
 | `landing/README.md` / `SETUP.md` | Receita deploy landing no Railway |
 | `frontend/package.json` → `start:railway` | Bind `0.0.0.0` + `PORT` |
 | `landing/package.json` → `start:railway` | Idem porta 3000 default |
