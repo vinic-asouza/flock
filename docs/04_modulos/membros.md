@@ -3,7 +3,7 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
+ultima_atualizacao: 2026-07-15
 versao: "1.0"
 owner: (não identificado no código)
 tags: [módulo, membros]
@@ -49,7 +49,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Usuários Auth / papéis da equipe (→ [[04_modulos/auth]], [[04_modulos/igreja-config]])
 - Pipeline pré-membro `integration_members` (→ [[04_modulos/integracao]])
 - CRUD de congregações/grupos em si (só valida/associa)
-- Export PDF/CSV de listas (`/api/export/*` → [[04_modulos/relatorios]])
+- Export PDF/CSV de listas e **ficha de cadastro em branco** (`/api/export/*` → [[04_modulos/relatorios]])
 - Stripe checkout/webhooks (só consome quota via `plan_type` / `past_due`)
 
 ---
@@ -84,7 +84,7 @@ backend/src/
 └── types/index.ts                 → interface Member
 
 frontend/src/app/
-├── (main)/members/                → UI rol
+├── (main)/members/                → UI rol (+ botão **Ficha de Cadastro** → export PDF em branco)
 └── public/register/[token]/      → form autocadastro
 
 Testes dedicados: inexistentes.
@@ -208,6 +208,14 @@ Capability de autocadastro.
 | POST | `/registration/:token` | 🔗 | — | Criar membro (RL 15/15min) |
 
 **Total aprox.:** **21** endpoints do domínio membros.
+
+### UI — lista de membros (`/members`)
+
+| Ação | Visibilidade | Descrição |
+| --- | --- | --- |
+| **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 alinhado ao form v2 para impressão e preenchimento manual. |
+
+Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
 
 ### Contrato principal — `POST /api/members/`
 
@@ -538,6 +546,7 @@ graph LR
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |
+| 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
 
 ---
 
