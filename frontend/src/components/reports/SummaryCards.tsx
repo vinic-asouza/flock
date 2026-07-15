@@ -113,10 +113,6 @@ export function SummaryCards({
   const getFilterText = () => {
     if (!filterInfo?.congregation_id) return null;
     
-    if (filterInfo.congregation_id === 'sede') {
-      return 'Filtrado: Sede';
-    }
-    
     if (filterInfo.congregation_id && congregationName) {
       return `Filtrado: ${congregationName}`;
     }

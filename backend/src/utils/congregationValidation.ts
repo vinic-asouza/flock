@@ -9,7 +9,6 @@ export async function validateCongregationBelongsToChurch(
     .select('id')
     .eq('id', congregationId)
     .eq('church_id', churchId)
-    .eq('active', true)
     .single();
 
   if (error || !data) {

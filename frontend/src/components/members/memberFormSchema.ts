@@ -107,7 +107,7 @@ export const memberSchema = z.object({
       if (!date) return false;
       return new Date(date) <= new Date();
     }, { message: 'Data de recebimento deve estar no formato DD/MM/YYYY e não pode ser no futuro' }),
-  congregation_id: z.string().optional().or(z.literal('')).nullable(),
+  congregation_id: z.string().min(1, 'Congregação é obrigatória'),
   active: z.boolean(),
 });
 

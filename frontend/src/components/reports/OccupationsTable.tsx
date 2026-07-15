@@ -10,7 +10,7 @@ import { apiService } from '@/services/api';
 interface OccupationsTableProps {
   data: TopOccupation[];
   loading?: boolean;
-  viewMode?: 'all' | 'sede' | 'congregation';
+  viewMode?: 'all' | 'congregation';
   selectedCongregationId?: string;
 }
 
@@ -37,9 +37,7 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
         page: 1
       };
 
-      if (viewMode === 'sede') {
-        filters.congregation_id = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
+      if (viewMode === 'congregation' && selectedCongregationId) {
         filters.congregation_id = selectedCongregationId;
       }
 

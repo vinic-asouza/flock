@@ -40,8 +40,10 @@ export const createGroupSchema = Joi.object({
       'string.empty': 'A descrição não pode estar vazia',
       'string.max': 'A descrição não pode ter mais de 5000 caracteres'
     }),
-  congregation_id: Joi.string().uuid().allow(null, '').optional().messages({
-    'string.guid': 'O ID da congregação deve ser um UUID válido'
+  congregation_id: Joi.string().uuid().required().messages({
+    'string.guid': 'O ID da congregação deve ser um UUID válido',
+    'any.required': 'A congregação é obrigatória',
+    'string.empty': 'A congregação é obrigatória'
   }),
   responsible_id: Joi.string().uuid().allow(null, '').optional().messages({
     'string.guid': 'O ID do responsável deve ser um UUID válido'
@@ -70,7 +72,7 @@ export const updateGroupSchema = Joi.object({
       'string.empty': 'A descrição não pode estar vazia',
       'string.max': 'A descrição não pode ter mais de 5000 caracteres'
     }),
-  congregation_id: Joi.string().uuid().allow(null, '').optional().messages({
+  congregation_id: Joi.string().uuid().optional().messages({
     'string.guid': 'O ID da congregação deve ser um UUID válido'
   }),
   responsible_id: Joi.string().uuid().allow(null, '').optional().messages({

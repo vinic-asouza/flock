@@ -30,10 +30,7 @@ export function IntegrationActiveFiltersChips({
   }
 
   if (filters.expectedCongregationId) {
-    const label =
-      filters.expectedCongregationId === 'sede'
-        ? 'Sede'
-        : congregations.find(c => c.id === filters.expectedCongregationId)?.name || 'Congregação selecionada';
+    const label = congregations.find(c => c.id === filters.expectedCongregationId)?.name || 'Congregação selecionada';
     activeChips.push({
       key: 'expectedCongregationId',
       label: `Congregação: ${label}`

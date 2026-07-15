@@ -4,7 +4,7 @@ import { logError } from './logger';
 /**
  * Valida se a congregação pertence à igreja
  * 
- * @param congregationId - ID da congregação a ser validada (pode ser null/undefined para 'Sede')
+ * @param congregationId - ID da congregação (vazio = escopo da igreja toda)
  * @param churchId - ID da igreja para validar pertencimento
  * @returns Promise com objeto contendo isValid (boolean) e errorMessage (string opcional)
  */
@@ -12,7 +12,7 @@ export async function validateCongregation(
   congregationId: string | null | undefined,
   churchId: string
 ): Promise<{ isValid: boolean; errorMessage?: string }> {
-  // Se não há congregação (Sede), é válido
+  // Sem congregação = escopo da igreja toda
   if (!congregationId || congregationId.trim() === '') {
     return { isValid: true };
   }
@@ -40,7 +40,7 @@ export async function validateCongregation(
  * Valida se o grupo pertence à igreja e se está associado à congregação (se fornecida)
  * 
  * @param groupId - ID do grupo a ser validado (pode ser null/undefined)
- * @param congregationId - ID da congregação do item (pode ser null/undefined para 'Sede')
+ * @param congregationId - ID da congregação do item (vazio = escopo da igreja toda)
  * @param churchId - ID da igreja para validar pertencimento
  * @returns Promise com objeto contendo isValid (boolean) e errorMessage (string opcional)
  */
@@ -70,25 +70,18 @@ export async function validateGroup(
     };
   }
 
-  // Se não há congregação do item (ou é 'Sede'), grupo pode ser de qualquer congregação da igreja
+  // Sem congregação no item = qualquer grupo da igreja
   if (!congregationId || congregationId.trim() === '') {
     return { isValid: true };
   }
 
-  // Se há congregação do item, verificar se o grupo está associado a ela
-  // O grupo pode estar na congregação ou na Sede (congregation_id null)
   if (group.congregation_id === congregationId) {
-    return { isValid: true };
-  }
-
-  // Se o grupo está na Sede (congregation_id null), ele pode ser usado em qualquer congregação
-  if (!group.congregation_id) {
     return { isValid: true };
   }
 
   return {
     isValid: false,
-    errorMessage: 'O grupo não pertence à congregação selecionada ou à Sede'
+    errorMessage: 'O grupo não pertence à congregação selecionada'
   };
 }
 
@@ -96,7 +89,7 @@ export async function validateGroup(
  * Valida se o responsável pertence à igreja e se está associado à congregação (se fornecida)
  * 
  * @param responsibleId - ID do responsável a ser validado (pode ser null/undefined)
- * @param congregationId - ID da congregação do item (pode ser null/undefined para 'Sede')
+ * @param congregationId - ID da congregação do item (vazio = escopo da igreja toda)
  * @param churchId - ID da igreja para validar pertencimento
  * @returns Promise com objeto contendo isValid (boolean) e errorMessage (string opcional)
  */
@@ -126,25 +119,18 @@ export async function validateResponsibleMember(
     };
   }
 
-  // Se não há congregação do item (ou é 'Sede'), responsável pode ser de qualquer congregação da igreja
+  // Sem congregação no item = responsável de qualquer congregação
   if (!congregationId || congregationId.trim() === '') {
     return { isValid: true };
   }
 
-  // Se há congregação do item, verificar se o responsável está associado a ela
-  // O responsável pode estar na congregação ou na Sede (congregation_id null)
   if (responsible.congregation_id === congregationId) {
-    return { isValid: true };
-  }
-
-  // Se o responsável está na Sede (congregation_id null), ele pode ser responsável de qualquer congregação
-  if (!responsible.congregation_id) {
     return { isValid: true };
   }
 
   return {
     isValid: false,
-    errorMessage: 'O responsável não pertence à congregação selecionada ou à Sede'
+    errorMessage: 'O responsável não pertence à congregação selecionada'
   };
 }
 
@@ -152,7 +138,7 @@ export async function validateResponsibleMember(
  * Valida se os membros participantes pertencem à igreja e à congregação do item (se fornecida)
  * 
  * @param memberIds - Array de IDs dos membros a serem validados
- * @param congregationId - ID da congregação do item (pode ser null/undefined para 'Sede')
+ * @param congregationId - ID da congregação do item (vazio = escopo da igreja toda)
  * @param churchId - ID da igreja para validar pertencimento
  * @returns Promise com objeto contendo isValid (boolean) e errorMessage (string opcional)
  */
@@ -189,20 +175,19 @@ export async function validateParticipants(
     };
   }
 
-  // Se não há congregação do item (ou é 'Sede'), membros podem ser de qualquer congregação da igreja
+  // Sem congregação no item = membros de qualquer congregação
   if (!congregationId || congregationId.trim() === '') {
     return { isValid: true };
   }
 
-  // Se há congregação do item, verificar se todos os membros pertencem a ela ou à Sede
   const invalidMembers = members.filter(
-    member => member.congregation_id !== congregationId && member.congregation_id !== null
+    member => member.congregation_id !== congregationId
   );
 
   if (invalidMembers.length > 0) {
     return {
       isValid: false,
-      errorMessage: `Um ou mais membros não pertencem à congregação selecionada ou à Sede`
+      errorMessage: 'Um ou mais membros não pertencem à congregação selecionada'
     };
   }
 

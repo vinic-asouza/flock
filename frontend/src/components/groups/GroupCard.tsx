@@ -68,7 +68,7 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
         {/* Linha 2: Tipo e Congregação */}
         <InfoRow
           icon={MapPin}
-          value={group.congregations?.name || 'Sede'}
+          value={group.congregations?.name || '—'}
           className="mb-2"
           truncate
         />

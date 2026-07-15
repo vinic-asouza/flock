@@ -13,6 +13,7 @@ import { apiService } from '@/services/api';
 import { Group } from '@/types';
 import { fetchCEPData, validateDateFormat } from '@/utils/validations';
 import { formatDateToISO } from '@/utils';
+import { getPrimaryCongregationId } from '@/utils/congregation';
 import { memberSchema, MemberFormData } from './memberFormSchema';
 
 interface Child {
@@ -234,6 +235,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     }
   }, [error]);
 
+  // Definir congregação principal como padrão ao criar
+  useEffect(() => {
+    if (mode === 'create' && !filtersLoading && !watch('congregation_id') && congregations.length > 0) {
+      setValue('congregation_id', getPrimaryCongregationId(congregations));
+    }
+  }, [mode, filtersLoading, congregations, setValue, watch]);
+
   // Preencher formulário ao editar
   useEffect(() => {
     if (!member) { prevMemberRef.current = null; return; }
@@ -325,8 +333,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     const loadGroups = async () => {
       try {
         setLoadingGroups(true);
-        const congregationParam = !selectedCongregationId ? 'sede' : selectedCongregationId;
-        const response = await apiService.listGroups({ congregation_id: congregationParam });
+        const response = await apiService.listGroups({ congregation_id: selectedCongregationId });
         setAvailableGroups(response);
         if (mode === 'edit' && member?.groups) {
           const ids = response.map(g => g.id);
@@ -335,7 +342,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       } catch { setAvailableGroups([]); }
       finally { setLoadingGroups(false); }
     };
-    if (mode === 'create' || (mode === 'edit' && member)) loadGroups();
+    if (selectedCongregationId && (mode === 'create' || (mode === 'edit' && member))) loadGroups();
   }, [selectedCongregationId, mode, member]);
 
   // Carregar cidades ao selecionar estado
@@ -443,7 +450,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       wedding_date: data.wedding_date ? formatDateToISO(data.wedding_date) || undefined : undefined,
       occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
       occupation_other: undefined,
-      congregation_id: data.congregation_id || null,
+      congregation_id: data.congregation_id,
       children: childrenWithISO,
       groups: selectedGroups,
     };
@@ -1049,22 +1056,21 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800">
-              Informe se o membro faz parte da <strong>sede</strong> ou de alguma <strong>congregação/filial</strong>.
+              Informe a <strong>congregação</strong> a qual o membro pertence.
             </p>
           </div>
 
           <Select
-            label="Congregação"
+            label="Congregação *"
             value={watch('congregation_id') || ''}
             onChange={(value) => {
               setValue('congregation_id', value);
               if (mode === 'create') setSelectedGroups([]);
             }}
-            options={[
-              { value: '', label: 'Sede' },
-              ...congregations.map(c => ({ value: c.id, label: c.name })),
-            ]}
+            options={congregations.map(c => ({ value: c.id, label: c.name }))}
+            placeholder={filtersLoading ? 'Carregando...' : 'Selecione a congregação'}
             disabled={filtersLoading || isLoading}
+            error={errors.congregation_id?.message}
           />
         </div>
 

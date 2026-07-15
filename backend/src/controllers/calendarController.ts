@@ -8,6 +8,7 @@ import {
   listCalendarItemsSchema 
 } from '../validators/calendarValidator';
 import { logAudit } from '../utils/auditLogger';
+import { resolveCongregationFilter } from '../utils/primaryCongregation';
 import { expandRecurringItem } from '../utils/recurrenceExpander';
 import { startOfYear, endOfYear, startOfMonth, endOfMonth } from 'date-fns';
 import { 
@@ -113,15 +114,15 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
     }
 
     // Filtrar por congregação
-    // "sede" é uma string especial que representa itens sem congregação (congregation_id = null)
-    if (congregation_id) {
-      if (congregation_id === 'sede') {
-        // Filtrar itens onde congregation_id é null (Sede)
-        query = query.is('congregation_id', null);
-      } else {
-        // Filtrar por UUID da congregação específica
-        query = query.eq('congregation_id', congregation_id);
-      }
+    const congregationFilter = resolveCongregationFilter(congregation_id as string | undefined);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Parâmetros inválidos',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     if (group_id) {
@@ -969,10 +970,15 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       .eq('status', 'active')
       .order('start_date', { ascending: true });
 
-    if (congregation_id && congregation_id !== 'sede') {
-      query = query.eq('congregation_id', congregation_id);
-    } else if (congregation_id === 'sede') {
-      query = query.is('congregation_id', null);
+    const congregationFilter = resolveCongregationFilter(congregation_id as string | undefined);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Parâmetros inválidos',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     if (group_id) {
@@ -1100,7 +1106,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
         }
 
         doc
-          .text(`Congregação: ${item.congregation?.name || 'Sede'}`)
+          .text(`Congregação: ${item.congregation?.name || '—'}`)
           .text(`Grupo: ${item.group?.name || '-'}`)
           .text(`Responsável: ${item.responsible_member?.name || '-'}`);
 

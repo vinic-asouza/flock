@@ -24,7 +24,7 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
 
   // Converter dados de congregações para formato do gráfico
   const congregationsData = useMemo((): ChartDataItem[] => {
-    // Separar congregações normais e "Sem congregação" (Sede)
+    // Separar congregações normais e "Sem congregação"
     const regularCongregations: ChartDataItem[] = Object.entries(data.congregations)
       .filter(([label, congregationData]) => label !== 'Sem congregação' && congregationData.id)
       .map(([label, congregationData]) => ({
@@ -35,12 +35,12 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
       }))
       .sort((a, b) => b.value - a.value);
 
-    // Incluir "Sede" (membros sem congregação)
-    const sedeData = data.congregations['Sem congregação'];
-    const sedeItem: ChartDataItem | null = sedeData
+    // Incluir membros sem congregação, se houver
+    const noCongregationData = data.congregations['Sem congregação'];
+    const noCongregationItem: ChartDataItem | null = noCongregationData
       ? {
-          label: 'Sede',
-          value: sedeData.count,
+          label: 'Sem congregação',
+          value: noCongregationData.count,
           id: null,
           color: getCongregationColor(),
         }
@@ -55,10 +55,10 @@ export function ChurchStructureCharts({ data, loading = false, hideCongregations
       color: getCongregationColor(),
     };
 
-    // Combinar: Sede primeiro (se existir), depois congregações, e Total por último
+    // Combinar: sem congregação primeiro (se existir), depois congregações, e Total por último
     const result: ChartDataItem[] = [];
-    if (sedeItem) {
-      result.push(sedeItem);
+    if (noCongregationItem) {
+      result.push(noCongregationItem);
     }
     result.push(...regularCongregations);
     result.push(totalItem);

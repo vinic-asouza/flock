@@ -24,6 +24,7 @@ import { listChurchMembershipsForUser, resolveChurchContextForUser } from '../se
 import { sanitizeChurchForRole } from '../utils/churchDto';
 import { sendEmail } from '../services/emailService';
 import { getWelcomeEmailTemplate, getNewUserNotificationTemplate } from '../templates/emailTemplates';
+import { createPrimaryCongregationForChurch } from '../utils/primaryCongregation';
 
 export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res: Response) => {
   try {
@@ -123,6 +124,24 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
       return res.status(400).json({
         error: 'Erro ao criar igreja',
         details: churchError.message
+      });
+    }
+
+    // Nova regra: criar congregação principal com o nome/endereço da igreja
+    const { error: primaryCongregationError } = await createPrimaryCongregationForChurch({
+      id: churchRecord.id,
+      name: churchRecord.name || churchData.name,
+      address: churchRecord.address || churchData.address,
+      city: churchRecord.city || churchData.city,
+      state: churchRecord.state || churchData.state,
+    });
+
+    if (primaryCongregationError) {
+      await db.from('churches').delete().eq('id', churchRecord.id);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      return res.status(400).json({
+        error: 'Erro ao criar congregação principal',
+        details: primaryCongregationError,
       });
     }
 

@@ -146,7 +146,7 @@ export function PublicIntegrationForm({
 
   const congregationOptions = useMemo(() => {
     return [
-      { value: '', label: 'Sede' },
+      { value: '', label: 'Não definida' },
       ...congregations.map(congregation => ({
         value: congregation.id,
         label: congregation.name

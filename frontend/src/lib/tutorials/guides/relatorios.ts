@@ -11,8 +11,8 @@ export const relatoriosGuides: TutorialGuide[] = [
     tags: ['filtro', 'congregação', 'dashboard'],
     steps: [
       'Acesse Painel.',
-      'No seletor de visualização, escolha Todas, Sede ou Congregação.',
-      'Se escolher Congregação, selecione qual filial na lista.',
+      'No seletor de visualização, escolha Todas as congregações ou Congregação.',
+      'Se escolher Congregação, selecione qual congregação na lista.',
       'Os gráficos e cards atualizam automaticamente.',
     ],
     details: ['Exportação PDF respeita o filtro ativo.'],

@@ -18,7 +18,7 @@ type GroupFormData = {
   name: string;
   type: Group['type'];
   description?: string;
-  congregation_id?: string | null;
+  congregation_id: string;
   responsible_id?: string | null;
   status: boolean;
 };
@@ -279,7 +279,7 @@ export default function GroupsPage() {
           onSubmit={handleCreateGroup}
           onCancel={() => setCreateModalOpen(false)}
           isLoading={isSubmitting}
-          selectedCongregationId={filters.congregationId || 'sede'}
+          selectedCongregationId={filters.congregationId}
         />
       </Modal>
 
@@ -317,7 +317,7 @@ export default function GroupsPage() {
               setSelectedGroupId('');
             }}
             isLoading={isSubmitting}
-            selectedCongregationId={filters.congregationId || 'sede'}
+            selectedCongregationId={filters.congregationId}
           />
         </Modal>
       )}

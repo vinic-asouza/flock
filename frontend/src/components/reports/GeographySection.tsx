@@ -11,7 +11,7 @@ interface GeographySectionProps {
   cities: Record<string, number>;
   states: Record<string, number>;
   loading?: boolean;
-  viewMode?: 'all' | 'sede' | 'congregation';
+  viewMode?: 'all' | 'congregation';
   selectedCongregationId?: string;
 }
 

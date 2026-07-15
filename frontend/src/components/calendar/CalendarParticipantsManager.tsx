@@ -53,15 +53,13 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
   const [guestWhatsapp, setGuestWhatsapp] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Buscar membros da congregação
-  const congregationIdForSearch = congregationId === 'sede' ? null : congregationId || undefined;
+  // Buscar membros da congregação (sem congregação selecionada = buscar em todas)
   const {
     options: memberOptionsData,
     loading: membersLoading,
     setSearch: setMemberSearchDebounced,
   } = useMemberOptions({
-    enabled: congregationId !== undefined,
-    congregationId: congregationIdForSearch,
+    congregationId: congregationId || undefined,
   });
 
   // Garantir que o membro selecionado sempre esteja nas opções

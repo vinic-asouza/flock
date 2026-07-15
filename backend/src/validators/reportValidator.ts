@@ -6,7 +6,7 @@ import Joi from 'joi';
 export const reportFiltersSchema = Joi.object({
   // Filtros básicos
   congregation_id: Joi.string()
-    .allow('', 'sede')
+    .allow('')
     .optional()
     .messages({
       'string.base': 'ID da congregação deve ser uma string'

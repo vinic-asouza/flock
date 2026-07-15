@@ -12,6 +12,7 @@ import {
   validateMentorAndCongregation,
   validateIntegrationMemberNameUniqueness
 } from '../utils/integrationValidations';
+import { resolveCongregationFilter } from '../utils/primaryCongregation';
 import { debug, error as logError } from '../utils/logger';
 
 const DEFAULT_PAGE = 1;
@@ -142,12 +143,15 @@ export const listIntegrationMembers = async (req: AuthRequest, res: Response) =>
       query = query.eq('status', status);
     }
 
-    if (expected_congregation_id) {
-      if (expected_congregation_id === 'sede') {
-        query = query.is('expected_congregation_id', null);
-      } else {
-        query = query.eq('expected_congregation_id', expected_congregation_id);
-      }
+    const congregationFilter = resolveCongregationFilter(expected_congregation_id);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Filtro inválido',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('expected_congregation_id', congregationFilter.congregationId);
     }
 
     if (mentor_id) {

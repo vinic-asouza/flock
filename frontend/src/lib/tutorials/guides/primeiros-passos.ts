@@ -12,7 +12,7 @@ export const primeirosPassosGuides: TutorialGuide[] = [
     steps: [
       'Clique em Painel na barra lateral (primeiro item).',
       'Aguarde o carregamento dos gráficos e cards de resumo.',
-      'Use o seletor no topo para alternar entre Todas, Sede ou uma Congregação específica.',
+      'Use o seletor no topo para alternar entre Todas as congregações ou uma Congregação específica.',
       'Role a página para ver demografia, estrutura da igreja, grupos e mapa geográfico.',
       'Para atualizar os dados, clique no botão de atualizar (ícone de refresh).',
     ],
@@ -41,7 +41,7 @@ export const primeirosPassosGuides: TutorialGuide[] = [
       'Clique em Salvar.',
     ],
     details: [
-      'A Sede é a congregação principal da igreja e já existe por padrão — você cadastra filiais ou pontos adicionais.',
+      'A congregação principal é criada automaticamente com o nome da igreja — você cadastra as demais congregações conforme necessário.',
       'Congregações aparecem depois nos formulários de membros, grupos e calendário.',
       'Se você ainda não tem membros, o campo líder ficará vazio — pode editar depois.',
     ],

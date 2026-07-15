@@ -42,8 +42,7 @@ export function useMemberOptions({
         limit: 20,
         search: searchValue,
         active: includeInactive ? undefined : true,
-        // Se congregationId é null (sede), passar 'sede'. Se é string, passar a string. Se undefined, não passar
-        congregation_id: congregationId === null ? 'sede' : (congregationId || undefined),
+        congregation_id: congregationId || undefined,
         sort_by: 'name',
         sort_order: 'asc',
       });

@@ -9,6 +9,8 @@ import { checkMemberLimit } from '../utils/planLimits';
 import { error as logError } from '../utils/logger';
 import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
 import { calculateAge } from '../utils/ageCalculator';
+import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -143,14 +145,15 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       query = query.eq('active', active);
     }
 
-    if (congregation_id) {
-      if (congregation_id === 'sede') {
-        // Filtrar membros sem congregação (congregation_id IS NULL)
-        query = query.is('congregation_id', null);
-      } else {
-        // Filtrar por congregação específica
-        query = query.eq('congregation_id', congregation_id);
-      }
+    const congregationFilter = resolveCongregationFilter(congregation_id);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Filtro inválido',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     // Aplica filtros por campos específicos
@@ -542,6 +545,22 @@ export const createMember = async (req: AuthRequest, res: Response) => {
     // Normalizar datas antes de criar o membro (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(dataWithoutGroups);
 
+    const congregationId = normalizedData.congregation_id as string | null | undefined;
+    if (!congregationId || typeof congregationId !== 'string' || congregationId.trim() === '') {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: 'A congregação é obrigatória para cadastrar um membro'
+      });
+    }
+
+    const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
+    if (!congregationCheck.valid) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: congregationCheck.message
+      });
+    }
+
     // Verificar duplicidade por nome (lowercase) - OTIMIZADO
     if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
       const normalizedName = normalizedData.name.trim().toLowerCase();
@@ -778,6 +797,25 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
 
     // Normalizar datas antes de atualizar o membro (evita problemas de timezone)
     const normalizedData = normalizeMemberDates(dataWithoutGroups);
+
+    // Só valida se o campo foi explicitamente enviado no payload
+    if ('congregation_id' in dataWithoutGroups) {
+      const congregationId = normalizedData.congregation_id as string | null | undefined;
+      if (!congregationId || typeof congregationId !== 'string' || congregationId.trim() === '') {
+        return res.status(400).json({
+          error: 'Dados inválidos',
+          details: 'A congregação é obrigatória para o membro'
+        });
+      }
+
+      const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
+      if (!congregationCheck.valid) {
+        return res.status(400).json({
+          error: 'Congregação inválida',
+          details: congregationCheck.message
+        });
+      }
+    }
 
     // Verificar email duplicado no update (se fornecido e diferente do atual)
     const emailValidation = await validateEmailUniqueness(normalizedData.email as string, churchId, id);
@@ -1195,14 +1233,15 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .order('id', { ascending: true });
 
     // Aplica filtro por congregação
-    if (congregation_id) {
-      if (congregation_id === 'sede') {
-        // Filtrar membros sem congregação (congregation_id IS NULL)
-        query = query.is('congregation_id', null);
-      } else {
-        // Filtrar por congregação específica
-        query = query.eq('congregation_id', congregation_id);
-      }
+    const congregationFilter = resolveCongregationFilter(congregation_id);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Filtros inválidos',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     // Buscar contagem total primeiro (mais eficiente)
@@ -1212,12 +1251,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .eq('church_id', churchId);
 
     // Aplicar filtro de congregação na contagem
-    if (congregation_id) {
-      if (congregation_id === 'sede') {
-        countQuery = countQuery.is('congregation_id', null);
-      } else {
-        countQuery = countQuery.eq('congregation_id', congregation_id);
-      }
+    if (congregationFilter.congregationId) {
+      countQuery = countQuery.eq('congregation_id', congregationFilter.congregationId);
     }
 
     const { count: totalCount, error: countError } = await countQuery;
@@ -1264,12 +1299,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
           .range(offset, offset + CHUNK_SIZE - 1);
 
         // Reaplicar filtro de congregação
-        if (congregation_id) {
-          if (congregation_id === 'sede') {
-            chunkQuery = chunkQuery.is('congregation_id', null);
-          } else {
-            chunkQuery = chunkQuery.eq('congregation_id', congregation_id);
-          }
+        if (congregationFilter.congregationId) {
+          chunkQuery = chunkQuery.eq('congregation_id', congregationFilter.congregationId);
         }
 
         const { data: chunk, error: chunkError } = await chunkQuery;
@@ -1529,12 +1560,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .select(integrationSelect)
       .eq('church_id', churchId);
 
-    if (congregation_id) {
-      if (congregation_id === 'sede') {
-        integrationQuery = integrationQuery.is('expected_congregation_id', null);
-      } else {
-        integrationQuery = integrationQuery.eq('expected_congregation_id', congregation_id);
-      }
+    if (congregationFilter.congregationId) {
+      integrationQuery = integrationQuery.eq('expected_congregation_id', congregationFilter.congregationId);
     }
 
     const {
@@ -1795,14 +1822,15 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
       .not('birth', 'is', null);
 
     // Aplicar filtro de congregação se fornecido
-    if (congregationId) {
-      if (congregationId === 'sede') {
-        // "sede" representa membros sem congregação (congregation_id = null)
-        query = query.is('congregation_id', null);
-      } else {
-        // Filtrar por UUID da congregação específica
-        query = query.eq('congregation_id', congregationId);
-      }
+    const congregationFilter = resolveCongregationFilter(congregationId);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Parâmetro inválido',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     const { data: members, error: membersError } = await query;
@@ -1894,14 +1922,15 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
       .not('birth', 'is', null);
 
     // Aplicar filtro de congregação se fornecido
-    if (congregationId) {
-      if (congregationId === 'sede') {
-        // "sede" representa membros sem congregação (congregation_id = null)
-        query = query.is('congregation_id', null);
-      } else {
-        // Filtrar por UUID da congregação específica
-        query = query.eq('congregation_id', congregationId);
-      }
+    const congregationFilter = resolveCongregationFilter(congregationId);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Parâmetro inválido',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     const { data: members, error: membersError } = await query;

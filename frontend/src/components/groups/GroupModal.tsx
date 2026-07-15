@@ -85,9 +85,9 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
     try {
       setLoadingMembers(true);
       setErrorAvailableMembers(null);
-      // Normalizar: se congregation_id é null, usar 'sede' para filtrar membros sem congregação
-      const congregationId = group.congregation_id ? group.congregation_id : 'sede';
-      
+      // Se o grupo não tem congregação específica, buscar membros de todas as congregações
+      const congregationId = group.congregation_id || undefined;
+
       // Carregar todos os membros da congregação (pode precisar de múltiplas requisições se > 100)
       let allMembers: Member[] = [];
       let page = 1;
@@ -280,7 +280,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                     <MapPin size={18} className="text-gray-400 flex-shrink-0" />
                     Congregação
                   </label>
-                  <p className="text-gray-900">{group.congregations?.name || 'Sede'}</p>
+                  <p className="text-gray-900">{group.congregations?.name || '—'}</p>
                 </div>
                 
                 {group.responsible && (

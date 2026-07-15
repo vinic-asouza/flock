@@ -462,7 +462,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                   <div className="space-y-3">
                     <div>
                       <span className="text-sm font-medium text-gray-500">Congregação</span>
-                      <p className="text-gray-900">{member.congregation?.name || 'Sede'}</p>
+                      <p className="text-gray-900">{member.congregation?.name || '—'}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Data de Batismo</span>

@@ -12,7 +12,7 @@ interface CongregationListProps {
   canEdit?: boolean;
   onView?: (id: string) => void;
   onEdit: (id: string) => void;
-  onDelete: (id: string, name: string, activeMembersCount?: number) => void;
+  onDelete: (id: string, name: string, activeMembersCount?: number, isPrimary?: boolean) => void;
   onExport?: () => void;
   exporting?: boolean;
   refreshTrigger?: number;
@@ -65,8 +65,8 @@ export function CongregationList({
     onEdit(id);
   };
 
-  const handleDelete = (id: string, name: string, activeMembersCount: number = 0) => {
-    onDelete(id, name, activeMembersCount);
+  const handleDelete = (id: string, name: string, activeMembersCount: number = 0, isPrimary: boolean = false) => {
+    onDelete(id, name, activeMembersCount, isPrimary);
   };
 
   if (loading) {
@@ -129,7 +129,7 @@ export function CongregationList({
           canEdit={canEdit}
           onView={onView ? () => onView(congregation.id) : undefined}
           onEdit={() => handleEdit(congregation.id)}
-          onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0)}
+          onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0, congregation.is_primary)}
         />
       ))}
       </div>

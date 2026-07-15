@@ -15,6 +15,11 @@ import { validateDateFormat } from '@/utils/validations';
 import { formatDateToISO } from '@/utils';
 import { memberSchema, MemberFormData } from '@/components/members/memberFormSchema';
 
+function getDefaultCongregationId(congregations: { id: string; name: string; is_primary?: boolean }[]): string {
+  if (!congregations.length) return '';
+  return (congregations.find((c) => c.is_primary) || congregations[0]).id;
+}
+
 interface Child {
   name: string;
   birth?: string;
@@ -27,7 +32,7 @@ interface PublicMemberFormProps {
   isLoading?: boolean;
   churchName?: string;
   error?: string | null;
-  congregations?: { id: string; name: string }[];
+  congregations?: { id: string; name: string; is_primary?: boolean }[];
   registrationToken?: string;
   submitDisabled?: boolean;
 }
@@ -171,14 +176,20 @@ export function PublicMemberForm({
     if (error && errorRef.current) errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [error]);
 
+  // Definir congregação principal como padrão
+  useEffect(() => {
+    if (!selectedCongregationId && congregations.length > 0) {
+      setValue('congregation_id', getDefaultCongregationId(congregations));
+    }
+  }, [congregations, selectedCongregationId, setValue]);
+
   useEffect(() => {
     const loadGroups = async () => {
-      if (!registrationToken) { setAvailableGroups([]); return; }
-      const congregationParam = !selectedCongregationId ? 'sede' : selectedCongregationId;
+      if (!registrationToken || !selectedCongregationId) { setAvailableGroups([]); return; }
       try {
         setLoadingGroups(true);
         setGroupsLoadFailed(false);
-        const response = await apiService.listPublicRegistrationGroups(registrationToken, congregationParam);
+        const response = await apiService.listPublicRegistrationGroups(registrationToken, selectedCongregationId);
         setAvailableGroups(response);
       } catch {
         setGroupsLoadFailed(true);
@@ -253,7 +264,7 @@ export function PublicMemberForm({
       wedding_date: data.wedding_date ? formatDateToISO(data.wedding_date) || undefined : undefined,
       occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
       occupation_other: undefined,
-      congregation_id: data.congregation_id || null,
+      congregation_id: data.congregation_id,
       children: childrenWithISO,
       groups: selectedGroups,
     };
@@ -855,18 +866,16 @@ export function PublicMemberForm({
 
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800 leading-relaxed">
-              Informe se você faz parte da <strong>{churchName || 'igreja'}</strong> sede ou de alguma <strong>congregação/filial</strong>.
+              Informe a <strong>congregação/filial</strong> da <strong>{churchName || 'igreja'}</strong> a qual você faz parte.
             </p>
           </div>
 
           <Select
-            label="Congregação"
+            label="Congregação (obrigatório)"
             value={watch('congregation_id') || ''}
             onChange={(value) => { setValue('congregation_id', value); setSelectedGroups([]); }}
-            options={[
-              { value: '', label: 'Sede' },
-              ...congregations.map(c => ({ value: c.id, label: c.name })),
-            ]}
+            options={congregations.map(c => ({ value: c.id, label: c.name }))}
+            error={errors.congregation_id?.message}
             disabled={isLoading || submitDisabled}
           />
 

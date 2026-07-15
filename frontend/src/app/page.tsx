@@ -45,9 +45,7 @@ export default function HomePage() {
 
       const filters: ReportFilters = {};
 
-      if (view === 'sede') {
-        filters.congregation_id = 'sede';
-      } else if (view === 'congregation' && congregationId) {
+      if (view === 'congregation' && congregationId) {
         filters.congregation_id = congregationId;
       }
 
@@ -118,19 +116,13 @@ export default function HomePage() {
     try {
       setExporting(true);
 
-      let congregationParam: string | undefined;
-      if (viewMode === 'sede') {
-        congregationParam = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
-        congregationParam = selectedCongregationId;
-      }
+      const congregationParam =
+        viewMode === 'congregation' && selectedCongregationId ? selectedCongregationId : undefined;
 
       const blob = await apiService.exportDashboardPDF(congregationParam);
 
       let filename = 'relatorio-geral';
-      if (viewMode === 'sede') {
-        filename = 'relatorio-sede';
-      } else if (viewMode === 'congregation' && selectedCongregationName) {
+      if (viewMode === 'congregation' && selectedCongregationName) {
         filename = `relatorio-${selectedCongregationName.toLowerCase().replace(/\s+/g, '-')}`;
       }
       filename += `-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -332,9 +324,7 @@ export default function HomePage() {
                               <ChurchStructureCharts
                                 data={reportsData.churchStructure}
                                 loading={loading}
-                                hideCongregations={
-                                  viewMode === 'sede' || viewMode === 'congregation'
-                                }
+                                hideCongregations={viewMode === 'congregation'}
                               />
 
                               <div className="border-t border-gray-200" />

@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Building, Home, Users } from 'lucide-react';
+import { Building, Users } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
 
-export type ViewMode = 'all' | 'sede' | 'congregation';
+export type ViewMode = 'all' | 'congregation';
 
 interface ViewSelectorProps {
   selectedView: ViewMode;
@@ -48,12 +48,6 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
       label: 'Dados Gerais',
       description: 'Todos os membros da igreja',
       icon: Users,
-    },
-    {
-      value: 'sede',
-      label: 'Sede',
-      description: 'Membros da igreja sede',
-      icon: Home,
     },
     {
       value: 'congregation',

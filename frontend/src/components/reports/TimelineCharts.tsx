@@ -442,7 +442,7 @@ export function TimelineCharts({
                               : ''}
                           </div>
                           <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
-                            {member.congregation ? member.congregation.name : 'Sede'}
+                            {member.congregation ? member.congregation.name : '—'}
                           </span>
                         </div>
                       </div>
@@ -604,7 +604,7 @@ export function TimelineCharts({
                               {formatIntegrationDate(member.created_at)}
                             </div>
                             <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
-                              {member.expected_congregation ? member.expected_congregation.name : 'Sede'}
+                              {member.expected_congregation ? member.expected_congregation.name : 'Não definida'}
                             </span>
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700">
                               Em progresso

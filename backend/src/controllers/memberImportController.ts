@@ -28,26 +28,35 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
 
     const churchId = req.church!.churchId;
 
-    // Obtém congregation_id do body (pode ser null para "Sede")
-    const congregationId = req.body.congregation_id === 'null' || req.body.congregation_id === '' 
-      ? null 
-      : req.body.congregation_id || null;
+    const congregationIdRaw = req.body.congregation_id;
+    if (
+      !congregationIdRaw ||
+      typeof congregationIdRaw !== 'string' ||
+      congregationIdRaw.trim() === '' ||
+      congregationIdRaw === 'null' ||
+      congregationIdRaw === 'sede'
+    ) {
+      return res.status(400).json({
+        error: 'Congregação obrigatória',
+        details: 'Selecione uma congregação válida para importar os membros'
+      });
+    }
 
-    // Valida se a congregação existe (se fornecida)
-    if (congregationId) {
-      const { data: congregation, error: congError } = await supabase
-        .from('congregations')
-        .select('id')
-        .eq('id', congregationId)
-        .eq('church_id', churchId)
-        .single();
+    const congregationId = congregationIdRaw;
 
-      if (congError || !congregation) {
-        return res.status(400).json({
-          error: 'Congregação inválida',
-          details: 'A congregação fornecida não existe ou não pertence a esta igreja'
-        });
-      }
+    // Valida se a congregação existe
+    const { data: congregation, error: congError } = await supabase
+      .from('congregations')
+      .select('id')
+      .eq('id', congregationId)
+      .eq('church_id', churchId)
+      .single();
+
+    if (congError || !congregation) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: 'A congregação fornecida não existe ou não pertence a esta igreja'
+      });
     }
 
     // Valida o CSV
@@ -90,26 +99,35 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
 
     const churchId = req.church!.churchId;
 
-    // Obtém congregation_id do body (pode ser null para "Sede")
-    const congregationId = req.body.congregation_id === 'null' || req.body.congregation_id === '' 
-      ? null 
-      : req.body.congregation_id || null;
+    const congregationIdRaw = req.body.congregation_id;
+    if (
+      !congregationIdRaw ||
+      typeof congregationIdRaw !== 'string' ||
+      congregationIdRaw.trim() === '' ||
+      congregationIdRaw === 'null' ||
+      congregationIdRaw === 'sede'
+    ) {
+      return res.status(400).json({
+        error: 'Congregação obrigatória',
+        details: 'Selecione uma congregação válida para importar os membros'
+      });
+    }
 
-    // Valida se a congregação existe (se fornecida)
-    if (congregationId) {
-      const { data: congregation, error: congError } = await supabase
-        .from('congregations')
-        .select('id')
-        .eq('id', congregationId)
-        .eq('church_id', churchId)
-        .single();
+    const congregationId = congregationIdRaw;
 
-      if (congError || !congregation) {
-        return res.status(400).json({
-          error: 'Congregação inválida',
-          details: 'A congregação fornecida não existe ou não pertence a esta igreja'
-        });
-      }
+    // Valida se a congregação existe
+    const { data: congregation, error: congError } = await supabase
+      .from('congregations')
+      .select('id')
+      .eq('id', congregationId)
+      .eq('church_id', churchId)
+      .single();
+
+    if (congError || !congregation) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: 'A congregação fornecida não existe ou não pertence a esta igreja'
+      });
     }
 
     // Opções de importação
@@ -157,7 +175,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
         changesAfter: {
           importedRows: importResult.importedRows,
           totalRows: importResult.totalRows,
-          congregationId: congregationId || 'Sede'
+          congregationId: congregationId || '—'
         }
       });
     }
