@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import { getFilenameFromContentDisposition } from '@/utils';
 import {
   LoginData,
   RegisterData,
@@ -903,6 +904,17 @@ class ApiService {
       responseType: 'blob', // Importante para receber o arquivo como blob
     });
     return response.data;
+  }
+
+  async exportMemberRegistrationFormPDF(): Promise<{ blob: Blob; filename: string }> {
+    const response = await this.api.get('/export/members/registration-form/pdf', {
+      responseType: 'blob',
+    });
+    const filename = getFilenameFromContentDisposition(
+      response.headers['content-disposition'] as string | undefined
+    ) ?? `ficha-cadastro-membro-${new Date().toISOString().split('T')[0]}.pdf`;
+
+    return { blob: response.data, filename };
   }
 
   async exportDashboardPDF(congregationId?: string): Promise<Blob> {

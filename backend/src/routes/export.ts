@@ -9,6 +9,7 @@ import {
   exportGroupMembersList,
   exportGroupsList,
   exportCongregationsList,
+  exportMemberRegistrationFormPDF,
 } from '../controllers/exportController';
 import authMiddleware from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
@@ -18,6 +19,7 @@ const router = Router();
 router.use(authMiddleware);
 router.use(requireRole('reader'));
 
+router.get('/members/registration-form/pdf', exportMemberRegistrationFormPDF);
 router.get('/member/:id/pdf', exportMemberPDF);
 router.get('/integration/:id/pdf', exportIntegrationMemberPDF);
 router.get('/dashboard/pdf', exportDashboardPDF);

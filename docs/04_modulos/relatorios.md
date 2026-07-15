@@ -3,7 +3,7 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
+ultima_atualizacao: 2026-07-15
 versao: "1.0"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
@@ -37,7 +37,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Agregar indicadores de membros + integração (`getMemberReports`)
 - Endpoints de aniversariantes (count/list) no escopo de reports de UX
 - Rate limit específico em `GET /members/reports` (10/IP/min)
-- Export PDF: ficha membro, ficha integração, dashboard, listas (membros / integração / grupo / grupos / congregações)
+- Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (template impressão), ficha integração, dashboard, listas (membros / integração / grupo / grupos / congregações)
 - Export CSV de lista de membros (campos selecionáveis)
 - Escopo sempre `church_id` do contexto autenticado
 - Validação Joi de filtros de relatório (`reportFiltersSchema`)
@@ -58,7 +58,7 @@ Produto: [[01_produto/visao-do-produto]].
 ```
 backend/src/
 ├── routes/
-│   ├── export.ts                 → 9 rotas /api/export/*
+│   ├── export.ts                 → 10 rotas /api/export/*
 │   └── members.ts                → /reports + /birthdays/* (também CRUD membros)
 ├── controllers/
 │   ├── exportController.ts       → PDFs/CSV (PDFKit) — arquivo grande
@@ -66,7 +66,8 @@ backend/src/
 ├── validators/
 │   └── reportValidator.ts        → reportFiltersSchema (Joi)
 └── utils/
-    └── ageCalculator.ts          → idade nos aggregados
+    ├── ageCalculator.ts          → idade nos aggregados
+    └── memberRegistrationFormPdf.ts → template PDF ficha em branco (form v2)
 
 frontend/src/
 ├── app/page.tsx                  → Home = painel Vision UI
@@ -92,11 +93,11 @@ Consome (leitura):
 
 | Fonte | Uso |
 | --- | --- |
-| `members` (+ `congregations`) | Aggregados, aniversários, listas PDF/CSV, ficha PDF |
+| `members` (+ `congregations`) | Aggregados, aniversários, listas PDF/CSV, ficha PDF preenchida |
+| `churches` | Cabeçalho PDF (nome) + ficha em branco |
 | `integration_members` | Bloco `integration` no report + PDF list/ficha |
 | `groups` / `member_groups` | Export lista de grupos / membros do grupo |
 | `congregations` | Export lista + filtro por UUID |
-| `churches` | Cabeçalho PDF (nome) |
 
 ### Contratos de saída (DTO em memória)
 
@@ -152,7 +153,8 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
-| GET | `/api/export/member/:id/pdf` | ✅ | ≥ reader | Ficha PDF membro |
+| GET | `/api/export/members/registration-form/pdf` | ✅ | ≥ reader | Ficha de cadastro **em branco** (A4, form v2) |
+| GET | `/api/export/member/:id/pdf` | ✅ | ≥ reader | Ficha PDF membro **preenchida** |
 | GET | `/api/export/integration/:id/pdf` | ✅ | ≥ reader | Ficha PDF integração |
 | GET | `/api/export/dashboard/pdf` | ✅ | ≥ reader | Dashboard PDF (reusa getMemberReports) |
 | POST | `/api/export/members/list` | ✅ | ≥ reader | Lista membros PDF |
@@ -162,7 +164,20 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 | POST | `/api/export/groups/list` | ✅ | ≥ reader | Lista grupos PDF |
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | Lista congregações PDF |
 
-**Total:** **12** endpoints (3 reports + 9 export).
+**Total:** **13** endpoints (3 reports + 10 export).
+
+### Contrato — `GET /api/export/members/registration-form/pdf`
+
+```typescript
+// Sem query/body — gera template em branco da igreja autenticada.
+// Response: application/pdf
+// Content-Disposition: attachment; filename="ficha-cadastro-membro-{slug-igreja}-{YYYY-MM-DD}.pdf"
+// 401 — não autenticado
+// 404 — igreja não encontrada
+// 500 — erro na geração PDF
+```
+
+Template alinhado ao formulário de membros v2: Informações Básicas, Família (até 3 filhos + nota para folha adicional), Contato e Endereço, Informações Eclesiásticas, Informações de Recebimento. Campos com linhas/checkboxes para preenchimento manuscrito; cabeçalho com nome da igreja. **Não** pré-preenche dados de membro existente (MVP).
 
 ### Rate limit — `GET /reports`
 
@@ -299,6 +314,26 @@ sequenceDiagram
   API->>PDF: landscape A4 + colunas fields
   PDF-->>API: stream
   API-->>U: application/pdf
+```
+
+### Fluxo: Ficha de cadastro em branco (PDF)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Reader+
+  participant UI as members/page
+  participant API as exportMemberRegistrationFormPDF
+  participant PDF as memberRegistrationFormPdf
+  participant DB as PostgreSQL
+
+  U->>UI: Clicar "Ficha de Cadastro"
+  UI->>API: GET /api/export/members/registration-form/pdf
+  API->>DB: select churches.name (church_id)
+  API->>PDF: renderMemberRegistrationFormPdf(churchName)
+  PDF-->>API: stream A4
+  API-->>UI: application/pdf + Content-Disposition
+  UI-->>U: download ficha-cadastro-membro-*.pdf
 ```
 
 ### Fluxo: Dashboard PDF
@@ -451,6 +486,7 @@ graph LR
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo relatórios | — |
+| 2026-07-15 | 1.1 | Endpoint ficha de cadastro em branco (`GET /export/members/registration-form/pdf`) | DEV-10 |
 
 ---
 
@@ -459,7 +495,7 @@ graph LR
 | Item | Valor |
 | --- | --- |
 | Módulo documentado | **relatorios** ✅ |
-| Endpoints | **12** (3 agregados/aniversários + 9 export) |
+| Endpoints | **13** (3 agregados/aniversários + 10 export) |
 | Regras BR-REL | **9** |
 | Entidades próprias | **0** (read-only) |
 | Integrações | Supabase + PDFKit |
