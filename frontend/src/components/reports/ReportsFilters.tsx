@@ -91,7 +91,6 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
 
         setCongregations([
           { value: '', label: 'Todas as congregações' },
-          { value: 'sede', label: 'Sede' },
           ...congregationsData.map((congregation: { id: string; name: string }) => ({
             value: congregation.id,
             label: congregation.name,

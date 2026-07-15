@@ -10,7 +10,7 @@ const cadastrarCongregacaoSteps = [
 ];
 
 const cadastrarCongregacaoDetails = [
-  'A Sede é a congregação principal da igreja e já existe por padrão — você cadastra filiais ou pontos adicionais.',
+  'A congregação principal é criada automaticamente com o nome da igreja — você cadastra as demais congregações conforme necessário.',
   'Congregações aparecem depois nos formulários de membros, grupos e calendário.',
   'Se você ainda não tem membros, o campo líder ficará vazio — pode editar depois.',
 ];
@@ -43,6 +43,7 @@ export const congregacoesGuides: TutorialGuide[] = [
     ],
     details: [
       'Exclusão pode ser bloqueada se houver membros vinculados — verifique mensagem do sistema.',
+      'A congregação principal da igreja não pode ser excluída.',
     ],
     related: ['congregacoes-cadastrar', 'congregacoes-exportar'],
   },

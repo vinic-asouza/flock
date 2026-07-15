@@ -32,10 +32,7 @@ export function GroupActiveFiltersChips({
   }
 
   if (filters.congregationId) {
-    const label =
-      filters.congregationId === 'sede'
-        ? 'Sede'
-        : congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada';
+    const label = congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada';
     activeChips.push({
       key: 'congregationId',
       label: `Congregação: ${label}`

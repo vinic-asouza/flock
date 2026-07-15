@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Group, GroupType } from '@/types';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
+import { getPrimaryCongregationId } from '@/utils/congregation';
 
 // Schema de validação
 const groupSchema = z.object({
@@ -35,19 +36,9 @@ const groupSchema = z.object({
     .max(5000, 'A descrição não pode ter mais de 5000 caracteres')
     .optional()
     .or(z.literal('')),
-  congregation_id: z.string()
-    .optional()
-    .or(z.literal(''))
-    .or(z.literal('sede'))
-    .nullable()
-    .refine((val) => {
-      if (!val || val === '' || val === 'sede') return true; // String vazia ou 'sede' é válida
-      // Validar que é UUID válido
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      return uuidRegex.test(val);
-    }, {
-      message: 'ID da congregação inválido'
-    }),
+  congregation_id: z
+    .string({ required_error: 'Congregação é obrigatória' })
+    .uuid('ID da congregação inválido'),
   responsible_id: z.string().uuid().optional().or(z.literal('')).nullable(),
   status: z.boolean(),
 });
@@ -101,21 +92,15 @@ export function GroupForm({
     resolver: zodResolver(groupSchema),
     defaultValues: mode === 'create' ? {
       status: true,
-      congregation_id: selectedCongregationId || 'sede',
+      congregation_id: selectedCongregationId || '',
     } : {},
   });
 
   const selectedCongregation = watch('congregation_id');
   const responsibleId = watch('responsible_id') ?? '';
 
-  // Determinar congregação a usar para busca de membros
-  // Se selectedCongregationId é 'sede', usar null. Se selectedCongregation existe, usar ele (pode ser 'sede' também)
-  let congregationIdForSearch: string | null = null;
-  if (selectedCongregation) {
-    congregationIdForSearch = selectedCongregation === 'sede' ? null : selectedCongregation;
-  } else if (selectedCongregationId) {
-    congregationIdForSearch = selectedCongregationId === 'sede' ? null : selectedCongregationId;
-  }
+  // Determinar congregação a usar para busca de membros (vazio = buscar em todas)
+  const congregationIdForSearch = selectedCongregation || selectedCongregationId || undefined;
 
   // Hook para buscar membros com busca
   const {
@@ -123,7 +108,6 @@ export function GroupForm({
     loading: loadingMembers,
     setSearch: setMemberSearch,
   } = useMemberOptions({
-    enabled: congregationIdForSearch !== undefined,
     congregationId: congregationIdForSearch,
   });
 
@@ -174,8 +158,7 @@ export function GroupForm({
       setValue('name', group.name);
       setValue('type', group.type);
       setValue('description', group.description || '');
-      // Se não tem congregação, usar 'sede'
-      setValue('congregation_id', group.congregation_id || 'sede');
+      setValue('congregation_id', group.congregation_id || '');
       setValue('responsible_id', group.responsible_id || '');
       setValue('status', group.status);
       
@@ -183,20 +166,32 @@ export function GroupForm({
       if (group.responsible_id && group.members?.name) {
         setSelectedResponsibleLabel(group.members.name);
       }
-    } else if (mode === 'create' && selectedCongregationId) {
-      // No modo create, definir a congregação padrão se fornecida
-      setValue('congregation_id', selectedCongregationId);
     }
-  }, [group, mode, setValue, selectedCongregationId]);
+  }, [group, mode, setValue]);
+
+  // Default: congregação do filtro ativo ou a principal (create)
+  useEffect(() => {
+    if (mode !== 'create' || filtersLoading) return;
+    const current = watch('congregation_id');
+    if (current) return;
+
+    if (selectedCongregationId) {
+      setValue('congregation_id', selectedCongregationId);
+      return;
+    }
+
+    const primaryId = getPrimaryCongregationId(congregations);
+    if (primaryId) {
+      setValue('congregation_id', primaryId);
+    }
+  }, [mode, filtersLoading, congregations, selectedCongregationId, setValue, watch]);
 
   const handleFormSubmit = async (data: GroupFormData) => {
     try {
-      // Converter 'sede' para null antes de enviar
-      const payload = {
+      await onSubmit({
         ...data,
-        congregation_id: data.congregation_id === 'sede' ? null : (data.congregation_id || null),
-      };
-      await onSubmit(payload as GroupFormData);
+        congregation_id: data.congregation_id,
+      });
       reset();
     } catch {
       // Erro será tratado pelo componente pai
@@ -267,24 +262,21 @@ export function GroupForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Select
-            label="Congregação"
-            value={watch('congregation_id') || (selectedCongregationId || 'sede')}
+            label="Congregação *"
+            value={watch('congregation_id') || ''}
             onChange={(value) => {
-              // Se não selecionou nada, usar 'sede'
-              setValue('congregation_id', value || 'sede');
+              setValue('congregation_id', value, { shouldValidate: true });
               // Limpar responsável quando mudar congregação para evitar inconsistências
               setValue('responsible_id', null);
               setSelectedResponsibleLabel('');
             }}
-            options={[
-              { value: 'sede', label: 'Sede' },
-              ...(congregations || []).map((cong) => ({
-                value: cong.id,
-                label: cong.name
-              }))
-            ]}
+            options={(congregations || []).map((cong) => ({
+              value: cong.id,
+              label: cong.name
+            }))}
             disabled={filtersLoading || isLoading}
             error={errors.congregation_id?.message}
+            placeholder={filtersLoading ? 'Carregando...' : 'Selecione a congregação'}
           />
 
           <Select
@@ -292,15 +284,9 @@ export function GroupForm({
             value={responsibleId}
             onChange={handleResponsibleChange}
             options={responsibleSelectOptions}
-            disabled={loadingMembers || isLoading || (!selectedCongregation && !selectedCongregationId)}
+            disabled={loadingMembers || isLoading}
             error={errors.responsible_id?.message}
-            placeholder={
-              loadingMembers 
-                ? 'Carregando membros...' 
-                : (!selectedCongregation && !selectedCongregationId) 
-                  ? 'Selecione uma congregação primeiro' 
-                  : 'Digite para buscar o responsável'
-            }
+            placeholder={loadingMembers ? 'Carregando membros...' : 'Digite para buscar o responsável'}
             searchable={true}
             onSearchChange={setMemberSearch}
             helperText="Digite o nome do membro para buscar"

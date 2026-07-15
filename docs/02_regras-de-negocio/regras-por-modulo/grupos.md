@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: grupos
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-07-14
+versao: "1.1"
 total_regras: 10
 tags: [regras, modulo:grupos]
 ver_tambem:
@@ -78,7 +78,7 @@ Organizar membros em ministérios, células e demais tipos.
 ### 📝 Regras de Atualização / Edição
 
 ### BR-GRP-005: Responsável válido
-- **Declaração:** responsible_id é membro da igreja alinhado à cong./Sede.
+- **Declaração:** responsible_id (se informado) é membro da igreja na mesma congregação do grupo.
 - **Tipo:** Restrição
 - **Gatilho:** Create/update
 - **Comportamento esperado:** OK
@@ -88,12 +88,12 @@ Organizar membros em ministérios, células e demais tipos.
 - **Depende de:** —
 
 ### BR-GRP-006: Congregação do grupo
-- **Declaração:** congregation_id null=Sede; deve ser da igreja.
+- **Declaração:** congregation_id é obrigatório (UUID da igreja). Não existe mais null = “Sede”.
 - **Tipo:** Restrição
 - **Gatilho:** Create/update
 - **Comportamento esperado:** OK
-- **Comportamento em violação:** 400
-- **Implementado em:** `groupValidations.ts`
+- **Comportamento em violação:** 400 Congregação é obrigatória / inválida
+- **Implementado em:** `groupValidator.ts` / `groupValidations.ts`
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
@@ -110,7 +110,7 @@ Organizar membros em ministérios, células e demais tipos.
 ### 🔗 Regras de Relacionamento
 
 ### BR-GRP-008: Add membro alinhado
-- **Declaração:** Mesma igreja; mesma cong. ou Sede.
+- **Declaração:** Membro da mesma igreja e da mesma congregação do grupo.
 - **Tipo:** Restrição
 - **Gatilho:** POST members
 - **Comportamento esperado:** Vínculo

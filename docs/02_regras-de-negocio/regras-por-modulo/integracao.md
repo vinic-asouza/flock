@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: integracao
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-07-14
+versao: "1.1"
 total_regras: 15
 tags: [regras, modulo:integracao]
 ver_tambem:
@@ -94,7 +94,7 @@ Qualificar pré-membros até conversão ao rol ou descarte.
 - **Depende de:** —
 
 ### BR-INT-006: Mentor alinhado à congregação
-- **Declaração:** Com congregação prevista, mentor dessa cong. ou Sede.
+- **Declaração:** Com `expected_congregation_id` definido, o mentor deve pertencer a essa congregação. Sem congregação prevista (null = ainda não definida), o mentor pode ser de qualquer congregação da igreja.
 - **Tipo:** Restrição
 - **Gatilho:** Create/update
 - **Comportamento esperado:** OK

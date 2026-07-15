@@ -268,10 +268,11 @@ const memberSchema = Joi.object({
 
   congregation_id: Joi.string()
     .uuid()
-    .optional()
-    .allow(null)
+    .required()
     .messages({
-      'string.guid': 'ID da congregação inválido'
+      'string.guid': 'ID da congregação inválido',
+      'any.required': 'Congregação é obrigatória',
+      'string.empty': 'Congregação é obrigatória'
     }),
 
   children: Joi.array()

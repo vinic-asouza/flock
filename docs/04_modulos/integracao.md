@@ -233,7 +233,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/integracao]] (**15** regras).
 | BR-INT-003 | Campos/enums/fones validados |
 | BR-INT-004 | Público: sem mentor/admission/notes forçados |
 | BR-INT-005 | Mentor = membro da mesma igreja |
-| BR-INT-006 | Mentor da cong. prevista ou Sede (`congregation_id` null) |
+| BR-INT-006 | Mentor na cong. prevista; se `expected_congregation_id` null, qualquer cong. |
 | BR-INT-007 | `expected_congregation_id` da mesma igreja |
 | BR-INT-008 | Mutações editor+; leitura reader+ |
 | BR-INT-009 | Convert bloqueado se integrado/descartado |

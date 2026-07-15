@@ -400,7 +400,7 @@ export default function CalendarPage() {
               )}
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                 <Church size={14} />
-                {selectedItem.congregation?.name || 'Sede'}
+                {selectedItem.congregation?.name || 'Todas as congregações'}
               </span>
             </div>
 

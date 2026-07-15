@@ -17,7 +17,7 @@ interface CongregationModalProps {
   congregationId: string | null;
   canEdit?: boolean;
   onEdit?: (id: string) => void;
-  onDelete?: (id: string, name: string, activeMembersCount: number) => void;
+  onDelete?: (id: string, name: string, activeMembersCount: number, isPrimary?: boolean) => void;
   onRefresh?: () => void;
 }
 
@@ -152,7 +152,11 @@ export function CongregationModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={congregation ? congregation.name : 'Carregando...'}
+      title={
+        congregation
+          ? `${congregation.name}${congregation.is_primary ? ' (Principal)' : ''}`
+          : 'Carregando...'
+      }
       size="xl"
     >
       {loading ? (
@@ -238,11 +242,17 @@ export function CongregationModal({
                       variant="danger"
                       onClick={() => {
                         handleClose();
-                        onDelete(congregation.id, congregation.name, congregation.activeMembersCount ?? 0);
+                        onDelete(congregation.id, congregation.name, congregation.activeMembersCount ?? 0, congregation.is_primary);
                       }}
                       className="w-full"
-                      disabled={readOnly}
-                      title={readOnly ? READER_TOOLTIP : undefined}
+                      disabled={readOnly || congregation.is_primary}
+                      title={
+                        congregation.is_primary
+                          ? 'A congregação principal não pode ser excluída'
+                          : readOnly
+                            ? READER_TOOLTIP
+                            : undefined
+                      }
                     >
                       <Trash2 size={16} className="mr-2" />
                       Excluir

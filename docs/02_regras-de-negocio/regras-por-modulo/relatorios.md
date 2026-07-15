@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-07-14
+versao: "1.1"
 total_regras: 9
 tags: [regras, modulo:relatorios]
 ver_tambem:
@@ -68,12 +68,12 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** —
 
 ### BR-REL-004: Aniversariantes
-- **Declaração:** Birthdays: active=true, birth não nulo; mês 1–12; filtro cong/sede.
+- **Declaração:** Birthdays: active=true, birth não nulo; mês 1–12; filtro opcional por `congregation_id` (UUID). Sentinel `sede` rejeitado.
 - **Tipo:** Derivação
 - **Gatilho:** birthdays endpoints
 - **Comportamento esperado:** Lista/count
-- **Comportamento em violação:** 400 mês
-- **Implementado em:** `memberController.ts`
+- **Comportamento em violação:** 400 mês / filtro inválido
+- **Implementado em:** `memberController.ts` + `resolveCongregationFilter`
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
@@ -120,7 +120,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** —
 
 ### BR-REL-009: Vision UI painel
-- **Declaração:** Home pode filtrar all/sede/congregation antes de exportar dashboard.
+- **Declaração:** Home pode filtrar `all` | `congregation` (por UUID) antes de exportar dashboard. Não há view mode `sede`.
 - **Tipo:** Fato
 - **Gatilho:** Frontend /
 - **Comportamento esperado:** PDF/UI
@@ -133,8 +133,8 @@ Oferecer indicadores demográficos/operacionais e exportações.
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
 
-- 🔍 API aceita muitos filtros Joi mas getMemberReports aplica principalmente congregation_id/sede na query.
+- 🔍 API aceita muitos filtros Joi mas getMemberReports aplica principalmente `congregation_id` (UUID) na query.
 
 ---
 
-*Gerado em 2026-07-13.*
+*Atualizado em 2026-07-14 (DEV-18).*

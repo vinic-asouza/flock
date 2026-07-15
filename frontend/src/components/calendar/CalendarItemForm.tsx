@@ -44,10 +44,9 @@ const createCalendarItemSchema = (congregations: Array<{ id: string; name: strin
   congregation_id: z.string()
     .optional()
     .or(z.literal(''))
-    .or(z.literal('sede'))
     .nullable()
     .refine((val: string | null | undefined) => {
-      if (val === 'sede' || !val) return true; // 'sede' or null/empty is always valid
+      if (!val) return true; // null/empty (todas as congregações) é sempre válido
       // Check if it's a valid UUID format
       const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
       if (!isUuid) return false;
@@ -268,7 +267,7 @@ export function CalendarItemForm({
     resolver: zodResolver(calendarItemSchema),
     defaultValues: mode === 'create' ? {
       is_recurring: false,
-      congregation_id: 'sede',
+      congregation_id: '',
     } : {},
   });
 
@@ -283,19 +282,12 @@ export function CalendarItemForm({
     recurrenceDayOfMonth >= 1 &&
     recurrenceDayOfMonth <= 31;
 
-  // Determinar congregação para busca de membros
-  // Se selectedCongregation é 'sede', passar null. Se é uma string (UUID), passar a string. Se undefined, não buscar ainda.
-  const congregationIdForSearch: string | null | undefined = selectedCongregation === 'sede' 
-    ? null 
-    : selectedCongregation || undefined;
-
   const {
     options: memberOptionsData,
     loading: membersLoading,
     setSearch: setMemberSearch,
   } = useMemberOptions({
-    enabled: selectedCongregation !== undefined, // Habilitar quando temos uma congregação selecionada (incluindo 'sede')
-    congregationId: congregationIdForSearch,
+    congregationId: selectedCongregation || undefined,
   });
 
   // Carregar grupos quando congregação mudar
@@ -466,7 +458,7 @@ export function CalendarItemForm({
           recurrence_day_of_month: item.recurrence_day_of_month !== null && item.recurrence_day_of_month !== undefined ? item.recurrence_day_of_month : '',
           recurrence_week_of_month: item.recurrence_week_of_month !== null && item.recurrence_week_of_month !== undefined ? item.recurrence_week_of_month : '',
           location: item.location || '',
-          congregation_id: item.congregation_id || 'sede',
+          congregation_id: item.congregation_id || '',
           group_id: item.group_id || '',
           responsible_member_id: item.responsible_member_id || '',
         });
@@ -487,7 +479,7 @@ export function CalendarItemForm({
           recurrence_day_of_month: '',
           recurrence_week_of_month: '',
           location: item.location || '',
-          congregation_id: item.congregation_id || 'sede',
+          congregation_id: item.congregation_id || '',
           group_id: item.group_id || '',
           responsible_member_id: item.responsible_member_id || '',
         });
@@ -528,7 +520,7 @@ export function CalendarItemForm({
         description: data.description || undefined,
         is_recurring: data.is_recurring,
         location: data.location || undefined,
-        congregation_id: data.congregation_id === 'sede' ? null : (data.congregation_id || null),
+        congregation_id: data.congregation_id || null,
         // status não é mais enviado, sempre será 'active' no backend
         group_id: data.group_id || null,
         responsible_member_id: data.responsible_member_id || null,
@@ -960,10 +952,10 @@ export function CalendarItemForm({
             Congregação
           </label>
           <Select
-            value={watch('congregation_id') || 'sede'}
-            onChange={(value) => setValue('congregation_id', value || 'sede')}
+            value={watch('congregation_id') || ''}
+            onChange={(value) => setValue('congregation_id', value || '')}
             options={[
-              { value: 'sede', label: 'Sede' },
+              { value: '', label: 'Todas as congregações' },
               ...(congregations || []).map((c: { id: string; name: string }) => ({ value: c.id, label: c.name }))
             ]}
             error={errors.congregation_id?.message}

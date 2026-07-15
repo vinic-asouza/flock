@@ -37,7 +37,8 @@ Produto: [[01_produto/visao-do-produto]].
 
 - Payload e validação do registro de igreja + credenciais do owner
 - Criação do usuário Auth + insert de `churches` (owner via `user_id`)
-- Rollback (`deleteUser`) se a igreja não puder ser criada
+- Criação automática da **congregação principal** (`is_primary`) com nome/endereço da igreja
+- Rollback (`deleteUser` + church) se a igreja ou a primary não puderem ser criadas
 - Match e-mail registro ↔ checkout (`link_token` / pending)
 - Chamada RPC `link_pending_to_church` no register
 - Cookie `flock_pending_link_token` e query `session_id` / `link_token` / `plan`
@@ -78,6 +79,7 @@ backend/src/
 │   ├── emailService.ts
 │   └── supabase.ts
 ├── utils/
+│   ├── primaryCongregation.ts      → createPrimaryCongregationForChurch
 │   ├── cookieUtils.ts              → pending link token + activeChurchId
 │   ├── billingMetrics.ts           → register_subscription_link_failed
 │   └── structuredLogger.ts
@@ -237,6 +239,8 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/onboarding]] (**12** regras).
 | BR-ONB-011 | E-mails welcome + admin (best-effort) |
 | BR-ONB-012 | Register ≤10/IP/15min |
 
+> **DEV-18:** após INSERT da church, o register cria a congregação principal (`is_primary`) e faz rollback (church + user) se falhar — ver [[BR-CON-010]].
+
 ---
 
 ## 7. 🔄 Fluxos do Módulo
@@ -261,6 +265,12 @@ sequenceDiagram
   API->>SA: signUp(email, password)
   API->>DB: INSERT churches (user_id)
   alt Church insert fail
+    API->>SA: admin.deleteUser
+    API-->>FE: 400
+  end
+  API->>DB: INSERT congregations (is_primary=true, nome/endereço da igreja)
+  alt Primary fail
+    API->>DB: DELETE church
     API->>SA: admin.deleteUser
     API-->>FE: 400
   end

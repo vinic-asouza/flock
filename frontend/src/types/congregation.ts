@@ -7,6 +7,7 @@ export interface Congregation {
   state: string;
   leader?: string;
   phone?: string;
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
   activeMembersCount?: number;

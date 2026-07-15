@@ -32,7 +32,7 @@ interface MemberModalWithSelectProps {
   filters: SelectFilter[];
   selectedValues: Record<string, string>;
   onFilterChange: (key: string, value: string) => void;
-  viewMode?: 'all' | 'sede' | 'congregation';
+  viewMode?: 'all' | 'congregation';
   selectedCongregationId?: string;
   itemsPerPage?: number;
 }
@@ -134,9 +134,7 @@ export function MemberModalWithSelect({
       });
 
       // Aplicar filtro baseado no ViewSelector da página principal
-      if (viewMode === 'sede') {
-        params.congregation_id = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
+      if (viewMode === 'congregation' && selectedCongregationId) {
         params.congregation_id = selectedCongregationId;
       }
 
@@ -177,9 +175,7 @@ export function MemberModalWithSelect({
       });
 
       // Aplicar filtro baseado no ViewSelector
-      if (viewMode === 'sede') {
-        exportFilters.congregation_id = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
+      if (viewMode === 'congregation' && selectedCongregationId) {
         exportFilters.congregation_id = selectedCongregationId;
       }
 

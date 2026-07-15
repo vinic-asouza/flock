@@ -120,9 +120,7 @@ export function IntegrationFiltersBar({
           >
             <span>
               {filters.expectedCongregationId
-                ? filters.expectedCongregationId === 'sede'
-                  ? 'Sede'
-                  : congregations.find(c => c.id === filters.expectedCongregationId)?.name || 'Congregação selecionada'
+                ? congregations.find(c => c.id === filters.expectedCongregationId)?.name || 'Congregação selecionada'
                 : 'Todas as congregações'}
             </span>
             <ChevronDown
@@ -174,16 +172,6 @@ export function IntegrationFiltersBar({
                 className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.expectedCongregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
               >
                 Todas as congregações
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onChange({ expectedCongregationId: 'sede' });
-                  setOpenSelect(null);
-                }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.expectedCongregationId === 'sede' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-              >
-                Sede
               </button>
               {congregations.map(congregation => (
                 <button

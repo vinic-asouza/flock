@@ -13,10 +13,11 @@ interface DeleteCongregationModalProps {
   congregationId: string;
   congregationName: string;
   activeMembersCount?: number;
+  isPrimary?: boolean;
   onSuccess: (congregationId: string) => void;
 }
 
-export function DeleteCongregationModal({ isOpen, onClose, congregationId, congregationName, activeMembersCount = 0, onSuccess }: DeleteCongregationModalProps) {
+export function DeleteCongregationModal({ isOpen, onClose, congregationId, congregationName, activeMembersCount = 0, isPrimary = false, onSuccess }: DeleteCongregationModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -71,18 +72,24 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
 
         <div className="text-center">
           <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
-            activeMembersCount > 0 ? 'bg-orange-100' : 'bg-red-100'
+            isPrimary || activeMembersCount > 0 ? 'bg-orange-100' : 'bg-red-100'
           }`}>
             <AlertTriangle className={`h-6 w-6 ${
-              activeMembersCount > 0 ? 'text-orange-600' : 'text-red-600'
+              isPrimary || activeMembersCount > 0 ? 'text-orange-600' : 'text-red-600'
             }`} />
           </div>
           
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {activeMembersCount > 0 ? 'Não é possível excluir a congregação' : 'Excluir Congregação'}
+            {isPrimary || activeMembersCount > 0 ? 'Não é possível excluir a congregação' : 'Excluir Congregação'}
           </h3>
           
-          {activeMembersCount > 0 ? (
+          {isPrimary ? (
+            <div className="space-y-2 mb-6">
+              <p className="text-sm text-gray-600">
+                <strong className="font-semibold text-gray-900">{congregationName}</strong> é a congregação principal da igreja e não pode ser excluída.
+              </p>
+            </div>
+          ) : activeMembersCount > 0 ? (
             <div className="space-y-4">
               <div className="p-4 bg-orange-50 border border-orange-200 rounded-md">
                 <p className="text-sm text-orange-700">
@@ -115,7 +122,15 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
           )}
 
           <div className="flex justify-end space-x-3 mt-6">
-            {activeMembersCount > 0 ? (
+            {isPrimary ? (
+              <Button
+                variant="secondary"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Entendi
+              </Button>
+            ) : activeMembersCount > 0 ? (
               <>
                 <Button
                   variant="secondary"

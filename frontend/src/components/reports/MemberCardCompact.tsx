@@ -50,7 +50,7 @@ export function MemberCardCompact({ member }: MemberCardCompactProps) {
             {member.active ? 'Ativo' : 'Inativo'}
           </span> */}
           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-            {member.congregation?.name || 'Sede'}
+            {member.congregation?.name || '—'}
           </span>
         </div>
         {/* Linha única: Idade e contatos */}

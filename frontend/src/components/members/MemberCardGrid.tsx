@@ -153,7 +153,7 @@ export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onDeact
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
             <Church size={12} className="text-gray-600" />
-            {member.congregation?.name || 'Sede'}
+            {member.congregation?.name || '—'}
           </span>
           {member.groups && member.groups.length > 0 && member.groups
             .filter(group => group.status) // Apenas grupos ativos

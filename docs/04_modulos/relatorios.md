@@ -95,7 +95,7 @@ Consome (leitura):
 | `members` (+ `congregations`) | Aggregados, aniversários, listas PDF/CSV, ficha PDF |
 | `integration_members` | Bloco `integration` no report + PDF list/ficha |
 | `groups` / `member_groups` | Export lista de grupos / membros do grupo |
-| `congregations` | Export lista + filtro sede |
+| `congregations` | Export lista + filtro por UUID |
 | `churches` | Cabeçalho PDF (nome) |
 
 ### Contratos de saída (DTO em memória)
@@ -178,7 +178,7 @@ max: 10 // por IP
 ```typescript
 // Query (reportFiltersSchema) — aceitos pelo Joi:
 {
-  congregation_id?: string | 'sede' | '';
+  congregation_id?: string | ''; // UUID; 'sede' rejeitado
   gender?: 'Masculino'|'Feminino'|'Outro'|'Não informado';
   marital_status?: 'Solteiro(a)'|...; // ⚠ divergente do enum de members (ver §14)
   nationality?, occupation?, city?, state?;
@@ -187,7 +187,7 @@ max: 10 // por IP
   search?: string;
 }
 
-// ⚠ IMPLEMENTAÇÃO ATUAL: na query SQL só aplica congregation_id / sede.
+// ⚠ IMPLEMENTAÇÃO ATUAL: na query SQL só aplica congregation_id (UUID).
 // Demais filtros são validados/stripped mas NÃO filtrados no getMemberReports.
 
 // Response 200: MemberReports (ver §4)
@@ -199,7 +199,7 @@ max: 10 // por IP
 ### Aniversários
 
 ```typescript
-// GET /birthdays/count|list?month=1-12&year=&congregation_id=uuid|sede
+// GET /birthdays/count|list?month=1-12&year=&congregation_id=uuid
 // members: active=true AND birth IS NOT NULL
 ```
 
@@ -211,7 +211,7 @@ max: 10 // por IP
   fields: string[];           // obrigatório, não vazio
   filters?: {
     search?, status?: 'all'|'active'|'inactive',
-    congregation_id?: uuid|'sede',
+    congregation_id?: uuid,
     gender?, marital_status?, nationality?, state?, city?, neighborhood?, occupation?,
     age_from?, age_to?, birth_date_from/to?, baptism_date_from/to?, ...
   };
@@ -228,7 +228,7 @@ max: 10 // por IP
 ### Dashboard PDF
 
 ```typescript
-// GET /api/export/dashboard/pdf?congregation_id=uuid|sede
+// GET /api/export/dashboard/pdf?congregation_id=uuid
 // Internamente: mock res + await getMemberReports(...) → PDFKit
 ```
 
@@ -251,12 +251,12 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**9** regras).
 | BR-REL-001 | Reports, birthdays e exports exigem reader+ |
 | BR-REL-002 | `GET /members/reports` ≤ 10 req/IP/min → 429 |
 | BR-REL-003 | Demografia usa `active=true`; summary inclui inativos |
-| BR-REL-004 | Birthdays: ativos, birth não nulo; mês 1–12; filtro cong/sede |
+| BR-REL-004 | Birthdays: ativos, birth não nulo; mês 1–12; filtro cong UUID |
 | BR-REL-005 | Filtros de report passam `reportFiltersSchema` |
 | BR-REL-006 | Exports scoped ao `church_id` do contexto |
 | BR-REL-007 | PDF/CSV de lista exige `fields[]` não vazio |
 | BR-REL-008 | Lista vazia no filtro → **404** “Nenhum membro encontrado” |
-| BR-REL-009 | Home filtra all/sede/congregation antes do dashboard |
+| BR-REL-009 | Home filtra `all` \| `congregation` antes do dashboard |
 
 ---
 

@@ -13,7 +13,7 @@ integracoes: [Supabase PostgreSQL]
 
 # Módulo — Congregações
 
-> Unidades locais (filiais/sedes) da igreja: CRUD + batch, isolamento por `church_id`, contagem de membros ativos.  
+> Unidades locais da igreja: CRUD + batch, congregação principal (`is_primary`), isolamento por `church_id`, contagem de membros ativos.  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/congregacoes]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
 
 ---
@@ -22,10 +22,10 @@ integracoes: [Supabase PostgreSQL]
 
 Organiza a estrutura geográfica/pastoral do tenant: cada congregação tem nome único na igreja, endereço e dados opcionais de líder/telefone.
 
-Existe para segmentar membros, grupos, calendário e integração (“Sede” = `congregation_id` null em outros módulos).
+Toda igreja tem exatamente uma **congregação principal** (`is_primary=true`), criada no onboarding com o nome/endereço da igreja. Membros e grupos referenciam congregações reais por UUID — não existe mais sentinel “Sede” / `null`.
 
 É entidade de apoio: leve em regras, mas amplamente referenciada.  
-Produto: [[01_produto/visao-do-produto]].
+Produto: [[01_produto/visao-do-produto]] · Glossário: [[01_produto/glossario]].
 
 ---
 
@@ -34,15 +34,17 @@ Produto: [[01_produto/visao-do-produto]].
 ### ✅ Este módulo É responsável por:
 
 - CRUD de `congregations` no tenant autenticado
-- Batch create com unicidade intra-lote e vs existentes
+- Batch create com unicidade intra-lote e vs existentes (`is_primary: false` em creates manuais)
+- Flag `is_primary` (única por igreja; unique parcial no banco)
 - Unicidade de nome case-insensitive por igreja
 - Normalização UF (uppercase) e telefone (só dígitos)
 - Listagem com `search` e `activeMembersCount` (membros `active=true`)
-- Bloquear DELETE se houver membros ativos na congregação
+- Bloquear DELETE se houver membros ativos, se for principal, ou se for a última congregação
 - Auditoria create/update/delete
 
 ### ❌ Este módulo NÃO é responsável por:
 
+- Criação da primary no register (→ [[04_modulos/onboarding]] / `authController` + `primaryCongregation.ts`)
 - CRUD de membros/grupos/calendário/links (só é FK consumida)
 - Soft delete / campo `active` na própria congregação (**não existe** no schema)
 - Paginação da lista (retorna conjunto do tenant)
@@ -63,13 +65,14 @@ backend/src/
 │   └── congregationValidator.ts   → Joi create/update
 ├── utils/
 │   ├── congregationValidation.ts  → helpers usados por membros/integração/público
+│   ├── primaryCongregation.ts     → get/create primary + resolveCongregationFilter
 │   └── auditLogger.ts
-└── types/index.ts                 → interface Congregation
+└── types/index.ts                 → interface Congregation (inclui is_primary)
 
-frontend/src/app/(main)/congregations/  → UI
+frontend/src/app/(main)/congregations/  → UI (badge Principal; delete bloqueado)
 
 Testes: inexistentes.
-Migrations: tabela no Supabase; sem pasta migrations local dedicada.
+Migrations: `congregations_is_primary_and_backfill` (Supabase).
 ```
 
 ---
@@ -90,15 +93,16 @@ Unidade local da igreja.
 | state | text | NOT NULL | — | UF 2 letras |
 | leader | text | NULL | — | Líder |
 | phone | text | NULL | — | Telefone (dígitos) |
+| is_primary | boolean | NOT NULL | false | Congregação principal do tenant |
 | created_at | timestamptz | NOT NULL | timezone utc now | Criação |
 | updated_at | timestamptz | NOT NULL | timezone utc now | Atualização |
 
 **Relacionamentos:**
 
 - Pertence a: `churches` (`church_id`)
-- Tem muitos (FKs em outros módulos): `members.congregation_id` (SET NULL), `groups`, `calendar_items`, `integration_members.expected_congregation_id`, `public_registration_links.default_congregation_id`
+- Tem muitos (FKs em outros módulos): `members.congregation_id` (**NOT NULL**, FK **RESTRICT**), `groups`, `calendar_items`, `integration_members.expected_congregation_id`, `public_registration_links.default_congregation_id`
 
-**Soft delete:** **não**. DELETE físico, bloqueado se houver membros ativos.  
+**Soft delete:** **não**. DELETE físico, bloqueado se houver membros ativos, se `is_primary`, ou se for a última congregação.  
 **Auditoria:** `created_at`/`updated_at` + `audit_logs` entity `congregation`.
 
 ```typescript
@@ -112,6 +116,7 @@ Unidade local da igreja.
   state: string;
   leader?: string | null;
   phone?: string | null;
+  is_primary: boolean;
   created_at: Date;
   updated_at: Date;
   // list/get enriquecido:
@@ -169,7 +174,7 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 
 ```typescript
 // 204 No Content
-// 400 — membros ativos associados
+// 400 — membros ativos associados | congregação principal | última congregação
 // 404 — não encontrada nesta church
 ```
 
@@ -177,19 +182,22 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/congregacoes]] (**9** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/congregacoes]] (**12** regras).
 
 | ID | Declaração curta |
 | --- | --- |
 | BR-CON-001 | Campos obrigatórios + limites Joi |
 | BR-CON-002 | Nome único na igreja (ilike) |
-| BR-CON-003 | Batch: array; sem dup no lote nem vs DB |
+| BR-CON-003 | Batch: array; sem dup no lote nem vs DB; `is_primary: false` |
 | BR-CON-004 | UF uppercase; telefone só dígitos |
 | BR-CON-005 | PUT não pode esvaziar name/address/city/state |
 | BR-CON-006 | Escrita editor+; leitura reader+ |
 | BR-CON-007 | DELETE proibido com membros `active=true` |
 | BR-CON-008 | Isolamento por `church_id` do contexto |
 | BR-CON-009 | Contagem só membros ativos |
+| BR-CON-010 | Register cria primary (nome/endereço da igreja) |
+| BR-CON-011 | DELETE proibido se `is_primary` ou última |
+| BR-CON-012 | No máximo uma `is_primary` por igreja |
 
 ---
 
@@ -232,6 +240,9 @@ sequenceDiagram
   alt não achou
     API-->>U: 404
   end
+  alt is_primary ou última
+    API-->>U: 400 não pode excluir
+  end
   API->>DB: count members where congregation_id AND active=true
   alt count > 0
     API-->>U: 400 não pode excluir
@@ -244,13 +255,13 @@ sequenceDiagram
 ### Estados
 
 N/A — **sem máquina de status**. Congregação existe ou é removida.  
-“Sede” em outros módulos = referência **nula** a congregação, não um registro especial obrigatório.
+A principal (`is_primary`) não pode ser excluída; demais congregações só se não tiverem membros ativos.
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Existente: create / batch
+  [*] --> Existente: create / batch / onboarding primary
   Existente --> Existente: update
-  Existente --> [*]: DELETE (sem membros ativos)
+  Existente --> [*]: DELETE (não primary, não última, sem membros ativos)
 ```
 
 ---

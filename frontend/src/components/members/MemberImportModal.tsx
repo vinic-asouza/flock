@@ -9,6 +9,7 @@ import { useMemberImport } from '@/hooks/useMemberImport';
 import { apiService } from '@/services/api';
 import type { Congregation } from '@/types/congregation';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { getPrimaryCongregationId } from '@/utils/congregation';
 
 interface MemberImportModalProps {
   isOpen: boolean;
@@ -21,8 +22,8 @@ type Step = 'upload' | 'validation' | 'importing' | 'result';
 export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportModalProps) {
   const [step, setStep] = useState<Step>('upload');
   const [file, setFile] = useState<File | null>(null);
-  const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
-  const [selectedCongregationId, setSelectedCongregationId] = useState<string>('sede');
+  const [congregations, setCongregations] = useState<Congregation[]>([]);
+  const [selectedCongregationId, setSelectedCongregationId] = useState<string>('');
   const [loadingCongregations, setLoadingCongregations] = useState(false);
 
   const {
@@ -47,13 +48,8 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     try {
       setLoadingCongregations(true);
       const data = await apiService.listCongregations();
-      setCongregations([
-        { value: 'sede', label: 'Sede' },
-        ...data.map((cong: Congregation) => ({
-          value: cong.id,
-          label: cong.name,
-        })),
-      ]);
+      setCongregations(data);
+      setSelectedCongregationId((prev) => prev || getPrimaryCongregationId(data));
     } catch {
       // Silenciar erro - não crítico, apenas para carregar congregações
     } finally {
@@ -77,8 +73,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     if (!file) return;
 
     try {
-      const congregationId = selectedCongregationId === 'sede' ? null : selectedCongregationId;
-      await validateImport(file, congregationId);
+      await validateImport(file, selectedCongregationId);
       setStep('validation');
     } catch {
       // O erro já foi definido pelo hook
@@ -90,8 +85,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
 
     try {
       setStep('importing');
-      const congregationId = selectedCongregationId === 'sede' ? null : selectedCongregationId;
-      await importMembers(file, congregationId, true);
+      await importMembers(file, selectedCongregationId, true);
       setStep('result');
     } catch {
       // O erro já foi definido pelo hook
@@ -104,7 +98,6 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     
     setStep('upload');
     setFile(null);
-    setSelectedCongregationId('sede');
     reset();
     onClose();
   };
@@ -114,10 +107,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     onSuccess();
   };
 
-  const congregationOptions = [
-    { value: 'sede', label: 'Sede' },
-    ...congregations.filter(c => c.value !== 'sede'),
-  ];
+  const congregationOptions = congregations.map((c) => ({ value: c.id, label: c.name }));
 
   return (
     <Modal
@@ -188,11 +178,11 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
             {/* Seleção de congregação */}
             <div>
               <Select
-                label="Congregação"
+                label="Congregação *"
                 options={congregationOptions}
                 value={selectedCongregationId}
                 onChange={setSelectedCongregationId}
-                placeholder="Selecione uma congregação"
+                placeholder={loadingCongregations ? 'Carregando...' : 'Selecione uma congregação'}
                 disabled={loadingCongregations}
                 helperText="Todos os membros importados serão associados a esta congregação"
               />
@@ -259,7 +249,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               </Button>
               <Button
                 onClick={handleValidate}
-                disabled={!file || validating || loadingCongregations}
+                disabled={!file || !selectedCongregationId || validating || loadingCongregations}
               >
                 {validating ? (
                   <>

@@ -103,7 +103,7 @@ Cadastro oficial do membro no tenant.
 | --- | --- | --- | --- | --- |
 | id | uuid | NOT NULL | gen_random_uuid() | PK |
 | church_id | uuid | NOT NULL | — | Tenant |
-| congregation_id | uuid | NULL | — | Congregação |
+| congregation_id | uuid | NOT NULL | — | Congregação (obrigatória; FK RESTRICT) |
 | name | text | NOT NULL | — | Nome completo |
 | birth | date | NOT NULL | — | Nascimento (não futuro) |
 | gender | text | NULL* | — | Masculino/Feminino (*Joi exige; CHECK DB) |
@@ -125,7 +125,7 @@ Cadastro oficial do membro no tenant.
 
 **Relacionamentos:**
 
-- Pertence a: `churches` (`church_id`), `congregations` (`congregation_id`, SET NULL)
+- Pertence a: `churches` (`church_id`), `congregations` (`congregation_id`, **RESTRICT**)
 - Tem muitos: `member_groups`; referenciado por grupos (responsible), calendário, integração (mentor)
 
 **Soft delete:** **não** via `deleted_at`. Inativação = `active=false`. **DELETE = hard delete.**  
@@ -222,7 +222,7 @@ Capability de autocadastro.
   admission?: string; admission_date?: string;
   email?: string;               // único na church se informado
   document?: string;            // CPF/CNPJ se informado
-  congregation_id?: string;
+  congregation_id: string;      // UUID obrigatório (BR-MEM-017)
   groups?: string[];            // UUIDs de groups da igreja
   children?: Array<{ name: string; birth: string }>;
   // + campos eclesiásticos form v2 (baptism_type, sunday_attendance, …)
@@ -258,7 +258,7 @@ Capability de autocadastro.
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**16** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**17** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -278,6 +278,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**16** regras).
 | BR-MEM-014 | Público também checa plano |
 | BR-MEM-015 | Race max_uses → rollback membro + 409 |
 | BR-MEM-016 | Link: expires futuro ≤1 ano; max_uses 1–10000 |
+| BR-MEM-017 | `congregation_id` UUID obrigatório (sem Sede/null) |
 
 **Inferido:** reativar via PATCH pode **não** revalidar limite do plano.
 

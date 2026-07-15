@@ -14,7 +14,7 @@ interface MembersModalProps {
   icon: React.ReactNode;
   tabs: { label: string; value: string; count: number; color: string }[];
   filterKey: string; // 'gender', 'marital_status', 'age_range', etc.
-  viewMode?: 'all' | 'sede' | 'congregation';
+  viewMode?: 'all' | 'congregation';
   selectedCongregationId?: string;
   itemsPerPage?: number;
   sideLayout?: boolean; // Para modais com muitas tabs (ex: faixa etária)
@@ -101,9 +101,7 @@ export function MembersModal({
       }
 
       // Aplicar filtro baseado no ViewSelector da página principal
-      if (viewMode === 'sede') {
-        params.congregation_id = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
+      if (viewMode === 'congregation' && selectedCongregationId) {
         params.congregation_id = selectedCongregationId;
       }
       // Se viewMode === 'all', não adiciona filtro de congregação
@@ -136,9 +134,7 @@ export function MembersModal({
       }
 
       // Aplicar filtro baseado no ViewSelector
-      if (viewMode === 'sede') {
-        filters.congregation_id = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
+      if (viewMode === 'congregation' && selectedCongregationId) {
         filters.congregation_id = selectedCongregationId;
       }
 

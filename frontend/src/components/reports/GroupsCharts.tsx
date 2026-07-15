@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 
 interface GroupsChartsProps {
   loading?: boolean;
-  viewMode?: 'all' | 'sede' | 'congregation';
+  viewMode?: 'all' | 'congregation';
   selectedCongregationId?: string;
   totalMembers?: number;
 }
@@ -42,9 +42,7 @@ export function GroupsCharts({
       setError(null);
 
       let congregationId: string | undefined;
-      if (viewMode === 'sede') {
-        congregationId = 'sede';
-      } else if (viewMode === 'congregation' && selectedCongregationId) {
+      if (viewMode === 'congregation' && selectedCongregationId) {
         congregationId = selectedCongregationId;
       }
 
@@ -116,7 +114,7 @@ export function GroupsCharts({
             color: getGroupTypeColor(type as GroupType),
             totalMembers,
             congregationName:
-              group.congregations?.name || (group.congregation_id ? null : 'Sede'),
+              group.congregations?.name || (group.congregation_id ? null : 'Todas as congregações'),
           }));
 
         const totalValue = groupsData.reduce((sum, item) => sum + item.value, 0);

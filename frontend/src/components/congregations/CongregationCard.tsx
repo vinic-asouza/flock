@@ -17,6 +17,12 @@ interface CongregationCardProps {
 
 export function CongregationCard({ congregation, canEdit = true, onView, onEdit, onDelete }: CongregationCardProps) {
   const readOnly = canEdit === false;
+  const deleteDisabled = readOnly || congregation.is_primary;
+  const deleteTooltip = congregation.is_primary
+    ? 'A congregação principal não pode ser excluída'
+    : readOnly
+      ? READER_TOOLTIP
+      : 'Excluir';
 
   return (
     <div
@@ -41,6 +47,11 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
           <span className="font-semibold text-gray-900 text-base truncate" title={congregation.name}>
             {congregation.name}
           </span>
+          {congregation.is_primary && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+              Principal
+            </span>
+          )}
           {congregation.activeMembersCount !== undefined && congregation.activeMembersCount > 0 && (
             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
               {congregation.activeMembersCount} ativo{congregation.activeMembersCount !== 1 ? 's' : ''}
@@ -99,12 +110,12 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
             <Edit size={18} />
           </button>
           <button
-            title={readOnly ? READER_TOOLTIP : 'Excluir'}
+            title={deleteTooltip}
             onClick={(e) => {
               e.stopPropagation();
               onDelete?.();
             }}
-            disabled={readOnly}
+            disabled={deleteDisabled}
             className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Trash2 size={18} />

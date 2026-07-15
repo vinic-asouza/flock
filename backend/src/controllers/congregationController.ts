@@ -68,7 +68,8 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
           city: city.trim(),
           state: state.trim().toUpperCase(),
           leader: leader?.trim() || null,
-          phone: normalizedPhone || null
+          phone: normalizedPhone || null,
+          is_primary: false
         }
       ])
       .select()
@@ -420,6 +421,35 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Nova regra: não excluir congregação principal
+    if (existingCongregation.is_primary) {
+      return res.status(400).json({
+        error: 'Não é possível excluir congregação',
+        details: 'A congregação principal da igreja não pode ser excluída.',
+      });
+    }
+
+    // Nova regra: não excluir a última congregação da igreja
+    const { count: congregationCount, error: countError } = await supabase
+      .from('congregations')
+      .select('id', { count: 'exact', head: true })
+      .eq('church_id', churchId);
+
+    if (countError) {
+      logError('Erro ao contar congregações:', countError);
+      return res.status(500).json({
+        error: 'Erro ao verificar congregações',
+        details: 'Não foi possível verificar se esta é a última congregação da igreja',
+      });
+    }
+
+    if ((congregationCount ?? 0) <= 1) {
+      return res.status(400).json({
+        error: 'Não é possível excluir congregação',
+        details: 'A igreja precisa manter ao menos uma congregação.',
+      });
+    }
+
     // Verificar se existem membros ativos usando esta congregação
     const { data: members, error: membersError } = await supabase
       .from('members')
@@ -562,7 +592,8 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       city: congregation.city.trim(),
       state: congregation.state.trim().toUpperCase(),
       leader: congregation.leader?.trim() || null,
-      phone: congregation.phone ? congregation.phone.replace(/\D/g, '') : null
+      phone: congregation.phone ? congregation.phone.replace(/\D/g, '') : null,
+      is_primary: false,
     }));
 
     // Inserir congregações em lote

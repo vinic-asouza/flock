@@ -164,7 +164,7 @@ tags: [padrões, código, convenções]
 > Amplamente usados (`leader?.trim() || null`, `error?.message`).
 - **Nível:** 🔴 Preferir
 - **Enforcement:** 👁️
-- ✅ `member.congregations?.name || 'Sede'`
+- ✅ `member.congregations?.name || '—'`
 - ❌ `member.congregations && member.congregations.name`
 
 ### CONV-022: Generics sob demanda
@@ -234,7 +234,7 @@ tags: [padrões, código, convenções]
 - ❌ `if (plan === '200')` espalhado sem `PLAN_CONFIG`
 
 ### CONV-033: Extrair quando logic se replica em 2+ módulos
-> Ex.: alinhamento Sede/congregação em group/calendar/integrations.
+> Ex.: alinhamento mentor/responsável/membro à congregação em group/calendar/integrations; `resolveCongregationFilter` (rejeita `sede`).
 - **Nível:** 🟡 · **Enforcement:** 👁️
 
 ---

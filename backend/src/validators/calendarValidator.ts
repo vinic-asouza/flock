@@ -235,11 +235,7 @@ export const listCalendarItemsSchema = Joi.object({
     Joi.string().valid(...calendarItemTypes),
     Joi.array().items(Joi.string().valid(...calendarItemTypes))
   ).optional(),
-  // congregation_id pode ser UUID ou a string 'sede' (que representa null)
-  congregation_id: Joi.alternatives().try(
-    Joi.string().uuid(),
-    Joi.string().valid('sede')
-  ).optional(),
+  congregation_id: Joi.string().uuid().allow('').optional(),
   group_id: Joi.string().uuid().optional(),
   start_date: Joi.date().iso().optional(),
   end_date: Joi.date().iso().optional(),

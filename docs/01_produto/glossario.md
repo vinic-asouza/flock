@@ -34,11 +34,17 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **UI:** nome da igreja no Header / switcher
 
 **Congregação** *(código: `Congregation`, `congregations`)*  
-> Unidade local ou sede dentro da igreja (ex.: sede, ponto, campus). Não é o tenant.  
-- **Atributos-chave:** `name`, endereço, `leader`, `phone`  
-- **Relacionamentos:** pertence a 1 igreja; membros e eventos podem referenciá-la  
+> Unidade local dentro da igreja (ex.: campus, ponto, filial). Não é o tenant.  
+- **Atributos-chave:** `name`, endereço, `leader`, `phone`, `is_primary`  
+- **Relacionamentos:** pertence a 1 igreja; membros e eventos referenciam-na  
 - **Usado em:** Membros, Integração, Grupos, Calendário, Relatórios  
-- **UI:** “Congregações”
+- **UI:** “Congregações”  
+- **Nota:** cada igreja tem exatamente uma **congregação principal** (`is_primary = true`), criada no registro com o nome da igreja. Não existe mais o conceito implícito “Sede” (`congregation_id` null / sentinel `sede`).
+
+**Congregação principal** *(código: `is_primary` em `congregations`)*  
+> Unidade default da igreja. Criada automaticamente no onboarding; não pode ser excluída; membros novos usam-na como default no formulário.  
+- **UI:** badge “Principal” na listagem de congregações  
+- **Usado em:** onboarding, defaults de formulário, migração de dados legados
 
 **Membro** *(código: `Member`, `members`)*  
 > Pessoa no **rol oficial** da igreja. **Não** possui login no Flock por ser membro.  

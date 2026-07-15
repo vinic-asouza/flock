@@ -37,7 +37,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Validação de tipo, datas, recorrência (weekly/monthly) e vínculos alinhados (cong./grupo/responsável)
 - Forçar `status = 'active'` na criação; **não aplicar** mudança de status no PUT
 - Listagem com expansão de ocorrências recorrentes no intervalo + paginação pós-expansão
-- Filtros: type, congregation (`sede`|uuid), group, janela de datas
+- Filtros: type, congregation (UUID; `sede` rejeitado), group, janela de datas
 - Participantes: XOR membro/guest; add; list; remove; bulk; opcional no create do item
 - Export PDF mensal (PDFKit, síncrono) dos itens ativos com expansão
 - Helper `GET /api/calendar/groups` — grupos que têm itens no calendário
@@ -111,7 +111,7 @@ Programação/evento/encontro/reunião da igreja (única linha = série se recor
 | recurrence_day_of_month | int4 | NULL | — | 1–31 (modo mensal A) |
 | recurrence_week_of_month | int4 | NULL | — | -1…4 (modo mensal B com day_of_week) |
 | location | text | NULL | — | Local ≤255 |
-| congregation_id | uuid | NULL | — | null = Sede |
+| congregation_id | uuid | NULL | — | Opcional; sem sentinel Sede |
 | group_id | uuid | NULL | — | Grupo opcional |
 | responsible_member_id | uuid | NULL | — | Membro responsável |
 | created_by | uuid | NULL | — | auth.users |
@@ -210,7 +210,7 @@ Auth: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 | Param | Default | Notas |
 | --- | --- | --- |
 | `type` | — | string ou array dos 4 tipos |
-| `congregation_id` | — | uuid ou `sede` |
+| `congregation_id` | — | uuid (`sede` rejeitado) |
 | `group_id` | — | uuid |
 | `start_date` / `end_date` | ano atual | ISO; define janela de expansão |
 | `page` | 1 | pós-expansão |
@@ -486,7 +486,7 @@ Isolamento RLS bypassado pelo service_role — confiança no filtro aplicacional
 - XOR participante e UNIQUE membro
 - Rollback create quando participants falham
 - Status dead path (cancelled/postponed)
-- PDF params e filtros sede
+- PDF params e filtros por congregação (UUID)
 - Isolamento cross-tenant
 
 ---
@@ -497,7 +497,7 @@ Isolamento RLS bypassado pelo service_role — confiança no filtro aplicacional
 
 - [[04_modulos/auth]] — sessão/RBAC  
 - [[04_modulos/igreja-config]] — nome da igreja no PDF + tenant  
-- [[04_modulos/congregacoes]] — escopo / Sede  
+- [[04_modulos/congregacoes]] — escopo por UUID  
 - [[04_modulos/grupos]] — vínculo opcional + helper `/groups`  
 - [[04_modulos/membros]] — responsável e participantes  
 

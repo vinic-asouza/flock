@@ -45,7 +45,8 @@ tags: [padrões, API, endpoints]
 
 ### API-003: Path = identidade; query = filtro/paginação/busca
 - **Nível:** 🔴
-- ✅ `GET /members?page=1&limit=20&congregation_id=sede`
+- ✅ `GET /members?page=1&limit=20&congregation_id=<uuid>`
+- ❌ `GET /members?congregation_id=sede` (sentinel removido)
 - ❌ `GET /members/filter/active` para filtros dinâmicos
 
 ### API-004: Sem versionamento de path por enquanto

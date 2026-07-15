@@ -5,7 +5,7 @@ import { logError } from './logger';
  * Valida se o mentor pertence à igreja e se está associado à congregação (se fornecida)
  * 
  * @param mentorId - ID do mentor a ser validado (pode ser null/undefined)
- * @param expectedCongregationId - ID da congregação prevista (pode ser null/undefined ou string vazia para 'Sede')
+ * @param expectedCongregationId - ID da congregação prevista (vazio = ainda não definida)
  * @param churchId - ID da igreja para validar pertencimento
  * @returns Promise com objeto contendo isValid (boolean) e errorMessage (string opcional)
  */
@@ -35,39 +35,15 @@ export async function validateMentorAndCongregation(
     };
   }
 
-  // Se não há congregação prevista (ou é 'Sede'), mentor pode ser de qualquer congregação da igreja
+  // Sem congregação prevista (= ainda não definida), mentor pode ser de qualquer congregação
   if (!expectedCongregationId || expectedCongregationId.trim() === '') {
     return { isValid: true };
   }
 
-  // Se há congregação prevista, verificar se o mentor está associado a ela
-  // O mentor pode estar na congregação ou na Sede (congregation_id null)
   if (mentor.congregation_id === expectedCongregationId) {
     return { isValid: true };
   }
 
-  // Se o mentor está na Sede (congregation_id null), ele pode ser mentor de qualquer congregação
-  if (!mentor.congregation_id) {
-    // Verificar se a congregação prevista pertence à igreja
-    const { data: congregation, error: congregationError } = await supabase
-      .from('congregations')
-      .select('id, church_id')
-      .eq('id', expectedCongregationId)
-      .eq('church_id', churchId)
-      .single();
-
-    if (congregationError || !congregation) {
-      logError('Erro ao buscar congregação:', congregationError);
-      return {
-        isValid: false,
-        errorMessage: 'Congregação prevista não encontrada ou não pertence a esta igreja'
-      };
-    }
-
-    return { isValid: true };
-  }
-
-  // Mentor está em outra congregação, não pode ser mentor desta
   return {
     isValid: false,
     errorMessage: 'O mentor selecionado não está associado à congregação prevista'
@@ -77,7 +53,7 @@ export async function validateMentorAndCongregation(
 /**
  * Valida se a congregação prevista pertence à igreja
  * 
- * @param expectedCongregationId - ID da congregação prevista (pode ser null/undefined ou string vazia para 'Sede')
+ * @param expectedCongregationId - ID da congregação prevista (vazio = ainda não definida)
  * @param churchId - ID da igreja para validar pertencimento
  * @returns Promise com objeto contendo isValid (boolean) e errorMessage (string opcional)
  */
@@ -85,7 +61,7 @@ export async function validateCongregation(
   expectedCongregationId: string | null | undefined,
   churchId: string
 ): Promise<{ isValid: boolean; errorMessage?: string }> {
-  // Se não há congregação (ou é 'Sede'), é válido
+  // Sem congregação prevista (= ainda não definida) é válido
   if (!expectedCongregationId || expectedCongregationId.trim() === '') {
     return { isValid: true };
   }

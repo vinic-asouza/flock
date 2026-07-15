@@ -31,6 +31,7 @@ export interface Congregation {
   state: string;
   leader?: string;
   phone?: string;
+  is_primary: boolean;
   created_at: Date;
   updated_at: Date;
 }

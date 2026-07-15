@@ -79,7 +79,7 @@ export const listPublicRegistrationGroups = async (
 ) => {
   try {
     const churchId = req.churchId!;
-    const congregation_id = (req.query.congregation_id as string) || 'sede';
+    const congregation_id = (req.query.congregation_id as string) || '';
 
     let query = supabase
       .from('groups')
@@ -97,9 +97,7 @@ export const listPublicRegistrationGroups = async (
       .order('type')
       .order('name');
 
-    if (congregation_id === 'sede') {
-      query = query.is('congregation_id', null);
-    } else {
+    if (congregation_id) {
       const congregationCheck = await validateCongregationBelongsToChurch(congregation_id, churchId);
       if (!congregationCheck.valid) {
         return res.status(400).json({
@@ -182,21 +180,26 @@ export const createMemberViaPublicLink = async (
     const congregationId = (normalizedData.congregation_id as string | null | undefined)
       || registrationLink.default_congregation_id;
 
-    if (congregationId) {
-      const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
-      if (!congregationCheck.valid) {
-        return res.status(400).json({
-          error: 'Congregação inválida',
-          details: congregationCheck.message,
-        });
-      }
+    if (!congregationId) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: 'A congregação é obrigatória para o cadastro'
+      });
+    }
+
+    const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
+    if (!congregationCheck.valid) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: congregationCheck.message,
+      });
     }
 
     const memberData: Partial<Member> = {
       ...normalizedData,
       church_id: churchId,
       active: true,
-      congregation_id: congregationId ?? undefined,
+      congregation_id: congregationId,
       children: normalizedData.children && Array.isArray(normalizedData.children)
         ? normalizedData.children
         : []

@@ -1,6 +1,6 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-07-13
+ultima_atualizacao: 2026-07-14
 versao: "1.0"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
@@ -86,6 +86,7 @@ erDiagram
     text state
     text leader
     text phone
+    boolean is_primary
     timestamptz created_at
     timestamptz updated_at
   }
@@ -311,12 +312,13 @@ erDiagram
 | state | text | NOT NULL | — | UF |
 | leader | text | NULL | — | Líder |
 | phone | text | NULL | — | Telefone |
+| is_primary | boolean | NOT NULL | `false` | Congregação principal do tenant |
 | created_at | timestamptz | NOT NULL | `timezone('utc', now())` | Criação |
 | updated_at | timestamptz | NOT NULL | `timezone('utc', now())` | Atualização |
 
-**Índices:** `church_id`; `(church_id, name)` (duplicado histórico); `state`.
+**Índices:** `church_id`; `(church_id, name)` (duplicado histórico); `state`; unique parcial `(church_id)` WHERE `is_primary` (no máximo uma principal por igreja).
 
-**Relacionamentos:** `church_id` → `churches.id` (many-to-one, CASCADE). Referenciado por members/groups/calendar/integration/links com SET NULL onde aplicável.
+**Relacionamentos:** `church_id` → `churches.id` (many-to-one, CASCADE). Referenciado por members (RESTRICT), groups/calendar/integration/links (SET NULL onde aplicável). Toda igreja nova recebe uma primary no register (`createPrimaryCongregationForChurch`).
 
 ---
 
@@ -327,7 +329,7 @@ erDiagram
 | --- | --- | --- | --- | --- |
 | id | uuid | PK | `gen_random_uuid()` | Identificador |
 | church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
-| congregation_id | uuid | NULL, FK SET NULL | — | Congregação |
+| congregation_id | uuid | NOT NULL, FK **RESTRICT** | — | Congregação (obrigatória) |
 | name | text | NOT NULL | — | Nome completo |
 | birth | date | NOT NULL | — | Nascimento |
 | gender | text | NULL, CHECK Masculino/Feminino | — | Gênero (label PT) |
@@ -372,9 +374,9 @@ erDiagram
 | weekly_activities | boolean | NULL | — | Atividades semanais |
 | weekly_activities_which | text | NULL | — | Quais atividades |
 
-**Índices:** PK; `congregation_id`; parcial `(church_id, congregation_id, active)` WHERE active e congregation NOT NULL; GIN `children`.
+**Índices:** PK; `congregation_id`; parcial `(church_id, congregation_id, active)` WHERE active; GIN `children`.
 
-**Relacionamentos:** `church_id` → churches CASCADE; `congregation_id` → congregations SET NULL. Referenciado por member_groups (CASCADE), calendar/group responsible / mentor (SET NULL).
+**Relacionamentos:** `church_id` → churches CASCADE; `congregation_id` → congregations **RESTRICT** (não permite deletar cong. com membros). Referenciado por member_groups (CASCADE), calendar/group responsible / mentor (SET NULL).
 
 > **Nota:** não há `updated_at` em `members`. Soft “inativação” via `active=false`; delete de membro na API é **hard delete**.
 
@@ -410,7 +412,7 @@ erDiagram
 | --- | --- | --- | --- | --- |
 | id | uuid | PK | `gen_random_uuid()` | Identificador |
 | church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
-| congregation_id | uuid | NULL, FK SET NULL | — | Escopo congregação |
+| congregation_id | uuid | NULL, FK SET NULL | — | Escopo congregação (API de grupos exige UUID) |
 | type | varchar | NOT NULL, CHECK lista PT (Ministério, Célula, …) | — | Tipo |
 | name | varchar | NOT NULL | — | Nome |
 | description | text | NULL | — | Descrição |
@@ -457,7 +459,7 @@ erDiagram
 | recurrence_day_of_month | int4 | NULL, 1–31 | — | Dia mês |
 | recurrence_week_of_month | int4 | NULL, -1–4 | — | Semana do mês |
 | location | text | NULL | — | Local |
-| congregation_id | uuid | NULL, FK SET NULL | — | Congregação |
+| congregation_id | uuid | NULL, FK SET NULL | — | Congregação opcional (filtro `sede` removido) |
 | group_id | uuid | NULL, FK SET NULL | — | Grupo |
 | responsible_member_id | uuid | NULL, FK SET NULL | — | Responsável |
 | created_by | uuid | NULL, FK → auth.users | — | Autor |

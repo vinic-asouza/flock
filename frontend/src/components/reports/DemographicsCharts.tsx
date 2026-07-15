@@ -10,7 +10,7 @@ import { Users, Heart, Calendar, Eye } from 'lucide-react';
 interface DemographicsChartsProps {
   data: Demographics;
   loading?: boolean;
-  viewMode?: 'all' | 'sede' | 'congregation';
+  viewMode?: 'all' | 'congregation';
   selectedCongregationId?: string;
 }
 

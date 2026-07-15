@@ -1,19 +1,19 @@
 ---
 type: regras-modulo
 modulo: congregacoes
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
-total_regras: 9
+ultima_atualizacao: 2026-07-14
+versao: "1.1"
+total_regras: 12
 tags: [regras, modulo:congregacoes]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
-  - "[[04_modulos/congregacoes/overview]]"
+  - "[[04_modulos/congregacoes]]"
 ---
 
 # Regras de Negócio — Congregações
 
 ## Responsabilidade do Módulo
-Organizar unidades locais da igreja.
+Organizar unidades locais da igreja. Toda igreja possui exatamente uma congregação principal (`is_primary`).
 
 ## Índice de Regras
 | ID | Nome | Tipo | Status |
@@ -27,6 +27,9 @@ Organizar unidades locais da igreja.
 | BR-CON-007 | Delete com membros ativos | Restrição | Ativo |
 | BR-CON-008 | Isolamento tenant | Restrição | Ativo |
 | BR-CON-009 | Contagem de ativos | Derivação | Ativo |
+| BR-CON-010 | Congregação principal no onboarding | Gatilho | Ativo |
+| BR-CON-011 | Proteção da congregação principal | Restrição | Ativo |
+| BR-CON-012 | Única principal por igreja | Restrição | Ativo |
 
 ---
 
@@ -130,6 +133,32 @@ Organizar unidades locais da igreja.
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
+### BR-CON-010: Congregação principal no onboarding
+- **Declaração:** Ao registrar a igreja, o sistema cria automaticamente uma congregação com `is_primary=true`, nome e endereço iguais aos da igreja.
+- **Tipo:** Gatilho
+- **Gatilho:** POST register (sucesso na criação da church)
+- **Comportamento esperado:** Uma primary por tenant novo
+- **Comportamento em violação:** Rollback da church/user se a primary falhar
+- **Implementado em:** `authController.ts` + `primaryCongregation.ts`
+- **Depende de:** —
+
+### BR-CON-011: Proteção da congregação principal
+- **Declaração:** Não excluir congregação com `is_primary=true` nem a última congregação da igreja.
+- **Tipo:** Restrição
+- **Gatilho:** DELETE
+- **Comportamento esperado:** 400 com mensagem clara
+- **Comportamento em violação:** —
+- **Implementado em:** `congregationController.ts` (+ UI)
+- **Depende de:** [[BR-CON-007]]
+
+### BR-CON-012: Única principal por igreja
+- **Declaração:** No máximo uma congregação com `is_primary=true` por `church_id` (unique parcial no banco).
+- **Tipo:** Restrição
+- **Gatilho:** Insert/update de primary
+- **Comportamento esperado:** Constraint impede segunda primary
+- **Implementado em:** migration `congregations_is_primary_and_backfill`
+- **Depende de:** —
+
 ---
 
-*Gerado em 2026-07-13.*
+*Atualizado em 2026-07-14 (DEV-18).*

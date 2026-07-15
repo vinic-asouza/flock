@@ -57,12 +57,10 @@ export function ActiveFiltersChips({
     switch (key) {
       case 'status':
         return value === 'active' ? 'Ativo' : value === 'inactive' ? 'Inativo' : 'Todos';
-      case 'congregationId':
-        if (value === 'sede') {
-          return 'Sede';
-        }
+      case 'congregationId': {
         const congregation = congregations.find(c => c.id === value);
         return congregation ? congregation.name : '';
+      }
       case 'gender':
         return value;
       case 'maritalStatus':

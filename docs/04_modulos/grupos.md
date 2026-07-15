@@ -13,14 +13,14 @@ integracoes: [Supabase PostgreSQL]
 
 # Módulo — Grupos
 
-> Ministérios, células, equipes e demais tipos: CRUD de `groups` + vínculo N:N `member_groups`, com alinhamento de congregação/Sede.  
+> Ministérios, células, equipes e demais tipos: CRUD de `groups` + vínculo N:N `member_groups`, com alinhamento por congregação (UUID).  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/grupos]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
 
 ---
 
 ## 1. 📌 Visão Geral
 
-Organiza membros em estruturas pastorais e operacionais (Ministério, Célula, Equipe, etc.), com responsável opcional, escopo de congregação (ou Sede) e status ativo/inativo.
+Organiza membros em estruturas pastorais e operacionais (Ministério, Célula, Equipe, etc.), com responsável opcional, escopo de congregação (UUID obrigatório na API) e status ativo/inativo.
 
 Resolve o problema de segmentar o rol além da congregação geográfica — um membro pode participar de vários grupos.
 
@@ -35,13 +35,13 @@ Produto: [[01_produto/visao-do-produto]].
 
 - CRUD de `groups` no tenant autenticado
 - Tipos restringidos (`GroupType` enum PT)
-- Unicidade de grupo **ativo** por `name + type + congregation_id` (null = Sede)
-- Validação de `congregation_id` pertencente à igreja
-- Validação de `responsible_id` (membro da igreja, alinhado à cong./Sede)
+- Unicidade de grupo **ativo** por `name + type + congregation_id` (UUID)
+- Validação de `congregation_id` obrigatório e pertencente à igreja
+- Validação de `responsible_id` (membro da igreja, mesma congregação do grupo)
 - Vínculos N:N via `member_groups` (add/list/remove)
-- Alinhamento membro↔grupo na mesma congregação (ou Sede como coringa)
+- Alinhamento membro↔grupo na mesma congregação
 - Impedir membro duplicado no mesmo grupo
-- Listagem com filtros (`congregation_id`, `type`, `status`, `search`) + `memberCount`
+- Listagem com filtros (`congregation_id` UUID, `type`, `status`, `search`) + `memberCount`
 - Soft-flag `status` (ativo/inativo); hard delete do grupo (CASCADE em `member_groups`)
 - Auditoria create/update/delete (grupo e vínculo)
 
@@ -91,7 +91,7 @@ Ministério / célula / equipe da igreja.
 | --- | --- | --- | --- | --- |
 | id | uuid | NOT NULL | gen_random_uuid() | PK |
 | church_id | uuid | NOT NULL | — | Tenant (CASCADE) |
-| congregation_id | uuid | NULL | — | Escopo; null = Sede (SET NULL) |
+| congregation_id | uuid | NULL* | — | Escopo; **API create/update exige UUID** (*coluna ainda nullable no schema) |
 | type | varchar | NOT NULL | — | GroupType (CHECK) |
 | name | varchar | NOT NULL | — | Nome |
 | description | text | NULL | — | Descrição ≤5000 no validator |
@@ -105,7 +105,7 @@ Ministério / célula / equipe da igreja.
 
 **Relacionamentos:**
 
-- Pertence a: `churches` (`church_id`); opcionalmente `congregations` (`congregation_id`)
+- Pertence a: `churches` (`church_id`); `congregations` (`congregation_id`, obrigatório na API)
 - Tem muitos: `member_groups` (CASCADE)
 - Tem um (opcional): `members` via `responsible_id`
 - Referenciado por: `calendar_items.group_id` (fora deste módulo)
@@ -118,7 +118,7 @@ Ministério / célula / equipe da igreja.
 interface Group {
   id: string;
   church_id: string;
-  congregation_id?: string | null;
+  congregation_id: string; // UUID obrigatório na API
   type: GroupType;
   name: string;
   description?: string | null;
@@ -182,7 +182,7 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 
 | Param | Valores | Efeito |
 | --- | --- | --- |
-| `congregation_id` | uuid \| `sede` | Filtra cong. ou `congregation_id IS NULL` |
+| `congregation_id` | uuid | Filtra congregação (`sede` rejeitado) |
 | `type` | GroupType | Filtra tipo |
 | `status` | `active` \| `inactive` \| `all` (default) | `status` boolean |
 | `search` | string | `ilike` no name |
@@ -197,7 +197,7 @@ Sem paginação — retorna todos do tenant filtrados.
   name: string;                 // 2–100, obrigatório
   type: GroupType;              // obrigatório
   description?: string;         // max 5000, '' ok
-  congregation_id?: string | null; // uuid ou null/'' = Sede
+  congregation_id: string;      // UUID obrigatório
   responsible_id?: string | null;  // uuid membro
   status?: boolean;             // default true
 }
@@ -246,17 +246,14 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/grupos]] (**10** regras).
 | BR-GRP-002 | Nome 2–100; descrição ≤5000 |
 | BR-GRP-003 | Sem outro **ativo** com mesmo name+type+congregation |
 | BR-GRP-004 | Create defaulta `status=true` |
-| BR-GRP-005 | `responsible_id` membro da igreja alinhado à cong./Sede |
-| BR-GRP-006 | `congregation_id` null=Sede; se setado, da igreja |
+| BR-GRP-005 | `responsible_id` membro da mesma congregação do grupo |
+| BR-GRP-006 | `congregation_id` UUID obrigatório e da igreja |
 | BR-GRP-007 | Mutações editor+; leitura reader+ |
-| BR-GRP-008 | Add membro: mesma igreja; mesma cong. ou Sede |
+| BR-GRP-008 | Add membro: mesma igreja e mesma congregação do grupo |
 | BR-GRP-009 | Membro único por grupo |
 | BR-GRP-010 | DELETE remove grupo e CASCADE `member_groups` |
 
-**Alinhamento Sede (detalhe de BR-GRP-005/008):**
-
-- Grupo sem `congregation_id` (Sede) → qualquer membro/responsável da igreja
-- Grupo com cong. → membro/responsável na mesma cong. **ou** com `congregation_id` null (Sede)
+**Alinhamento (BR-GRP-005/008):** responsável e membro devem pertencer à mesma congregação do grupo (sem coringa null/Sede).
 
 ---
 
@@ -428,10 +425,10 @@ Sem policy RLS efetiva: isolamento é **aplicacional** (service_role).
 **Gaps críticos:**
 
 - Unicidade só entre ativos (e case-sensitive no `eq('name')`)
-- Alinhamento Sede vs congregação (responsável e membro)
+- Alinhamento membro/responsável ↔ congregação do grupo
 - Duplicata no `member_groups` / UNIQUE DB
 - DELETE com CASCADE (não bloqueia)
-- Filtros list (`sede`, status, search)
+- Filtros list (UUID, rejeição de `sede`, status, search)
 - Isolamento cross-tenant
 
 ---
@@ -442,7 +439,7 @@ Sem policy RLS efetiva: isolamento é **aplicacional** (service_role).
 
 - [[04_modulos/auth]] — sessão e RBAC  
 - [[04_modulos/igreja-config]] — tenant  
-- [[04_modulos/congregacoes]] — escopo `congregation_id` / Sede  
+- [[04_modulos/congregacoes]] — escopo `congregation_id` (UUID)  
 - [[04_modulos/membros]] — `responsible_id` e vínculos  
 
 **Dependem deste:**

@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: membros
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
-total_regras: 16
+ultima_atualizacao: 2026-07-14
+versao: "1.1"
+total_regras: 17
 tags: [regras, modulo:membros]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -35,6 +35,7 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | BR-MEM-014 | Link e plano | Restrição | Ativo |
 | BR-MEM-015 | Race de max_uses | Gatilho | Ativo |
 | BR-MEM-016 | Validade de link de registro | Restrição | Ativo |
+| BR-MEM-017 | Congregação obrigatória | Restrição | Ativo |
 
 ---
 
@@ -219,6 +220,16 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
+### BR-MEM-017: Congregação obrigatória
+- **Declaração:** Todo membro deve ter `congregation_id` (UUID da igreja). Não existe membro sem congregação nem sentinel “Sede”.
+- **Tipo:** Restrição
+- **Gatilho:** Create/update member (API e registro público)
+- **Comportamento esperado:** Membro vinculado a uma congregação real
+- **Comportamento em violação:** 400 Congregação é obrigatória / inválida
+- **Implementado em:** `memberValidator.ts` / `memberValidations.ts` / schema `members.congregation_id NOT NULL`
+- **Testado em:** N/A — sem suite dedicada
+- **Depende de:** [[BR-CON-010]]
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -228,4 +239,4 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 
 ---
 
-*Gerado em 2026-07-13.*
+*Atualizado em 2026-07-14 (DEV-18).*

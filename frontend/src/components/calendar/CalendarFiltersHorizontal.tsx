@@ -149,9 +149,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             >
               <span className="truncate">
                 {filters.congregation_id 
-                  ? filters.congregation_id === 'sede' 
-                    ? 'Sede'
-                    : congregations.find(c => c.id === filters.congregation_id)?.name || 'Congregação selecionada'
+                  ? congregations.find(c => c.id === filters.congregation_id)?.name || 'Congregação selecionada'
                   : loading ? 'Carregando...' : 'Todas as congregações'
                 }
               </span>
@@ -176,18 +174,6 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                     }`}
                   >
                     Todas as congregações
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onFiltersChange({ ...filters, congregation_id: 'sede' });
-                      setOpenSelect(null);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                      filters.congregation_id === 'sede' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
-                    }`}
-                  >
-                    Sede
                   </button>
                   {loading ? (
                     <div className="px-3 py-2 text-sm text-gray-500">Carregando congregações...</div>
@@ -300,7 +286,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
           ))}
           {filters.congregation_id && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-              {filters.congregation_id === 'sede' ? 'Sede' : congregations.find(c => c.id === filters.congregation_id)?.name || 'Congregação'}
+              {congregations.find(c => c.id === filters.congregation_id)?.name || 'Congregação'}
               <button
                 onClick={() => onFiltersChange({ ...filters, congregation_id: undefined })}
                 className="hover:text-purple-900"

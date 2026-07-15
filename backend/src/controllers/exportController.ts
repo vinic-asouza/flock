@@ -3,6 +3,7 @@ import PDFDocument from 'pdfkit';
 import { AuthRequest } from '../types';
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { getMemberReports } from './memberController';
+import { resolveCongregationFilter } from '../utils/primaryCongregation';
 
 /** Formata YYYY-MM-DD sem offset de fuso (America/Sao_Paulo). */
 function formatDateSafe(date: string | null | undefined): string {
@@ -397,7 +398,7 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
       .moveDown(0.5);
 
     const churchInfo = [
-      { label: 'Congregação', value: member.congregation?.name || 'Sede' },
+      { label: 'Congregação', value: member.congregation?.name || '—' },
       { label: 'Data de Batismo', value: formatDate(member.baptism_date) },
       { label: 'Data de Recebimento', value: formatDate(member.admission_date) },
       { label: 'Tipo de Recebimento', value: member.admission || '-' },
@@ -743,7 +744,7 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
       },
       {
         label: 'Congregação Prevista',
-        value: integrationMember.expected_congregation?.name || 'Sede'
+        value: integrationMember.expected_congregation?.name || '—'
       },
       {
         label: 'Responsável/Discipulador',
@@ -870,10 +871,12 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
         query = query.eq('status', filters.status);
       }
       if (filters.expectedCongregationId) {
-        if (filters.expectedCongregationId === 'sede') {
-          query = query.is('expected_congregation_id', null);
-        } else {
-          query = query.eq('expected_congregation_id', filters.expectedCongregationId);
+        const congregationFilter = resolveCongregationFilter(filters.expectedCongregationId);
+        if (!congregationFilter.ok) {
+          return res.status(400).json({ error: 'Filtro inválido', details: congregationFilter.message });
+        }
+        if (congregationFilter.congregationId) {
+          query = query.eq('expected_congregation_id', congregationFilter.congregationId);
         }
       }
       if (filters.mentorId) {
@@ -1030,7 +1033,7 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
               : '-';
             break;
           case 'expected_congregation':
-            value = member.expected_congregation?.name || 'Sede';
+            value = member.expected_congregation?.name || '—';
             break;
           case 'mentor':
             value = member.mentor?.name || '-';
@@ -1160,21 +1163,23 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     let reportTitle = 'Relatório Geral';
     let reportSubtitle = 'Todos os membros da igreja';
 
-    if (congregation_id === 'sede') {
-      reportTitle = 'Relatório da Sede';
-      reportSubtitle = 'Membros da igreja sede';
-    } else if (congregation_id && congregation_id !== 'sede') {
-      // Buscar nome da congregação
-      const { data: congregation } = await supabase
-        .from('congregations')
-        .select('name')
-        .eq('id', congregation_id)
-        .eq('church_id', churchId)
-        .single();
+    if (congregation_id) {
+      const congregationFilter = resolveCongregationFilter(String(congregation_id));
+      if (!congregationFilter.ok) {
+        return res.status(400).json({ error: 'Filtro inválido', details: congregationFilter.message });
+      }
+      if (congregationFilter.congregationId) {
+        const { data: congregation } = await supabase
+          .from('congregations')
+          .select('name')
+          .eq('id', congregationFilter.congregationId)
+          .eq('church_id', churchId)
+          .single();
 
-      if (congregation) {
-        reportTitle = `Relatório - ${congregation.name}`;
-        reportSubtitle = `Membros da congregação ${congregation.name}`;
+        if (congregation) {
+          reportTitle = `Relatório - ${congregation.name}`;
+          reportSubtitle = `Membros da congregação ${congregation.name}`;
+        }
       }
     }
 
@@ -1622,10 +1627,12 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
     // Aplicar filtro de congregação se necessário
     if (congregation_id) {
-      if (congregation_id === 'sede') {
-        groupsQuery = groupsQuery.is('congregation_id', null);
-      } else {
-        groupsQuery = groupsQuery.eq('congregation_id', congregation_id);
+      const __cf = resolveCongregationFilter(String(congregation_id));
+      if (!__cf.ok) {
+        return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
+      }
+      if (__cf.congregationId) {
+        groupsQuery = groupsQuery.eq('congregation_id', __cf.congregationId);
       }
     }
 
@@ -1807,11 +1814,13 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
         query = query.eq('active', filters.status === 'active');
       }
       if (filters.congregation_id) {
-        if (filters.congregation_id === 'sede') {
-          query = query.is('congregation_id', null);
-        } else {
-          query = query.eq('congregation_id', filters.congregation_id);
-        }
+          const __cf = resolveCongregationFilter(filters.congregation_id);
+          if (!__cf.ok) {
+            return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
+          }
+          if (__cf.congregationId) {
+            query = query.eq('congregation_id', __cf.congregationId);
+          }
       }
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
@@ -2140,7 +2149,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
             value = member.active ? 'Ativo' : 'Inativo';
             break;
           case 'congregation':
-            value = member.congregation?.name || 'Sede';
+            value = member.congregation?.name || '—';
             break;
           case 'baptism_date':
             value = formatDate(member.baptism_date);
@@ -2265,11 +2274,13 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
     // Aplicar filtros (mesma lógica de listGroups)
     if (filters) {
       if (filters.congregation_id) {
-        if (filters.congregation_id === 'sede') {
-          query = query.is('congregation_id', null);
-        } else {
-          query = query.eq('congregation_id', filters.congregation_id);
-        }
+          const __cf = resolveCongregationFilter(filters.congregation_id);
+          if (!__cf.ok) {
+            return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
+          }
+          if (__cf.congregationId) {
+            query = query.eq('congregation_id', __cf.congregationId);
+          }
       }
       if (filters.type) {
         query = query.eq('type', filters.type);
@@ -2326,7 +2337,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
         case 'name':
           return group.name || '-';
         case 'congregation':
-          return group.congregations?.name || 'Sede';
+          return group.congregations?.name || '—';
         case 'responsible_name':
           return group.members?.name || '-';
         case 'member_count':
@@ -2844,7 +2855,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     };
 
     const groupData = group as any;
-    const congregationName = groupData.congregations?.name || 'Sede';
+    const congregationName = groupData.congregations?.name || '—';
     const responsible = groupData.members || null;
 
     doc.fontSize(18).font('Helvetica-Bold').text(churchData?.name || '', { align: 'center' }).moveDown(0.3);
@@ -2911,7 +2922,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
         case 'whatsapp': return formatPhone(member.whatsapp);
         case 'email': return member.email || '-';
         case 'active': return member.active ? 'Ativo' : 'Inativo';
-        case 'congregation': return member.congregation?.name || 'Sede';
+        case 'congregation': return member.congregation?.name || '—';
         case 'baptism_date': return formatDate(member.baptism_date);
         case 'admission': return member.admission || '-';
         case 'admission_date': return formatDate(member.admission_date);
@@ -3028,11 +3039,13 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
         }
       }
       if (filters.congregation_id) {
-        if (filters.congregation_id === 'sede') {
-          query = query.is('congregation_id', null);
-        } else {
-          query = query.eq('congregation_id', filters.congregation_id);
-        }
+          const __cf = resolveCongregationFilter(filters.congregation_id);
+          if (!__cf.ok) {
+            return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
+          }
+          if (__cf.congregationId) {
+            query = query.eq('congregation_id', __cf.congregationId);
+          }
       }
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
@@ -3245,7 +3258,7 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
             value = member.active ? 'Ativo' : 'Inativo';
             break;
           case 'congregation':
-            value = member.congregation?.name || 'Sede';
+            value = member.congregation?.name || '—';
             break;
           case 'baptism_date':
             value = formatDate(member.baptism_date);

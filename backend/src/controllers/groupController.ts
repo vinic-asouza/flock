@@ -4,6 +4,7 @@ import { AuthRequest, Group } from '../types';
 import { createGroupSchema, updateGroupSchema } from '../validators/groupValidator';
 import { logAudit } from '../utils/auditLogger';
 import { validateResponsibleAndCongregation, validateGroupCongregation, validateMemberForGroup } from '../utils/groupValidations';
+import { resolveCongregationFilter } from '../utils/primaryCongregation';
 import { debug, error as logError } from '../utils/logger';
 
 /**
@@ -55,12 +56,15 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
       .order('name');
 
     // Aplicar filtro de congregação
-    if (congregation_id) {
-      if (congregation_id === 'sede') {
-        query = query.is('congregation_id', null);
-      } else {
-        query = query.eq('congregation_id', congregation_id);
-      }
+    const congregationFilter = resolveCongregationFilter(congregation_id);
+    if (!congregationFilter.ok) {
+      return res.status(400).json({
+        error: 'Filtro inválido',
+        details: congregationFilter.message
+      });
+    }
+    if (congregationFilter.congregationId) {
+      query = query.eq('congregation_id', congregationFilter.congregationId);
     }
 
     // Aplicar filtro de tipo
@@ -305,11 +309,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       .eq('type', type)
       .eq('status', true); // Apenas grupos ativos
 
-    if (congregation_id) {
-      duplicateQuery = duplicateQuery.eq('congregation_id', congregation_id);
-    } else {
-      duplicateQuery = duplicateQuery.is('congregation_id', null);
-    }
+    duplicateQuery = duplicateQuery.eq('congregation_id', congregation_id);
 
     const { data: existingGroup } = await duplicateQuery.single();
 
@@ -326,7 +326,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       name,
       type,
       description: description || null,
-      congregation_id: congregation_id || null,
+      congregation_id,
       responsible_id: responsible_id || null,
       status: status !== undefined ? status : true
     };
@@ -414,8 +414,18 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
     }
 
     const { name, type, congregation_id, responsible_id } = req.body;
-    const finalCongregationId = congregation_id !== undefined ? (congregation_id || null) : existingGroup.congregation_id;
-    const finalResponsibleId = responsible_id !== undefined ? (responsible_id || null) : existingGroup.responsible_id;
+
+    if (congregation_id !== undefined && (!congregation_id || String(congregation_id).trim() === '')) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: 'A congregação é obrigatória para o grupo',
+      });
+    }
+
+    const finalCongregationId =
+      congregation_id !== undefined ? congregation_id : existingGroup.congregation_id;
+    const finalResponsibleId =
+      responsible_id !== undefined ? (responsible_id || null) : existingGroup.responsible_id;
 
     // Aplicar as mesmas validações do create usando o estado final do grupo
     const congregationValidation = await validateGroupCongregation(finalCongregationId, churchId);
@@ -444,22 +454,16 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       const finalType = type || existingGroup.type;
 
       // Verificar duplicidade considerando apenas grupos ativos (exceto o próprio grupo sendo editado)
-      let duplicateQuery = supabase
+      const { data: duplicateGroup } = await supabase
         .from('groups')
         .select('id')
         .eq('church_id', churchId)
         .eq('name', finalName)
         .eq('type', finalType)
         .eq('status', true) // Apenas grupos ativos
-        .neq('id', id);
-
-      if (finalCongregationId) {
-        duplicateQuery = duplicateQuery.eq('congregation_id', finalCongregationId);
-      } else {
-        duplicateQuery = duplicateQuery.is('congregation_id', null);
-      }
-
-      const { data: duplicateGroup } = await duplicateQuery.single();
+        .eq('congregation_id', finalCongregationId)
+        .neq('id', id)
+        .single();
 
       if (duplicateGroup) {
         return res.status(400).json({
@@ -475,9 +479,6 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       updated_at: new Date()
     };
 
-    if (updateData.congregation_id === '') {
-      updateData.congregation_id = null;
-    }
     if (updateData.responsible_id === '') {
       updateData.responsible_id = null;
     }
@@ -687,7 +688,7 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
  * 
  * Processo:
  * 1. Valida que grupo e membro pertencem à igreja
- * 2. Valida que membro pertence à congregação do grupo (ou grupo é da Sede)
+ * 2. Valida que membro pertence à congregação do grupo
  * 3. Verifica se membro já está no grupo
  * 4. Adiciona membro ao grupo
  * 5. Registra auditoria

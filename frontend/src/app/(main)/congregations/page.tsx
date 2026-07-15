@@ -30,6 +30,7 @@ export default function CongregationsPage() {
   const [selectedCongregationId, setSelectedCongregationId] = useState<string>('');
   const [selectedCongregationName, setSelectedCongregationName] = useState<string>('');
   const [selectedCongregationMembersCount, setSelectedCongregationMembersCount] = useState<number>(0);
+  const [selectedCongregationIsPrimary, setSelectedCongregationIsPrimary] = useState<boolean>(false);
 
   const handleViewCongregation = (id: string) => {
     setSelectedCongregationId(id);
@@ -46,10 +47,11 @@ export default function CongregationsPage() {
     setEditModalOpen(true);
   };
 
-  const handleDeleteCongregation = (id: string, name: string, activeMembersCount: number = 0) => {
+  const handleDeleteCongregation = (id: string, name: string, activeMembersCount: number = 0, isPrimary: boolean = false) => {
     setSelectedCongregationId(id);
     setSelectedCongregationName(name);
     setSelectedCongregationMembersCount(activeMembersCount);
+    setSelectedCongregationIsPrimary(isPrimary);
     setDeleteModalOpen(true);
   };
 
@@ -131,9 +133,9 @@ export default function CongregationsPage() {
           setDetailModalOpen(false);
           handleEditCongregation(id);
         }}
-        onDelete={(id, name, activeMembersCount) => {
+        onDelete={(id, name, activeMembersCount, isPrimary) => {
           setDetailModalOpen(false);
-          handleDeleteCongregation(id, name, activeMembersCount);
+          handleDeleteCongregation(id, name, activeMembersCount, isPrimary);
         }}
         onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
       />
@@ -158,6 +160,7 @@ export default function CongregationsPage() {
         congregationId={selectedCongregationId}
         congregationName={selectedCongregationName}
         activeMembersCount={selectedCongregationMembersCount}
+        isPrimary={selectedCongregationIsPrimary}
         onSuccess={handleDeleteSuccess}
       />
     </div>

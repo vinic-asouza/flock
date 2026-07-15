@@ -165,9 +165,7 @@ export function MemberFiltersBar({
           >
             <span>
               {filters.congregationId 
-                ? filters.congregationId === 'sede' 
-                  ? 'Sede'
-                  : congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada'
+                ? congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada'
                 : filtersLoading ? 'Carregando...' : 'Todas as congregações'
               }
             </span>
@@ -256,13 +254,6 @@ export function MemberFiltersBar({
                 className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.congregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
               >
                 Todas as congregações
-              </button>
-              <button
-                type="button"
-                onClick={() => { onChange({ congregationId: 'sede' }); setOpenSelect(null); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === 'sede' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-              >
-                Sede
               </button>
               {!filtersLoading && congregations.map(cong => (
                 <button
