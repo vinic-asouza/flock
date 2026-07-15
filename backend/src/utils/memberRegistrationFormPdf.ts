@@ -8,7 +8,7 @@ interface PdfHelpers {
   ensureSpace: (needed?: number) => void;
   writeSectionTitle: (title: string) => void;
   writeBlankField: (label: string, width?: number) => void;
-  writeCheckboxGroup: (label: string, options: string[], columns?: number) => void;
+  writeCheckboxGroup: (label: string | undefined, options: string[], columns?: number) => void;
   writeTextArea: (label: string, lines?: number) => void;
 }
 
@@ -55,14 +55,18 @@ function createHelpers(doc: PdfDoc): PdfHelpers {
     doc.y = y + 24;
   };
 
-  const writeCheckboxGroup = (label: string, options: string[], columns = 2) => {
-    ensureSpace(20 + Math.ceil(options.length / columns) * 16);
-    doc
-      .fontSize(10)
-      .font('Helvetica-Bold')
-      .fillColor('#374151')
-      .text(`${label}:`);
-    doc.moveDown(0.2);
+  const writeCheckboxGroup = (label: string | undefined, options: string[], columns = 2) => {
+    const labelHeight = label ? 14 : 0;
+    ensureSpace(20 + Math.ceil(options.length / columns) * 16 + labelHeight);
+
+    if (label) {
+      doc
+        .fontSize(10)
+        .font('Helvetica-Bold')
+        .fillColor('#374151')
+        .text(`${label}:`);
+      doc.moveDown(0.2);
+    }
 
     const startY = doc.y;
     const colWidth = 240;
@@ -178,7 +182,7 @@ export function renderMemberRegistrationFormPdf(doc: PdfDoc, churchName: string)
     .text('Filhos (preencha quantos forem necessários):');
   doc.moveDown(0.4);
 
-  for (let i = 1; i <= 2; i += 1) {
+  for (let i = 1; i <= 3; i += 1) {
     h.ensureSpace(70);
     doc
       .fontSize(9)
@@ -190,6 +194,14 @@ export function renderMemberRegistrationFormPdf(doc: PdfDoc, churchName: string)
     h.writeCheckboxGroup('Reside com você?', ['Sim', 'Não'], 2);
     doc.moveDown(0.2);
   }
+
+  h.ensureSpace(20);
+  doc
+    .fontSize(8)
+    .font('Helvetica-Oblique')
+    .fillColor('#6B7280')
+    .text('Se houver mais filhos, utilize folha adicional com os mesmos campos acima.');
+  doc.moveDown(0.4);
 
   // ─── Contato e Endereço ───
   h.writeSectionTitle('Contato e Endereço');
@@ -218,7 +230,7 @@ export function renderMemberRegistrationFormPdf(doc: PdfDoc, churchName: string)
     .text('Se batizado(a), marque uma opção:');
   doc.moveDown(0.2);
 
-  h.writeCheckboxGroup('', [
+  h.writeCheckboxGroup(undefined, [
     'Fui batizado(a) na igreja católica',
     'Fui batizado(a) quando adulto — nesta igreja',
     'Fui batizado(a) quando adulto — em outra igreja evangélica',

@@ -3373,10 +3373,11 @@ export const exportMemberRegistrationFormPDF = async (req: AuthRequest, res: Res
       .replace(/^-+|-+$/g, '')
       .toLowerCase();
 
+    const exportDate = new Date().toISOString().split('T')[0];
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=ficha-cadastro-membro-${churchSlug}.pdf`
+      `attachment; filename=ficha-cadastro-membro-${churchSlug}-${exportDate}.pdf`
     );
 
     const doc = createMemberRegistrationFormPdf(churchData.name || 'Igreja');

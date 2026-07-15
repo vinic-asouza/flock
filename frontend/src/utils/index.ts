@@ -124,8 +124,30 @@ export function calculateAge(birth: string | Date | null | undefined): number | 
 }
 
 /**
- * Formata um valor monetário para o formato brasileiro
+ * Extrai o nome do arquivo do header Content-Disposition de uma resposta HTTP.
  */
+export function getFilenameFromContentDisposition(header?: string): string | null {
+  if (!header) return null;
+
+  const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim());
+    } catch {
+      return utf8Match[1].trim();
+    }
+  }
+
+  const quotedMatch = header.match(/filename="([^"]+)"/i);
+  if (quotedMatch?.[1]) return quotedMatch[1].trim();
+
+  const plainMatch = header.match(/filename=([^;]+)/i);
+  if (plainMatch?.[1]) return plainMatch[1].trim();
+
+  return null;
+}
+
+/**
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
