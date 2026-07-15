@@ -65,7 +65,7 @@ _Resultado geral: aprovado / aprovado com ressalvas / reprovado._
 aprovado | aprovado com ressalvas | requer ajustes
 
 ### Próximo Passo
-Done / Document · ou retorno aos Engineers
+Document · ou retorno aos Engineers (In Progress)
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado

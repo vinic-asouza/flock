@@ -58,14 +58,14 @@ _2–3 frases: abordagem escolhida e por que é adequada._
 2. 
 3. 
 
-### Critérios para To-Do
+### Critérios para Todo
 - [ ] Abordagem clara
 - [ ] Escopo técnico alinhado ao de produto
 - [ ] Sem perguntas bloqueantes
 - [ ] Dependências registradas
 
 ### Próximo Passo
-Mover para To-Do (se autorizado) · Backend/Frontend Engineer
+Mover para Todo (se autorizado) · Backend/Frontend Engineer
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado

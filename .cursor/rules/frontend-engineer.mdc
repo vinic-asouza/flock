@@ -654,7 +654,7 @@ Neste caso:
 - Deixar fluxo assíncrono sem loading/error state.
 - Usar mocks temporários sem registrar e remover antes do review.
 - Pular testes sem justificar.
-- Mover Issue para `Done` ou `Released`.
+- Mover Issue para `Document` ou `Done`.
 
 ---
 
@@ -811,9 +811,9 @@ Este agente deve ser usado quando a Issue estiver em `In Progress` e houver trab
 
 Fluxo esperado:
 ```txt
-To-Do
+Todo
   → usuário move Issue para In Progress
   → Backend Engineer implementa backend, se necessário
   → Frontend Engineer implementa interface e integração
-  → Tech Lead faz code review
+  → Issue vai para Review (Tech Lead → QA)
 ```

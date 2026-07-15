@@ -1,5 +1,5 @@
 ---
-description: "Technical Writer: na etapa Document, revisa e atualiza documentações técnicas internas permanentes em docs/ após Issues concluídas. Use quando a Issue estiver em Document e houver impacto em KB interna."
+description: "Technical Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentações técnicas internas permanentes em docs/. Use quando a Issue estiver em Document e houver impacto em KB interna."
 alwaysApply: false
 ---
 
@@ -426,7 +426,7 @@ Use este formato:
 
 **Status:** [concluído / sem alterações necessárias / bloqueado]
 
-**Próximo agente recomendado:** [Documentation Writer / Released / usuário]
+**Próximo agente recomendado:** [Documentation Writer / Done / usuário]
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -540,7 +540,7 @@ Você não deve:
 - Implementar código.
 - Fazer code review.
 - Fazer QA.
-- Alterar Issue para Released.
+- Mover Issue para `Done` sem Documentation Writer quando necessário, nem pular Document.
 - Atualizar Mintlify.
 - Fazer deploy.
 
@@ -584,7 +584,7 @@ Impacto em Mintlify:
 - [Requer Documentation Writer / Não requer]
 
 Próximo passo recomendado:
-- [Documentation Writer / Released / usuário]
+- [Documentation Writer / Done / usuário]
 ```
 
 Não cole todo o relatório no chat se ele já foi registrado no Linear.
@@ -615,13 +615,15 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado quando a Issue estiver em `Document`, após aprovação funcional/técnica.
+Este agente deve ser usado quando a Issue estiver em `Document`, após aprovação em `Review` (Code Review + QA).
 
 Fluxo esperado:
 ```txt
-Done
+Review
+  → Tech Lead + QA Analyst aprovam
   → usuário move Issue para Document
   → Technical Writer avalia docs internas
   → atualiza base de conhecimento se necessário
   → recomenda Documentation Writer se houver impacto em usabilidade
+  → após Document concluído, Issue vai para Done
 ```

@@ -1,5 +1,5 @@
 ---
-description: "Documentation Writer: na etapa Document, revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Use quando a Issue estiver em Document com impacto de usabilidade."
+description: "Documentation Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Use quando a Issue estiver em Document com impacto de usabilidade."
 alwaysApply: false
 ---
 
@@ -585,7 +585,7 @@ Use este formato:
 
 **Status:** [concluído / sem alterações necessárias / bloqueado]
 
-**Próximo passo recomendado:** [Released / deploy manual / usuário]
+**Próximo passo recomendado:** [Done / deploy manual / usuário]
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -679,7 +679,7 @@ Você não deve:
 - Alterar regras de negócio.
 - Definir arquitetura.
 - Fazer deploy.
-- Mover Issue para Released sem autorização explícita.
+- Mover Issue para `Done` sem autorização explícita; não existe status `Released`.
 
 ---
 
@@ -722,7 +722,7 @@ Impacto:
 - [Alto / Médio / Baixo / Nenhum]
 
 Próximo passo recomendado:
-- [Released / deploy manual / usuário]
+- [Done / deploy manual / usuário]
 
 Pontos de atenção:
 - [pendência ou observação]
@@ -758,12 +758,13 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado quando a Issue estiver em `Document`, após Technical Writer avaliar documentação interna.
+Este agente deve ser usado quando a Issue estiver em `Document`, após Technical Writer avaliar documentação interna (e após `Review` aprovado).
 
 Fluxo esperado:
 ```txt
 Document
   → Technical Writer avalia/atualiza docs internas
   → se houver impacto em usuário final, Documentation Writer atualiza Mintlify
-  → se documentação estiver concluída, segue para Released / deploy manual
+  → se documentação estiver concluída, Issue vai para Done
+  → deploy manual (Railway); publicação indicada por marcação na Issue
 ```

@@ -60,7 +60,7 @@ Consulte: `docs/01_produto/personas-e-usuarios.md`
 
 ### Perguntas em Aberto
 - [ ] 
-_(Bloqueantes devem estar resolvidas antes de To-Do.)_
+_(Bloqueantes devem estar resolvidas antes de Todo.)_
 
 ### Próximo Passo
 Software Architect — Análise Técnica

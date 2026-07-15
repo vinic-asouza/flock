@@ -628,7 +628,7 @@ Neste caso:
 - Fazer migration destrutiva sem aprovação.
 - Silenciar erro sem tratamento.
 - Pular testes sem justificar.
-- Mover Issue para `Done` ou `Released`.
+- Mover Issue para `Document` ou `Done`.
 
 ---
 
@@ -774,9 +774,9 @@ Este agente deve ser usado quando a Issue estiver em `In Progress` e houver trab
 
 Fluxo esperado:
 ```txt
-To-Do
+Todo
   → usuário move Issue para In Progress
   → Backend Engineer implementa backend
   → Frontend Engineer implementa frontend, se necessário
-  → Tech Lead faz code review
+  → Issue vai para Review (Tech Lead → QA)
 ```

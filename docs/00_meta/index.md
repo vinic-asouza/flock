@@ -1,8 +1,8 @@
 ---
 type: index
 secao: 00_meta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-15
+versao: "1.1"
 tags: [meta, índice, workflow]
 ---
 
