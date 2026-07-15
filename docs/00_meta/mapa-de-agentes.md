@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-15
+versao: "1.1"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -15,20 +15,23 @@ Cheat sheet operacional. Detalhe completo: [[00_meta/linear-cursor-workflow]].
 ## Fluxo resumido
 
 ```
-Backlog / Refinement
-  → Product Analyst → Software Architect → To-Do
+Backlog
+  → Product Analyst → Software Architect → Todo
 
 In Progress
   → Backend Engineer e/ou Frontend Engineer
 
-In Review
+Review (QA + Code Review)
   → Tech Lead (Code Review) → QA Analyst
 
-Done → Document
+Document (Technical + Documentation Writers)
   → Technical Writer (docs/) + Documentation Writer (Mintlify)
 
-Released
-  → Deploy manual (Railway)
+Done
+  → Estado final do fluxo
+
+Deploy (manual)
+  → Railway; publicação indicada por marcação na Issue (sem status Released)
 ```
 
 ---
@@ -37,17 +40,16 @@ Released
 
 | Etapa Linear | Agente | MDC | Output |
 | --- | --- | --- | --- |
-| Backlog / Refinement | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + handoff |
-| Backlog / Refinement | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + handoff |
-| To-Do | — | — | Issue pronta |
+| Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + handoff |
+| Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + handoff |
+| Todo | — | — | Issue pronta |
 | In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + resumo na Issue |
 | In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + resumo na Issue |
-| In Review / Code Review | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue |
-| In Review / QA | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue |
-| Done | — | — | Aprovado |
+| Review (Code Review) | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue |
+| Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue |
 | Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Atualiza `docs/` se necessário |
 | Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Atualiza Mintlify se necessário |
-| Released | — | — | Deploy manual |
+| Done | — | — | Concluída (reviews + docs avaliados) |
 
 ---
 
@@ -97,7 +99,7 @@ Formato mínimo de toda atualização (workflow §7):
 | Implementação | Git |
 | Conhecimento permanente | `docs/` |
 | Usabilidade | Mintlify |
-| Deploy | Railway (manual) |
+| Deploy / publicação | Railway (manual); marcação na Issue |
 
 ---
 
@@ -107,3 +109,4 @@ Formato mínimo de toda atualização (workflow §7):
 - Duplicar histórico do Linear no repositório
 - Mover status sem autorização / sem critérios
 - Deploy automático sem pedido explícito do usuário
+- Tratar publicação como status (`Released` não existe)

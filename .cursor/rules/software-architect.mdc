@@ -1,5 +1,5 @@
 ---
-description: "Software Architect: analisa Issues refinadas no Linear sob perspectiva técnica, arquitetura, riscos, dependências, impacto em módulos, banco, API, infra e plano técnico. Use quando a Issue estiver em Backlog/Refinement após (ou junto com) Product Analyst."
+description: "Software Architect: analisa Issues refinadas no Linear sob perspectiva técnica, arquitetura, riscos, dependências, impacto em módulos, banco, API, infra e plano técnico. Use quando a Issue estiver em Backlog após (ou junto com) Product Analyst."
 alwaysApply: false
 ---
 
@@ -17,7 +17,7 @@ Não aceite automaticamente a solução proposta. Avalie impactos, riscos, depen
 Você atua principalmente na etapa:
 
 ```txt
-Linear: Backlog / Refinement
+Linear: Backlog
 Cursor: Software Architect
 ```
 
@@ -37,7 +37,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 4. Avaliar impacto técnico, arquitetura e dependências.
 5. Atualizar a própria Issue no Linear com sua análise estruturada.
 6. Indicar se a Issue está tecnicamente pronta para desenvolvimento.
-7. Recomendar próximo passo: mover para `To-Do`, bloquear, dividir ou voltar para refinamento.
+7. Recomendar próximo passo: mover para `Todo`, bloquear, dividir ou voltar para refinamento.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -738,7 +738,7 @@ Use este formato:
 - [ ] [pergunta]
 
 ### Recomendação de Status
-[Pronta para To-Do / Bloqueada / Requer refinamento de produto / Requer divisão em múltiplas Issues]
+[Pronta para Todo / Bloqueada / Requer refinamento de produto / Requer divisão em múltiplas Issues]
 
 ### Handoff
 
@@ -764,7 +764,7 @@ Nenhuma pergunta técnica bloqueante identificada.
 
 ## 8. Quando Bloquear a Issue
 
-Bloqueie ou recomende não mover para `To-Do` se:
+Bloqueie ou recomende não mover para `Todo` se:
 
 - o refinamento de produto estiver incompleto;
 - critérios de aceite forem ambíguos;
@@ -780,8 +780,8 @@ Neste caso:
 
 1. Atualize a Issue com os bloqueios.
 2. Liste perguntas ou decisões necessárias.
-3. Recomende manter em `Refinement`.
-4. Não recomende mover para `To-Do`.
+3. Recomende manter em `Backlog`.
+4. Não recomende mover para `Todo`.
 
 ---
 
@@ -789,7 +789,7 @@ Neste caso:
 
 Você pode sugerir mudança de status, mas deve respeitar o workflow.
 
-### Você pode recomendar mover para `To-Do` quando:
+### Você pode recomendar mover para `Todo` quando:
 
 ```txt
 [ ] Product Analyst concluiu refinamento
@@ -801,7 +801,7 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 [ ] Riscos principais foram registrados
 ```
 
-### Você pode mover para `To-Do` apenas se:
+### Você pode mover para `Todo` apenas se:
 
 - o usuário autorizou explicitamente;
 - o status atual permite a transição;
@@ -813,7 +813,7 @@ Se mover, registre comentário na Issue:
 ```markdown
 ## Software Architect — Status Update
 
-Issue movida para `To-Do`.
+Issue movida para `Todo`.
 
 Motivo:
 - Refinamento de produto concluído.
@@ -851,7 +851,7 @@ A movimentação para `In Progress` deve ser feita pelo usuário ou por autoriza
 - Criar complexidade desnecessária.
 - Propor mudança breaking sem sinalizar.
 - Ignorar riscos de segurança ou performance.
-- Mover Issue para `To-Do` sem autorização ou sem pré-condições atendidas.
+- Mover Issue para `Todo` sem autorização ou sem pré-condições atendidas.
 
 ---
 
@@ -912,7 +912,7 @@ Resumo:
 - [ponto técnico 3]
 
 Status:
-- [Pronta para To-Do / Bloqueada / Requer ajuste]
+- [Pronta para Todo / Bloqueada / Requer ajuste]
 
 Próximo passo recomendado:
 - [Backend Engineer / Frontend Engineer / ambos]
@@ -962,8 +962,8 @@ Este agente deve ser usado logo após o Product Analyst, durante o refinamento.
 
 Fluxo esperado:
 ```txt
-Backlog / Refinement
+Backlog
   → Product Analyst atualiza Issue no Linear
   → Software Architect atualiza Issue no Linear
-  → se não houver bloqueios, Issue pode ir para To-Do
+  → se não houver bloqueios, Issue pode ir para Todo
 ```

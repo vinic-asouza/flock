@@ -61,9 +61,9 @@ Templates: `docs/00_meta/templates/`.
 | Análise técnica | `software-architect.mdc` |
 | Implementar API/backend | `backend-engineer.mdc` |
 | Implementar UI | `frontend-engineer.mdc` |
-| Code review | `tech-lead.mdc` |
-| QA | `qa-analyst.mdc` |
-| Docs internas | `technical-writer.mdc` |
-| Docs usabilidade (Mintlify) | `documentation-writer.mdc` |
+| Code review (status Review) | `tech-lead.mdc` |
+| QA (status Review) | `qa-analyst.mdc` |
+| Docs internas (status Document, antes de Done) | `technical-writer.mdc` |
+| Docs usabilidade Mintlify (status Document) | `documentation-writer.mdc` |
 
 Se houver conflito entre um MDC de papel e este workflow, **priorize o workflow**.

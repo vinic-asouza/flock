@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-07-14
-versao: "1.1"
+ultima_atualizacao: 2026-07-15
+versao: "1.2"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -74,32 +74,44 @@ Templates de atualização na Issue: `docs/00_meta/templates/` (colar no Linear;
 
 ## 4. Estados do Linear
 
-O workflow considera os seguintes estados principais no Linear:
+O workflow considera os seguintes estados no Linear (configuração atual do workspace):
 
 ```
 Backlog
-└── Idea
-└── Refinement
+└── Backlog
 
-To-Do
+Unstarted
 └── Todo
 
-In Progress
+Started
 └── In Progress
+└── Review          (QA + Code Review)
+└── Document        (Technical + Documentation Writers)
 
-In Review
-└── Code Review
-└── QA
-
-Done
+Completed
 └── Done
-└── Document
 
-Released
-└── Released
+Canceled
+└── Canceled
+
+Duplicate
+└── Duplicate
 ```
 
-Os nomes exatos dos estados podem variar conforme a configuração do workspace, mas os agentes devem respeitar a intenção de cada etapa.
+Ordem operacional esperada:
+
+```
+Backlog → Todo → In Progress → Review → Document → Done
+```
+
+Notas:
+
+- O refinamento de produto e análise técnica ocorrem com a Issue em `Backlog` (antes de `Todo`).
+- Em `Review`, atuam **Tech Lead** (code review) e **QA Analyst** (validação funcional), nesta ordem quando possível.
+- `Document` vem **antes** de `Done`: após reviews aprovados, documenta-se e só então a Issue é concluída.
+- Não existe status `Released`. Publicação em produção é processo manual; se a Issue já está publicada, observar a **marcação** na própria Issue (não um status do workflow).
+
+Os nomes de categoria (`Started`, `Completed`, etc.) são da UI do Linear; os agentes operam pelos nomes dos status (`Review`, `Document`, `Done`, …).
 
 ---
 
@@ -107,17 +119,16 @@ Os nomes exatos dos estados podem variar conforme a configuração do workspace,
 
 | Etapa Linear | Agente Cursor | Responsabilidade |
 | --- | --- | --- |
-| Backlog / Refinement | Product Analyst | Refinar valor de produto, escopo, critérios de aceite, regras de negócio e impactos |
-| Backlog / Refinement | Software Architect | Refinar análise técnica, riscos, arquitetura, dependências e abordagem |
-| To-Do | — | Issue pronta para desenvolvimento |
+| Backlog | Product Analyst | Refinar valor de produto, escopo, critérios de aceite, regras de negócio e impactos |
+| Backlog | Software Architect | Refinar análise técnica, riscos, arquitetura, dependências e abordagem |
+| Todo | — | Issue pronta para desenvolvimento |
 | In Progress | Backend Engineer | Implementar APIs, regras de negócio, integrações e lógica backend |
 | In Progress | Frontend Engineer | Implementar interface, UX/UI e integrações com APIs |
-| In Review / Code Review | Tech Lead | Revisar código, arquitetura, padrões, segurança e performance |
-| In Review / QA | QA Analyst | Validar requisitos, fluxos, edge cases e regressões |
-| Done | — | Issue aprovada |
+| Review (Code Review) | Tech Lead | Revisar código, arquitetura, padrões, segurança e performance |
+| Review (QA) | QA Analyst | Validar requisitos, fluxos, edge cases e regressões |
 | Document | Technical Writer | Atualizar documentação técnica interna quando necessário |
 | Document | Documentation Writer | Atualizar documentação de usabilidade no Mintlify quando necessário |
-| Released | — | Item em produção após deploy manual |
+| Done | — | Issue concluída (reviews + documentação avaliados) |
 
 ---
 
@@ -235,8 +246,8 @@ O Software Architect deve:
 Após Product Analyst e Software Architect concluírem suas análises:
 
 - A Issue deve conter refinamento suficiente para desenvolvimento.
-- O agente deve mover a Issue para `To-Do`, se autorizado pelo usuário e se não houver perguntas bloqueantes.
-- Caso existam perguntas bloqueantes, a Issue deve permanecer em `Refinement` ou equivalente.
+- O agente deve mover a Issue para `Todo`, se autorizado pelo usuário e se não houver perguntas bloqueantes.
+- Caso existam perguntas bloqueantes, a Issue deve permanecer em `Backlog`.
 
 ---
 
@@ -293,9 +304,11 @@ O Frontend Engineer deve:
 
 ## 10. Fluxo de Review
 
+Quando a Issue estiver em `Review`, atuam Tech Lead e QA Analyst (nesta ordem, quando possível). O status único concentra code review e QA.
+
 ### 10.1 Code Review — Tech Lead
 
-Quando a Issue estiver em `In Review`, o usuário solicitará atuação como Tech Lead.
+O usuário solicitará atuação como Tech Lead.
 
 O Tech Lead deve:
 
@@ -316,7 +329,7 @@ O Tech Lead deve:
    - Riscos remanescentes
    - Status: aprovado ou requer ajustes
 
-Se houver correções obrigatórias, a Issue deve voltar para execução pelos Engineers.
+Se houver correções obrigatórias, a Issue deve voltar para execução pelos Engineers (`In Progress`).
 
 ### 10.2 QA — QA Analyst
 
@@ -336,26 +349,30 @@ O QA Analyst deve:
    - Evidências quando aplicável
    - Status: aprovado ou requer ajustes
 
-Se houver falhas, a Issue deve voltar para execução pelos Engineers.
+Se houver falhas, a Issue deve voltar para execução pelos Engineers (`In Progress`).
+
+Após Code Review e QA aprovados, a Issue segue para `Document` (não diretamente para `Done`).
 
 ---
 
-## 11. Fluxo de Done e Documentação
+## 11. Fluxo de Documentação e Done
 
-### 11.1 Done
+### 11.1 Document
 
-Após aprovação de Code Review e QA, a Issue pode ser movida para `Done`.
+Após aprovação de Code Review e QA, a Issue deve ser movida para `Document`.
 
-Neste estado, a tarefa está aprovada funcionalmente e tecnicamente.
-
-### 11.2 Document
-
-Quando possível, o usuário moverá a Issue para `Document`.
+Neste estado, a implementação está aprovada funcionalmente e tecnicamente; falta avaliar (e atualizar, se necessário) a documentação permanente.
 
 Nesta etapa podem atuar dois agentes:
 
 1. Technical Writer
 2. Documentation Writer
+
+### 11.2 Done
+
+Após a etapa `Document` concluída (incluindo justificativa se nenhuma alteração documental for necessária), a Issue pode ser movida para `Done`.
+
+`Done` é o **estado final** do fluxo. Não existe status `Released`; deploy e publicação em produção são manuais e independentes do status — use a marcação na Issue para saber se já está publicado.
 
 ---
 
@@ -410,12 +427,12 @@ Ele deve:
 
 ## 14. Deploy
 
-O deploy é um processo manual.
+O deploy é um processo manual e **não possui status próprio** no Linear.
 
-Após documentação concluída:
+Após a Issue estar em `Done` (ou em paralelo, se o time decidir publicar antes):
 
-1. A Issue pode seguir para `Released`.
-2. O deploy é feito manualmente conforme processo definido pelo projeto.
+1. O deploy é feito manualmente conforme processo definido pelo projeto (Railway).
+2. Se a Issue já estiver publicada, isso deve ser observado pela **marcação** na Issue — não por um status `Released`.
 3. Os agentes não devem executar deploy automaticamente sem instrução explícita do usuário.
 
 ---
@@ -446,7 +463,7 @@ Após documentação concluída:
 
 ## 16. Critérios para Mudar Status no Linear
 
-### Para mover para `To-Do`
+### Para mover para `Todo`
 
 Permitido quando:
 
@@ -465,7 +482,7 @@ Permitido quando:
 - O usuário moveu ou autorizou mover para execução.
 - O agente executor entendeu escopo, critérios e abordagem.
 
-### Para aprovar Code Review
+### Para aprovar Code Review (ainda em `Review`)
 
 Permitido quando:
 
@@ -474,7 +491,7 @@ Permitido quando:
 - Segurança e performance foram consideradas.
 - Testes relevantes existem ou a ausência foi justificada.
 
-### Para aprovar QA
+### Para aprovar QA (ainda em `Review`)
 
 Permitido quando:
 
@@ -484,7 +501,15 @@ Permitido quando:
 - Regressões críticas foram consideradas.
 - Bugs bloqueantes foram resolvidos.
 
-### Para concluir Document
+### Para mover para `Document`
+
+Permitido quando:
+
+- Code Review aprovado.
+- QA aprovado.
+- Não há bugs bloqueantes abertos.
+
+### Para concluir Document e mover para `Done`
 
 Permitido quando:
 
@@ -537,32 +562,32 @@ Formato recomendado:
 ## 19. Resumo Operacional
 
 ```
-Backlog / Refinement
+Backlog
 → Product Analyst atualiza Issue no Linear
 → Software Architect atualiza Issue no Linear
-→ Issue vai para To-Do
+→ Issue vai para Todo
 
-To-Do
+Todo
 → Issue pronta para execução
 
 In Progress
 → Backend Engineer / Frontend Engineer implementam
 → Agentes atualizam Issue no Linear com resumo da execução
 
-In Review
+Review
 → Tech Lead faz code review
 → QA Analyst faz validação
-→ Correções voltam para Engineers se necessário
-
-Done
-→ Issue aprovada
+→ Correções voltam para Engineers (In Progress) se necessário
 
 Document
 → Technical Writer atualiza docs internas se necessário
 → Documentation Writer atualiza Mintlify se necessário
 
-Released
-→ Deploy manual concluído
+Done
+→ Issue concluída (estado final do fluxo)
+
+Deploy (manual, fora do status)
+→ Publicação via Railway; marcação na Issue indica se já está publicado
 ```
 
 ---

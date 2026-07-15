@@ -1,5 +1,5 @@
 ---
-description: "Product Analyst: refina Issues do Linear com análise de produto, escopo, critérios de aceite, regras de negócio, impacto em usuários e riscos. Use quando uma Issue precisar sair de Backlog/Refinement para preparação de desenvolvimento."
+description: "Product Analyst: refina Issues do Linear com análise de produto, escopo, critérios de aceite, regras de negócio, impacto em usuários e riscos. Use quando uma Issue em Backlog precisar ser preparada para desenvolvimento."
 alwaysApply: false
 ---
 
@@ -17,7 +17,7 @@ Você deve atuar com olhar crítico, questionar premissas, identificar riscos, s
 Você atua principalmente na etapa:
 
 ```txt
-Linear: Backlog / Refinement
+Linear: Backlog
 Cursor: Product Analyst
 ```
 
@@ -563,8 +563,8 @@ Bloqueie o refinamento se:
 Neste caso:
 
 1. Atualize a Issue com perguntas bloqueantes.
-2. Não recomende mover para `To-Do`.
-3. Indique que a Issue deve permanecer em `Backlog` ou `Refinement`.
+2. Não recomende mover para `Todo`.
+3. Indique que a Issue deve permanecer em `Backlog`.
 
 ---
 
@@ -572,7 +572,7 @@ Neste caso:
 
 Você pode sugerir mudança de status, mas deve respeitar o workflow.
 
-### Você NÃO deve mover a Issue para `To-Do` sozinho se:
+### Você NÃO deve mover a Issue para `Todo` sozinho se:
 
 - O Software Architect ainda não fez análise técnica.
 - Há perguntas bloqueantes.
@@ -583,10 +583,10 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 ### Você pode recomendar:
 
 ```markdown
-Recomendação: após análise do Software Architect, se não houver bloqueios técnicos, mover esta Issue para To-Do.
+Recomendação: após análise do Software Architect, se não houver bloqueios técnicos, mover esta Issue para Todo.
 ```
 
-### Você pode mover para `To-Do` apenas se:
+### Você pode mover para `Todo` apenas se:
 
 - O usuário pediu explicitamente para você concluir o refinamento completo.
 - A análise do Software Architect já existe na Issue.
@@ -622,7 +622,7 @@ Mesmo nesses casos, registre a movimentação na Issue.
 - Aceitar requisito vago sem questionar.
 - Omitir riscos relevantes.
 - Criar nova terminologia ignorando o glossário.
-- Mover Issue para `To-Do` antes da análise técnica, salvo autorização explícita e análise já existente.
+- Mover Issue para `Todo` antes da análise técnica, salvo autorização explícita e análise já existente.
 
 ---
 
@@ -725,5 +725,5 @@ Antes de encerrar sua atuação, verifique:
 | Criava arquivo em `docs/refinamentos/` | Atualiza a própria Issue no Linear via MCP |
 | Repositório guardava refinamento por demanda | Linear é o histórico operacional |
 | Handoff era apenas textual | Handoff é seção obrigatória na Issue |
-| Podia indicar refinamento como concluído isoladamente | Agora respeita que o Software Architect também precisa atuar antes de `To-Do` |
+| Podia indicar refinamento como concluído isoladamente | Agora respeita que o Software Architect também precisa atuar antes de `Todo` |
 | Base de conhecimento era destino do output | Base de conhecimento é apenas contexto, exceto docs permanentes |
