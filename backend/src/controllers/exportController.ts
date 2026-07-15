@@ -4,6 +4,7 @@ import { AuthRequest } from '../types';
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { getMemberReports } from './memberController';
 import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import { createMemberRegistrationFormPdf } from '../utils/memberRegistrationFormPdf';
 
 /** Formata YYYY-MM-DD sem offset de fuso (America/Sao_Paulo). */
 function formatDateSafe(date: string | null | undefined): string {
@@ -3337,6 +3338,57 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       res.status(500).json({
         error: 'Erro interno do servidor',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+};
+
+export const exportMemberRegistrationFormPDF = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado',
+      });
+    }
+
+    const churchId = req.church!.churchId;
+    const { data: churchData, error: churchError } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('id', churchId)
+      .single();
+
+    if (churchError || !churchData) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: churchError?.message || 'Não foi possível carregar os dados da igreja',
+      });
+    }
+
+    const churchSlug = (churchData.name || 'igreja')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=ficha-cadastro-membro-${churchSlug}.pdf`
+    );
+
+    const doc = createMemberRegistrationFormPdf(churchData.name || 'Igreja');
+    doc.pipe(res);
+    doc.end();
+  } catch (error) {
+    console.error('❌ Erro ao gerar ficha de cadastro em branco:', error);
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
       });
     }
   }

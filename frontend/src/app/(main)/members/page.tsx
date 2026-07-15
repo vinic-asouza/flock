@@ -20,7 +20,7 @@ import { MemberImportModal } from '@/components/members/MemberImportModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Plus, Upload, Link as LinkIcon } from 'lucide-react';
+import { Plus, Upload, Link as LinkIcon, FileText } from 'lucide-react';
 import { RegistrationLinksModal } from '@/components/members/RegistrationLinksModal';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
 import { useAuth } from '@/context/AuthContext';
@@ -97,6 +97,7 @@ function MembersPageContent() {
   const [exportCSVModalOpen, setExportCSVModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [registrationLinksModalOpen, setRegistrationLinksModalOpen] = useState(false);
+  const [registrationFormLoading, setRegistrationFormLoading] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
   const [memberLimit, setMemberLimit] = useState<{
@@ -370,6 +371,27 @@ function MembersPageContent() {
     }
   }, [filters, sorting]);
 
+  const handleDownloadRegistrationForm = useCallback(async () => {
+    try {
+      setRegistrationFormLoading(true);
+      const blob = await apiService.exportMemberRegistrationFormPDF();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `ficha-cadastro-membro-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Ficha de cadastro baixada com sucesso!');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao baixar ficha de cadastro.';
+      toast.error(errorMessage);
+    } finally {
+      setRegistrationFormLoading(false);
+    }
+  }, []);
+
   const handleExportMembersCSV = useCallback(async (selectedFields: string[], delimiter: string, includeHeaders: boolean) => {
     try {
       // Construir parâmetros de filtro
@@ -434,6 +456,16 @@ function MembersPageContent() {
         subtitle="Visualize, cadastre e gerencie os membros da igreja."
         actions={
           <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            onClick={handleDownloadRegistrationForm}
+            className="inline-flex items-center gap-2"
+            isLoading={registrationFormLoading}
+            title="Baixar ficha em branco para impressão e preenchimento manual"
+          >
+            <FileText size={18} />
+            Ficha de Cadastro
+          </Button>
           {/* Mostrar botões apenas se:
               - Não houver limite definido (memberLimit === null) OU
               - Puder adicionar (canAdd === true) OU  

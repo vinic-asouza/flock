@@ -905,6 +905,13 @@ class ApiService {
     return response.data;
   }
 
+  async exportMemberRegistrationFormPDF(): Promise<Blob> {
+    const response = await this.api.get('/export/members/registration-form/pdf', {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
   async exportDashboardPDF(congregationId?: string): Promise<Blob> {
     const params = new URLSearchParams();
     if (congregationId) {
