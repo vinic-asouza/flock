@@ -332,7 +332,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | POST | `/api/export/members/list/csv` | ✅ | ≥ reader | Lista membros CSV | ✅ |
 | POST | `/api/export/group/members/list` | ✅ | ≥ reader | PDF membros do grupo | ✅ |
 | POST | `/api/export/integration/list` | ✅ | ≥ reader | Lista integração | ✅ |
-| POST | `/api/export/groups/list` | ✅ | ≥ reader | PDF grupos | ✅ |
+| POST | `/api/export/groups/list` | ✅ | ≥ reader | PDF grupos (`filters.types[]` min 1) | ✅ |
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | PDF congregações | ✅ |
 
 ### Links públicos gerenciados
