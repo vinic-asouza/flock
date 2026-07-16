@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { Droplets, UserPlus, TrendingUp, ChevronLeft, ChevronRight, ExternalLink, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface TimelineChartsProps {
   data: Timeline;
@@ -442,7 +443,7 @@ export function TimelineCharts({
                               : ''}
                           </div>
                           <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
-                            {member.congregation ? member.congregation.name : '—'}
+                            {member.congregation ? getCongregationDisplayName(member.congregation) : '—'}
                           </span>
                         </div>
                       </div>
@@ -604,7 +605,7 @@ export function TimelineCharts({
                               {formatIntegrationDate(member.created_at)}
                             </div>
                             <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
-                              {member.expected_congregation ? member.expected_congregation.name : 'Não definida'}
+                              {member.expected_congregation ? getCongregationDisplayName(member.expected_congregation) : 'Não definida'}
                             </span>
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700">
                               Em progresso

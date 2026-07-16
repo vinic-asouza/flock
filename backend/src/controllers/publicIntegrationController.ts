@@ -42,7 +42,7 @@ export const validateIntegrationLink = async (
     // Buscar congregações da igreja para o formulário público (sem autenticação)
     const { data: congregations } = await supabase
       .from('congregations')
-      .select('id, name')
+      .select('id, name, abbreviation')
       .eq('church_id', churchId)
       .eq('active', true)
       .order('name');

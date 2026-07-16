@@ -33,6 +33,7 @@ interface Member {
   congregation?: {
     id: string;
     name: string;
+    abbreviation?: string | null;
     address: string;
     city: string;
     state: string;
@@ -50,6 +51,7 @@ interface Member {
     congregations?: {
       id: string;
       name: string;
+      abbreviation?: string | null;
     } | null;
   }>;
 }

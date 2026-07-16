@@ -3,6 +3,7 @@
 import { X, RefreshCcw } from 'lucide-react';
 import { GroupFilters } from '@/types';
 import { useFiltersData } from '@/hooks/useFiltersData';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface GroupActiveFiltersChipsProps {
   filters: GroupFilters;
@@ -32,7 +33,7 @@ export function GroupActiveFiltersChips({
   }
 
   if (filters.congregationId) {
-    const label = congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada';
+    const label = getCongregationDisplayName(congregations.find(c => c.id === filters.congregationId)) || 'Congregação selecionada';
     activeChips.push({
       key: 'congregationId',
       label: `Congregação: ${label}`

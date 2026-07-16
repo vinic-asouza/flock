@@ -5,6 +5,17 @@ import { AuthRequest } from '../types';
 import { logAudit } from '../utils/auditLogger';
 import { logError } from '../utils/logger';
 
+const normalizeAbbreviation = (value: unknown): string | null => {
+  if (value === undefined || value === null) return null;
+  const trimmed = String(value).trim();
+  return trimmed === '' ? null : trimmed;
+};
+
+const isUniqueViolation = (error: { code?: string; message?: string } | null | undefined): boolean => {
+  if (!error) return false;
+  return error.code === '23505' || Boolean(error.message?.toLowerCase().includes('abbreviation'));
+};
+
 /**
  * Cria uma nova congregação
  * 
@@ -13,8 +24,10 @@ import { logError } from '../utils/logger';
  * 
  * @remarks
  * - Valida duplicidade de nome (case-insensitive)
+ * - Valida duplicidade de abreviação (case-insensitive) quando preenchida
  * - Normaliza telefone (remove formatação)
  * - Normaliza estado (uppercase)
+ * - Normaliza abreviação (trim; vazio → null)
  * - Registra a operação no audit log
  */
 export const createCongregation = async (req: AuthRequest, res: Response) => {
@@ -27,7 +40,8 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { name, address, city, state, leader, phone } = req.body;
+    const { name, address, city, state, leader, phone, abbreviation } = req.body;
+    const normalizedAbbreviation = normalizeAbbreviation(abbreviation);
 
     // Buscar church_id do usuário autenticado
     const churchId = req.church!.churchId;
@@ -54,6 +68,29 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    if (normalizedAbbreviation) {
+      const { data: existingAbbreviations, error: abbreviationError } = await supabase
+        .from('congregations')
+        .select('id')
+        .eq('church_id', churchId)
+        .ilike('abbreviation', normalizedAbbreviation);
+
+      if (abbreviationError) {
+        logError('Erro ao verificar abreviação existente:', abbreviationError);
+        return res.status(500).json({
+          error: 'Erro ao verificar abreviação',
+          details: 'Não foi possível verificar se já existe uma congregação com esta abreviação'
+        });
+      }
+
+      if (existingAbbreviations && existingAbbreviations.length > 0) {
+        return res.status(400).json({
+          error: 'Abreviação já existe',
+          details: 'Já existe uma congregação com esta abreviação nesta igreja'
+        });
+      }
+    }
+
     // Normalizar telefone (remover formatação antes de salvar)
     const normalizedPhone = phone ? phone.replace(/\D/g, '') : null;
 
@@ -64,6 +101,7 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
         {
           church_id: churchId,
           name: name.trim(),
+          abbreviation: normalizedAbbreviation,
           address: address.trim(),
           city: city.trim(),
           state: state.trim().toUpperCase(),
@@ -77,6 +115,12 @@ export const createCongregation = async (req: AuthRequest, res: Response) => {
 
     if (createError) {
       logError('Erro ao criar congregação:', createError);
+      if (isUniqueViolation(createError)) {
+        return res.status(400).json({
+          error: 'Abreviação já existe',
+          details: 'Já existe uma congregação com esta abreviação nesta igreja'
+        });
+      }
       return res.status(400).json({ 
         error: 'Erro ao criar congregação',
         details: createError.message || 'Não foi possível criar a congregação. Verifique os dados e tente novamente.'
@@ -117,14 +161,15 @@ export const getCongregations = async (req: AuthRequest, res: Response) => {
     const churchId = req.church!.churchId;
     const search = (req.query.search as string)?.trim() || '';
 
-    // Buscar congregações da igreja (com filtro opcional por nome)
+    // Buscar congregações da igreja (com filtro opcional por nome ou abreviação)
     let query = supabase
       .from('congregations')
       .select('*')
       .eq('church_id', churchId);
 
     if (search) {
-      query = query.ilike('name', `%${search}%`);
+      const safeSearch = search.replace(/,/g, '');
+      query = query.or(`name.ilike.%${safeSearch}%,abbreviation.ilike.%${safeSearch}%`);
     }
 
     const { data: congregations, error } = await query.order('name', { ascending: true });
@@ -169,7 +214,6 @@ export const getCongregations = async (req: AuthRequest, res: Response) => {
       return acc;
     }, {} as Record<string, number>);
 
-    // Combinar congregações com contagem de membros
     const congregationsWithMemberCount = congregations.map(congregation => ({
       ...congregation,
       activeMembersCount: memberCountByCongregation[congregation.id] || 0
@@ -187,21 +231,12 @@ export const getCongregations = async (req: AuthRequest, res: Response) => {
 
 /**
  * Busca uma congregação específica por ID
- * 
- * @param req - Request contendo o ID da congregação nos params
- * @param res - Response com os dados completos da congregação incluindo activeMembersCount
- * 
- * @remarks
- * - Valida que a congregação pertence à igreja do usuário
- * - Retorna contagem de membros ativos vinculados
  */
 export const getCongregation = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-
     const churchId = req.church!.churchId;
 
-    // Buscar congregação específica
     const { data: congregation, error } = await supabase
       .from('congregations')
       .select('*')
@@ -216,7 +251,7 @@ export const getCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Contar membros ativos com esta congregação
+    // Contar membros ativos
     const { count: activeMembersCount, error: countError } = await supabase
       .from('members')
       .select('*', { count: 'exact', head: true })
@@ -244,12 +279,13 @@ export const getCongregation = async (req: AuthRequest, res: Response) => {
 /**
  * Atualiza uma congregação existente
  * 
- * @param req - Request contendo o ID da congregação nos params e dados para atualização no body
+ * @param req - Request contendo o ID nos params e dados no body
  * @param res - Response com a congregação atualizada
  * 
  * @remarks
  * - Permite atualização parcial (apenas campos fornecidos são atualizados)
  * - Valida duplicidade de nome (case-insensitive) se nome for alterado
+ * - Valida duplicidade de abreviação quando fornecida
  * - Normaliza telefone e estado antes de salvar
  * - Registra a operação no audit log
  */
@@ -282,7 +318,7 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { name, address, city, state, leader, phone } = req.body;
+    const { name, address, city, state, leader, phone, abbreviation } = req.body;
 
     // Se o nome foi fornecido, verificar se já existe outra congregação com o mesmo nome (case-insensitive)
     if (name) {
@@ -310,11 +346,38 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
     }
 
     // Preparar dados para atualização (apenas campos fornecidos)
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updated_at: new Date()
     };
 
     if (name !== undefined) updateData.name = name.trim();
+    if (abbreviation !== undefined) {
+      const normalizedAbbreviation = normalizeAbbreviation(abbreviation);
+      if (normalizedAbbreviation) {
+        const { data: existingAbbreviations, error: abbreviationError } = await supabase
+          .from('congregations')
+          .select('id')
+          .eq('church_id', churchId)
+          .ilike('abbreviation', normalizedAbbreviation)
+          .neq('id', id);
+
+        if (abbreviationError) {
+          logError('Erro ao verificar duplicidade de abreviação:', abbreviationError);
+          return res.status(500).json({
+            error: 'Erro ao verificar duplicidade',
+            details: 'Não foi possível verificar se já existe uma congregação com esta abreviação'
+          });
+        }
+
+        if (existingAbbreviations && existingAbbreviations.length > 0) {
+          return res.status(400).json({
+            error: 'Abreviação já existe',
+            details: 'Já existe uma congregação com esta abreviação nesta igreja'
+          });
+        }
+      }
+      updateData.abbreviation = normalizedAbbreviation;
+    }
     if (address !== undefined) updateData.address = address.trim();
     if (city !== undefined) updateData.city = city.trim();
     if (state !== undefined) updateData.state = state.trim().toUpperCase();
@@ -363,6 +426,12 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
 
     if (error || !congregation) {
       logError('Erro ao atualizar congregação:', error);
+      if (isUniqueViolation(error)) {
+        return res.status(400).json({
+          error: 'Abreviação já existe',
+          details: 'Já existe uma congregação com esta abreviação nesta igreja'
+        });
+      }
       return res.status(404).json({ 
         error: 'Erro ao atualizar congregação',
         details: error?.message || 'Não foi possível atualizar a congregação'
@@ -540,11 +609,11 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       }
     }
 
-    const congregationNames = req.body.map(congregation => congregation.name.trim());
-    const normalizedBatchNames = congregationNames.map((name) => name.toLowerCase());
+    const congregationNames = req.body.map((congregation: { name: string }) => congregation.name.trim());
+    const normalizedBatchNames = congregationNames.map((name: string) => name.toLowerCase());
     const duplicateNamesInPayload = Array.from(
       new Set(
-        congregationNames.filter((name, index) =>
+        congregationNames.filter((name: string, index: number) =>
           normalizedBatchNames.indexOf(name.toLowerCase()) !== index
         )
       )
@@ -557,10 +626,29 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       });
     }
 
-    // Verificar se já existem congregações com os mesmos nomes (case-insensitive)
+    const batchAbbreviations = req.body
+      .map((congregation: { abbreviation?: string | null }) => normalizeAbbreviation(congregation.abbreviation))
+      .filter((abbr: string | null): abbr is string => Boolean(abbr));
+    const normalizedBatchAbbreviations = batchAbbreviations.map((abbr: string) => abbr.toLowerCase());
+    const duplicateAbbreviationsInPayload = Array.from(
+      new Set(
+        batchAbbreviations.filter((abbr: string, index: number) =>
+          normalizedBatchAbbreviations.indexOf(abbr.toLowerCase()) !== index
+        )
+      )
+    );
+
+    if (duplicateAbbreviationsInPayload.length > 0) {
+      return res.status(400).json({
+        error: 'Abreviações duplicadas no lote',
+        details: `O payload contém abreviações repetidas: ${duplicateAbbreviationsInPayload.join(', ')}`
+      });
+    }
+
+    // Verificar se já existem congregações com os mesmos nomes/abreviações (case-insensitive)
     const { data: allCongregations, error: existingCongregationsError } = await supabase
       .from('congregations')
-      .select('name')
+      .select('name, abbreviation')
       .eq('church_id', churchId);
 
     if (existingCongregationsError) {
@@ -573,7 +661,7 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
 
     // Verificar duplicatas (case-insensitive)
     const existingNamesLower = (allCongregations || []).map(c => c.name.toLowerCase());
-    const duplicateNames = congregationNames.filter(name => 
+    const duplicateNames = congregationNames.filter((name: string) => 
       existingNamesLower.includes(name.toLowerCase())
     );
 
@@ -584,10 +672,33 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       });
     }
 
+    const existingAbbreviationsLower = (allCongregations || [])
+      .map(c => c.abbreviation?.trim().toLowerCase())
+      .filter(Boolean) as string[];
+    const duplicateAbbreviations = batchAbbreviations.filter((abbr: string) =>
+      existingAbbreviationsLower.includes(abbr.toLowerCase())
+    );
+
+    if (duplicateAbbreviations.length > 0) {
+      return res.status(400).json({
+        error: 'Abreviações já existentes',
+        details: `As seguintes abreviações já existem: ${duplicateAbbreviations.join(', ')}`
+      });
+    }
+
     // Preparar dados para inserção (normalizar telefones)
-    const congregationsToInsert = req.body.map(congregation => ({
+    const congregationsToInsert = req.body.map((congregation: {
+      name: string;
+      address: string;
+      city: string;
+      state: string;
+      leader?: string;
+      phone?: string;
+      abbreviation?: string | null;
+    }) => ({
       church_id: churchId,
       name: congregation.name.trim(),
+      abbreviation: normalizeAbbreviation(congregation.abbreviation),
       address: congregation.address.trim(),
       city: congregation.city.trim(),
       state: congregation.state.trim().toUpperCase(),
@@ -604,6 +715,12 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
 
     if (createError) {
       logError('Erro ao criar congregações em lote:', createError);
+      if (isUniqueViolation(createError)) {
+        return res.status(400).json({
+          error: 'Abreviação já existe',
+          details: 'Já existe uma congregação com esta abreviação nesta igreja'
+        });
+      }
       return res.status(400).json({ 
         error: 'Erro ao criar congregações',
         details: createError.message || 'Não foi possível criar as congregações. Verifique os dados e tente novamente.'
@@ -628,4 +745,4 @@ export const createCongregationsBatch = async (req: AuthRequest, res: Response) 
       details: error instanceof Error ? error.message : 'Erro desconhecido ao processar a solicitação'
     });
   }
-}; 
+};

@@ -54,6 +54,7 @@ export interface IntegrationMemberSummary {
   expected_congregation?: {
     id: string;
     name: string | null;
+    abbreviation?: string | null;
   } | null;
   mentor?: {
     id: string;
@@ -80,7 +81,8 @@ export interface Member {
   active: boolean;
   congregation?: { 
     id: string;
-    name: string; 
+    name: string;
+    abbreviation?: string | null;
     address: string;
     city: string;
     state: string;

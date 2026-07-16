@@ -91,6 +91,7 @@ export function ConvertIntegrationModal({
         ? {
           id: integrationMember.expected_congregation.id,
           name: integrationMember.expected_congregation.name,
+          abbreviation: integrationMember.expected_congregation.abbreviation,
           address: '',
           city: integrationMember.expected_congregation.city,
           state: integrationMember.expected_congregation.state,

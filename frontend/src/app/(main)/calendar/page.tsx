@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { parseCalendarDateForDisplay } from '@/utils/calendarDate';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -400,7 +401,7 @@ export default function CalendarPage() {
               )}
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
                 <Church size={14} />
-                {selectedItem.congregation?.name || 'Todas as congregações'}
+                {getCongregationDisplayName(selectedItem.congregation) || 'Todas as congregações'}
               </span>
             </div>
 
@@ -521,7 +522,7 @@ export default function CalendarPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-gray-500 mb-1">Congregação</p>
-                        <p className="text-sm text-gray-900">{selectedItem.congregation.name}</p>
+                        <p className="text-sm text-gray-900">{getCongregationDisplayName(selectedItem.congregation)}</p>
                       </div>
                     </div>
                   )}

@@ -280,6 +280,7 @@ export interface Group {
   congregations?: {
     id: string;
     name: string;
+    abbreviation?: string | null;
   } | null;
   members?: {
     id: string;
@@ -311,6 +312,7 @@ export interface GroupWithMembers extends Omit<Group, 'members'> {
     congregations?: {
       id: string;
       name: string;
+      abbreviation?: string | null;
     } | null;
   }>;
 }

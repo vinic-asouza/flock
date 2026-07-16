@@ -4,6 +4,7 @@ import { Eye, Users, User, MapPin } from 'lucide-react';
 import { Group } from '@/types';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { InfoRow } from '@/components/ui/InfoRow';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface GroupCardProps {
   group: Group;
@@ -68,7 +69,7 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
         {/* Linha 2: Tipo e Congregação */}
         <InfoRow
           icon={MapPin}
-          value={group.congregations?.name || '—'}
+          value={getCongregationDisplayName(group.congregations) || '—'}
           className="mb-2"
           truncate
         />

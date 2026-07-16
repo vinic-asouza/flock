@@ -23,6 +23,7 @@ const selectIntegrationMember = `
   expected_congregation:congregations!integration_members_expected_congregation_id_fkey (
     id,
     name,
+    abbreviation,
     city,
     state
   ),

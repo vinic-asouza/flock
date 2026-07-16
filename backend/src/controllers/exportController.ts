@@ -102,7 +102,8 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
           congregation_id,
           congregations (
             id,
-            name
+            name,
+            abbreviation
           )
         )
       `)
@@ -599,6 +600,7 @@ const getIntegrationSelect = () => `
   *,
   expected_congregation:congregations!integration_members_expected_congregation_id_fkey (
     name,
+    abbreviation,
     city,
     state
   ),
@@ -2260,7 +2262,8 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         ),
         members!groups_responsible_id_fkey (
           id,
@@ -2747,7 +2750,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
         id,
         name,
         type,
-        congregations ( id, name ),
+        congregations ( id, name, abbreviation ),
         members!groups_responsible_id_fkey ( id, name, email, phone, whatsapp )
       `)
       .eq('id', groupId)

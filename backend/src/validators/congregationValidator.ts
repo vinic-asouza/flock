@@ -55,6 +55,13 @@ export const createCongregationSchema = Joi.object({
       'string.empty': 'O líder não pode estar vazio',
       'string.max': 'O nome do líder não pode ter mais de 100 caracteres'
     }),
+  abbreviation: Joi.string()
+    .allow('', null)
+    .optional()
+    .max(20)
+    .messages({
+      'string.max': 'A abreviação não pode ter mais de 20 caracteres'
+    }),
   phone: Joi.string()
     .allow('')
     .optional()
@@ -84,6 +91,13 @@ export const updateCongregationSchema = Joi.object({
       'string.empty': 'O nome da congregação não pode estar vazio',
       'string.min': 'O nome da congregação deve ter pelo menos 2 caracteres',
       'string.max': 'O nome da congregação não pode ter mais de 100 caracteres'
+    }),
+  abbreviation: Joi.string()
+    .allow('', null)
+    .optional()
+    .max(20)
+    .messages({
+      'string.max': 'A abreviação não pode ter mais de 20 caracteres'
     }),
   address: Joi.string()
     .optional()

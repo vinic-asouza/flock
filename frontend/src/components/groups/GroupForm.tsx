@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Group, GroupType } from '@/types';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
-import { getPrimaryCongregationId } from '@/utils/congregation';
+import { getPrimaryCongregationId, getCongregationDisplayName } from '@/utils/congregation';
 
 // Schema de validação
 const groupSchema = z.object({
@@ -272,7 +272,7 @@ export function GroupForm({
             }}
             options={(congregations || []).map((cong) => ({
               value: cong.id,
-              label: cong.name
+              label: getCongregationDisplayName(cong)
             }))}
             disabled={filtersLoading || isLoading}
             error={errors.congregation_id?.message}

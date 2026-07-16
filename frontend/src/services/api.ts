@@ -522,7 +522,7 @@ class ApiService {
   }
 
   // Criar congregação
-  async createCongregation(data: { name: string; address: string; city: string; state: string; leader?: string; phone?: string }) {
+  async createCongregation(data: { name: string; abbreviation?: string; address: string; city: string; state: string; leader?: string; phone?: string }) {
     const response = await this.api.post('/congregations', data);
     return response.data;
   }
@@ -534,7 +534,7 @@ class ApiService {
   }
 
   // Atualizar congregação
-  async updateCongregation(id: string, data: { name?: string; address?: string; city?: string; state?: string; leader?: string; phone?: string }) {
+  async updateCongregation(id: string, data: { name?: string; abbreviation?: string | null; address?: string; city?: string; state?: string; leader?: string; phone?: string }) {
     const response = await this.api.put(`/congregations/${id}`, data);
     return response.data;
   }
@@ -546,7 +546,7 @@ class ApiService {
   }
 
   // Criar congregações em lote
-  async createCongregationsBatch(data: Array<{ name: string; address: string; city: string; state: string; leader?: string; phone?: string }>) {
+  async createCongregationsBatch(data: Array<{ name: string; abbreviation?: string; address: string; city: string; state: string; leader?: string; phone?: string }>) {
     const response = await this.api.post('/congregations/batch', data);
     return response.data;
   }

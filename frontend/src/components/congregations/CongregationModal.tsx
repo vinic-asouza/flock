@@ -8,6 +8,7 @@ import { Congregation } from '@/types/congregation';
 import { apiService, formatApiError } from '@/services/api';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import type { Member } from '@/types/reports';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -154,7 +155,7 @@ export function CongregationModal({
       onClose={handleClose}
       title={
         congregation
-          ? `${congregation.name}${congregation.is_primary ? ' (Principal)' : ''}`
+          ? `${getCongregationDisplayName(congregation)}${congregation.is_primary ? ' (Principal)' : ''}`
           : 'Carregando...'
       }
       size="xl"
@@ -175,6 +176,15 @@ export function CongregationModal({
           {/* Coluna Esquerda - Informações (30%) */}
           <div className="w-[30%] flex-shrink-0 border-r border-gray-200 pr-6 overflow-y-auto">
             <div className="space-y-6">
+              {congregation.abbreviation?.trim() && (
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
+                    Nome completo
+                  </label>
+                  <p className="text-gray-900 break-words">{congregation.name}</p>
+                </div>
+              )}
+
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
                   <Users size={18} className="text-gray-400 flex-shrink-0" />

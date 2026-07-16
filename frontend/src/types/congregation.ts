@@ -2,6 +2,7 @@ export interface Congregation {
   id: string;
   church_id: string;
   name: string;
+  abbreviation?: string | null;
   address: string;
   city: string;
   state: string;
@@ -15,6 +16,7 @@ export interface Congregation {
 
 export interface CreateCongregationData {
   name: string;
+  abbreviation?: string;
   address: string;
   city: string;
   state: string;
@@ -24,6 +26,7 @@ export interface CreateCongregationData {
 
 export interface UpdateCongregationData {
   name?: string;
+  abbreviation?: string | null;
   address?: string;
   city?: string;
   state?: string;

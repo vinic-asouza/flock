@@ -9,6 +9,7 @@ import { IntegrationMember } from '@/types';
 import { DeleteIntegrationModal } from './DeleteIntegrationModal';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { formatPhone } from '@/utils';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -193,7 +194,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
                     {statusLabels[member.status] ?? member.status}
                   </span>
                   <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                    {member.expected_congregation?.name || 'Não definida'}
+                    {getCongregationDisplayName(member.expected_congregation) || 'Não definida'}
                   </span>
                   {member.expected_admission_type && (
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
@@ -248,7 +249,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
                 icon={<Clipboard size={20} />}
                 items={[
                   { label: 'Tipo de recebimento previsto', value: member.expected_admission_type ? (admissionLabels[member.expected_admission_type] || member.expected_admission_type) : '—' },
-                  { label: 'Congregação prevista', value: member.expected_congregation?.name || 'Não definida' },
+                  { label: 'Congregação prevista', value: getCongregationDisplayName(member.expected_congregation) || 'Não definida' },
                   { label: 'Responsável/Discipulador', value: member.mentor?.name || '—' },
                   { label: 'Contato do responsável', value: member.mentor?.phone || member.mentor?.whatsapp || '—' }
                 ]}
@@ -439,5 +440,4 @@ function formatDate(date?: string | null): string {
   if (isNaN(parsed.getTime())) return '—';
   return parsed.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
-
 

@@ -7,6 +7,7 @@ import { Loader, Mail, MessageCircle, User, Trash2, UserMinus, UserPlus, Phone, 
 import apiService from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { calculateAge } from '@/utils';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -45,14 +46,14 @@ interface Member {
     birth?: string;
     dependent?: boolean;
   }>;
-  congregation?: { name: string } | null;
+  congregation?: { name: string; abbreviation?: string | null } | null;
   groups?: Array<{
     id: string;
     name: string;
     type: string;
     status: boolean;
     congregation_id?: string | null;
-    congregations?: { id: string; name: string } | null;
+    congregations?: { id: string; name: string; abbreviation?: string | null } | null;
   }>;
   active: boolean;
   // Informações Eclesiásticas
@@ -462,7 +463,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                   <div className="space-y-3">
                     <div>
                       <span className="text-sm font-medium text-gray-500">Congregação</span>
-                      <p className="text-gray-900">{member.congregation?.name || '—'}</p>
+                      <p className="text-gray-900">{getCongregationDisplayName(member.congregation) || '—'}</p>
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-500">Data de Batismo</span>

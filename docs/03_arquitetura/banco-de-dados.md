@@ -1,7 +1,7 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-16
+versao: "1.1"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
 tags: [arquitetura, banco-de-dados, schema, ERD]
@@ -81,6 +81,7 @@ erDiagram
     uuid id PK
     uuid church_id FK
     text name
+    text abbreviation
     text address
     text city
     text state
@@ -306,7 +307,8 @@ erDiagram
 | --- | --- | --- | --- | --- |
 | id | uuid | PK | `uuid_generate_v4()` | Identificador |
 | church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
-| name | text | NOT NULL | — | Nome |
+| name | text | NOT NULL | — | Nome completo |
+| abbreviation | text | NULL | — | Nome popular curto (opcional) |
 | address | text | NOT NULL | — | Endereço |
 | city | text | NOT NULL | — | Cidade |
 | state | text | NOT NULL | — | UF |
@@ -316,9 +318,9 @@ erDiagram
 | created_at | timestamptz | NOT NULL | `timezone('utc', now())` | Criação |
 | updated_at | timestamptz | NOT NULL | `timezone('utc', now())` | Atualização |
 
-**Índices:** `church_id`; `(church_id, name)` (duplicado histórico); `state`; unique parcial `(church_id)` WHERE `is_primary` (no máximo uma principal por igreja).
+**Índices:** `church_id`; `(church_id, name)` (duplicado histórico); `state`; unique parcial `(church_id)` WHERE `is_primary` (no máximo uma principal por igreja); unique parcial `(church_id, lower(abbreviation))` WHERE `abbreviation IS NOT NULL` (`idx_congregations_church_abbreviation_lower`).
 
-**Relacionamentos:** `church_id` → `churches.id` (many-to-one, CASCADE). Referenciado por members (RESTRICT), groups/calendar/integration/links (SET NULL onde aplicável). Toda igreja nova recebe uma primary no register (`createPrimaryCongregationForChurch`).
+**Relacionamentos:** `church_id` → `churches.id` (many-to-one, CASCADE). Referenciado por members (RESTRICT), groups/calendar/integration/links (SET NULL onde aplicável). Toda igreja nova recebe uma primary no register (`createPrimaryCongregationForChurch`) **sem** abreviação.
 
 ---
 

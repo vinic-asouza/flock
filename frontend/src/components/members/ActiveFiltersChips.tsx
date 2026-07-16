@@ -4,6 +4,7 @@ import { X, RefreshCcw } from 'lucide-react';
 import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { Congregation } from '@/types/congregation';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface ActiveFiltersChipsProps {
   filters: MemberFilters;
@@ -59,7 +60,7 @@ export function ActiveFiltersChips({
         return value === 'active' ? 'Ativo' : value === 'inactive' ? 'Inativo' : 'Todos';
       case 'congregationId': {
         const congregation = congregations.find(c => c.id === value);
-        return congregation ? congregation.name : '';
+        return congregation ? getCongregationDisplayName(congregation) : '';
       }
       case 'gender':
         return value;

@@ -25,6 +25,7 @@ export interface IntegrationMember {
   expected_congregation?: {
     id: string;
     name: string;
+    abbreviation?: string | null;
     city: string;
     state: string;
   } | null;

@@ -13,7 +13,7 @@ import { apiService } from '@/services/api';
 import { Group } from '@/types';
 import { fetchCEPData, validateDateFormat } from '@/utils/validations';
 import { formatDateToISO } from '@/utils';
-import { getPrimaryCongregationId } from '@/utils/congregation';
+import { getPrimaryCongregationId, getCongregationDisplayName } from '@/utils/congregation';
 import { memberSchema, MemberFormData } from './memberFormSchema';
 
 interface Child {
@@ -56,8 +56,8 @@ interface Member {
   congregation_id?: string;
   children?: Child[];
   active: boolean;
-  congregation?: { id: string; name: string; address: string; city: string; state: string; leader?: string; phone?: string } | null;
-  groups?: Array<{ id: string; name: string; type: string; status: boolean; congregation_id?: string | null; memberGroupId?: string; addedAt?: string; congregations?: { id: string; name: string } | null }>;
+  congregation?: { id: string; name: string; abbreviation?: string | null; address: string; city: string; state: string; leader?: string; phone?: string } | null;
+  groups?: Array<{ id: string; name: string; type: string; status: boolean; congregation_id?: string | null; memberGroupId?: string; addedAt?: string; congregations?: { id: string; name: string; abbreviation?: string | null } | null }>;
   // Informações Eclesiásticas
   years_evangelical?: string;
   evangelical_family?: boolean;
@@ -1067,7 +1067,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               setValue('congregation_id', value);
               if (mode === 'create') setSelectedGroups([]);
             }}
-            options={congregations.map(c => ({ value: c.id, label: c.name }))}
+            options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}
             placeholder={filtersLoading ? 'Carregando...' : 'Selecione a congregação'}
             disabled={filtersLoading || isLoading}
             error={errors.congregation_id?.message}
@@ -1103,7 +1103,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
                         className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm text-gray-500 block truncate">{group.type}{group.congregations && ` • ${group.congregations.name}`}</span>
+                        <span className="text-sm text-gray-500 block truncate">{group.type}{group.congregations && ` • ${getCongregationDisplayName(group.congregations)}`}</span>
                         <span className={`text-sm font-medium block truncate ${isSelected ? 'text-primary' : 'text-gray-900'}`}>{group.name}</span>
                       </div>
                     </label>

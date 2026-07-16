@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react
 import { ChevronDown, Loader } from 'lucide-react';
 import { GroupFilters, GroupType } from '@/types';
 import { useFiltersData } from '@/hooks/useFiltersData';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const GROUP_TYPES: GroupType[] = [
   'Ministério',
@@ -130,7 +131,7 @@ export function GroupFiltersBar({ filters, onChange }: GroupFiltersBarProps) {
           >
             <span>
               {filters.congregationId
-                ? congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada'
+                ? getCongregationDisplayName(congregations.find(c => c.id === filters.congregationId)) || 'Congregação selecionada'
                 : 'Todas as congregações'}
             </span>
             <ChevronDown
@@ -217,7 +218,7 @@ export function GroupFiltersBar({ filters, onChange }: GroupFiltersBarProps) {
                     }}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
-                    {cong.name}
+                    {getCongregationDisplayName(cong)}
                   </button>
                 ))}
               </>

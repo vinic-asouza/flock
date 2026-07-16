@@ -44,7 +44,7 @@ export const validateRegistrationLink = async (
 
     const { data: congregations } = await supabase
       .from('congregations')
-      .select('id, name')
+      .select('id, name, abbreviation')
       .eq('church_id', churchId)
       .eq('active', true)
       .order('name');
@@ -89,7 +89,8 @@ export const listPublicRegistrationGroups = async (
         type,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         )
       `)
       .eq('church_id', churchId)

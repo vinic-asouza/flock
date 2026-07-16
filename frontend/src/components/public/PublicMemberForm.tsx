@@ -14,6 +14,7 @@ import { Group } from '@/types';
 import { validateDateFormat } from '@/utils/validations';
 import { formatDateToISO } from '@/utils';
 import { memberSchema, MemberFormData } from '@/components/members/memberFormSchema';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 function getDefaultCongregationId(congregations: { id: string; name: string; is_primary?: boolean }[]): string {
   if (!congregations.length) return '';
@@ -32,7 +33,7 @@ interface PublicMemberFormProps {
   isLoading?: boolean;
   churchName?: string;
   error?: string | null;
-  congregations?: { id: string; name: string; is_primary?: boolean }[];
+  congregations?: { id: string; name: string; abbreviation?: string | null; is_primary?: boolean }[];
   registrationToken?: string;
   submitDisabled?: boolean;
 }
@@ -874,7 +875,7 @@ export function PublicMemberForm({
             label="Congregação (obrigatório)"
             value={watch('congregation_id') || ''}
             onChange={(value) => { setValue('congregation_id', value); setSelectedGroups([]); }}
-            options={congregations.map(c => ({ value: c.id, label: c.name }))}
+            options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}
             error={errors.congregation_id?.message}
             disabled={isLoading || submitDisabled}
           />
@@ -913,7 +914,7 @@ export function PublicMemberForm({
                           className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm text-gray-500 block truncate">{group.type}{group.congregations && ` • ${group.congregations.name}`}</span>
+                          <span className="text-sm text-gray-500 block truncate">{group.type}{group.congregations && ` • ${getCongregationDisplayName(group.congregations)}`}</span>
                           <span className={`text-sm font-medium block truncate ${isSelected ? 'text-primary' : 'text-gray-900'}`}>{group.name}</span>
                         </div>
                       </label>

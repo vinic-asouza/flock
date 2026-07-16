@@ -7,6 +7,7 @@ import { apiService, formatApiError } from '@/services/api';
 import { Group } from '@/types';
 import { ChevronDown, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface CalendarFiltersHorizontalProps {
   filters: CalendarFiltersType;
@@ -149,7 +150,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             >
               <span className="truncate">
                 {filters.congregation_id 
-                  ? congregations.find(c => c.id === filters.congregation_id)?.name || 'Congregação selecionada'
+                  ? getCongregationDisplayName(congregations.find(c => c.id === filters.congregation_id)) || 'Congregação selecionada'
                   : loading ? 'Carregando...' : 'Todas as congregações'
                 }
               </span>
@@ -190,7 +191,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                           filters.congregation_id === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                         }`}
                       >
-                        {cong.name}
+                        {getCongregationDisplayName(cong)}
                       </button>
                     ))
                   )}
@@ -286,7 +287,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
           ))}
           {filters.congregation_id && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-              {congregations.find(c => c.id === filters.congregation_id)?.name || 'Congregação'}
+              {getCongregationDisplayName(congregations.find(c => c.id === filters.congregation_id)) || 'Congregação'}
               <button
                 onClick={() => onFiltersChange({ ...filters, congregation_id: undefined })}
                 className="hover:text-purple-900"

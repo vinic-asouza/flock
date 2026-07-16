@@ -44,7 +44,8 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         ),
         members!groups_responsible_id_fkey (
           id,
@@ -167,6 +168,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
         congregations (
           id,
           name,
+          abbreviation,
           address,
           city,
           state
@@ -206,7 +208,8 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
           congregation_id,
           congregations (
             id,
-            name
+            name,
+            abbreviation
           )
         )
       `)
@@ -653,7 +656,8 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
           congregation_id,
           congregations (
             id,
-            name
+            name,
+            abbreviation
           )
         )
       `)

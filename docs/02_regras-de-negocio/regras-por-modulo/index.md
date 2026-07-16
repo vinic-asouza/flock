@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-07-16
+versao: "1.1"
 total_modulos: 12
-total_regras: 141
+total_regras: 143
 tags: [regras, índice, módulos]
 ---
 
@@ -20,7 +20,7 @@ tags: [regras, índice, módulos]
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
 | Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 16 | Rol oficial, import, autocadastro |
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
-| Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
+| Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
 | Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 9 | Painel e exportações |

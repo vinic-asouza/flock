@@ -35,11 +35,11 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 
 **Congregação** *(código: `Congregation`, `congregations`)*  
 > Unidade local dentro da igreja (ex.: campus, ponto, filial). Não é o tenant.  
-- **Atributos-chave:** `name`, endereço, `leader`, `phone`, `is_primary`  
+- **Atributos-chave:** `name` (nome completo), `abbreviation` (nome popular curto, opcional), endereço, `leader`, `phone`, `is_primary`  
 - **Relacionamentos:** pertence a 1 igreja; membros e eventos referenciam-na  
 - **Usado em:** Membros, Integração, Grupos, Calendário, Relatórios  
-- **UI:** “Congregações”  
-- **Nota:** cada igreja tem exatamente uma **congregação principal** (`is_primary = true`), criada no registro com o nome da igreja. Não existe mais o conceito implícito “Sede” (`congregation_id` null / sentinel `sede`).
+- **UI:** “Congregações”; em selects/chips/flags a UI prefere `abbreviation` quando existir  
+- **Nota:** cada igreja tem exatamente uma **congregação principal** (`is_primary = true`), criada no registro com o nome da igreja (sem abreviação). Não existe mais o conceito implícito “Sede” (`congregation_id` null / sentinel `sede`).
 
 **Congregação principal** *(código: `is_primary` em `congregations`)*  
 > Unidade default da igreja. Criada automaticamente no onboarding; não pode ser excluída; membros novos usam-na como default no formulário.  
