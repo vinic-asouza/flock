@@ -1,7 +1,7 @@
 import Joi from 'joi';
 import { GroupType } from '../types';
 
-const groupTypes: GroupType[] = [
+export const groupTypes: GroupType[] = [
   'Ministério',
   'Departamento',
   'Grupo',
@@ -16,6 +16,28 @@ const groupTypes: GroupType[] = [
   'Núcleo',
   'Região'
 ];
+
+/** Filtros do POST /api/export/groups/list — types obrigatório (min 1). */
+export const exportGroupsListFiltersSchema = Joi.object({
+  types: Joi.array()
+    .items(
+      Joi.string()
+        .valid(...groupTypes)
+        .messages({
+          'any.only': `Cada tipo deve ser um dos seguintes: ${groupTypes.join(', ')}`,
+        })
+    )
+    .min(1)
+    .required()
+    .messages({
+      'any.required': 'Selecione pelo menos um tipo de grupo',
+      'array.min': 'Selecione pelo menos um tipo de grupo',
+      'array.base': 'types deve ser um array',
+    }),
+  congregation_id: Joi.string().uuid().optional().allow(null, ''),
+  status: Joi.string().valid('active', 'inactive', 'all').optional(),
+  search: Joi.string().optional().allow('', null),
+}).unknown(false);
 
 export const createGroupSchema = Joi.object({
   name: Joi.string()

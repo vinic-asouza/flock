@@ -5,6 +5,7 @@ import { supabaseAdmin as supabase } from '../services/supabase';
 import { getMemberReports } from './memberController';
 import { resolveCongregationFilter } from '../utils/primaryCongregation';
 import { createMemberRegistrationFormPdf } from '../utils/memberRegistrationFormPdf';
+import { exportGroupsListFiltersSchema } from '../validators/groupValidator';
 
 /** Formata YYYY-MM-DD sem offset de fuso (America/Sao_Paulo). */
 function formatDateSafe(date: string | null | undefined): string {
@@ -2243,7 +2244,19 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { filters } = req.body;
+    const { filters: rawFilters } = req.body;
+
+    const { error: filtersError, value: filters } = exportGroupsListFiltersSchema.validate(
+      rawFilters ?? {},
+      { abortEarly: false }
+    );
+
+    if (filtersError) {
+      return res.status(400).json({
+        error: 'Filtros inválidos',
+        details: filtersError.details.map((d) => d.message),
+      });
+    }
 
     // Campos fixos: nome, congregação, responsável, quantidade de membros
     const fields = ['name', 'congregation', 'responsible_name', 'member_count'] as const;
@@ -2273,28 +2286,24 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
           whatsapp
         )
       `)
-      .eq('church_id', churchId);
+      .eq('church_id', churchId)
+      .in('type', filters.types);
 
-    // Aplicar filtros (mesma lógica de listGroups)
-    if (filters) {
-      if (filters.congregation_id) {
-          const __cf = resolveCongregationFilter(filters.congregation_id);
-          if (!__cf.ok) {
-            return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
-          }
-          if (__cf.congregationId) {
-            query = query.eq('congregation_id', __cf.congregationId);
-          }
+    // Aplicar filtros (mesma lógica de listGroups, com types multi-seleção)
+    if (filters.congregation_id) {
+      const __cf = resolveCongregationFilter(filters.congregation_id);
+      if (!__cf.ok) {
+        return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
       }
-      if (filters.type) {
-        query = query.eq('type', filters.type);
+      if (__cf.congregationId) {
+        query = query.eq('congregation_id', __cf.congregationId);
       }
-      if (filters.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status === 'active');
-      }
-      if (filters.search) {
-        query = query.ilike('name', `%${filters.search}%`);
-      }
+    }
+    if (filters.status && filters.status !== 'all') {
+      query = query.eq('status', filters.status === 'active');
+    }
+    if (filters.search) {
+      query = query.ilike('name', `%${filters.search}%`);
     }
 
     // Ordenar por tipo e nome
