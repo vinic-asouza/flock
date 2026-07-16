@@ -17,6 +17,10 @@ const createCongregationSchema = (cities: Array<{ nome: string }> = []) => z.obj
   name: z.string()
     .min(2, 'Nome deve ter pelo menos 2 caracteres')
     .max(100, 'Nome não pode ter mais de 100 caracteres'),
+  abbreviation: z.string()
+    .max(20, 'Abreviação não pode ter mais de 20 caracteres')
+    .optional()
+    .or(z.literal('')),
   address: z.string()
     .min(5, 'Endereço deve ter pelo menos 5 caracteres')
     .max(255, 'Endereço não pode ter mais de 255 caracteres'),
@@ -59,6 +63,7 @@ interface Congregation {
   id: string;
   church_id: string;
   name: string;
+  abbreviation?: string | null;
   address: string;
   city: string;
   state: string;
@@ -130,6 +135,7 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   useEffect(() => {
     if (congregation && mode === 'edit') {
       setValue('name', congregation.name);
+      setValue('abbreviation', congregation.abbreviation || '');
       setValue('address', congregation.address);
       setValue('city', congregation.city);
       setValue('state', congregation.state);
@@ -203,13 +209,25 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Nome da Congregação *"
-            placeholder="Digite o nome da congregação"
+            label="Nome completo *"
+            placeholder="Nome oficial da congregação"
+            helperText="Nome oficial da unidade"
             error={errors.name?.message}
             isLoading={isLoading}
             disabled={isLoading}
             maxLength={100}
             {...register('name')}
+          />
+
+          <Input
+            label="Abreviação"
+            placeholder="Ex.: 3IPI"
+            helperText="Nome popular curto (opcional)"
+            error={errors.abbreviation?.message}
+            isLoading={isLoading}
+            disabled={isLoading}
+            maxLength={20}
+            {...register('abbreviation')}
           />
 
           <Input

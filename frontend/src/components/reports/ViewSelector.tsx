@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Building, Users } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 export type ViewMode = 'all' | 'congregation';
 
@@ -26,9 +27,9 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
         const congregationsData = await apiService.listCongregations();
 
         setCongregations(
-          congregationsData.map((congregation: { id: string; name: string }) => ({
+          congregationsData.map((congregation: { id: string; name: string; abbreviation?: string | null }) => ({
             value: congregation.id,
-            label: congregation.name,
+            label: getCongregationDisplayName(congregation),
           }))
         );
       } catch (error) {

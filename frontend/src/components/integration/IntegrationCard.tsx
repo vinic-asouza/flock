@@ -5,6 +5,7 @@ import { formatMemberName } from '@/utils/formatMemberName';
 import { calculateAge } from '@/utils';
 import { CardHeader } from '@/components/ui/CardHeader';
 import { ContactLinks } from '@/components/ui/ContactLinks';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -54,7 +55,7 @@ export function IntegrationCard({ member, canEdit = true, onEdit, onConvert, onD
           badges={[
             <IntegrationStatusBadge key="status" status={member.status} />,
             <span key="congregation" className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-              {member.expected_congregation?.name || 'Não definida'}
+              {getCongregationDisplayName(member.expected_congregation) || 'Não definida'}
             </span>,
             ...(admissionLabel
               ? [
@@ -133,4 +134,3 @@ export function IntegrationCard({ member, canEdit = true, onEdit, onConvert, onD
     </div>
   );
 }
-

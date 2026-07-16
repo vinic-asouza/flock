@@ -1,11 +1,12 @@
 import { X, RefreshCcw } from 'lucide-react';
 import { IntegrationFilters } from '@/types';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface IntegrationActiveFiltersChipsProps {
   filters: IntegrationFilters;
   onRemoveFilter: (key: keyof IntegrationFilters) => void;
   onClearAll: () => void;
-  congregations: { id: string; name: string }[];
+  congregations: { id: string; name: string; abbreviation?: string | null }[];
 }
 
 const statusLabels: Record<'em_progresso' | 'integrado' | 'descartado', string> = {
@@ -30,7 +31,7 @@ export function IntegrationActiveFiltersChips({
   }
 
   if (filters.expectedCongregationId) {
-    const label = congregations.find(c => c.id === filters.expectedCongregationId)?.name || 'Congregação selecionada';
+    const label = getCongregationDisplayName(congregations.find(c => c.id === filters.expectedCongregationId)) || 'Congregação selecionada';
     activeChips.push({
       key: 'expectedCongregationId',
       label: `Congregação: ${label}`
@@ -69,4 +70,3 @@ export function IntegrationActiveFiltersChips({
     </div>
   );
 }
-

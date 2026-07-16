@@ -6,6 +6,7 @@ import { apiService, formatApiError } from '@/services/api';
 import { Group, GroupType } from '@/types';
 import { UserCog, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface GroupsChartsProps {
   loading?: boolean;
@@ -114,7 +115,7 @@ export function GroupsCharts({
             color: getGroupTypeColor(type as GroupType),
             totalMembers,
             congregationName:
-              group.congregations?.name || (group.congregation_id ? null : 'Todas as congregações'),
+              getCongregationDisplayName(group.congregations) || (group.congregation_id ? null : 'Todas as congregações'),
           }));
 
         const totalValue = groupsData.reduce((sum, item) => sum + item.value, 0);

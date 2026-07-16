@@ -90,7 +90,8 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         ),
         groups (
           id,
@@ -284,6 +285,7 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
         congregations (
           id,
           name,
+          abbreviation,
           address,
           city,
           state
@@ -527,7 +529,8 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         ),
         groups (
           id,
@@ -788,7 +791,8 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         ),
         groups (
           id,
@@ -954,7 +958,8 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         ),
         groups (
           id,
@@ -1202,7 +1207,8 @@ export const listGroupsWithCalendarItems = async (req: AuthRequest, res: Respons
         *,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         )
       `)
       .in('id', groupIds)

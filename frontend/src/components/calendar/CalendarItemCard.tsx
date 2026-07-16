@@ -6,6 +6,7 @@ import { typeColors } from '@/types/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getCalendarItemDisplayDate } from '@/utils/calendarDate';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface CalendarItemCardProps {
   item: CalendarItem & { recurrenceDescription?: string };
@@ -82,7 +83,7 @@ export function CalendarItemCard({ item, onClick }: CalendarItemCardProps) {
           {/* Congregação - alinhada à direita */}
           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
             <Church size={12} className="text-gray-600" />
-            {item.congregation?.name || 'Todas as congregações'}
+            {getCongregationDisplayName(item.congregation) || 'Todas as congregações'}
           </span>
         </div>
 

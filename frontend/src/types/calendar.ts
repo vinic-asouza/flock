@@ -32,6 +32,7 @@ export interface CalendarItem {
   congregation?: {
     id: string;
     name: string;
+    abbreviation?: string | null;
   } | null;
   group?: {
     id: string;

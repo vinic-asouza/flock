@@ -2,6 +2,7 @@
 
 import { Mail, MessageCircle, Phone } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface MemberCardCompactProps {
   member: {
@@ -9,7 +10,7 @@ interface MemberCardCompactProps {
     name: string;
     birth: string; // ISO date
     active: boolean;
-    congregation?: { name: string } | null;
+    congregation?: { name: string; abbreviation?: string | null } | null;
     gender: string;
     marital_status: string;
     occupation?: string | null;
@@ -50,7 +51,7 @@ export function MemberCardCompact({ member }: MemberCardCompactProps) {
             {member.active ? 'Ativo' : 'Inativo'}
           </span> */}
           <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-            {member.congregation?.name || '—'}
+            {getCongregationDisplayName(member.congregation) || '—'}
           </span>
         </div>
         {/* Linha única: Idade e contatos */}

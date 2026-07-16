@@ -6,6 +6,7 @@ import { Cake, Loader2, Mail, MessageCircle, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 export interface Birthday {
   id: string;
@@ -19,6 +20,7 @@ export interface Birthday {
   congregation?: {
     id: string;
     name: string;
+    abbreviation?: string | null;
   } | null;
 }
 
@@ -134,7 +136,7 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                               {formatMemberName(birthday.name)}
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              {birthday.congregation?.name || '—'}
+                              {getCongregationDisplayName(birthday.congregation) || '—'}
                             </span>
                           </div>
                           
@@ -207,7 +209,7 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                               {formatMemberName(birthday.name)}
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              {birthday.congregation?.name || '—'}
+                              {getCongregationDisplayName(birthday.congregation) || '—'}
                             </span>
                           </div>
                           

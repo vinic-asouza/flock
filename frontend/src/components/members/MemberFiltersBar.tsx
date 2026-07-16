@@ -6,6 +6,7 @@ import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { Congregation } from '@/types/congregation';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface MemberFiltersBarProps {
   filters: MemberFilters;
@@ -165,7 +166,7 @@ export function MemberFiltersBar({
           >
             <span>
               {filters.congregationId 
-                ? congregations.find(c => c.id === filters.congregationId)?.name || 'Congregação selecionada'
+                ? getCongregationDisplayName(congregations.find(c => c.id === filters.congregationId)) || 'Congregação selecionada'
                 : filtersLoading ? 'Carregando...' : 'Todas as congregações'
               }
             </span>
@@ -262,7 +263,7 @@ export function MemberFiltersBar({
                   onClick={() => { onChange({ congregationId: cong.id }); setOpenSelect(null); }}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
-                  {cong.name}
+                  {getCongregationDisplayName(cong)}
                 </button>
               ))}
             </>

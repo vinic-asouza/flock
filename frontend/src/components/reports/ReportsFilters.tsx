@@ -9,6 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { apiService } from '@/services/api';
 import toast from 'react-hot-toast';
 import { debounce } from '@/utils';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface ReportsFiltersProps {
   filters: ReportFilters;
@@ -91,9 +92,9 @@ export function ReportsFilters({ filters, onApply, onClear, onClose }: ReportsFi
 
         setCongregations([
           { value: '', label: 'Todas as congregações' },
-          ...congregationsData.map((congregation: { id: string; name: string }) => ({
+          ...congregationsData.map((congregation: { id: string; name: string; abbreviation?: string | null }) => ({
             value: congregation.id,
-            label: congregation.name,
+            label: getCongregationDisplayName(congregation),
           })),
         ]);
       } catch (error) {

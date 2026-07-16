@@ -26,6 +26,7 @@ export interface Congregation {
   id: string;
   church_id: string;
   name: string;
+  abbreviation?: string | null;
   address: string;
   city: string;
   state: string;

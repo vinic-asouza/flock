@@ -3,8 +3,8 @@ type: modulo
 nome: congregacoes
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-16
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, congregacoes]
 depende_de: [auth, igreja-config]
@@ -20,7 +20,7 @@ integracoes: [Supabase PostgreSQL]
 
 ## 1. 📌 Visão Geral
 
-Organiza a estrutura geográfica/pastoral do tenant: cada congregação tem nome único na igreja, endereço e dados opcionais de líder/telefone.
+Organiza a estrutura geográfica/pastoral do tenant: cada congregação tem nome completo único na igreja, abreviação opcional (nome popular curto), endereço e dados opcionais de líder/telefone.
 
 Toda igreja tem exatamente uma **congregação principal** (`is_primary=true`), criada no onboarding com o nome/endereço da igreja. Membros e grupos referenciam congregações reais por UUID — não existe mais sentinel “Sede” / `null`.
 
@@ -37,10 +37,12 @@ Produto: [[01_produto/visao-do-produto]] · Glossário: [[01_produto/glossario]]
 - Batch create com unicidade intra-lote e vs existentes (`is_primary: false` em creates manuais)
 - Flag `is_primary` (única por igreja; unique parcial no banco)
 - Unicidade de nome case-insensitive por igreja
-- Normalização UF (uppercase) e telefone (só dígitos)
-- Listagem com `search` e `activeMembersCount` (membros `active=true`)
+- Abreviação opcional (`abbreviation`), única por igreja quando preenchida (case-insensitive; unique parcial no banco)
+- Normalização UF (uppercase), telefone (só dígitos) e abreviação (trim; `''` → `NULL`)
+- Listagem com `search` em nome **ou** abreviação e `activeMembersCount` (membros `active=true`)
 - Bloquear DELETE se houver membros ativos, se for principal, ou se for a última congregação
 - Auditoria create/update/delete
+- UI: labels Nome completo / Abreviação; display compacto via `getCongregationDisplayName` nos consumidores
 
 ### ❌ Este módulo NÃO é responsável por:
 
@@ -70,9 +72,10 @@ backend/src/
 └── types/index.ts                 → interface Congregation (inclui is_primary)
 
 frontend/src/app/(main)/congregations/  → UI (badge Principal; delete bloqueado)
+frontend/src/utils/congregation.ts     → getPrimaryCongregationId + getCongregationDisplayName
 
 Testes: inexistentes.
-Migrations: `congregations_is_primary_and_backfill` (Supabase).
+Migrations: `congregations_is_primary_and_backfill`, `congregations_add_abbreviation` (Supabase).
 ```
 
 ---
@@ -87,7 +90,8 @@ Unidade local da igreja.
 | --- | --- | --- | --- | --- |
 | id | uuid | NOT NULL | uuid_generate_v4() | PK |
 | church_id | uuid | NOT NULL | — | Tenant (CASCADE) |
-| name | text | NOT NULL | — | Nome (único por igreja, app-level) |
+| name | text | NOT NULL | — | Nome completo (único por igreja, app-level) |
+| abbreviation | text | NULL | — | Nome popular curto (opcional; único por igreja quando preenchido) |
 | address | text | NOT NULL | — | Endereço |
 | city | text | NOT NULL | — | Cidade |
 | state | text | NOT NULL | — | UF 2 letras |
@@ -111,6 +115,7 @@ Unidade local da igreja.
   id: string;
   church_id: string;
   name: string;
+  abbreviation?: string | null;
   address: string;
   city: string;
   state: string;
@@ -146,18 +151,19 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 ```typescript
 // Request (createCongregationSchema):
 {
-  name: string;      // 2–100, obrigatório
-  address: string;   // 5–255
-  city: string;      // 2–100
-  state: string;     // length 2 → salvo UPPERCASE
-  leader?: string;   // max 100, '' ok
-  phone?: string;    // 10–11 dígitos (formatação permitida no input)
+  name: string;            // 2–100, obrigatório (nome completo)
+  abbreviation?: string;   // max 20, opcional; '' → NULL
+  address: string;         // 5–255
+  city: string;            // 2–100
+  state: string;           // length 2 → salvo UPPERCASE
+  leader?: string;         // max 100, '' ok
+  phone?: string;          // 10–11 dígitos (formatação permitida no input)
 }
 
 // Response 201: Congregation row
 
 // Erros:
-// 400 — Dados inválidos / Congregação já existe / erro insert
+// 400 — Dados inválidos / Congregação já existe / Abreviação já existe / erro insert
 // 403 — role
 // 500 — verificação ou interno
 ```
@@ -166,7 +172,8 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 
 ```typescript
 // Response 200: Congregation[] ordenado por name
-// cada item inclui activeMembersCount: number
+// cada item inclui abbreviation? e activeMembersCount: number
+// search filtra name OU abbreviation (ilike)
 // Sem paginação page/limit
 ```
 
@@ -182,22 +189,24 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/congregacoes]] (**12** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/congregacoes]] (**14** regras).
 
 | ID | Declaração curta |
 | --- | --- |
-| BR-CON-001 | Campos obrigatórios + limites Joi |
-| BR-CON-002 | Nome único na igreja (ilike) |
-| BR-CON-003 | Batch: array; sem dup no lote nem vs DB; `is_primary: false` |
-| BR-CON-004 | UF uppercase; telefone só dígitos |
-| BR-CON-005 | PUT não pode esvaziar name/address/city/state |
+| BR-CON-001 | Campos obrigatórios + abreviação opcional (limites Joi) |
+| BR-CON-002 | Nome completo único na igreja (ilike) |
+| BR-CON-003 | Batch: array; sem dup nome/abbr no lote nem vs DB; `is_primary: false` |
+| BR-CON-004 | UF uppercase; telefone só dígitos; abbr trim / ''→NULL |
+| BR-CON-005 | PUT não pode esvaziar name/address/city/state (abbr pode limpar) |
 | BR-CON-006 | Escrita editor+; leitura reader+ |
 | BR-CON-007 | DELETE proibido com membros `active=true` |
 | BR-CON-008 | Isolamento por `church_id` do contexto |
 | BR-CON-009 | Contagem só membros ativos |
-| BR-CON-010 | Register cria primary (nome/endereço da igreja) |
+| BR-CON-010 | Register cria primary (nome/endereço da igreja; sem abbr) |
 | BR-CON-011 | DELETE proibido se `is_primary` ou última |
 | BR-CON-012 | No máximo uma `is_primary` por igreja |
+| BR-CON-013 | Abreviação opcional; única por igreja quando preenchida |
+| BR-CON-014 | UI compacta prefere abbr; PDF usa nome completo |
 
 ---
 
@@ -363,8 +372,8 @@ graph LR
 2. Contagem no list: implementação afirma anti-N+1 — validar que continua batch (`.in`) ao alterar.  
 3. Formúlaris públicos às vezes filtram `.eq('active', true)` em congregations — **coluna não existe**; bug potencial nos módulos consumidores, não neste CRUD.  
 4. DELETE seta FKs SET NULL em members/groups/etc. — só após passar o gate de ativos.  
-5. Unicidade é **aplicacional** (não UNIQUE DB composto church_id+name) — race possível sob concorrência.  
-6. Export PDF de congregações não vive aqui.
+5. Unicidade de **nome** é **aplicacional** (não UNIQUE DB composto church_id+name) — race possível sob concorrência. Unicidade de **abreviação** tem unique parcial no banco.  
+6. Export PDF de congregações não vive aqui; PDF usa **nome completo** (não abreviação).
 
 ---
 
@@ -373,6 +382,7 @@ graph LR
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo congregações | — |
+| 2026-07-16 | 1.1 | Campo `abbreviation` + regras BR-CON-013/014 + display compacto | DEV-20 |
 
 ---
 
@@ -382,7 +392,7 @@ graph LR
 | --- | --- |
 | Módulo documentado | **congregacoes** ✅ |
 | Endpoints | **6** |
-| Regras BR-CON | **9** |
+| Regras BR-CON | **14** |
 | Integrações | Só Supabase PostgreSQL |
 | Jobs | Nenhum |
 | Testes | Nenhum dedicado |

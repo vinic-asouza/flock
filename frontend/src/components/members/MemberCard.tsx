@@ -6,6 +6,7 @@ import { calculateAge } from '@/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CardHeader } from '@/components/ui/CardHeader';
 import { ContactLinks } from '@/components/ui/ContactLinks';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -15,7 +16,7 @@ interface MemberCardProps {
     name: string;
     birth: string; // ISO date
     active: boolean;
-    congregation?: { name: string } | null;
+    congregation?: { name: string; abbreviation?: string | null } | null;
     groups?: Array<{
       id: string;
       name: string;
@@ -47,7 +48,7 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
             <StatusBadge key="status" variant={member.active ? 'active' : 'inactive'} size="sm" />,
             <span key="congregation" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
               <Church size={12} className="text-gray-600" />
-              {member.congregation?.name || '—'}
+              {getCongregationDisplayName(member.congregation) || '—'}
             </span>,
             ...(member.groups && member.groups.length > 0
               ? member.groups

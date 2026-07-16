@@ -16,7 +16,7 @@ type LinkInfo = {
   max_uses?: number | null;
   current_uses: number;
   remaining_uses?: number | null;
-  congregations?: { id: string; name: string }[];
+  congregations?: { id: string; name: string; abbreviation?: string | null }[];
 };
 
 function isLimitError(err: unknown): boolean {

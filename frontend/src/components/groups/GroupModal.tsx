@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/Select';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { ExportGroupMembersModal } from '@/components/groups/ExportGroupMembersModal';
 import toast from 'react-hot-toast';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -280,7 +281,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                     <MapPin size={18} className="text-gray-400 flex-shrink-0" />
                     Congregação
                   </label>
-                  <p className="text-gray-900">{group.congregations?.name || '—'}</p>
+                  <p className="text-gray-900">{getCongregationDisplayName(group.congregations) || '—'}</p>
                 </div>
                 
                 {group.responsible && (

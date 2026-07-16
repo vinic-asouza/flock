@@ -9,6 +9,7 @@ import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { validatePhone, validateDateFormat } from '@/utils/validations';
 import { formatPhone, formatDateToISO } from '@/utils';
+import { getCongregationDisplayName } from '@/utils/congregation';
 import {
   IntegrationMember,
   IntegrationMemberPayload,
@@ -208,7 +209,7 @@ export function IntegrationForm({
       { value: '', label: 'Não definida' },
       ...congregations.map(congregation => ({
         value: congregation.id,
-        label: congregation.name
+        label: getCongregationDisplayName(congregation)
       }))
     ];
   }, [congregations]);

@@ -126,6 +126,7 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
         congregations (
           id,
           name,
+          abbreviation,
           address,
           city,
           state,
@@ -299,7 +300,8 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
             congregation_id,
             congregations (
               id,
-              name
+              name,
+              abbreviation
             )
           )
         `)
@@ -424,6 +426,7 @@ export const getMember = async (req: AuthRequest, res: Response) => {
         congregations (
           id,
           name,
+          abbreviation,
           address,
           city,
           state,
@@ -457,7 +460,8 @@ export const getMember = async (req: AuthRequest, res: Response) => {
           congregation_id,
           congregations (
             id,
-            name
+            name,
+            abbreviation
           )
         )
       `)
@@ -680,9 +684,9 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       .from('members')
       .select(`
         *,
-        congregations (id, name, address, city, state, leader, phone),
+        congregations (id, name, abbreviation, address, city, state, leader, phone),
         member_groups (
-          groups (id, name, type, status, congregation_id, congregations (id, name))
+          groups (id, name, type, status, congregation_id, congregations (id, name, abbreviation))
         )
       `)
       .eq('id', member.id)
@@ -1222,6 +1226,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
         congregations (
           id,
           name,
+          abbreviation,
           address,
           city,
           state,
@@ -1287,6 +1292,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
             congregations (
               id,
               name,
+              abbreviation,
               address,
               city,
               state,
@@ -1547,7 +1553,8 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       created_at,
       expected_congregation:congregations!integration_members_expected_congregation_id_fkey (
         id,
-        name
+        name,
+        abbreviation
       ),
       mentor:members!integration_members_mentor_id_fkey (
         id,
@@ -1914,7 +1921,8 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
         email,
         congregations (
           id,
-          name
+          name,
+          abbreviation
         )
       `)
       .eq('church_id', churchId)

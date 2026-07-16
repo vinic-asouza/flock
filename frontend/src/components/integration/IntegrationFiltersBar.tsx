@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { IntegrationFilters } from '@/types';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface IntegrationFiltersBarProps {
   filters: IntegrationFilters;
@@ -120,7 +121,7 @@ export function IntegrationFiltersBar({
           >
             <span>
               {filters.expectedCongregationId
-                ? congregations.find(c => c.id === filters.expectedCongregationId)?.name || 'Congregação selecionada'
+                ? getCongregationDisplayName(congregations.find(c => c.id === filters.expectedCongregationId)) || 'Congregação selecionada'
                 : 'Todas as congregações'}
             </span>
             <ChevronDown
@@ -183,7 +184,7 @@ export function IntegrationFiltersBar({
                   }}
                   className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.expectedCongregationId === congregation.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
-                  {congregation.name}
+                  {getCongregationDisplayName(congregation)}
                 </button>
               ))}
             </>
@@ -194,4 +195,3 @@ export function IntegrationFiltersBar({
     </div>
   );
 }
-

@@ -16,6 +16,7 @@ import { Group, Member } from '@/types';
 import { endOfYear, getDay, lastDayOfMonth } from 'date-fns';
 import { CalendarParticipantsManager, CalendarParticipantsManagerRef } from './CalendarParticipantsManager';
 import { toast } from 'react-hot-toast';
+import { getCongregationDisplayName } from '@/utils/congregation';
 
 // Função para criar schema de validação (permite acesso às congregações)
 const createCalendarItemSchema = (congregations: Array<{ id: string; name: string }> = []) => z.object({
@@ -956,7 +957,7 @@ export function CalendarItemForm({
             onChange={(value) => setValue('congregation_id', value || '')}
             options={[
               { value: '', label: 'Todas as congregações' },
-              ...(congregations || []).map((c: { id: string; name: string }) => ({ value: c.id, label: c.name }))
+              ...(congregations || []).map((c: { id: string; name: string; abbreviation?: string | null }) => ({ value: c.id, label: getCongregationDisplayName(c) }))
             ]}
             error={errors.congregation_id?.message}
             disabled={filtersLoading}

@@ -9,7 +9,7 @@ import { useMemberImport } from '@/hooks/useMemberImport';
 import { apiService } from '@/services/api';
 import type { Congregation } from '@/types/congregation';
 import { formatMemberName } from '@/utils/formatMemberName';
-import { getPrimaryCongregationId } from '@/utils/congregation';
+import { getPrimaryCongregationId, getCongregationDisplayName } from '@/utils/congregation';
 
 interface MemberImportModalProps {
   isOpen: boolean;
@@ -107,7 +107,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     onSuccess();
   };
 
-  const congregationOptions = congregations.map((c) => ({ value: c.id, label: c.name }));
+  const congregationOptions = congregations.map((c) => ({ value: c.id, label: getCongregationDisplayName(c) }));
 
   return (
     <Modal
@@ -572,4 +572,3 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     </Modal>
   );
 }
-

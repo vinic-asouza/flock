@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { getCongregationDisplayName } from '@/utils/congregation';
 import {
   IntegrationMemberPayload,
   IntegrationGender,
@@ -48,7 +49,7 @@ interface PublicIntegrationFormProps {
   onCancel?: () => void;
   isLoading?: boolean;
   churchName?: string;
-  congregations?: { id: string; name: string }[];
+  congregations?: { id: string; name: string; abbreviation?: string | null }[];
   submitDisabled?: boolean;
 }
 
@@ -149,7 +150,7 @@ export function PublicIntegrationForm({
       { value: '', label: 'Não definida' },
       ...congregations.map(congregation => ({
         value: congregation.id,
-        label: congregation.name
+        label: getCongregationDisplayName(congregation)
       }))
     ];
   }, [congregations]);
