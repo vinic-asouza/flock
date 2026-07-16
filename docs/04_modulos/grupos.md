@@ -3,8 +3,8 @@ type: modulo
 nome: grupos
 status: Ativo
 complexidade: Média
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-16
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, grupos]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -41,7 +41,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Vínculos N:N via `member_groups` (add/list/remove)
 - Alinhamento membro↔grupo na mesma congregação
 - Impedir membro duplicado no mesmo grupo
-- Listagem com filtros (`congregation_id` UUID, `type`, `status`, `search`) + `memberCount`
+- Listagem com filtros (`congregation_id` UUID, `type`, `status`, `search`), ordenação (`sort_by` / `sort_order` com whitelist) + `memberCount`
 - Soft-flag `status` (ativo/inativo); hard delete do grupo (CASCADE em `member_groups`)
 - Auditoria create/update/delete (grupo e vínculo)
 
@@ -167,7 +167,7 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
-| GET | `/api/groups/` | ✅ | ≥ reader | Lista (+ filtros, `memberCount`) |
+| GET | `/api/groups/` | ✅ | ≥ reader | Lista (+ filtros, ordenação, `memberCount`) |
 | GET | `/api/groups/:id` | ✅ | ≥ reader | Detalhe + `responsible` + `membersList` |
 | GET | `/api/groups/:id/members` | ✅ | ≥ reader | Só membros do grupo |
 | POST | `/api/groups/` | ✅ | ≥ editor | Criar |
@@ -186,8 +186,11 @@ Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 | `type` | GroupType | Filtra tipo |
 | `status` | `active` \| `inactive` \| `all` (default) | `status` boolean |
 | `search` | string | `ilike` no name |
+| `sort_by` | `name` \| `type` \| `created_at` \| `updated_at` \| `status` | Campo de ordenação (whitelist); inválido → fallback `name` |
+| `sort_order` | `asc` \| `desc` | Direção; valor ≠ `desc` → `asc` |
 
-Sem paginação — retorna todos do tenant filtrados.
+**Default:** `sort_by=name`, `sort_order=asc`, com desempate estável por `id` asc.  
+Sem paginação — retorna todos do tenant filtrados (array `Group[]`; não ecoa `sorting` no body).
 
 ### Contrato — `POST /api/groups/`
 
@@ -238,7 +241,7 @@ Sem paginação — retorna todos do tenant filtrados.
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/grupos]] (**10** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/grupos]] (**11** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -252,6 +255,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/grupos]] (**10** regras).
 | BR-GRP-008 | Add membro: mesma igreja e mesma congregação do grupo |
 | BR-GRP-009 | Membro único por grupo |
 | BR-GRP-010 | DELETE remove grupo e CASCADE `member_groups` |
+| BR-GRP-011 | Ordenação da listagem: whitelist `sort_by` + fallback default |
 
 **Alinhamento (BR-GRP-005/008):** responsável e membro devem pertencer à mesma congregação do grupo (sem coringa null/Sede).
 
@@ -466,7 +470,7 @@ graph LR
 1. **DELETE não bloqueia por membros** — `memberCount` é consultado em `deleteGroup` mas **não usado** para gate; CASCADE apaga vínculos. Diferente de congregações.  
 2. Unicidade é **case-sensitive** (`eq('name')`), ao contrário de congregações (`ilike`).  
 3. Unicidade só considera `status=true` — reativar/duplicar inativos exige cuidado.  
-4. Lista **sem paginação**; `memberCount` carrega todos os `member_groups` dos IDs listados (ok para volumes típicos, revisar se escalar).  
+4. Lista **sem paginação**; `memberCount` carrega todos os `member_groups` dos IDs listados (ok para volumes típicos, revisar se escalar). Ordenação no banco **antes** do enrichment de `memberCount`.  
 5. Responsável **não** é auto-inserido em `member_groups` — só FK `responsible_id`.  
 6. Remover membro: se vínculo inexistente, delete “silencia” e ainda pode retornar 204 (sem 404 explícito de vínculo).  
 7. Export no front (`ExportGroupMembersModal`) não faz parte deste módulo de API.
@@ -477,6 +481,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-07-16 | 1.1 | Ordenação na listagem (`sort_by` / `sort_order` + whitelist; default `name` asc) | DEV-13 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo grupos | — |
 
 ---

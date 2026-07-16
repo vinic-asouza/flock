@@ -11,7 +11,7 @@ import { GroupFiltersBar } from '@/components/groups/GroupFiltersBar';
 import { GroupActiveFiltersChips } from '@/components/groups/GroupActiveFiltersChips';
 import { GroupSummaryBar } from '@/components/groups/GroupSummaryBar';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
-import { Group, GroupPayload, GroupFilters } from '@/types';
+import { Group, GroupPayload, GroupFilters, GroupSorting } from '@/types';
 
 // Tipo do formulário de grupo (mesmo do GroupForm)
 type GroupFormData = {
@@ -36,12 +36,18 @@ const initialFilters: GroupFilters = {
   status: 'all'
 };
 
+const initialSorting: GroupSorting = {
+  sort_by: 'name',
+  sort_order: 'asc'
+};
+
 export default function GroupsPage() {
   const { canEdit } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<GroupFilters>(initialFilters);
+  const [sorting, setSorting] = useState<GroupSorting>(initialSorting);
 
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -61,7 +67,9 @@ export default function GroupsPage() {
         congregation_id: filters.congregationId || undefined,
         type: filters.type || undefined,
         status: filters.status,
-        search: filters.search.trim() || undefined
+        search: filters.search.trim() || undefined,
+        sort_by: sorting.sort_by,
+        sort_order: sorting.sort_order
       });
       setGroups(data);
     } catch (err: unknown) {
@@ -70,7 +78,7 @@ export default function GroupsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters.congregationId, filters.type, filters.status, filters.search]);
+  }, [filters.congregationId, filters.type, filters.status, filters.search, sorting.sort_by, sorting.sort_order]);
 
   useEffect(() => {
     loadGroups();
@@ -80,12 +88,21 @@ export default function GroupsPage() {
     setFilters(prev => ({ ...prev, ...changes }));
   }, []);
 
+  const handleSortingChange = useCallback((newSorting: GroupSorting) => {
+    setSorting(newSorting);
+  }, []);
+
   const handleRemoveFilter = useCallback((key: keyof GroupFilters) => {
     setFilters(prev => ({ ...prev, [key]: initialFilters[key] }));
   }, []);
 
+  const handleRemoveSorting = useCallback(() => {
+    setSorting(initialSorting);
+  }, []);
+
   const handleClearAllFilters = useCallback(() => {
     setFilters(initialFilters);
+    setSorting(initialSorting);
   }, []);
 
   const handleSearchChange = useCallback((value: string) => {
@@ -195,7 +212,9 @@ export default function GroupsPage() {
     filters.search.trim().length > 0 ||
     filters.congregationId !== '' ||
     filters.type !== '' ||
-    filters.status !== 'all';
+    filters.status !== 'all' ||
+    sorting.sort_by !== initialSorting.sort_by ||
+    sorting.sort_order !== initialSorting.sort_order;
 
   return (
     <div className="flex flex-col gap-6">
@@ -229,7 +248,12 @@ export default function GroupsPage() {
           />
         </div>
         <div className="flex-shrink-0">
-          <GroupFiltersBar filters={filters} onChange={handleFilterChange} />
+          <GroupFiltersBar
+            filters={filters}
+            onChange={handleFilterChange}
+            sorting={sorting}
+            onSortingChange={handleSortingChange}
+          />
         </div>
       </div>
 
@@ -237,6 +261,9 @@ export default function GroupsPage() {
         filters={filters}
         onRemoveFilter={handleRemoveFilter}
         onClearAll={handleClearAllFilters}
+        sorting={sorting}
+        onRemoveSorting={handleRemoveSorting}
+        defaultSorting={initialSorting}
       />
 
       {/* Conteúdo */}

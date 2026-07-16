@@ -557,6 +557,8 @@ class ApiService {
     type?: string;
     status?: 'active' | 'inactive' | 'all';
     search?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
   }): Promise<Group[]> {
     const queryParams = new URLSearchParams();
     if (params?.congregation_id) {
@@ -570,6 +572,12 @@ class ApiService {
     }
     if (params?.search?.trim()) {
       queryParams.append('search', params.search.trim());
+    }
+    if (params?.sort_by) {
+      queryParams.append('sort_by', params.sort_by);
+    }
+    if (params?.sort_order) {
+      queryParams.append('sort_order', params.sort_order);
     }
     const url = `/groups${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.api.get(url);

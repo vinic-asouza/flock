@@ -9,15 +9,16 @@ import { debug, error as logError } from '../utils/logger';
 
 /**
  * Lista todos os grupos da igreja com filtros
- * 
+ *
  * Suporta:
  * - Filtro por congregação (query param congregation_id)
  * - Filtro por tipo (query param type)
  * - Filtro por status (query param status: active | inactive | all)
- * - Ordenação por tipo e nome
+ * - Busca por nome (query param search)
+ * - Ordenação (query params sort_by, sort_order) com whitelist
  * - Contagem de membros por grupo
- * 
- * @param req - Request com query params congregation_id, type, status (opcionais)
+ *
+ * @param req - Request com query params de filtro e ordenação (opcionais)
  * @param res - Response com lista de grupos incluindo contagem de membros
  * @returns JSON com array de grupos
  */
@@ -37,6 +38,14 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     const statusParam = (req.query.status as string) || 'all';
     const search = (req.query.search as string) || '';
 
+    // Whitelist de campos para sort_by — evita acesso indireto a colunas sensíveis
+    const ALLOWED_SORT_FIELDS = ['name', 'type', 'created_at', 'updated_at', 'status'] as const;
+    const sort_by_raw = (req.query.sort_by as string) || 'name';
+    const sort_by = ALLOWED_SORT_FIELDS.includes(sort_by_raw as (typeof ALLOWED_SORT_FIELDS)[number])
+      ? sort_by_raw
+      : 'name';
+    const sort_order = (req.query.sort_order as string) === 'desc' ? 'desc' : 'asc';
+
     // Construir query base
     let query = supabase
       .from('groups')
@@ -52,9 +61,7 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
           name
         )
       `)
-      .eq('church_id', churchId)
-      .order('type')
-      .order('name');
+      .eq('church_id', churchId);
 
     // Aplicar filtro de congregação
     const congregationFilter = resolveCongregationFilter(congregation_id);
@@ -84,6 +91,10 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     if (search.trim()) {
       query = query.ilike('name', `%${search.trim()}%`);
     }
+
+    query = query
+      .order(sort_by, { ascending: sort_order === 'asc' })
+      .order('id', { ascending: true });
 
     const { data: groups, error } = await query;
 
