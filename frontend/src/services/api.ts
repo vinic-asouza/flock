@@ -947,9 +947,12 @@ class ApiService {
     return response.data;
   }
 
-  async exportGroupsList(
-    filters: Record<string, string | number | boolean | null | undefined>
-  ): Promise<Blob> {
+  async exportGroupsList(filters: {
+    types: string[];
+    search?: string;
+    congregation_id?: string;
+    status?: string;
+  }): Promise<Blob> {
     const response = await this.api.post('/export/groups/list', {
       filters,
     }, {

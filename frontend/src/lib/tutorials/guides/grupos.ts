@@ -49,6 +49,27 @@ export const gruposGuides: TutorialGuide[] = [
       'Filtre por congregação, tipo ou status (ativo/inativo).',
       'A barra de resumo no topo mostra totais por tipo.',
     ],
-    related: ['grupos-cadastrar', 'grupos-membros'],
+    related: ['grupos-cadastrar', 'grupos-membros', 'grupos-exportar'],
+  },
+  {
+    slug: 'grupos-exportar',
+    title: 'Exportar lista de grupos em PDF',
+    module: 'grupos',
+    role: 'reader',
+    route: '/groups',
+    estimatedMinutes: 2,
+    tags: ['exportar', 'pdf', 'grupo', 'tipo'],
+    steps: [
+      'Abra Grupos na barra lateral.',
+      '(Opcional) Aplique filtros de busca, congregação ou status na listagem — eles também valem no PDF.',
+      'Clique em Exportar PDF.',
+      'No modal, selecione quais tipos de grupo incluir (ex.: só Ministérios). Use Selecionar todos ou Limpar seleção conforme necessário.',
+      'Confirme Exportar PDF. A seleção de tipos afeta apenas o documento, não a listagem na tela.',
+    ],
+    details: [
+      'É necessário marcar pelo menos um tipo para exportar.',
+      'Se a listagem já estiver filtrada por um tipo, esse tipo vem pré-selecionado no modal.',
+    ],
+    related: ['grupos-filtrar', 'congregacoes-exportar'],
   },
 ];

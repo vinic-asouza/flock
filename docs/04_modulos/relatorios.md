@@ -161,7 +161,7 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 | POST | `/api/export/members/list/csv` | ✅ | ≥ reader | Lista membros CSV |
 | POST | `/api/export/integration/list` | ✅ | ≥ reader | Lista integração PDF |
 | POST | `/api/export/group/members/list` | ✅ | ≥ reader | Membros de um grupo PDF |
-| POST | `/api/export/groups/list` | ✅ | ≥ reader | Lista grupos PDF |
+| POST | `/api/export/groups/list` | ✅ | ≥ reader | Lista grupos PDF (`filters.types[]` obrigatório) |
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | Lista congregações PDF |
 
 **Total:** **13** endpoints (3 reports + 10 export).
@@ -251,15 +251,24 @@ max: 10 // por IP
 
 ```typescript
 // POST /group/members/list { groupId, fields: string[] }
-// POST /groups/list { filters?: { congregation_id, type, status, search } }  // campos PDF fixos
+// POST /groups/list {
+//   filters: {
+//     types: GroupType[];           // obrigatório, min 1 (BR-REL-010)
+//     congregation_id?: string;
+//     status?: 'active'|'inactive'|'all';
+//     search?: string;
+//   }
+// }  // campos PDF fixos: name, congregation, responsible_name, member_count
 // POST /congregations/list { } // lista do tenant
 ```
+
+UI: modal `ExportGroupsTypesModal` na tela `/groups` — multi-seleção de tipos antes do PDF (pré-seleciona o tipo do filtro da listagem, se houver).
 
 ---
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**9** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**10** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -270,8 +279,9 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**9** regras).
 | BR-REL-005 | Filtros de report passam `reportFiltersSchema` |
 | BR-REL-006 | Exports scoped ao `church_id` do contexto |
 | BR-REL-007 | PDF/CSV de lista exige `fields[]` não vazio |
-| BR-REL-008 | Lista vazia no filtro → **404** “Nenhum membro encontrado” |
+| BR-REL-008 | Lista vazia no filtro → **404** |
 | BR-REL-009 | Home filtra `all` \| `congregation` antes do dashboard |
+| BR-REL-010 | Export grupos exige `filters.types[]` (min 1, GroupType) |
 
 ---
 
@@ -496,7 +506,7 @@ graph LR
 | --- | --- |
 | Módulo documentado | **relatorios** ✅ |
 | Endpoints | **13** (3 agregados/aniversários + 10 export) |
-| Regras BR-REL | **9** |
+| Regras BR-REL | **10** |
 | Entidades próprias | **0** (read-only) |
 | Integrações | Supabase + PDFKit |
 | Jobs | Nenhum |

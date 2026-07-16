@@ -1,14 +1,15 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-07-14
-versao: "1.1"
-total_regras: 9
+ultima_atualizacao: 2026-07-16
+versao: "1.2"
+total_regras: 10
 tags: [regras, modulo:relatorios]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
   - "[[04_modulos/relatorios/overview]]"
-  - ""[[02_regras-de-negocio/regras-por-modulo/membros]]""
+  - "[[02_regras-de-negocio/regras-por-modulo/membros]]"
+  - "[[02_regras-de-negocio/regras-por-modulo/grupos]]"
 ---
 
 # Regras de Negócio — Relatórios e Painel
@@ -28,6 +29,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 | BR-REL-007 | Export fields obrigatórios | Restrição | Ativo |
 | BR-REL-008 | Export lista vazia | Restrição | Ativo |
 | BR-REL-009 | Vision UI painel | Fato | Ativo |
+| BR-REL-010 | Export grupos exige types | Restrição | Ativo |
 
 ---
 
@@ -110,7 +112,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** —
 
 ### BR-REL-008: Export lista vazia
-- **Declaração:** Sem membros no filtro → 404 Nenhum membro encontrado.
+- **Declaração:** Sem membros no filtro → 404 Nenhum membro encontrado. Análogo em export de grupos: sem grupos após filtros → 404 Nenhum grupo encontrado.
 - **Tipo:** Restrição
 - **Gatilho:** Export
 - **Comportamento esperado:** —
@@ -129,6 +131,16 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
+### BR-REL-010: Export grupos exige types
+- **Declaração:** `POST /api/export/groups/list` exige `filters.types` como array com pelo menos um valor ∈ GroupType (whitelist). Tipos inválidos ou array vazio → 400. A UI abre modal de multi-seleção antes do download; a seleção afeta só o PDF (não a listagem). Demais filtros opcionais: `congregation_id`, `status`, `search`.
+- **Tipo:** Restrição
+- **Gatilho:** Export lista de grupos
+- **Comportamento esperado:** PDF apenas com grupos dos tipos selecionados
+- **Comportamento em violação:** 400 Filtros inválidos
+- **Implementado em:** `groupValidator.ts` (`exportGroupsListFiltersSchema`) + `exportController.ts` + `ExportGroupsTypesModal.tsx`
+- **Testado em:** N/A — validação schema manual (DEV-14); sem suite dedicada
+- **Depende de:** [[BR-GRP-001]], [[BR-REL-006]], [[BR-REL-008]]
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -137,4 +149,4 @@ Oferecer indicadores demográficos/operacionais e exportações.
 
 ---
 
-*Atualizado em 2026-07-14 (DEV-18).*
+*Atualizado em 2026-07-16 (DEV-14).*

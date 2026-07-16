@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
@@ -10,8 +10,12 @@ import { GroupModal } from '@/components/groups/GroupModal';
 import { GroupFiltersBar } from '@/components/groups/GroupFiltersBar';
 import { GroupActiveFiltersChips } from '@/components/groups/GroupActiveFiltersChips';
 import { GroupSummaryBar } from '@/components/groups/GroupSummaryBar';
+import {
+  ExportGroupsTypesModal,
+  GROUP_TYPES,
+} from '@/components/groups/ExportGroupsTypesModal';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
-import { Group, GroupPayload, GroupFilters, GroupSorting } from '@/types';
+import { Group, GroupPayload, GroupFilters, GroupSorting, GroupType } from '@/types';
 
 // Tipo do formulário de grupo (mesmo do GroupForm)
 type GroupFormData = {
@@ -58,6 +62,7 @@ export default function GroupsPage() {
   const [selectedGroupName, setSelectedGroupName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingGroups, setIsExportingGroups] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   const loadGroups = useCallback(async () => {
     try {
@@ -179,34 +184,42 @@ export default function GroupsPage() {
     setDeleteModalOpen(true);
   };
 
-  const handleExportGroups = useCallback(async () => {
-    try {
-      setIsExportingGroups(true);
+  const exportInitialTypes: GroupType[] = useMemo(
+    () => (filters.type ? [filters.type as GroupType] : [...GROUP_TYPES]),
+    [filters.type]
+  );
 
-      const params: Record<string, string | number | boolean | null | undefined> = {};
+  const handleExportGroups = useCallback(
+    async (selectedTypes: GroupType[]) => {
+      try {
+        setIsExportingGroups(true);
 
-      if (filters.search) params.search = filters.search;
-      if (filters.congregationId) params.congregation_id = filters.congregationId;
-      if (filters.type) params.type = filters.type;
-      if (filters.status && filters.status !== 'all') params.status = filters.status;
-
-      const blob = await apiService.exportGroupsList(params);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `grupos-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('PDF exportado com sucesso!');
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Erro ao exportar PDF. Tente novamente.';
-      toast.error(msg);
-    } finally {
-      setIsExportingGroups(false);
-    }
-  }, [filters]);
+        const blob = await apiService.exportGroupsList({
+          types: selectedTypes,
+          ...(filters.search ? { search: filters.search } : {}),
+          ...(filters.congregationId ? { congregation_id: filters.congregationId } : {}),
+          ...(filters.status && filters.status !== 'all' ? { status: filters.status } : {}),
+        });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `grupos-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        toast.success('PDF exportado com sucesso!');
+      } catch (error) {
+        const msg =
+          error instanceof Error ? error.message : 'Erro ao exportar PDF. Tente novamente.';
+        toast.error(msg);
+        throw error;
+      } finally {
+        setIsExportingGroups(false);
+      }
+    },
+    [filters]
+  );
 
   const hasActiveFilters =
     filters.search.trim().length > 0 ||
@@ -282,7 +295,7 @@ export default function GroupsPage() {
             congregationId={filters.congregationId}
             groups={groups}
             onRefreshClick={loadGroups}
-            onExportClick={handleExportGroups}
+            onExportClick={() => setExportModalOpen(true)}
             exporting={isExportingGroups}
           />
           <GroupList
@@ -348,6 +361,13 @@ export default function GroupsPage() {
           />
         </Modal>
       )}
+
+      <ExportGroupsTypesModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        initialSelectedTypes={exportInitialTypes}
+        onExport={handleExportGroups}
+      />
 
       {/* Modal de Confirmação de Exclusão */}
       <Modal
