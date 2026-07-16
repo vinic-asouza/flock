@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: grupos
-ultima_atualizacao: 2026-07-14
-versao: "1.1"
-total_regras: 10
+ultima_atualizacao: 2026-07-16
+versao: "1.2"
+total_regras: 11
 tags: [regras, modulo:grupos]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -28,6 +28,7 @@ Organizar membros em ministérios, células e demais tipos.
 | BR-GRP-008 | Add membro alinhado | Restrição | Ativo |
 | BR-GRP-009 | Sem duplicar no grupo | Restrição | Ativo |
 | BR-GRP-010 | Delete com cascade N:N | Gatilho | Ativo |
+| BR-GRP-011 | Ordenação da listagem | Restrição | Ativo |
 
 ---
 
@@ -139,6 +140,18 @@ Organizar membros em ministérios, células e demais tipos.
 - **Comportamento em violação:** 404
 - **Implementado em:** `groupController.ts`
 - **Testado em:** N/A — sem suite dedicada
+- **Depende de:** —
+
+### 📋 Regras de Listagem
+
+### BR-GRP-011: Ordenação da listagem
+- **Declaração:** `GET /api/groups/` aceita `sort_by` apenas em whitelist (`name`, `type`, `created_at`, `updated_at`, `status`) e `sort_order` `asc`|`desc`. Valor inválido faz fallback para default (`name` asc); desempate por `id` asc.
+- **Tipo:** Restrição
+- **Gatilho:** Listagem
+- **Comportamento esperado:** Lista ordenada no banco; resposta permanece array
+- **Comportamento em violação:** Fallback silencioso (não 400)
+- **Implementado em:** `groupController.ts` (`listGroups`)
+- **Testado em:** N/A — sem suite dedicada; validado em QA (DEV-13)
 - **Depende de:** —
 
 ---

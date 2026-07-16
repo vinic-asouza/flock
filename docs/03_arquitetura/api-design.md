@@ -285,7 +285,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 
 | Método | Rota | Auth | Role | Descrição | Status |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/api/groups/` | ✅ | ≥ reader | Listar | ✅ |
+| GET | `/api/groups/` | ✅ | ≥ reader | Listar (filtros + `sort_by`/`sort_order`) | ✅ |
 | GET | `/api/groups/:id` | ✅ | ≥ reader | Detalhe + membros | ✅ |
 | GET | `/api/groups/:id/members` | ✅ | ≥ reader | Membros do grupo | ✅ |
 | POST | `/api/groups/` | ✅ | ≥ editor | Criar | ✅ |
@@ -428,7 +428,9 @@ Query params: `search`, `active`, `congregation_id`, `gender`, `marital_status`,
 
 ### Outros módulos
 
-Integration: page/limit + filtros de status/nome (ver controller). Groups/calendar: filtros por query específicos do domínio. Account logs: page/limit.
+Integration: page/limit + filtros de status/nome (ver controller).  
+Groups: filtros `congregation_id`, `type`, `status`, `search` + ordenação `sort_by`/`sort_order` (whitelist `name|type|created_at|updated_at|status`; default `name` asc; fallback silencioso; resposta array sem eco de `sorting`).  
+Calendar: filtros por query específicos do domínio. Account logs: page/limit.
 
 Resposta de members ecoa `filters` e `sorting` aplicados.
 

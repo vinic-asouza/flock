@@ -332,3 +332,8 @@ export interface GroupFilters {
   type: GroupType | '';
   status: 'active' | 'inactive' | 'all';
 }
+
+export interface GroupSorting {
+  sort_by: 'name' | 'type' | 'created_at' | 'updated_at' | 'status';
+  sort_order: 'asc' | 'desc';
+}
