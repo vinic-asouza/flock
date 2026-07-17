@@ -98,17 +98,19 @@ Legenda: ✅ permitido · ❌ negado · 🔶 parcial / com restrição. Baseado 
 | Recurso / Ação | Owner | Admin | Editor | Reader |
 | --- | --- | --- | --- | --- |
 | Login + contexto da igreja | ✅ | ✅ | ✅ | ✅ |
-| Ler membros / integração / grupos / congregações / calendário | ✅ | ✅ | ✅ | ✅ |
-| Criar/editar/excluir membros (incl. import CSV, status) | ✅ | ✅ | ✅ | ❌ |
-| Criar/editar/excluir integração + converter | ✅ | ✅ | ✅ | ❌ |
-| CRUD congregações / grupos / calendário / participantes | ✅ | ✅ | ✅ | ❌ |
-| Criar/gerir links públicos (registro e integração) | ✅ | ✅ | ✅ | ❌ (só listar/ver) _(inferido da rota: GET com reader)_ |
-| Exportar PDFs | ✅ | ✅ | ✅ | ✅ |
-| Painel / relatórios | ✅ | ✅ | ✅ | ✅ |
+| Ler membros / integração / grupos / congregações / calendário | ✅ | ✅ | 🔶 escopo | 🔶 escopo |
+| Criar/editar/excluir membros (incl. import CSV, status) | ✅ | ✅ | 🔶 escopo | ❌ |
+| Criar/editar/excluir integração + converter | ✅ | ✅ | 🔶 escopo | ❌ |
+| CRUD grupos / calendário / participantes | ✅ | ✅ | 🔶 escopo | ❌ |
+| Criar congregação | ✅ | ✅ | 🔶 só se acesso a **todas** | ❌ |
+| Editar/excluir congregação (no escopo) | ✅ | ✅ | 🔶 escopo | ❌ |
+| Criar/gerir links públicos (registro e integração) | ✅ | ✅ | 🔶 escopo (`default_congregation_id`) | ❌ (só listar/ver) |
+| Exportar PDFs / painel / relatórios | ✅ | ✅ | 🔶 escopo | 🔶 escopo |
 | Atualizar dados cadastrais da igreja | ✅ | ✅ | ❌ | ❌ |
 | Ver campos Stripe da igreja | ✅ | ✅ | ❌ | ❌ |
 | Checkout / portal / sync / change-plan / plano free | ✅ | ✅ | ❌ | ❌ |
 | Listar/criar/editar/remover usuários da igreja | ✅ | ✅ | ❌ | ❌ |
+| Definir escopo de congregações do usuário | ✅ | ✅ | ❌ | ❌ |
 | Alterar papel do `owner` | ❌ | ❌ | ❌ | ❌ |
 | Ver audit logs (`GET /api/account/logs`) | ✅ | ✅ | ❌ | ❌ |
 | Gerenciar própria conta (e-mail, senha, telefone) | ✅ | ✅ | ✅ | ✅ |
@@ -116,6 +118,21 @@ Legenda: ✅ permitido · ❌ negado · 🔶 parcial / com restrição. Baseado 
 
 _Exclusão de conta: autenticado; bloqueada se houver assinatura paga ativa. UI destaca fluxo especialmente para owner._
 
+### Escopo por congregação (DEV-15)
+
+Além do RBAC (`owner` > `admin` > `editor` > `reader`), `reader` e `editor` podem ter **acesso limitado a congregações** da igreja:
+
+| Papel | Escopo de congregação |
+| --- | --- |
+| `owner` / `admin` | Sempre **todas** (dinâmico; inclui congregações futuras) |
+| `editor` / `reader` | Flag `access_all_congregations` **ou** lista N:N em `church_user_congregations` (≥1). Seleção vazia inválida. |
+
+- Configurado em **Configurações → Usuários** (create/edit).
+- Enforcement no **backend** (listagens, get-by-id, writes, import CSV, export, participantes de calendário).
+- Recursos com `congregation_id` / `expected_congregation_id` **null** = abrangência da igreja (church-wide), visíveis a `reader+` do tenant.
+- Promover para `admin+` limpa restrições; rebaixar para `reader`/`editor` exige nova seleção.
+- Editor **sem** “todas” **não** cria novas congregações.
+- Não excluir congregação se for a **única** do escopo de algum usuário restrito.
 ---
 
 ## 🚪 Fluxos de Acesso
@@ -162,7 +179,10 @@ Preferências de UI persistidas no cliente _(inferido / parcial):_ modo de visua
 | `user_id` | uuid | Sim | Usuário Auth (UNIQUE global) |
 | `role` | enum `owner\|admin\|editor\|reader` | Sim | Papel |
 | `status` | enum `active\|invited\|disabled` | Sim | Padrão `active` |
+| `access_all_congregations` | boolean | Sim | `true` = acesso dinâmico a todas as congregações |
 | `created_at` / `updated_at` | timestamptz | Sim | Auditoria |
+
+Quando `access_all_congregations=false` (apenas `reader`/`editor`), as congregações permitidas ficam em `church_user_congregations` (N:N).
 
 Status `invited` existe no enum; fluxo atual de criação costuma gravar `active` de imediato _(inferido)_.
 
@@ -171,7 +191,7 @@ Status `invited` existe no enum; fluxo atual de criação costuma gravar `active
 | Campo | Origem | Descrição |
 | --- | --- | --- |
 | `req.user` | JWT | `{ id, email }` |
-| `req.church` | membership | `{ churchId, role }` |
+| `req.church` | membership + escopo | `{ churchId, role, accessAllCongregations, congregationIds }` |
 | Igreja ativa | cookie / `X-Church-Id` | Tenant selecionado |
 
 ---
@@ -180,29 +200,30 @@ Status `invited` existe no enum; fluxo atual de criação costuma gravar `active
 
 ```text
 Church (tenant)
-  ├── 1..n ChurchUser (usuários de login + role)
+  ├── 1..n ChurchUser (usuários de login + role + escopo de congregação)
+  │     └── 0..n church_user_congregations (quando não é “todas”)
   ├── 1 churches.user_id  → owner “legado” / billing anchor
   └── 1..n Members, IntegrationMembers, Congregations, Groups, Calendar…
 ```
 
 - **Isolamento:** queries autenticadas filtram por `church_id` do contexto; backend usa `service_role` (bypass RLS) — a segurança de tenant é **aplicacional**.
+- **Escopo intra-igreja:** além de `church_id`, `reader`/`editor` filtram por congregações permitidas (`accessAllCongregations` / `congregationIds` em `req.church`).
 - **Seleção:** se o usuário tiver mais de um membership resolvível, API pode retornar `CHURCH_SELECTION_REQUIRED`.
-- **Equipe:** admin/owner gerencia `church_users`; papéis atribuíveis no convite: `admin`, `editor`, `reader` (não `owner`).
-
+- **Equipe:** admin/owner gerencia `church_users` e o escopo; papéis atribuíveis no convite: `admin`, `editor`, `reader` (não `owner`).
 ---
 
 ## 📝 Notas para os Agentes
 
-1. **Sempre** autenticar e anexar `req.church` antes de dados de negócio; nunca confiar só no frontend (`canEdit`).
+1. **Sempre** autenticar e anexar `req.church` antes de dados de negócio; nunca confiar só no frontend (`canEdit` / selects de congregação).
 2. Usar `requireRole` / `hasRoleOrHigher` — hierarquia `reader < editor < admin < owner`.
-3. **Membro ≠ usuário:** CRUD de `members` não concede login; convites usam `church_users`.
-4. **Billing e equipe** são `admin`+: editor/reader não devem ver ou mutar Stripe.
-5. Respeitar limite de plano e `past_due` ao criar membros (qualquer role editor+).
-6. Links públicos são superfície separada: validar token, não JWT de usuário da igreja.
-7. Não permitir mutação do papel `owner` pelas APIs de igreja users.
-8. Ao projetar UI, desabilitar ações de escrita para `reader` e alinhar tooltips ao padrão existente.
-9. E-mail de convite é informativo (não SSO); onboarding do convidado = login com a conta criada/associada.
-
+3. Para dados com congregação: usar helpers de `congregationScope.ts` (`resolveScopedCongregationFilter`, `assertCongregationAccess`); não filtrar só no FE.
+4. **Membro ≠ usuário:** CRUD de `members` não concede login; convites usam `church_users`.
+5. **Billing e equipe** são `admin`+: editor/reader não devem ver ou mutar Stripe.
+6. Respeitar limite de plano e `past_due` ao criar membros (qualquer role editor+).
+7. Links públicos são superfície separada: validar token, não JWT de usuário da igreja.
+8. Não permitir mutação do papel `owner` pelas APIs de igreja users.
+9. Ao projetar UI, desabilitar ações de escrita para `reader` e limitar opções de congregação ao escopo do usuário.
+10. E-mail de convite é informativo (não SSO); onboarding do convidado = login com a conta criada/associada.
 ---
 
 ## Arquivos analisados
