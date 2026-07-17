@@ -4,6 +4,7 @@ import { supabaseAdmin as supabase } from '../services/supabase';
 import { validateCSV, importMembers } from '../services/memberImportService';
 import { logAudit } from '../utils/auditLogger';
 import { checkMemberLimit } from '../utils/planLimits';
+import { assertCongregationAccess } from '../utils/congregationScope';
 
 /**
  * Valida um arquivo CSV antes da importação
@@ -57,6 +58,11 @@ export const validateImport = async (req: AuthRequest, res: Response) => {
         error: 'Congregação inválida',
         details: 'A congregação fornecida não existe ou não pertence a esta igreja'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, congregationId);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Valida o CSV
@@ -128,6 +134,11 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
         error: 'Congregação inválida',
         details: 'A congregação fornecida não existe ou não pertence a esta igreja'
       });
+    }
+
+    const importAccess = assertCongregationAccess(req.church!, congregationId);
+    if (!importAccess.ok) {
+      return res.status(importAccess.status).json(importAccess.body);
     }
 
     // Opções de importação

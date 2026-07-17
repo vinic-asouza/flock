@@ -303,7 +303,11 @@ export async function congregationIsSoleScopeForAnyUser(
 
   if (error) {
     logError('Erro ao verificar escopo único da congregação:', error);
-    return { blocked: false };
+    return {
+      blocked: true,
+      message:
+        'Não foi possível verificar vínculos de escopo desta congregação. Tente novamente.',
+    };
   }
 
   for (const link of links || []) {

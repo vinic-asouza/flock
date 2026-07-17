@@ -4,6 +4,7 @@ import { supabaseAdmin as supabase } from '../services/supabase';
 import { addParticipantSchema } from '../validators/calendarParticipantValidator';
 import { logError } from '../utils/logger';
 import { logAudit } from '../utils/auditLogger';
+import { assertCongregationAccess } from '../utils/congregationScope';
 
 /**
  * Adiciona um participante (membro ou convidado) a um item do calendário
@@ -43,7 +44,7 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
-      .select('id, church_id')
+      .select('id, church_id, congregation_id')
       .eq('id', calendarItemId)
       .eq('church_id', churchId)
       .single();
@@ -55,6 +56,11 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const itemAccess = assertCongregationAccess(req.church!, calendarItem.congregation_id);
+    if (!itemAccess.ok) {
+      return res.status(itemAccess.status).json(itemAccess.body);
+    }
+
     const hasMemberId = participantData.member_id && participantData.member_id.trim() !== '';
     const hasGuestName = participantData.guest_name && participantData.guest_name.trim() !== '';
 
@@ -62,7 +68,7 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
     if (hasMemberId) {
       const { data: member, error: memberError } = await supabase
         .from('members')
-        .select('id, church_id')
+        .select('id, church_id, congregation_id')
         .eq('id', participantData.member_id!)
         .eq('church_id', churchId)
         .single();
@@ -72,6 +78,11 @@ export const addParticipant = async (req: AuthRequest, res: Response) => {
           error: 'Membro não encontrado',
           details: 'O membro não existe ou não pertence à sua igreja'
         });
+      }
+
+      const memberAccess = assertCongregationAccess(req.church!, member.congregation_id);
+      if (!memberAccess.ok) {
+        return res.status(memberAccess.status).json(memberAccess.body);
       }
 
       // Verificar se o membro já é participante
@@ -166,7 +177,7 @@ export const listParticipants = async (req: AuthRequest, res: Response) => {
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
-      .select('id, church_id')
+      .select('id, church_id, congregation_id')
       .eq('id', calendarItemId)
       .eq('church_id', churchId)
       .single();
@@ -176,6 +187,11 @@ export const listParticipants = async (req: AuthRequest, res: Response) => {
         error: 'Item do calendário não encontrado',
         details: 'O item do calendário não existe ou não pertence à sua igreja'
       });
+    }
+
+    const listAccess = assertCongregationAccess(req.church!, calendarItem.congregation_id);
+    if (!listAccess.ok) {
+      return res.status(listAccess.status).json(listAccess.body);
     }
 
     // Buscar participantes
@@ -233,7 +249,7 @@ export const removeParticipant = async (req: AuthRequest, res: Response) => {
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
-      .select('id, church_id')
+      .select('id, church_id, congregation_id')
       .eq('id', calendarItemId)
       .eq('church_id', churchId)
       .single();
@@ -243,6 +259,11 @@ export const removeParticipant = async (req: AuthRequest, res: Response) => {
         error: 'Item do calendário não encontrado',
         details: 'O item do calendário não existe ou não pertence à sua igreja'
       });
+    }
+
+    const removeAccess = assertCongregationAccess(req.church!, calendarItem.congregation_id);
+    if (!removeAccess.ok) {
+      return res.status(removeAccess.status).json(removeAccess.body);
     }
 
     // Verificar se o participante existe e pertence ao item
@@ -332,7 +353,7 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
     // Verificar se o item do calendário pertence à igreja
     const { data: calendarItem, error: itemError } = await supabase
       .from('calendar_items')
-      .select('id, church_id')
+      .select('id, church_id, congregation_id')
       .eq('id', calendarItemId)
       .eq('church_id', churchId)
       .single();
@@ -342,6 +363,11 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
         error: 'Item do calendário não encontrado',
         details: 'O item do calendário não existe ou não pertence à sua igreja'
       });
+    }
+
+    const bulkAccess = assertCongregationAccess(req.church!, calendarItem.congregation_id);
+    if (!bulkAccess.ok) {
+      return res.status(bulkAccess.status).json(bulkAccess.body);
     }
 
     const results = {
@@ -369,7 +395,7 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
         if (hasMemberId) {
           const { data: member, error: memberError } = await supabase
             .from('members')
-            .select('id, church_id, name')
+            .select('id, church_id, name, congregation_id')
             .eq('id', participantData.member_id!)
             .eq('church_id', churchId)
             .single();
@@ -378,6 +404,14 @@ export const addParticipantsBulk = async (req: AuthRequest, res: Response) => {
             results.errors.push({
               participant: participantData,
               error: 'Membro não encontrado ou não pertence à sua igreja'
+            });
+            continue;
+          }
+
+          if (!assertCongregationAccess(req.church!, member.congregation_id).ok) {
+            results.errors.push({
+              participant: participantData,
+              error: 'Sem acesso à congregação deste membro'
             });
             continue;
           }
