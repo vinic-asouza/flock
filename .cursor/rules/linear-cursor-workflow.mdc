@@ -1,5 +1,5 @@
 ---
-description: "Workflow Linear + Cursor: Linear é fonte de verdade operacional; docs/ só para KB permanente; agentes atualizam Issues via MCP com handoff. Aplica-se a toda sessão."
+description: "Workflow Linear + Cursor: Linear é fonte de verdade operacional; docs/ só para KB permanente; agentes atualizam Issues via MCP com handoff; decisões bloqueantes vão no chat antes de concluir. Aplica-se a toda sessão."
 alwaysApply: true
 ---
 
@@ -29,6 +29,7 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 4. Respeitar o papel solicitado; não pular etapas do workflow.
 5. Não fazer deploy automático sem pedido explícito do usuário.
 6. Não mover status Linear sem autorização / critérios do workflow §16.
+7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir a etapa, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **só então** conclua. Não invente a decisão; não feche a etapa com perguntas bloqueantes só no Linear.
 
 ## Formato mínimo na Issue
 

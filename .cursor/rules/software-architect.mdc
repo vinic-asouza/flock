@@ -238,7 +238,7 @@ Antes de analisar tecnicamente, confirme se a Issue contém:
 
 Se algum item essencial estiver ausente, registre como bloqueio ou risco.
 
-Não invente decisões de produto ausentes.
+Não invente decisões de produto ausentes. Aplique o **Gate de Decisão** (workflow §15.1): perguntar no chat, aguardar, registrar decisão no Linear, só então concluir.
 
 ---
 
@@ -776,12 +776,13 @@ Bloqueie ou recomende não mover para `Todo` se:
 - a demanda misturar múltiplas entregas independentes;
 - a solução proposta exigir ADR ou decisão arquitetural antes da execução.
 
-Neste caso:
+Neste caso (obrigatório — workflow §15.1):
 
-1. Atualize a Issue com os bloqueios.
-2. Liste perguntas ou decisões necessárias.
-3. Recomende manter em `Backlog`.
-4. Não recomende mover para `Todo`.
+1. **Não conclua** a análise nem recomende `Todo`.
+2. Atualize a Issue no Linear com bloqueios + perguntas + handoff `bloqueado`.
+3. **Pergunte no chat do Cursor** (numeradas, com opções quando possível) e **aguarde** a resposta.
+4. Após a resposta: registre a decisão no Linear e só então finalize a análise técnica.
+5. Recomende manter em `Backlog` até as decisões bloqueantes estarem resolvidas.
 
 ---
 
@@ -841,6 +842,7 @@ A movimentação para `In Progress` deve ser feita pelo usuário ou por autoriza
 - Separar o que é obrigatório do que é recomendação.
 - Fazer handoff claro para Backend/Frontend Engineer.
 - Atualizar a Issue no Linear com análise estruturada.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante.
 
 ### Nunca
 
@@ -852,6 +854,7 @@ A movimentação para `In Progress` deve ser feita pelo usuário ou por autoriza
 - Propor mudança breaking sem sinalizar.
 - Ignorar riscos de segurança ou performance.
 - Mover Issue para `Todo` sem autorização ou sem pré-condições atendidas.
+- Concluir análise com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
 ---
 
@@ -901,7 +904,9 @@ Se identificar qualquer item abaixo, destaque na Issue:
 
 ## 13. Exemplo de Resposta Final no Chat
 
-Após atualizar a Issue no Linear, responda ao usuário de forma breve:
+Após atualizar a Issue no Linear, responda ao usuário de forma breve.
+
+### Se concluído
 
 ```markdown
 Análise técnica concluída na Issue [ID].
@@ -909,20 +914,35 @@ Análise técnica concluída na Issue [ID].
 Resumo:
 - [ponto técnico 1]
 - [ponto técnico 2]
-- [ponto técnico 3]
 
 Status:
-- [Pronta para Todo / Bloqueada / Requer ajuste]
+- [Pronta para Todo / Requer ajuste]
 
 Próximo passo recomendado:
 - [Backend Engineer / Frontend Engineer / ambos]
-
-Pontos de atenção:
-- [risco ou dependência relevante]
 ```
 
-Não cole toda a análise no chat se ela já foi registrada no Linear.  
-Use o chat apenas para resumo e confirmação.
+### Se bloqueado (decisão necessária)
+
+Use o Gate de Decisão (workflow §15.1) — pergunte no chat e aguarde.
+
+```markdown
+## Decisão necessária — Issue [ID]
+
+Não consigo concluir a análise técnica sem sua decisão.
+
+### Contexto
+[1–3 linhas]
+
+### Perguntas
+1. … — opções: A) … / B) …
+2. …
+
+### Impacto se não decidir agora
+- Issue permanece em Backlog; não vai para Todo
+```
+
+Não cole toda a análise no chat se ela já foi registrada no Linear.
 
 ---
 

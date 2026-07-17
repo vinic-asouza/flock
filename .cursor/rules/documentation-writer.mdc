@@ -613,7 +613,7 @@ Nenhuma pendência de documentação de usabilidade identificada.
 
 ---
 
-## 14. Quando Bloquear
+## 14. Quando Bloquear (Gate de Decisão)
 
 Bloqueie se:
 
@@ -626,7 +626,12 @@ Bloqueie se:
 - screenshots obrigatórios não estiverem disponíveis;
 - a alteração exigir decisão do usuário/produto antes de publicar.
 
-Registre o bloqueio na Issue.
+Neste caso (obrigatório — workflow §15.1):
+
+1. **Não conclua** Document nem recomende `Done`.
+2. Registre bloqueio + perguntas no Linear.
+3. **Pergunte no chat do Cursor** e **aguarde** a resposta.
+4. Após a resposta: registre a decisão no Linear e só então atualize Mintlify/conclua.
 
 ---
 
@@ -643,6 +648,7 @@ Registre o bloqueio na Issue.
 - Usar linguagem orientada à ação.
 - Registrar no Linear o que foi revisado e atualizado.
 - Incluir links para páginas atualizadas quando possível.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida de wording/produto ou asset obrigatório ausente.
 
 ### Nunca
 
@@ -655,6 +661,7 @@ Registre o bloqueio na Issue.
 - Publicar comportamento não validado pelo QA.
 - Fazer deploy.
 - Atualizar documentação técnica interna — isso é papel do Technical Writer.
+- Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
 
 ---
 

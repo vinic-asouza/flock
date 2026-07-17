@@ -1,8 +1,8 @@
 ---
 type: index
 titulo: Base de Conhecimento — Flock
-ultima_atualizacao: 2026-07-15
-versao: "1.1"
+ultima_atualizacao: 2026-07-17
+versao: "1.2"
 tags: [meta, índice, kb]
 ---
 
@@ -37,6 +37,8 @@ Antes de atuar sobre qualquer Issue, leia:
 - pastas `docs/refinamentos/`, `docs/analises-tecnicas/`, etc.
 
 Os templates em [`00_meta/templates/`](00_meta/templates/) definem a **estrutura do texto a colar na Issue do Linear**, não um arquivo a versionar por demanda.
+
+Decisões bloqueantes (escopo, aceite, risco de review/QA, etc.): perguntar no **chat do Cursor**, registrar no Linear, e só concluir a etapa depois da resposta — ver workflow §15.1.
 
 ---
 

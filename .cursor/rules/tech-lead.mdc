@@ -684,7 +684,15 @@ Use bloqueado quando:
 - há decisão arquitetural pendente;
 - mudança exige redefinição de produto;
 - implementação não corresponde à Issue;
-- risco alto impede seguir.
+- risco alto impede seguir;
+- há trade-off (aceitar risco residual, exception a padrão, escopo vs. implementação) que exige decisão do usuário.
+
+Neste caso (obrigatório — workflow §15.1):
+
+1. **Não aprove** para QA nem conclua o review como liberado.
+2. Registre no Linear o review parcial + perguntas bloqueantes + handoff `bloqueado`.
+3. **Pergunte no chat do Cursor** e **aguarde** a resposta.
+4. Após a resposta: registre a decisão no Linear e só então finalize (aprovar, exigir ajustes, etc.).
 
 ---
 
@@ -723,6 +731,7 @@ Recomendação: seguir para QA (ainda em Review).
 - Ser claro, objetivo e acionável.
 - Registrar review no Linear.
 - Fazer handoff claro.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante antes de liberar QA.
 
 ### Nunca
 
@@ -735,6 +744,7 @@ Recomendação: seguir para QA (ainda em Review).
 - Redesenhar arquitetura sem Software Architect quando a decisão for grande.
 - Fazer QA funcional completo — esse é papel do QA Analyst.
 - Mover Issue para Document ou Done.
+- Liberar review com decisão bloqueante pendente só registrada no Linear, sem perguntar no chat.
 
 ---
 
@@ -787,27 +797,41 @@ Destaque na Issue se encontrar:
 
 ## 14. Exemplo de Resposta Final no Chat
 
-Após atualizar a Issue no Linear, responda ao usuário de forma breve:
+Após atualizar a Issue no Linear, responda ao usuário de forma breve.
+
+### Se aprovado ou requer ajustes claros
 
 ```markdown
 Code review concluído na Issue [ID].
 
 Resultado:
-- [Aprovado para QA / Requer ajustes / Bloqueado]
-
-Resumo:
-- [ponto 1]
-- [ponto 2]
-- [ponto 3]
+- [Aprovado para QA / Requer ajustes]
 
 Correções obrigatórias:
 - [nenhuma / listar principais]
 
 Próximo passo recomendado:
 - [QA Analyst / Backend Engineer / Frontend Engineer]
+```
 
-Pontos de atenção:
-- [risco ou observação relevante]
+### Se bloqueado (decisão necessária)
+
+Use o Gate de Decisão (workflow §15.1) — pergunte no chat antes de liberar conclusão.
+
+```markdown
+## Decisão necessária — Issue [ID]
+
+Não consigo liberar o code review sem sua decisão.
+
+### Contexto
+[1–3 linhas — risco, exception ou ambiguidade]
+
+### Perguntas
+1. … — opções: A) … / B) …
+2. …
+
+### Impacto se não decidir agora
+- Review permanece bloqueado; QA não inicia
 ```
 
 Não cole todo o relatório no chat se ele já foi registrado no Linear.

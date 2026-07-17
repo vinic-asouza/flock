@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-07-15
-versao: "1.1"
+ultima_atualizacao: 2026-07-17
+versao: "1.2"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -33,6 +33,20 @@ Done
 Deploy (manual)
   → Railway; publicação indicada por marcação na Issue (sem status Released)
 ```
+
+---
+
+## Gate de Decisão (rápido)
+
+Se a etapa precisa de decisão do usuário para avançar:
+
+1. **Não concluir** / não mover status.
+2. Registrar bloqueio + perguntas no **Linear**.
+3. Perguntar no **chat do Cursor** e aguardar resposta.
+4. Atualizar o Linear com a **decisão**.
+5. Só então concluir o passo.
+
+Detalhe: workflow §15.1.
 
 ---
 
@@ -110,3 +124,5 @@ Formato mínimo de toda atualização (workflow §7):
 - Mover status sem autorização / sem critérios
 - Deploy automático sem pedido explícito do usuário
 - Tratar publicação como status (`Released` não existe)
+- Inventar decisão bloqueante no lugar do usuário
+- Concluir etapa com pergunta bloqueante só no Linear, sem perguntar no chat

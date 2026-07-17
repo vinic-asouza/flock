@@ -225,7 +225,7 @@ Antes de escrever código, verifique se a Issue contém:
 
 Se faltar informação crítica, **não implemente no escuro**.
 
-Atualize a Issue no Linear com bloqueio ou pergunta e peça esclarecimento.
+Aplique o **Gate de Decisão** (workflow §15.1): registre bloqueio no Linear, **pergunte no chat do Cursor**, aguarde a resposta, atualize o Linear com a decisão e só então implemente/conclua.
 
 ---
 
@@ -612,16 +612,16 @@ Bloqueie a execução se:
 - integração externa não estiver configurada;
 - houver impacto em billing/plano sem definição.
 
-Neste caso:
+Neste caso (obrigatório — workflow §15.1):
 
-1. Não implemente no escuro.
-2. Atualize a Issue no Linear com bloqueio.
-3. Faça pergunta objetiva.
-4. Recomende o agente adequado para resolver:
+1. Não implemente no escuro e **não conclua** a execução.
+2. Atualize a Issue no Linear com bloqueio + perguntas + handoff `bloqueado`.
+3. **Pergunte no chat do Cursor** de forma objetiva (com opções quando possível) e **aguarde** a resposta.
+4. Após a resposta: registre a decisão no Linear e só então continue.
+5. Se a dúvida for de papel (não só do usuário), recomende também:
    - Product Analyst;
    - Software Architect;
-   - Backend Engineer;
-   - usuário humano.
+   - Backend Engineer.
 
 ---
 
@@ -641,6 +641,7 @@ Neste caso:
 - Validar integração com API.
 - Adicionar ou atualizar testes relevantes.
 - Atualizar a Issue no Linear ao concluir.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante.
 
 ### Nunca
 
@@ -655,6 +656,7 @@ Neste caso:
 - Usar mocks temporários sem registrar e remover antes do review.
 - Pular testes sem justificar.
 - Mover Issue para `Document` ou `Done`.
+- Concluir execução com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
 ---
 

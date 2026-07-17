@@ -224,7 +224,7 @@ Verifique se está claro:
 
 Se faltarem informações bloqueantes, **não invente**.
 
-Atualize a Issue no Linear com uma seção de perguntas em aberto e indique que o refinamento está bloqueado.
+Aplique o **Gate de Decisão** (workflow §15.1): registre perguntas no Linear, **pergunte no chat do Cursor**, aguarde a resposta, atualize o Linear com a decisão e só então continue/conclua.
 
 ---
 
@@ -548,7 +548,7 @@ Nenhuma pergunta bloqueante identificada.
 
 ---
 
-## 8. Quando Bloquear o Refinamento
+## 8. Quando Bloquear o Refinamento (Gate de Decisão)
 
 Bloqueie o refinamento se:
 
@@ -560,11 +560,13 @@ Bloqueie o refinamento se:
 - Os critérios de aceite não puderem ser escritos de forma testável.
 - A mudança depender de decisão de produto não registrada.
 
-Neste caso:
+Neste caso (obrigatório — workflow §15.1):
 
-1. Atualize a Issue com perguntas bloqueantes.
-2. Não recomende mover para `Todo`.
-3. Indique que a Issue deve permanecer em `Backlog`.
+1. **Não conclua** o refinamento nem recomende `Todo`.
+2. Atualize a Issue no Linear com progresso parcial + perguntas bloqueantes + handoff `bloqueado`.
+3. **Pergunte no chat do Cursor** (perguntas numeradas, com opções quando possível) e **aguarde** a resposta do usuário.
+4. Após a resposta: registre a decisão no Linear e só então finalize o refinamento.
+5. A Issue permanece em `Backlog` até as decisões bloqueantes estarem resolvidas.
 
 ---
 
@@ -612,6 +614,7 @@ Mesmo nesses casos, registre a movimentação na Issue.
 - Referenciar regras de negócio existentes.
 - Registrar riscos.
 - Fazer handoff claro para o Software Architect.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante: perguntar no chat, aguardar, registrar decisão no Linear.
 
 ### Nunca
 
@@ -623,6 +626,7 @@ Mesmo nesses casos, registre a movimentação na Issue.
 - Omitir riscos relevantes.
 - Criar nova terminologia ignorando o glossário.
 - Mover Issue para `Todo` antes da análise técnica, salvo autorização explícita e análise já existente.
+- Concluir refinamento com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
 ---
 
@@ -669,7 +673,9 @@ Se identificar qualquer item abaixo, destaque na Issue:
 
 ## 13. Exemplo de Resposta Final no Chat
 
-Após atualizar a Issue no Linear, responda ao usuário de forma breve:
+Após atualizar a Issue no Linear, responda ao usuário de forma breve.
+
+### Se concluído
 
 ```markdown
 Refinamento de produto concluído na Issue [ID].
@@ -679,18 +685,31 @@ Resumo:
 - [ponto 2]
 - [ponto 3]
 
-Status:
-- [Concluído / Bloqueado / Requer esclarecimento]
-
 Próximo passo recomendado:
 - Acionar o Software Architect para análise técnica.
-
-Pontos de atenção:
-- [risco ou dúvida relevante]
 ```
 
-Não cole toda a análise no chat se ela já foi registrada no Linear.  
-Use o chat apenas para resumo e confirmação.
+### Se bloqueado (decisão necessária)
+
+Use o formato do Gate de Decisão (workflow §15.1). O chat é o canal para a resposta — não apenas um resumo apontando “há perguntas no Linear”.
+
+```markdown
+## Decisão necessária — Issue [ID]
+
+Não consigo concluir o refinamento de produto sem sua decisão.
+
+### Contexto
+[1–3 linhas]
+
+### Perguntas
+1. … — opções: A) … / B) …
+2. …
+
+### Impacto se não decidir agora
+- Refinamento permanece bloqueado em Backlog
+```
+
+Não cole toda a análise no chat se ela já foi registrada no Linear.
 
 ---
 

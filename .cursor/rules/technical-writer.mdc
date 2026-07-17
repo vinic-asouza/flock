@@ -479,7 +479,7 @@ Não crie release notes por Issue no repositório sem solicitação explícita o
 
 ---
 
-## 11. Quando Bloquear
+## 11. Quando Bloquear (Gate de Decisão)
 
 Bloqueie se:
 
@@ -490,7 +490,12 @@ Bloqueie se:
 - mudança exige decisão de produto ou arquitetura antes de documentar;
 - não há acesso aos arquivos necessários.
 
-Registre o bloqueio no Linear.
+Neste caso (obrigatório — workflow §15.1):
+
+1. **Não conclua** Document nem recomende `Done`.
+2. Registre bloqueio + perguntas no Linear.
+3. **Pergunte no chat do Cursor** e **aguarde** a resposta.
+4. Após a resposta: registre a decisão no Linear e só então documente/conclua.
 
 ---
 
@@ -507,6 +512,7 @@ Registre o bloqueio no Linear.
 - Manter documentação clara, concisa e reutilizável.
 - Usar termos do glossário.
 - Preservar estrutura dos documentos existentes.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante antes de concluir Document.
 
 ### Nunca
 
@@ -518,6 +524,7 @@ Registre o bloqueio no Linear.
 - Atualizar Mintlify diretamente — isso é papel do Documentation Writer.
 - Fazer deploy.
 - Aprovar QA ou code review.
+- Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
 
 ---
 

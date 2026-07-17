@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-07-15
-versao: "1.2"
+ultima_atualizacao: 2026-07-17
+versao: "1.3"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -247,7 +247,7 @@ Após Product Analyst e Software Architect concluírem suas análises:
 
 - A Issue deve conter refinamento suficiente para desenvolvimento.
 - O agente deve mover a Issue para `Todo`, se autorizado pelo usuário e se não houver perguntas bloqueantes.
-- Caso existam perguntas bloqueantes, a Issue deve permanecer em `Backlog`.
+- Caso existam perguntas bloqueantes, aplicar o **Gate de Decisão** (§15.1): registrar no Linear, perguntar no chat, aguardar resposta, atualizar Linear com a decisão — e **só então** concluir. A Issue permanece em `Backlog` até isso.
 
 ---
 
@@ -448,6 +448,7 @@ Após a Issue estar em `Done` (ou em paralelo, se o time decidir publicar antes)
 - Manter o histórico centralizado no Linear.
 - Ser explícito sobre riscos, dúvidas e bloqueios.
 - Diferenciar correção obrigatória de sugestão opcional.
+- Seguir o **Gate de Decisão** (§15.1) quando houver dúvida bloqueante.
 
 ### Nunca fazer
 
@@ -458,6 +459,73 @@ Após a Issue estar em `Done` (ou em paralelo, se o time decidir publicar antes)
 - Implementar fora do escopo refinado sem sinalizar.
 - Atualizar documentação permanente sem necessidade real.
 - Fazer deploy automaticamente.
+- Inventar decisão de produto, arquitetura, aceite ou release no lugar do usuário.
+- Concluir a etapa com perguntas bloqueantes só registradas no Linear, sem perguntar no chat.
+
+---
+
+## 15.1 Gate de Decisão (dúvidas bloqueantes)
+
+Quando uma **decisão importante** for necessária para avançar a etapa, o agente **não inventa** e **não conclui** a atuação. O canal para obter a resposta é o **chat do Cursor**; o Linear registra o bloqueio e, depois, a decisão tomada.
+
+### O que é bloqueante
+
+É bloqueante qualquer dúvida sem a qual a etapa atual não pode ser fechada com qualidade, por exemplo:
+
+| Etapa | Exemplos de decisão bloqueante |
+| --- | --- |
+| Backlog (Product Analyst) | Escopo, problema, comportamento esperado, personas, regras de negócio, critérios de aceite |
+| Backlog (Software Architect) | Trade-off técnico com impacto de produto, ADR necessário, dependência externa/config, migration arriscada |
+| In Progress (Engineers) | Ambiguidade de escopo/contrato, regra indefinida, mudança fora do plano sem autorização |
+| Review (Tech Lead) | Aceitar risco residual, exception a padrão, escopo vs. implementação, ADR pendente |
+| Review (QA) | Comportamento esperado ambíguo, “aprovado com ressalvas”, ambiente/dados impossíveis de validar |
+| Document (Writers) | Wording/promessa de produto, o que documentar vs. omitir, screenshot/conteúdo obrigatório ausente |
+
+Dúvidas **não bloqueantes** (melhoria opcional, follow-up, nitpick) podem ir só na Issue, sem parar o fluxo.
+
+### Protocolo obrigatório
+
+1. **Pare** a conclusão da etapa (não marque handoff como `concluído`; não recomende/mova status para a próxima etapa).
+2. **Registre no Linear** (via MCP) o progresso parcial + seção de perguntas bloqueantes + handoff com `Status: bloqueado` (ou `requer esclarecimento`).
+3. **Pergunte no chat do Cursor** de forma explícita, numerada e acionável — este é o canal em que o usuário responde.
+4. **Aguarde** a resposta do usuário no chat. Não continue a etapa como se a decisão já existisse.
+5. **Após a resposta:** atualize o Linear com as decisões tomadas (o que foi decidido, por quem/quando no fluxo, impacto no escopo/aceite).
+6. **Só então** conclua a análise/execução da etapa e faça o handoff definitivo.
+
+### Formato mínimo no chat (perguntas)
+
+```markdown
+## Decisão necessária — Issue [ID]
+
+Não consigo concluir [etapa/papel] sem sua decisão.
+
+### Contexto (1–3 linhas)
+[por que isso bloqueia]
+
+### Perguntas
+1. [pergunta objetiva] — opções: A) … / B) … / C) …
+2. …
+
+### Impacto se não decidir agora
+- [o que fica parado]
+```
+
+### Formato mínimo no Linear (após resposta)
+
+```markdown
+## Decisões do Usuário — [data]
+
+- **Pergunta:** …
+- **Decisão:** …
+- **Impacto:** [escopo / aceite / abordagem / review / docs]
+```
+
+### Regras
+
+- Chat = obter a decisão. Linear = persistir bloqueio e decisão.
+- Não encerre a atuação com “perguntas em aberto” só no Linear sem espelhar as perguntas no chat.
+- Não mova status (§16) enquanto houver pergunta bloqueante sem resposta registrada.
+- Após registrar a decisão no Linear, o agente pode retomar e concluir o passo na mesma sessão (se o usuário já respondeu) ou na próxima atuação.
 
 ---
 
@@ -469,7 +537,7 @@ Permitido quando:
 
 - Product Analyst concluiu refinamento.
 - Software Architect concluiu análise técnica.
-- Não há perguntas bloqueantes.
+- Não há perguntas bloqueantes (se houve, foram resolvidas via Gate de Decisão §15.1 e registradas no Linear).
 - Critérios de aceite estão claros.
 - Escopo e fora de escopo estão definidos.
 - Riscos principais estão registrados.
@@ -540,6 +608,7 @@ Formato recomendado:
 - [item 2]
 ```
 
+Quando o status for `bloqueado` por falta de decisão, o próximo passo imediato é **aguardar resposta do usuário no chat** (Gate de Decisão §15.1), não o próximo agente.
 ---
 
 ## 18. Fonte de Verdade por Tipo de Informação
@@ -664,3 +733,18 @@ Status:
 Próximo agente recomendado:
 Pontos de atenção:
 ```
+
+### 20.6 Gate de Decisão nos MDCs
+
+Todo MDC deve instruir o agente a:
+
+```md
+Se surgir decisão bloqueante:
+1. Não concluir a etapa.
+2. Registrar bloqueio + perguntas no Linear.
+3. Perguntar no chat do Cursor e aguardar resposta do usuário.
+4. Atualizar o Linear com a decisão.
+5. Só então concluir e fazer handoff definitivo.
+```
+
+Detalhe: workflow §15.1.

@@ -634,7 +634,16 @@ Use quando:
 - serviço externo indisponível;
 - dados de teste não existem;
 - build não roda;
-- ausência de informação impede teste.
+- ausência de informação impede teste;
+- comportamento esperado ambíguo (precisa decisão de produto);
+- “aprovado com ressalvas” exige aceite explícito do usuário.
+
+Neste caso (obrigatório — workflow §15.1):
+
+1. **Não aprove** nem mova para `Document`.
+2. Registre no Linear o QA parcial + perguntas bloqueantes + handoff `bloqueado`.
+3. **Pergunte no chat do Cursor** e **aguarde** a resposta.
+4. Após a resposta: registre a decisão no Linear e só então finalize (aprovar, reprovar, ressalvas aceitas, etc.).
 
 ### Aprovado com ressalvas
 
@@ -642,7 +651,7 @@ Use apenas quando:
 
 - há issues menores não bloqueantes;
 - follow-up está claro;
-- usuário/produto pode aceitar a ressalva.
+- **o usuário aceitou a ressalva no chat** (Gate de Decisão) e a decisão foi registrada no Linear.
 
 ---
 
@@ -682,6 +691,7 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 - Registrar resultado no Linear.
 - Classificar bugs por severidade.
 - Fazer handoff claro.
+- Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante ou ressalva que precise de aceite.
 
 ### Nunca
 
@@ -694,6 +704,7 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 - Alterar escopo de produto.
 - Implementar correções durante QA, salvo pedido explícito.
 - Mover Issue para `Done` (pula Document) ou fazer deploy.
+- Aprovar/liberar com decisão bloqueante pendente só no Linear, sem perguntar no chat.
 
 ---
 
@@ -743,27 +754,41 @@ Destaque na Issue se encontrar:
 
 ## 14. Exemplo de Resposta Final no Chat
 
-Após atualizar a Issue no Linear, responda ao usuário de forma breve:
+Após atualizar a Issue no Linear, responda ao usuário de forma breve.
+
+### Se aprovado / reprovado com bugs claros
 
 ```markdown
 QA concluído na Issue [ID].
 
 Resultado:
-- [Aprovado / Reprovado / Bloqueado / Aprovado com ressalvas]
-
-Resumo:
-- [fluxo validado 1]
-- [fluxo validado 2]
-- [edge case relevante]
+- [Aprovado / Reprovado]
 
 Bugs:
 - [nenhum / listar principais]
 
 Próximo passo recomendado:
-- [Document / Backend Engineer / Frontend Engineer / Technical Writer]
+- [Document / Backend Engineer / Frontend Engineer]
+```
 
-Pontos de atenção:
-- [risco ou ressalva]
+### Se bloqueado ou ressalva precisa de aceite (decisão necessária)
+
+Use o Gate de Decisão (workflow §15.1) — pergunte no chat antes de liberar.
+
+```markdown
+## Decisão necessária — Issue [ID]
+
+Não consigo concluir o QA sem sua decisão.
+
+### Contexto
+[1–3 linhas]
+
+### Perguntas
+1. … — opções: A) … / B) …
+2. …
+
+### Impacto se não decidir agora
+- QA permanece bloqueado; Issue não vai para Document
 ```
 
 Não cole todo o relatório no chat se ele já foi registrado no Linear.
