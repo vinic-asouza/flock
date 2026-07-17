@@ -132,6 +132,8 @@ export interface CheckAuthResponse {
   role?: ChurchUserRole;
   memberships?: ChurchMembership[];
   activeChurchId?: string | null;
+  accessAllCongregations?: boolean;
+  congregationIds?: string[];
   code?: 'CHURCH_SELECTION_REQUIRED';
   message?: string;
 }
@@ -146,6 +148,8 @@ export interface ChurchUserListItem {
   roleLabel: string;
   created_at: string;
   updated_at?: string;
+  accessAllCongregations?: boolean;
+  congregationIds?: string[];
 }
 
 export interface AuthContextType {
@@ -155,6 +159,12 @@ export interface AuthContextType {
   currentRole: ChurchUserRole | null;
   /** false quando currentRole === 'reader'; true para editor/admin/owner; undefined se não autenticado */
   canEdit: boolean | undefined;
+  /** true = acesso dinâmico a todas as congregações */
+  accessAllCongregations: boolean;
+  /** IDs permitidos quando accessAllCongregations=false */
+  congregationIds: string[];
+  /** Pode criar novas congregações (admin/owner ou editor com acesso total) */
+  canCreateCongregations: boolean;
   isLoading: boolean;
   isOperationLoading: boolean;
   isAuthenticated: boolean;

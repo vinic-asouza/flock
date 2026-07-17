@@ -15,9 +15,11 @@ import { apiService } from '@/services/api';
 import toast from 'react-hot-toast';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+const CREATE_DISABLED_TOOLTIP =
+  'Seu usuário não tem permissão para criar congregações.';
 
 export default function CongregationsPage() {
-  const { canEdit } = useAuth();
+  const { canEdit, canCreateCongregations } = useAuth();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [search, setSearch] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -96,8 +98,14 @@ export default function CongregationsPage() {
           <Button
             onClick={() => setCreateModalOpen(true)}
             className="inline-flex items-center gap-2"
-            disabled={canEdit === false}
-            title={canEdit === false ? READER_TOOLTIP : undefined}
+            disabled={canCreateCongregations === false}
+            title={
+              canCreateCongregations === false
+                ? canEdit === false
+                  ? READER_TOOLTIP
+                  : CREATE_DISABLED_TOOLTIP
+                : undefined
+            }
           >
             <Plus size={18} />
             Adicionar Congregação
@@ -140,12 +148,13 @@ export default function CongregationsPage() {
         onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
       />
 
-      {/* Modais */}
-      <CreateCongregationModal
-        isOpen={createModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onSuccess={handleCreateSuccess}
-      />
+      {canCreateCongregations && (
+        <CreateCongregationModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      )}
 
       <EditCongregationModal
         isOpen={editModalOpen}

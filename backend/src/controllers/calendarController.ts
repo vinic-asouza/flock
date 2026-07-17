@@ -8,7 +8,11 @@ import {
   listCalendarItemsSchema 
 } from '../validators/calendarValidator';
 import { logAudit } from '../utils/auditLogger';
-import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import {
+  applyScopedCongregationFilter,
+  assertCongregationAccess,
+  resolveScopedCongregationFilter,
+} from '../utils/congregationScope';
 import { expandRecurringItem } from '../utils/recurrenceExpander';
 import { startOfYear, endOfYear, startOfMonth, endOfMonth } from 'date-fns';
 import { 
@@ -115,16 +119,16 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
     }
 
     // Filtrar por congregação
-    const congregationFilter = resolveCongregationFilter(congregation_id as string | undefined);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, congregation_id as string | undefined, {
+      includeNullAsChurchWide: true,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Parâmetros inválidos',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     if (group_id) {
       query = query.eq('group_id', group_id);
@@ -331,6 +335,11 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, item.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Normalizar relacionamentos (Supabase retorna com nome da tabela no plural)
     let normalizedCongregation = null;
     if (item.congregations) {
@@ -462,6 +471,11 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
         error: 'Dados inválidos',
         details: congregationValidation.errorMessage
       });
+    }
+
+    const congregationAccess = assertCongregationAccess(req.church!, congregation_id);
+    if (!congregationAccess.ok) {
+      return res.status(congregationAccess.status).json(congregationAccess.body);
     }
 
     // Validar grupo
@@ -664,6 +678,11 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const existingAccess = assertCongregationAccess(req.church!, existingItem.congregation_id);
+    if (!existingAccess.ok) {
+      return res.status(existingAccess.status).json(existingAccess.body);
+    }
+
     // Determinar valores finais para validação (usar valores do body se fornecidos, senão usar valores existentes)
     const finalCongregationId = req.body.congregation_id !== undefined ? req.body.congregation_id : existingItem.congregation_id;
     const finalGroupId = req.body.group_id !== undefined ? req.body.group_id : existingItem.group_id;
@@ -677,6 +696,11 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
           error: 'Dados inválidos',
           details: congregationValidation.errorMessage
         });
+      }
+
+      const finalCongregationAccess = assertCongregationAccess(req.church!, finalCongregationId);
+      if (!finalCongregationAccess.ok) {
+        return res.status(finalCongregationAccess.status).json(finalCongregationAccess.body);
       }
     }
 
@@ -871,6 +895,11 @@ export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, existingItem.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Deletar item
     const { error: deleteError } = await supabase
       .from('calendar_items')
@@ -975,16 +1004,16 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       .eq('status', 'active')
       .order('start_date', { ascending: true });
 
-    const congregationFilter = resolveCongregationFilter(congregation_id as string | undefined);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, congregation_id as string | undefined, {
+      includeNullAsChurchWide: true,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Parâmetros inválidos',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     if (group_id) {
       query = query.eq('group_id', group_id);

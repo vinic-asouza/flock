@@ -50,8 +50,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [memberships, setMemberships] = useState<ChurchMembership[]>([]);
   const [activeChurchId, setActiveChurchId] = useState<string | null>(null);
   const [churchSelectionRequired, setChurchSelectionRequired] = useState(false);
+  const [accessAllCongregations, setAccessAllCongregations] = useState(true);
+  const [congregationIds, setCongregationIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
+
+  const applyCongregationScope = useCallback((payload: {
+    accessAllCongregations?: boolean;
+    congregationIds?: string[];
+    role?: ChurchUserRole | null;
+  }) => {
+    const role = payload.role;
+    if (role === 'owner' || role === 'admin') {
+      setAccessAllCongregations(true);
+      setCongregationIds([]);
+      return;
+    }
+    setAccessAllCongregations(Boolean(payload.accessAllCongregations));
+    setCongregationIds(Array.isArray(payload.congregationIds) ? payload.congregationIds : []);
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -66,10 +83,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setActiveChurchId(auth.activeChurchId ?? null);
         } else if (auth.authenticated && auth.church) {
           setUser(auth.church);
-          setCurrentRole((auth.role as ChurchUserRole) ?? 'reader');
+          const role = (auth.role as ChurchUserRole) ?? 'reader';
+          setCurrentRole(role);
           setMemberships(auth.memberships || []);
           setActiveChurchId(auth.activeChurchId ?? auth.church.id);
           setChurchSelectionRequired(false);
+          applyCongregationScope({
+            role,
+            accessAllCongregations: auth.accessAllCongregations,
+            congregationIds: auth.congregationIds,
+          });
           if (auth.activeChurchId) {
             apiService.setActiveChurchIdClient(auth.activeChurchId);
           }
@@ -116,34 +139,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setMemberships([]);
           setActiveChurchId(null);
           setChurchSelectionRequired(false);
+          setAccessAllCongregations(true);
+          setCongregationIds([]);
         }
       } catch {
         setUser(null);
         setSession(null);
         setCurrentRole(null);
+        setAccessAllCongregations(true);
+        setCongregationIds([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     initializeAuth();
-  }, []);
+  }, [applyCongregationScope]);
 
   const login = useCallback(async (data: LoginData): Promise<void> => {
     try {
       setIsOperationLoading(true);
       const response = await apiService.login(data);
       setUser(response.church);
-      setCurrentRole((response.role as ChurchUserRole) ?? 'reader');
+      const role = (response.role as ChurchUserRole) ?? 'reader';
+      setCurrentRole(role);
       const loginRes = response as typeof response & {
         memberships?: ChurchMembership[];
         activeChurchId?: string;
+        accessAllCongregations?: boolean;
+        congregationIds?: string[];
       };
       if (loginRes.memberships) setMemberships(loginRes.memberships);
       if (loginRes.activeChurchId) {
         setActiveChurchId(loginRes.activeChurchId);
         apiService.setActiveChurchIdClient(loginRes.activeChurchId);
       }
+      applyCongregationScope({
+        role,
+        accessAllCongregations: loginRes.accessAllCongregations,
+        congregationIds: loginRes.congregationIds,
+      });
       setChurchSelectionRequired(false);
       const userEmail = response.email || data.email;
 
@@ -178,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsOperationLoading(false);
       throw preserveErrorProperties(error);
     }
-  }, []);
+  }, [applyCongregationScope]);
 
   const register = useCallback(async (data: RegisterData): Promise<RegisterResponse> => {
     try {
@@ -206,6 +241,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setActiveChurchId(null);
       apiService.setActiveChurchIdClient(null);
       setChurchSelectionRequired(false);
+      setAccessAllCongregations(true);
+      setCongregationIds([]);
       setIsOperationLoading(false);
     } catch {
       setIsOperationLoading(false);
@@ -216,6 +253,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setActiveChurchId(null);
       apiService.setActiveChurchIdClient(null);
       setChurchSelectionRequired(false);
+      setAccessAllCongregations(true);
+      setCongregationIds([]);
     }
   }, []);
 
@@ -223,11 +262,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const result = await apiService.setActiveChurch(churchId);
     clearStripeSyncCache(activeChurchId ?? undefined);
     setUser(result.church);
-    setCurrentRole((result.role as ChurchUserRole) ?? 'reader');
+    const role = (result.role as ChurchUserRole) ?? 'reader';
+    setCurrentRole(role);
     setActiveChurchId(churchId);
     apiService.setActiveChurchIdClient(churchId);
     setChurchSelectionRequired(false);
-  }, [activeChurchId]);
+    const scoped = result as typeof result & {
+      accessAllCongregations?: boolean;
+      congregationIds?: string[];
+    };
+    applyCongregationScope({
+      role,
+      accessAllCongregations: scoped.accessAllCongregations,
+      congregationIds: scoped.congregationIds,
+    });
+  }, [activeChurchId, applyCongregationScope]);
 
   const forgotPassword = useCallback(async (data: ForgotPasswordData): Promise<void> => {
     try {
@@ -292,12 +341,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user, churchSelectionRequired]
   );
   const canEdit = useMemo(() => (currentRole === null ? undefined : currentRole !== 'reader'), [currentRole]);
+  const canCreateCongregations = useMemo(() => {
+    if (currentRole === 'owner' || currentRole === 'admin') return true;
+    if (currentRole === 'editor') return accessAllCongregations;
+    return false;
+  }, [currentRole, accessAllCongregations]);
 
   const value: AuthContextType = useMemo(() => ({
     user,
     session,
     currentRole,
     canEdit,
+    accessAllCongregations,
+    congregationIds,
+    canCreateCongregations,
     isLoading,
     isOperationLoading,
     isAuthenticated,
@@ -313,7 +370,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     activeChurchId,
     churchSelectionRequired,
     switchChurch,
-  }), [user, session, currentRole, canEdit, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
+  }), [user, session, currentRole, canEdit, accessAllCongregations, congregationIds, canCreateCongregations, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
 
   return (
     <AuthContext.Provider value={value}>

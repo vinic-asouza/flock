@@ -337,6 +337,8 @@ export const login = async (req: Request<{}, {}, { email: string; password: stri
       email: authData.user.email,
       memberships,
       activeChurchId,
+      accessAllCongregations: context.accessAllCongregations,
+      congregationIds: context.congregationIds,
     });
 
   } catch (error) {

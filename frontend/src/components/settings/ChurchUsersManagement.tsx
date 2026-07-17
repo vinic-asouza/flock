@@ -9,6 +9,8 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
 import type { ChurchUserListItem, ChurchUserRole } from '@/types';
+import type { Congregation } from '@/types/congregation';
+import { getCongregationDisplayName } from '@/utils/congregation';
 import toast from 'react-hot-toast';
 import { UserPlus, Shield, Loader2, Trash2 } from 'lucide-react';
 
@@ -23,33 +25,154 @@ const STATUS_OPTIONS = [
   { value: 'disabled', label: 'Desativado' },
 ];
 
+function validateCongregationScope(
+  userRole: ChurchUserRole,
+  accessAll: boolean,
+  ids: string[]
+): string | null {
+  if (userRole === 'admin') return null;
+  if (accessAll || ids.length > 0) return null;
+  return 'Selecione ao menos uma congregação ou marque "Todas as congregações"';
+}
+
+function formatUserScope(
+  item: ChurchUserListItem,
+  congregationMap: Map<string, Congregation>
+): string {
+  if (item.role === 'owner' || item.role === 'admin') return 'Todas';
+  if (item.accessAllCongregations) return 'Todas';
+  const ids = item.congregationIds ?? [];
+  if (ids.length === 0) return '—';
+  const names = ids
+    .map((id) => getCongregationDisplayName(congregationMap.get(id)))
+    .filter(Boolean);
+  if (names.length <= 2) return names.join(', ');
+  return `${names.length} congregações`;
+}
+
+type CongregationScopePickerProps = {
+  accessAllCongregations: boolean;
+  onAccessAllChange: (value: boolean) => void;
+  selectedIds: string[];
+  onSelectedIdsChange: (ids: string[]) => void;
+  congregations: Congregation[];
+  loading: boolean;
+  disabled?: boolean;
+};
+
+function CongregationScopePicker({
+  accessAllCongregations,
+  onAccessAllChange,
+  selectedIds,
+  onSelectedIdsChange,
+  congregations,
+  loading,
+  disabled = false,
+}: CongregationScopePickerProps) {
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">Congregações</label>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={accessAllCongregations}
+          onChange={(e) => {
+            onAccessAllChange(e.target.checked);
+            if (e.target.checked) onSelectedIdsChange([]);
+          }}
+          disabled={disabled || loading}
+          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+        />
+        <span className="text-sm text-gray-700">Todas as congregações</span>
+      </label>
+      {!accessAllCongregations && (
+        <div className="space-y-2">
+          {loading ? (
+            <div className="flex items-center gap-2 py-2 text-sm text-gray-500">
+              <Loader2 size={16} className="animate-spin" />
+              Carregando congregações...
+            </div>
+          ) : congregations.length === 0 ? (
+            <p className="text-sm text-gray-500">Nenhuma congregação cadastrada.</p>
+          ) : (
+            <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2 space-y-1">
+              {congregations.map((cong) => {
+                const isSelected = selectedIds.includes(cong.id);
+                return (
+                  <label
+                    key={cong.id}
+                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                      isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'
+                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        onSelectedIdsChange(
+                          e.target.checked
+                            ? [...selectedIds, cong.id]
+                            : selectedIds.filter((id) => id !== cong.id)
+                        );
+                      }}
+                      disabled={disabled}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
+                    />
+                    <span className="text-sm text-gray-900">
+                      {getCongregationDisplayName(cong) || cong.name}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          {selectedIds.length > 0 && (
+            <p className="text-xs text-primary font-medium">
+              {selectedIds.length}{' '}
+              {selectedIds.length === 1 ? 'congregação selecionada' : 'congregações selecionadas'}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ChurchUsersManagement() {
   const { currentRole } = useAuth();
   const [list, setList] = useState<ChurchUserListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [congregations, setCongregations] = useState<Congregation[]>([]);
+  const [congregationsLoading, setCongregationsLoading] = useState(false);
 
-  // Estados do modal de adicionar
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [adding, setAdding] = useState(false);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<ChurchUserRole>('reader');
+  const [accessAllCongregations, setAccessAllCongregations] = useState(true);
+  const [selectedCongregationIds, setSelectedCongregationIds] = useState<string[]>([]);
 
-  // Estados do modal de edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<ChurchUserListItem | null>(null);
   const [editRole, setEditRole] = useState<ChurchUserRole>('reader');
   const [editStatus, setEditStatus] = useState('active');
+  const [editAccessAllCongregations, setEditAccessAllCongregations] = useState(true);
+  const [editSelectedCongregationIds, setEditSelectedCongregationIds] = useState<string[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Estados do modal de remoção
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<ChurchUserListItem | null>(null);
   const [removing, setRemoving] = useState(false);
 
   const canManage = currentRole === 'admin' || currentRole === 'owner';
 
+  const congregationMap = useMemo(() => {
+    const map = new Map<string, Congregation>();
+    for (const c of congregations) map.set(c.id, c);
+    return map;
+  }, [congregations]);
+
   const sortedList = useMemo(() => {
-    // Dono sempre primeiro, depois admin, editor, reader
     const order: ChurchUserRole[] = ['owner', 'admin', 'editor', 'reader'];
     return [...list].sort((a, b) => {
       const aIdx = order.indexOf(a.role as ChurchUserRole);
@@ -57,6 +180,31 @@ export function ChurchUsersManagement() {
       return aIdx - bIdx;
     });
   }, [list]);
+
+  const resetAddScope = () => {
+    setAccessAllCongregations(true);
+    setSelectedCongregationIds([]);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setEmail('');
+    setRole('reader');
+    resetAddScope();
+  };
+
+  const fetchCongregations = async () => {
+    try {
+      setCongregationsLoading(true);
+      const data = await apiService.listCongregations();
+      setCongregations(Array.isArray(data) ? data : []);
+    } catch (err: unknown) {
+      toast.error(formatApiError(err));
+      setCongregations([]);
+    } finally {
+      setCongregationsLoading(false);
+    }
+  };
 
   const fetchList = async () => {
     try {
@@ -72,7 +220,10 @@ export function ChurchUsersManagement() {
   };
 
   useEffect(() => {
-    if (canManage) fetchList();
+    if (canManage) {
+      fetchList();
+      fetchCongregations();
+    }
   }, [canManage]);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -82,13 +233,22 @@ export function ChurchUsersManagement() {
       toast.error('Informe o email');
       return;
     }
+    const scopeError = validateCongregationScope(role, accessAllCongregations, selectedCongregationIds);
+    if (scopeError) {
+      toast.error(scopeError);
+      return;
+    }
     try {
       setAdding(true);
-      await apiService.createChurchUser({ email: trimmed, role });
+      await apiService.createChurchUser({
+        email: trimmed,
+        role,
+        accessAllCongregations: role === 'admin' ? true : accessAllCongregations,
+        congregationIds:
+          role === 'admin' || accessAllCongregations ? [] : selectedCongregationIds,
+      });
       toast.success('Usuário adicionado. Um email informativo foi enviado.');
-      setEmail('');
-      setRole('reader');
-      setIsAddModalOpen(false);
+      closeAddModal();
       fetchList();
     } catch (err: unknown) {
       toast.error(formatApiError(err));
@@ -102,14 +262,38 @@ export function ChurchUsersManagement() {
     setEditingUser(item);
     setEditRole(item.role as ChurchUserRole);
     setEditStatus(item.status);
+    setEditAccessAllCongregations(item.accessAllCongregations ?? true);
+    setEditSelectedCongregationIds(item.congregationIds ?? []);
     setIsEditModalOpen(true);
   };
 
   const handleUpdate = async () => {
     if (!editingUser || editingUser.role === 'owner') return;
+    const needsScope = editRole === 'reader' || editRole === 'editor';
+    if (needsScope) {
+      const scopeError = validateCongregationScope(
+        editRole,
+        editAccessAllCongregations,
+        editSelectedCongregationIds
+      );
+      if (scopeError) {
+        toast.error(scopeError);
+        return;
+      }
+    }
     try {
       setSavingEdit(true);
-      await apiService.updateChurchUser(editingUser.id, { role: editRole, status: editStatus });
+      const payload: {
+        role: ChurchUserRole;
+        status: string;
+        accessAllCongregations?: boolean;
+        congregationIds?: string[];
+      } = { role: editRole, status: editStatus };
+      if (needsScope) {
+        payload.accessAllCongregations = editAccessAllCongregations;
+        payload.congregationIds = editAccessAllCongregations ? [] : editSelectedCongregationIds;
+      }
+      await apiService.updateChurchUser(editingUser.id, payload);
       toast.success('Usuário atualizado');
       setIsEditModalOpen(false);
       setEditingUser(null);
@@ -143,6 +327,9 @@ export function ChurchUsersManagement() {
     }
   };
 
+  const showAddScope = role === 'reader' || role === 'editor';
+  const showEditScope = editRole === 'reader' || editRole === 'editor';
+
   if (!canManage) {
     return (
       <Card className="p-6">
@@ -170,7 +357,6 @@ export function ChurchUsersManagement() {
               {' '}<span className="font-medium">&quot;Esqueci minha senha&quot;</span> na tela de login.
             </p>
             <div className="flex flex-col gap-1 text-sm text-gray-500">
-
               <div className="mt-2 inline-flex flex-wrap gap-2 text-xs">
                 <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700">
                   <span className="font-semibold">Leitor</span>: apenas visualiza dados e relatórios
@@ -216,6 +402,7 @@ export function ChurchUsersManagement() {
                 <tr className="text-gray-500">
                   <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Usuário</th>
                   <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Papel</th>
+                  <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Congregações</th>
                   <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Status</th>
                   <th className="py-1 w-32 text-xs font-semibold uppercase tracking-wide text-center">Ações</th>
                 </tr>
@@ -238,12 +425,13 @@ export function ChurchUsersManagement() {
                       ? 'bg-green-50 text-green-700 border border-green-200'
                       : 'bg-gray-50 text-gray-600 border border-gray-200';
 
+                  const scopeLabel = formatUserScope(item, congregationMap);
+
                   return (
                     <tr
                       key={item.id}
                       className={`${isOwner ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-primary/60'} border rounded-lg`}
                     >
-                      {/* Usuário */}
                       <td className="px-4 py-2 align-middle">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
@@ -264,7 +452,6 @@ export function ChurchUsersManagement() {
                         </div>
                       </td>
 
-                      {/* Papel */}
                       <td className="px-4 py-2 align-middle text-center">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeClass}`}
@@ -273,20 +460,23 @@ export function ChurchUsersManagement() {
                         </span>
                       </td>
 
-                      {/* Status */}
+                      <td className="px-4 py-2 align-middle text-center">
+                        <span className="text-xs text-gray-600">{scopeLabel}</span>
+                      </td>
+
                       <td className="px-4 py-2 align-middle text-center">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass}`}
                         >
                           <span
-                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
-                              }`}
+                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                              item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                            }`}
                           />
                           {item.status === 'active' ? 'Ativo' : 'Desativado'}
                         </span>
                       </td>
 
-                      {/* Ações */}
                       <td className="px-4 py-2 align-middle text-right">
                         {isOwner ? (
                           <span className="text-[11px] text-gray-400">Sem ações disponíveis</span>
@@ -319,13 +509,10 @@ export function ChurchUsersManagement() {
         )}
       </Card>
 
-      {/* Modal: Adicionar usuário */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => {
-          if (!adding) {
-            setIsAddModalOpen(false);
-          }
+          if (!adding) closeAddModal();
         }}
         title="Adicionar usuário"
         size="md"
@@ -345,11 +532,26 @@ export function ChurchUsersManagement() {
             <label className="block text-sm font-medium text-gray-700">Papel</label>
             <Select
               value={role}
-              onChange={(value) => setRole(value as ChurchUserRole)}
+              onChange={(value) => {
+                const newRole = value as ChurchUserRole;
+                setRole(newRole);
+                if (newRole === 'admin') resetAddScope();
+              }}
               options={ROLE_OPTIONS}
               disabled={adding}
             />
           </div>
+          {showAddScope && (
+            <CongregationScopePicker
+              accessAllCongregations={accessAllCongregations}
+              onAccessAllChange={setAccessAllCongregations}
+              selectedIds={selectedCongregationIds}
+              onSelectedIdsChange={setSelectedCongregationIds}
+              congregations={congregations}
+              loading={congregationsLoading}
+              disabled={adding}
+            />
+          )}
           <div className="text-xs text-gray-500 space-y-1">
             <p>
               O convidado receberá um email informando o acesso. Se ainda não tiver conta, poderá definir a senha pela opção
@@ -361,7 +563,7 @@ export function ChurchUsersManagement() {
               type="button"
               variant="secondary"
               disabled={adding}
-              onClick={() => setIsAddModalOpen(false)}
+              onClick={closeAddModal}
             >
               Cancelar
             </Button>
@@ -372,7 +574,6 @@ export function ChurchUsersManagement() {
         </form>
       </Modal>
 
-      {/* Modal: Editar usuário */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -403,7 +604,14 @@ export function ChurchUsersManagement() {
                   <label className="block text-sm font-medium text-gray-700">Papel</label>
                   <Select
                     value={editRole}
-                    onChange={(value) => setEditRole(value as ChurchUserRole)}
+                    onChange={(value) => {
+                      const newRole = value as ChurchUserRole;
+                      setEditRole(newRole);
+                      if (newRole === 'admin') {
+                        setEditAccessAllCongregations(true);
+                        setEditSelectedCongregationIds([]);
+                      }
+                    }}
                     options={ROLE_OPTIONS}
                   />
                 </div>
@@ -416,6 +624,17 @@ export function ChurchUsersManagement() {
                   />
                 </div>
               </div>
+              {showEditScope && (
+                <CongregationScopePicker
+                  accessAllCongregations={editAccessAllCongregations}
+                  onAccessAllChange={setEditAccessAllCongregations}
+                  selectedIds={editSelectedCongregationIds}
+                  onSelectedIdsChange={setEditSelectedCongregationIds}
+                  congregations={congregations}
+                  loading={congregationsLoading}
+                  disabled={savingEdit}
+                />
+              )}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
                 <Button
                   type="button"
@@ -443,7 +662,6 @@ export function ChurchUsersManagement() {
         </div>
       </Modal>
 
-      {/* Modal: Remover usuário */}
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => {

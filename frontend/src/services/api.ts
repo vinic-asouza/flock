@@ -891,12 +891,25 @@ class ApiService {
     return response.data;
   }
 
-  async createChurchUser(data: { email: string; role: ChurchUserRole }): Promise<{ message: string; data: ChurchUserListItem }> {
+  async createChurchUser(data: {
+    email: string;
+    role: ChurchUserRole;
+    accessAllCongregations?: boolean;
+    congregationIds?: string[];
+  }): Promise<{ message: string; data: ChurchUserListItem }> {
     const response = await this.api.post('/church-users', data);
     return response.data;
   }
 
-  async updateChurchUser(id: string, data: { role?: ChurchUserRole; status?: string }): Promise<{ message: string; data: ChurchUserListItem }> {
+  async updateChurchUser(
+    id: string,
+    data: {
+      role?: ChurchUserRole;
+      status?: string;
+      accessAllCongregations?: boolean;
+      congregationIds?: string[];
+    }
+  ): Promise<{ message: string; data: ChurchUserListItem }> {
     const response = await this.api.patch(`/church-users/${id}`, data);
     return response.data;
   }

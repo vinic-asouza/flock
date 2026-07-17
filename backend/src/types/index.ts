@@ -122,6 +122,10 @@ export type ChurchUserStatus = 'active' | 'invited' | 'disabled';
 export interface ChurchContext {
   churchId: string;
   role: ChurchUserRole;
+  /** true = acesso dinâmico a todas as congregações (admin/owner ou flag) */
+  accessAllCongregations: boolean;
+  /** IDs permitidos quando accessAllCongregations=false; vazio quando all */
+  congregationIds: string[];
 }
 
 export interface AuthRequest extends Request {

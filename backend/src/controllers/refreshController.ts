@@ -181,6 +181,8 @@ export const checkAuth = async (req: AuthRequest, res: Response) => {
       role: context.role,
       memberships,
       activeChurchId: context.churchId,
+      accessAllCongregations: context.accessAllCongregations,
+      congregationIds: context.congregationIds,
     });
 
   } catch (error) {

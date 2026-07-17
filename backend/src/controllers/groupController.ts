@@ -4,7 +4,11 @@ import { AuthRequest, Group } from '../types';
 import { createGroupSchema, updateGroupSchema } from '../validators/groupValidator';
 import { logAudit } from '../utils/auditLogger';
 import { validateResponsibleAndCongregation, validateGroupCongregation, validateMemberForGroup } from '../utils/groupValidations';
-import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import {
+  applyScopedCongregationFilter,
+  assertCongregationAccess,
+  resolveScopedCongregationFilter,
+} from '../utils/congregationScope';
 import { debug, error as logError } from '../utils/logger';
 
 /**
@@ -64,16 +68,16 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
       .eq('church_id', churchId);
 
     // Aplicar filtro de congregação
-    const congregationFilter = resolveCongregationFilter(congregation_id);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, congregation_id, {
+      includeNullAsChurchWide: false,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Filtro inválido',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     // Aplicar filtro de tipo
     if (type) {
@@ -203,6 +207,11 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, group.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Buscar membros vinculados ao grupo
     const { data: memberGroups, error: memberGroupsError } = await supabase
       .from('member_groups')
@@ -298,6 +307,11 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
         error: 'Congregação inválida',
         details: congregationValidation.errorMessage || 'A congregação não é válida'
       });
+    }
+
+    const congregationAccess = assertCongregationAccess(req.church!, congregation_id);
+    if (!congregationAccess.ok) {
+      return res.status(congregationAccess.status).json(congregationAccess.body);
     }
 
     // Validar responsável e sua associação com a congregação (se fornecido)
@@ -427,6 +441,11 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const existingAccess = assertCongregationAccess(req.church!, existingGroup.congregation_id);
+    if (!existingAccess.ok) {
+      return res.status(existingAccess.status).json(existingAccess.body);
+    }
+
     const { name, type, congregation_id, responsible_id } = req.body;
 
     if (congregation_id !== undefined && (!congregation_id || String(congregation_id).trim() === '')) {
@@ -448,6 +467,11 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
         error: 'Congregação inválida',
         details: congregationValidation.errorMessage || 'A congregação não é válida'
       });
+    }
+
+    const finalCongregationAccess = assertCongregationAccess(req.church!, finalCongregationId);
+    if (!finalCongregationAccess.ok) {
+      return res.status(finalCongregationAccess.status).json(finalCongregationAccess.body);
     }
 
     const responsibleValidation = await validateResponsibleAndCongregation(
@@ -575,6 +599,11 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, existingGroup.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Verificar se existem membros vinculados (opcional - pode permitir deletar mesmo assim)
     const { count: memberCount } = await supabase
       .from('member_groups')
@@ -639,7 +668,7 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
     // Verificar se o grupo pertence à igreja
     const { data: group } = await supabase
       .from('groups')
-      .select('id')
+      .select('id, congregation_id')
       .eq('id', id)
       .eq('church_id', churchId)
       .single();
@@ -649,6 +678,11 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
         error: 'Grupo não encontrado',
         details: 'Não foi possível encontrar o grupo solicitado'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, group.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Buscar membros vinculados ao grupo
@@ -746,6 +780,11 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
         error: 'Grupo não encontrado',
         details: 'Não foi possível encontrar o grupo solicitado'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, group.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Validar se o membro pode ser adicionado ao grupo (pertence à igreja e congregação)
@@ -854,7 +893,7 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
     // Verificar se o grupo pertence à igreja
     const { data: group } = await supabase
       .from('groups')
-      .select('id')
+      .select('id, congregation_id')
       .eq('id', id)
       .eq('church_id', churchId)
       .single();
@@ -864,6 +903,11 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
         error: 'Grupo não encontrado',
         details: 'Não foi possível encontrar o grupo solicitado'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, group.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Buscar dados do membro e grupo para auditoria antes de remover
