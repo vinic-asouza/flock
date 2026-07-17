@@ -12,7 +12,11 @@ import {
   validateMentorAndCongregation,
   validateIntegrationMemberNameUniqueness
 } from '../utils/integrationValidations';
-import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import {
+  applyScopedCongregationFilter,
+  assertCongregationAccess,
+  resolveScopedCongregationFilter,
+} from '../utils/congregationScope';
 import { debug, error as logError } from '../utils/logger';
 
 const DEFAULT_PAGE = 1;
@@ -144,16 +148,16 @@ export const listIntegrationMembers = async (req: AuthRequest, res: Response) =>
       query = query.eq('status', status);
     }
 
-    const congregationFilter = resolveCongregationFilter(expected_congregation_id);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, expected_congregation_id, {
+      includeNullAsChurchWide: true,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Filtro inválido',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('expected_congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'expected_congregation_id', scoped);
 
     if (mentor_id) {
       query = query.eq('mentor_id', mentor_id);
@@ -256,6 +260,11 @@ export const getIntegrationMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, data.expected_congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     res.json({
       ...data,
       expected_congregation: data.expected_congregation || null,
@@ -326,6 +335,14 @@ export const createIntegrationMember = async (req: AuthRequest, res: Response) =
         error: errorTitle,
         details: dataValidation.errorMessage || 'Dados inválidos'
       });
+    }
+
+    const expectedCongregationAccess = assertCongregationAccess(
+      req.church!,
+      value.expected_congregation_id
+    );
+    if (!expectedCongregationAccess.ok) {
+      return res.status(expectedCongregationAccess.status).json(expectedCongregationAccess.body);
     }
 
     // Normalizar datas antes de criar o integrante (evita problemas de timezone)
@@ -433,6 +450,11 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
+    const existingAccess = assertCongregationAccess(req.church!, existing.expected_congregation_id);
+    if (!existingAccess.ok) {
+      return res.status(existingAccess.status).json(existingAccess.body);
+    }
+
     // Validar todos os dados do integrante (congregação, mentor, duplicidade de nome)
     // Só verifica duplicidade se o nome foi alterado
     const shouldCheckName = value.name && value.name.trim() !== existing.name.trim();
@@ -452,6 +474,14 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
         error: errorTitle,
         details: dataValidation.errorMessage || 'Dados inválidos'
       });
+    }
+
+    const finalExpectedCongregationId = Object.prototype.hasOwnProperty.call(req.body, 'expected_congregation_id')
+      ? value.expected_congregation_id
+      : existing.expected_congregation_id;
+    const finalExpectedAccess = assertCongregationAccess(req.church!, finalExpectedCongregationId);
+    if (!finalExpectedAccess.ok) {
+      return res.status(finalExpectedAccess.status).json(finalExpectedAccess.body);
     }
 
     // Normalizar datas antes de atualizar o integrante (evita problemas de timezone)
@@ -548,6 +578,11 @@ export const deleteIntegrationMember = async (req: AuthRequest, res: Response) =
       });
     }
 
+    const access = assertCongregationAccess(req.church!, existing.expected_congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     const { error } = await supabase
       .from('integration_members')
       .delete()
@@ -630,6 +665,14 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       });
     }
 
+    const integrationAccess = assertCongregationAccess(
+      req.church!,
+      integrationMember.expected_congregation_id
+    );
+    if (!integrationAccess.ok) {
+      return res.status(integrationAccess.status).json(integrationAccess.body);
+    }
+
     if (integrationMember.status === 'integrado') {
       return res.status(400).json({
         error: 'Integrante já integrado',
@@ -687,6 +730,14 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
         error: 'Dados inválidos para membro',
         details: validationError.details.map(detail => detail.message)
       });
+    }
+
+    const memberCongregationAccess = assertCongregationAccess(
+      req.church!,
+      normalizedMemberPayload.congregation_id
+    );
+    if (!memberCongregationAccess.ok) {
+      return res.status(memberCongregationAccess.status).json(memberCongregationAccess.body);
     }
 
     // ✅ TRANSAÇÃO: Criar membro primeiro

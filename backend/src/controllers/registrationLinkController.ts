@@ -4,6 +4,7 @@ import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest, CreateRegistrationLinkData, PublicRegistrationLink } from '../types';
 import { validateRegistrationLink } from '../validators/registrationLinkValidator';
 import { logAudit } from '../utils/auditLogger';
+import { assertCongregationAccess } from '../utils/congregationScope';
 
 /**
  * Gera um token único e seguro para o link de registro
@@ -171,6 +172,11 @@ export const createRegistrationLink = async (
           details: 'A congregação especificada não pertence à sua igreja'
         });
       }
+
+      const access = assertCongregationAccess(req.church!, req.body.default_congregation_id);
+      if (!access.ok) {
+        return res.status(access.status).json(access.body);
+      }
     }
 
     // Gerar token único
@@ -326,6 +332,11 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
             error: 'Congregação inválida',
             details: 'A congregação especificada não pertence à sua igreja'
           });
+        }
+
+        const access = assertCongregationAccess(req.church!, req.body.default_congregation_id);
+        if (!access.ok) {
+          return res.status(access.status).json(access.body);
         }
       }
     }

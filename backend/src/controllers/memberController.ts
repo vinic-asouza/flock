@@ -9,7 +9,11 @@ import { checkMemberLimit } from '../utils/planLimits';
 import { error as logError } from '../utils/logger';
 import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
 import { calculateAge } from '../utils/ageCalculator';
-import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import {
+  applyScopedCongregationFilter,
+  assertCongregationAccess,
+  resolveScopedCongregationFilter,
+} from '../utils/congregationScope';
 import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
 
 /**
@@ -146,16 +150,16 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       query = query.eq('active', active);
     }
 
-    const congregationFilter = resolveCongregationFilter(congregation_id);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, congregation_id, {
+      includeNullAsChurchWide: false,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Filtro inválido',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     // Aplica filtros por campos específicos
     if (gender) {
@@ -446,6 +450,11 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, memberWithDetails.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Buscar grupos do membro
     const { data: memberGroups, error: memberGroupsError } = await supabase
       .from('member_groups')
@@ -563,6 +572,11 @@ export const createMember = async (req: AuthRequest, res: Response) => {
         error: 'Congregação inválida',
         details: congregationCheck.message
       });
+    }
+
+    const congregationAccess = assertCongregationAccess(req.church!, congregationId);
+    if (!congregationAccess.ok) {
+      return res.status(congregationAccess.status).json(congregationAccess.body);
     }
 
     // Verificar duplicidade por nome (lowercase) - OTIMIZADO
@@ -783,6 +797,11 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
 
     previousMemberData = { ...existingMember }; // Backup para rollback
 
+    const existingAccess = assertCongregationAccess(req.church!, existingMember.congregation_id);
+    if (!existingAccess.ok) {
+      return res.status(existingAccess.status).json(existingAccess.body);
+    }
+
     // Buscar grupos atuais do membro (para rollback se necessário)
     const { data: currentMemberGroups, error: currentGroupsError } = await supabase
       .from('member_groups')
@@ -818,6 +837,11 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
           error: 'Congregação inválida',
           details: congregationCheck.message
         });
+      }
+
+      const newCongregationAccess = assertCongregationAccess(req.church!, congregationId);
+      if (!newCongregationAccess.ok) {
+        return res.status(newCongregationAccess.status).json(newCongregationAccess.body);
       }
     }
 
@@ -1068,6 +1092,11 @@ export const deleteMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, existingMember.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Remove o membro permanentemente
     const { error: memberError } = await supabase
       .from('members')
@@ -1141,6 +1170,20 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
     }
 
     // Processa cada membro para adicionar o church_id, normalizar datas e garantir que active seja true
+    for (const member of members) {
+      const congregationId = member.congregation_id as string | null | undefined;
+      if (!congregationId || String(congregationId).trim() === '') {
+        return res.status(400).json({
+          error: 'Dados inválidos',
+          details: 'A congregação é obrigatória para cada membro do lote',
+        });
+      }
+      const access = assertCongregationAccess(req.church!, congregationId);
+      if (!access.ok) {
+        return res.status(access.status).json(access.body);
+      }
+    }
+
     const membersWithChurchId = members.map(member => {
       const normalized = normalizeMemberDates(member);
       return {
@@ -1218,6 +1261,16 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
 
     const churchId = req.church!.churchId;
 
+    const scoped = resolveScopedCongregationFilter(req.church!, congregation_id, {
+      includeNullAsChurchWide: false,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
+        error: 'Filtros inválidos',
+        details: scoped.message,
+      });
+    }
+
     // Constrói a query base
     let query = supabase
       .from('members')
@@ -1237,17 +1290,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .eq('church_id', churchId)
       .order('id', { ascending: true });
 
-    // Aplica filtro por congregação
-    const congregationFilter = resolveCongregationFilter(congregation_id);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
-        error: 'Filtros inválidos',
-        details: congregationFilter.message
-      });
-    }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     // Buscar contagem total primeiro (mais eficiente)
     let countQuery = supabase
@@ -1255,10 +1298,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .select('*', { count: 'exact', head: true })
       .eq('church_id', churchId);
 
-    // Aplicar filtro de congregação na contagem
-    if (congregationFilter.congregationId) {
-      countQuery = countQuery.eq('congregation_id', congregationFilter.congregationId);
-    }
+    countQuery = applyScopedCongregationFilter(countQuery, 'congregation_id', scoped);
 
     const { count: totalCount, error: countError } = await countQuery;
     
@@ -1305,9 +1345,7 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
           .range(offset, offset + CHUNK_SIZE - 1);
 
         // Reaplicar filtro de congregação
-        if (congregationFilter.congregationId) {
-          chunkQuery = chunkQuery.eq('congregation_id', congregationFilter.congregationId);
-        }
+        chunkQuery = applyScopedCongregationFilter(chunkQuery, 'congregation_id', scoped);
 
         const { data: chunk, error: chunkError } = await chunkQuery;
 
@@ -1567,9 +1605,20 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       .select(integrationSelect)
       .eq('church_id', churchId);
 
-    if (congregationFilter.congregationId) {
-      integrationQuery = integrationQuery.eq('expected_congregation_id', congregationFilter.congregationId);
+    const integrationScoped = resolveScopedCongregationFilter(req.church!, congregation_id, {
+      includeNullAsChurchWide: true,
+    });
+    if (!integrationScoped.ok) {
+      return res.status(integrationScoped.status).json({
+        error: 'Filtros inválidos',
+        details: integrationScoped.message,
+      });
     }
+    integrationQuery = applyScopedCongregationFilter(
+      integrationQuery,
+      'expected_congregation_id',
+      integrationScoped
+    );
 
     const {
       data: integrationData,
@@ -1829,16 +1878,16 @@ export const getBirthdaysCount = async (req: AuthRequest, res: Response) => {
       .not('birth', 'is', null);
 
     // Aplicar filtro de congregação se fornecido
-    const congregationFilter = resolveCongregationFilter(congregationId);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, congregationId, {
+      includeNullAsChurchWide: false,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Parâmetro inválido',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     const { data: members, error: membersError } = await query;
 
@@ -1930,16 +1979,16 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
       .not('birth', 'is', null);
 
     // Aplicar filtro de congregação se fornecido
-    const congregationFilter = resolveCongregationFilter(congregationId);
-    if (!congregationFilter.ok) {
-      return res.status(400).json({
+    const scoped = resolveScopedCongregationFilter(req.church!, congregationId, {
+      includeNullAsChurchWide: false,
+    });
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
         error: 'Parâmetro inválido',
-        details: congregationFilter.message
+        details: scoped.message,
       });
     }
-    if (congregationFilter.congregationId) {
-      query = query.eq('congregation_id', congregationFilter.congregationId);
-    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
     const { data: members, error: membersError } = await query;
 
@@ -2041,7 +2090,7 @@ export const setMemberStatus = async (req: AuthRequest, res: Response) => {
     // Verificar se o membro pertence a esta igreja
     const { data: existing, error: checkError } = await supabase
       .from('members')
-      .select('id, name, active')
+      .select('id, name, active, congregation_id')
       .eq('id', id)
       .eq('church_id', churchId)
       .single();
@@ -2051,6 +2100,11 @@ export const setMemberStatus = async (req: AuthRequest, res: Response) => {
         error: 'Membro não encontrado',
         details: 'Não foi possível encontrar o membro solicitado'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, existing.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Atualização atômica — altera APENAS o campo active

@@ -92,15 +92,14 @@ Organizar unidades locais da igreja. Toda igreja possui exatamente uma congrega�
 - **Depende de:** —
 
 ### BR-CON-006: Escrita editor+
-- **Declaração:** Mutações editor+; leitura reader+.
+- **Declaração:** Mutações editor+; leitura reader+. Leitura e mutação respeitam o **escopo de congregação** do usuário (`reader`/`editor` restritos só nas congregações permitidas). Criar congregação exige `editor+` **com** acesso a todas as congregações (ou admin/owner).
 - **Tipo:** Restrição
 - **Gatilho:** Rotas
 - **Comportamento esperado:** —
 - **Comportamento em violação:** 403
-- **Implementado em:** `routes/congregations.ts`
+- **Implementado em:** `routes/congregations.ts`, `congregationController.ts`, `congregationScope.ts`
 - **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
-
+- **Depende de:** [[BR-CFG-016]]
 ### 🗑️ Regras de Exclusão / Desativação
 
 ### BR-CON-007: Delete com membros ativos

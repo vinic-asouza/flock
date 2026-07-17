@@ -4,6 +4,13 @@ import { createCongregationSchema, updateCongregationSchema } from '../validator
 import { AuthRequest } from '../types';
 import { logAudit } from '../utils/auditLogger';
 import { logError } from '../utils/logger';
+import {
+  applyScopedCongregationFilter,
+  assertCongregationAccess,
+  canCreateCongregation,
+  congregationIsSoleScopeForAnyUser,
+  resolveScopedCongregationFilter,
+} from '../utils/congregationScope';
 
 const normalizeAbbreviation = (value: unknown): string | null => {
   if (value === undefined || value === null) return null;
@@ -32,6 +39,13 @@ const isUniqueViolation = (error: { code?: string; message?: string } | null | u
  */
 export const createCongregation = async (req: AuthRequest, res: Response) => {
   try {
+    if (!canCreateCongregation(req.church!)) {
+      return res.status(403).json({
+        error: 'Sem permissão',
+        details: 'Usuários com acesso restrito a congregações não podem criar novas congregações',
+      });
+    }
+
     const { error: validationError } = createCongregationSchema.validate(req.body);
     if (validationError) {
       return res.status(400).json({ 
@@ -167,6 +181,15 @@ export const getCongregations = async (req: AuthRequest, res: Response) => {
       .select('*')
       .eq('church_id', churchId);
 
+    const scoped = resolveScopedCongregationFilter(req.church!, undefined);
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
+        error: 'Sem acesso',
+        details: scoped.message,
+      });
+    }
+    query = applyScopedCongregationFilter(query, 'id', scoped);
+
     if (search) {
       const safeSearch = search.replace(/,/g, '');
       query = query.or(`name.ilike.%${safeSearch}%,abbreviation.ilike.%${safeSearch}%`);
@@ -251,6 +274,11 @@ export const getCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, congregation.id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Contar membros ativos
     const { count: activeMembersCount, error: countError } = await supabase
       .from('members')
@@ -316,6 +344,11 @@ export const updateCongregation = async (req: AuthRequest, res: Response) => {
         error: 'Congregação não encontrada',
         details: 'A congregação solicitada não existe ou não pertence à sua igreja'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, existingCongregation.id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     const { name, address, city, state, leader, phone, abbreviation } = req.body;
@@ -490,6 +523,11 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const access = assertCongregationAccess(req.church!, existingCongregation.id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     // Nova regra: não excluir congregação principal
     if (existingCongregation.is_primary) {
       return res.status(400).json({
@@ -516,6 +554,14 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         error: 'Não é possível excluir congregação',
         details: 'A igreja precisa manter ao menos uma congregação.',
+      });
+    }
+
+    const soleScope = await congregationIsSoleScopeForAnyUser(id);
+    if (soleScope.blocked) {
+      return res.status(400).json({
+        error: 'Não é possível excluir congregação',
+        details: soleScope.message,
       });
     }
 
@@ -589,6 +635,13 @@ export const deleteCongregation = async (req: AuthRequest, res: Response) => {
  */
 export const createCongregationsBatch = async (req: AuthRequest, res: Response) => {
   try {
+    if (!canCreateCongregation(req.church!)) {
+      return res.status(403).json({
+        error: 'Sem permissão',
+        details: 'Usuários com acesso restrito a congregações não podem criar novas congregações',
+      });
+    }
+
     if (!Array.isArray(req.body)) {
       return res.status(400).json({ 
         error: 'Dados inválidos',

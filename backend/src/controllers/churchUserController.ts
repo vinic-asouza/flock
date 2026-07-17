@@ -5,6 +5,11 @@ import { ChurchUserRole } from '../types';
 import { sendEmail } from '../services/emailService';
 import { getChurchUserInvitationTemplate } from '../templates/emailTemplates';
 import { logError } from '../utils/logger';
+import {
+  parseCongregationScopeForRole,
+  syncChurchUserCongregationScope,
+  validateCongregationIdsBelongToChurch,
+} from '../utils/congregationScope';
 
 const ROLE_LABELS: Record<ChurchUserRole, string> = {
   owner: 'Dono',
@@ -12,6 +17,45 @@ const ROLE_LABELS: Record<ChurchUserRole, string> = {
   editor: 'Editor',
   reader: 'Leitor'
 };
+
+type ChurchUserRow = {
+  id: string;
+  user_id: string;
+  role: ChurchUserRole;
+  status: string;
+  created_at: string;
+  updated_at?: string;
+  access_all_congregations?: boolean;
+};
+
+async function loadScopeMap(
+  churchUserIds: string[]
+): Promise<Record<string, { accessAllCongregations: boolean; congregationIds: string[] }>> {
+  const map: Record<string, { accessAllCongregations: boolean; congregationIds: string[] }> = {};
+  for (const id of churchUserIds) {
+    map[id] = { accessAllCongregations: false, congregationIds: [] };
+  }
+  if (churchUserIds.length === 0) return map;
+
+  const { data: links, error } = await supabase
+    .from('church_user_congregations')
+    .select('church_user_id, congregation_id')
+    .in('church_user_id', churchUserIds);
+
+  if (error) {
+    logError('Erro ao carregar escopos de usuários:', error);
+    return map;
+  }
+
+  for (const link of links || []) {
+    const entry = map[link.church_user_id];
+    if (entry) {
+      entry.congregationIds.push(link.congregation_id);
+    }
+  }
+
+  return map;
+}
 
 /**
  * Listar usuários da igreja (admin/owner).
@@ -22,7 +66,7 @@ export const listChurchUsers = async (req: AuthRequest, res: Response) => {
 
     const { data: rows, error } = await supabase
       .from('church_users')
-      .select('id, user_id, role, status, created_at, updated_at')
+      .select('id, user_id, role, status, created_at, updated_at, access_all_congregations')
       .eq('church_id', churchId)
       .order('created_at', { ascending: false });
 
@@ -34,7 +78,8 @@ export const listChurchUsers = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const userIds = [...new Set((rows || []).map((r: { user_id: string }) => r.user_id))];
+    const typedRows = (rows || []) as ChurchUserRow[];
+    const userIds = [...new Set(typedRows.map((r) => r.user_id))];
     const emails: Record<string, string> = {};
 
     if (userIds.length > 0) {
@@ -44,11 +89,23 @@ export const listChurchUsers = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    const list = (rows || []).map((r: { user_id: string; role: string; [k: string]: unknown }) => ({
-      ...r,
-      email: emails[r.user_id] ?? null,
-      roleLabel: ROLE_LABELS[r.role as ChurchUserRole]
-    }));
+    const scopeMap = await loadScopeMap(typedRows.map((r) => r.id));
+
+    const list = typedRows.map((r) => {
+      const isFullRole = r.role === 'owner' || r.role === 'admin';
+      const accessAllCongregations = isFullRole || Boolean(r.access_all_congregations);
+      const congregationIds = accessAllCongregations
+        ? []
+        : (scopeMap[r.id]?.congregationIds ?? []);
+
+      return {
+        ...r,
+        email: emails[r.user_id] ?? null,
+        roleLabel: ROLE_LABELS[r.role as ChurchUserRole],
+        accessAllCongregations,
+        congregationIds,
+      };
+    });
 
     return res.json({ data: list });
   } catch (err) {
@@ -61,14 +118,19 @@ export const listChurchUsers = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Adicionar usuário à igreja (admin/owner): email + role.
+ * Adicionar usuário à igreja (admin/owner): email + role + escopo de congregação.
  * Cria usuário no Supabase se não existir; não permite se já estiver em outra igreja.
  */
 export const createChurchUser = async (req: AuthRequest, res: Response) => {
   try {
     const churchId = req.church!.churchId;
     const requesterRole = req.church!.role;
-    const { email, role } = req.body as { email?: string; role?: ChurchUserRole };
+    const { email, role, accessAllCongregations, congregationIds } = req.body as {
+      email?: string;
+      role?: ChurchUserRole;
+      accessAllCongregations?: boolean;
+      congregationIds?: string[];
+    };
 
     const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     if (!normalizedEmail) {
@@ -91,6 +153,24 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
         error: 'Sem permissão',
         details: 'Apenas administrador ou dono pode adicionar usuários'
       });
+    }
+
+    const scope = parseCongregationScopeForRole(role, { accessAllCongregations, congregationIds });
+    if (!scope.ok) {
+      return res.status(400).json({
+        error: 'Escopo de congregação inválido',
+        details: scope.message,
+      });
+    }
+
+    if (!scope.accessAllCongregations) {
+      const validation = await validateCongregationIdsBelongToChurch(churchId, scope.congregationIds);
+      if (!validation.ok) {
+        return res.status(400).json({
+          error: 'Escopo de congregação inválido',
+          details: validation.message,
+        });
+      }
     }
 
     let userId: string;
@@ -175,9 +255,10 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
         church_id: churchId,
         user_id: userId,
         role,
-        status: 'active'
+        status: 'active',
+        access_all_congregations: scope.accessAllCongregations,
       })
-      .select('id, user_id, role, status, created_at')
+      .select('id, user_id, role, status, created_at, access_all_congregations')
       .single();
 
     if (insertError) {
@@ -185,6 +266,20 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
       return res.status(500).json({
         error: 'Erro ao vincular usuário',
         details: insertError.message
+      });
+    }
+
+    const sync = await syncChurchUserCongregationScope(
+      inserted.id,
+      role,
+      scope.accessAllCongregations,
+      scope.congregationIds
+    );
+    if (!sync.ok) {
+      await supabase.from('church_users').delete().eq('id', inserted.id);
+      return res.status(500).json({
+        error: 'Erro ao configurar congregações do usuário',
+        details: sync.message,
       });
     }
 
@@ -214,7 +309,13 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       message: 'Usuário adicionado com sucesso',
-      data: { ...inserted, email: normalizedEmail, roleLabel: ROLE_LABELS[role] }
+      data: {
+        ...inserted,
+        email: normalizedEmail,
+        roleLabel: ROLE_LABELS[role],
+        accessAllCongregations: scope.accessAllCongregations,
+        congregationIds: scope.congregationIds,
+      }
     });
   } catch (err) {
     logError('Erro em createChurchUser:', err);
@@ -226,18 +327,23 @@ export const createChurchUser = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Atualizar papel ou status de um usuário da igreja (admin/owner).
- * Owner não pode ser alterado por outro admin (apenas pelo próprio owner ou lógica futura).
+ * Atualizar papel, status e/ou escopo de congregação (admin/owner).
+ * Owner não pode ser alterado por esta rota.
  */
 export const updateChurchUser = async (req: AuthRequest, res: Response) => {
   try {
     const churchId = req.church!.churchId;
     const { id } = req.params;
-    const { role, status } = req.body as { role?: ChurchUserRole; status?: string };
+    const { role, status, accessAllCongregations, congregationIds } = req.body as {
+      role?: ChurchUserRole;
+      status?: string;
+      accessAllCongregations?: boolean;
+      congregationIds?: string[];
+    };
 
     const { data: current } = await supabase
       .from('church_users')
-      .select('id, church_id, user_id, role')
+      .select('id, church_id, user_id, role, access_all_congregations')
       .eq('id', id)
       .eq('church_id', churchId)
       .single();
@@ -256,37 +362,124 @@ export const updateChurchUser = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const updates: { role?: ChurchUserRole; status?: string } = {};
+    const updates: {
+      role?: ChurchUserRole;
+      status?: string;
+      access_all_congregations?: boolean;
+    } = {};
     const allowedRoles: ChurchUserRole[] = ['admin', 'editor', 'reader'];
     if (role && allowedRoles.includes(role)) updates.role = role;
     if (status && ['active', 'invited', 'disabled'].includes(status)) updates.status = status;
 
-    if (Object.keys(updates).length === 0) {
+    const nextRole = (updates.role || current.role) as ChurchUserRole;
+    const scopeProvided =
+      accessAllCongregations !== undefined || congregationIds !== undefined;
+
+    // Rebaixamento admin → reader/editor exige escopo explícito.
+    const demotingToScoped =
+      (current.role === 'admin') &&
+      (nextRole === 'reader' || nextRole === 'editor');
+
+    let parsedScope: ReturnType<typeof parseCongregationScopeForRole> | null = null;
+
+    if (nextRole === 'admin') {
+      parsedScope = parseCongregationScopeForRole('admin', {});
+    } else if (scopeProvided || demotingToScoped) {
+      parsedScope = parseCongregationScopeForRole(nextRole, {
+        accessAllCongregations,
+        congregationIds,
+      });
+      if (!parsedScope.ok) {
+        return res.status(400).json({
+          error: 'Escopo de congregação inválido',
+          details: parsedScope.message,
+        });
+      }
+    }
+
+    if (parsedScope?.ok && !parsedScope.accessAllCongregations) {
+      const validation = await validateCongregationIdsBelongToChurch(
+        churchId,
+        parsedScope.congregationIds
+      );
+      if (!validation.ok) {
+        return res.status(400).json({
+          error: 'Escopo de congregação inválido',
+          details: validation.message,
+        });
+      }
+    }
+
+    if (Object.keys(updates).length === 0 && !parsedScope) {
       return res.status(400).json({
         error: 'Nenhuma alteração válida',
-        details: 'Envie role e/ou status'
+        details: 'Envie role, status e/ou escopo de congregações'
       });
     }
 
-    const { data: updated, error } = await supabase
-      .from('church_users')
-      .update(updates)
-      .eq('id', id)
-      .eq('church_id', churchId)
-      .select()
-      .single();
-
-    if (error) {
-      logError('Erro ao atualizar church_user:', error);
-      return res.status(500).json({
-        error: 'Erro ao atualizar',
-        details: error.message
-      });
+    if (parsedScope?.ok) {
+      updates.access_all_congregations = parsedScope.accessAllCongregations;
     }
+
+    let updated: ChurchUserRow = {
+      id: current.id,
+      user_id: current.user_id,
+      role: current.role as ChurchUserRole,
+      status: (current as { status?: string }).status || 'active',
+      created_at: (current as { created_at?: string }).created_at || '',
+      updated_at: (current as { updated_at?: string }).updated_at,
+      access_all_congregations: Boolean(current.access_all_congregations),
+    };
+
+    if (Object.keys(updates).length > 0) {
+      const { data, error } = await supabase
+        .from('church_users')
+        .update(updates)
+        .eq('id', id)
+        .eq('church_id', churchId)
+        .select('id, user_id, role, status, created_at, updated_at, access_all_congregations')
+        .single();
+
+      if (error) {
+        logError('Erro ao atualizar church_user:', error);
+        return res.status(500).json({
+          error: 'Erro ao atualizar',
+          details: error.message
+        });
+      }
+      updated = data as ChurchUserRow;
+    }
+
+    if (parsedScope?.ok) {
+      const sync = await syncChurchUserCongregationScope(
+        id,
+        nextRole,
+        parsedScope.accessAllCongregations,
+        parsedScope.congregationIds
+      );
+      if (!sync.ok) {
+        return res.status(500).json({
+          error: 'Erro ao atualizar congregações do usuário',
+          details: sync.message,
+        });
+      }
+    }
+
+    const scopeMap = await loadScopeMap([id]);
+    const accessAll =
+      nextRole === 'admin' ||
+      nextRole === 'owner' ||
+      Boolean(updated.access_all_congregations) ||
+      (parsedScope?.ok ? parsedScope.accessAllCongregations : false);
 
     return res.json({
       message: 'Usuário atualizado',
-      data: updated
+      data: {
+        ...updated,
+        roleLabel: ROLE_LABELS[updated.role as ChurchUserRole],
+        accessAllCongregations: accessAll,
+        congregationIds: accessAll ? [] : (scopeMap[id]?.congregationIds ?? []),
+      }
     });
   } catch (err) {
     logError('Erro em updateChurchUser:', err);

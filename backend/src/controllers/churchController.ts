@@ -258,6 +258,8 @@ export const setActiveChurch = async (req: AuthRequest, res: Response) => {
       church: sanitizeChurchForRole(churchData, context.role),
       role: context.role,
       activeChurchId: churchId,
+      accessAllCongregations: context.accessAllCongregations,
+      congregationIds: context.congregationIds,
     });
   } catch (err) {
     console.error('Erro ao definir igreja ativa:', err);

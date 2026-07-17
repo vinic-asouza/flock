@@ -135,11 +135,13 @@ Papel do usuário Auth na igreja.
 | user_id | uuid | NOT NULL | — | UNIQUE global → 1 igreja |
 | role | enum | NOT NULL | — | owner \| admin \| editor \| reader |
 | status | enum | NOT NULL | active | active \| invited \| disabled |
+| access_all_congregations | boolean | NOT NULL | false | Acesso dinâmico a todas as congregações |
 | created_at / updated_at | timestamptz | NOT NULL | now() | Auditoria |
 
 **Convite API:** roles permitido `admin|editor|reader` (nunca `owner`). Status no insert: `active`.  
+Para `reader`/`editor`: body exige `accessAllCongregations: true` **ou** `congregationIds: string[]` (≥1). Admin força all.  
+**Relacionado:** tabela `church_user_congregations` (N:N) quando não é “todas”.  
 **Soft delete:** DELETE remove o vínculo (não desativa por default — update pode set `disabled`).
-
 ---
 
 ### audit_logs
@@ -223,22 +225,25 @@ Sem tabela local dedicada — `auth.users` + user_metadata.phone. GET `/account`
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
-| GET | `/api/church-users/` | ✅ | ≥ admin | Lista equipe |
-| POST | `/api/church-users/` | ✅ | ≥ admin | Convida/cria vínculo |
-| PATCH | `/api/church-users/:id` | ✅ | ≥ admin | role/status |
+| GET | `/api/church-users/` | ✅ | ≥ admin | Lista equipe (+ escopo) |
+| POST | `/api/church-users/` | ✅ | ≥ admin | Convida/cria vínculo + escopo |
+| PATCH | `/api/church-users/:id` | ✅ | ≥ admin | role/status/escopo |
 | DELETE | `/api/church-users/:id` | ✅ | ≥ admin | Remove vínculo |
 
 ```typescript
-// POST { email: string, role: 'admin'|'editor'|'reader' }
-// 201 { data: church_user + email + roleLabel }
-// 400 já na igreja / email em outra igreja / papel inválido
+// POST { email, role: 'admin'|'editor'|'reader',
+//        accessAllCongregations?: boolean,
+//        congregationIds?: string[] }
+// reader/editor: all=true XOR congregationIds.length >= 1
+// 201 { data: church_user + email + roleLabel + accessAllCongregations + congregationIds }
+// 400 já na igreja / email em outra igreja / papel inválido / escopo inválido
 ```
 
 ---
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/igreja-config]] (**15** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/igreja-config]] (**18** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -257,6 +262,9 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/igreja-config]] (**15** regras
 | BR-CFG-013 | Audit logs admin+ na church ativa |
 | BR-CFG-014 | E-mail convite best-effort |
 | BR-CFG-015 | E-mail pós-exclusão de conta |
+| BR-CFG-016 | Escopo de congregação obrigatório p/ reader/editor |
+| BR-CFG-017 | Admin/owner = acesso a todas as congregações |
+| BR-CFG-018 | Promoção limpa escopo; rebaixamento exige seleção |
 
 ---
 

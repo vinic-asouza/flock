@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import supabase, { supabaseAdmin } from './supabase';
 import { AuthRequest, ChurchContext, ChurchUserRole } from '../types';
 import { cookieConfig, setActiveChurchId } from '../utils/cookieUtils';
+import { loadCongregationScopeForUser } from '../utils/congregationScope';
 
 export interface ChurchMembership {
   churchId: string;
@@ -71,8 +72,22 @@ export async function listChurchMembershipsForUser(userId: string): Promise<Chur
   return memberships;
 }
 
+async function buildChurchContext(
+  userId: string,
+  churchId: string,
+  role: ChurchUserRole
+): Promise<ChurchContext> {
+  const scope = await loadCongregationScopeForUser(userId, churchId, role);
+  return {
+    churchId,
+    role,
+    accessAllCongregations: scope.accessAllCongregations,
+    congregationIds: scope.congregationIds,
+  };
+}
+
 /**
- * Resolve contexto para igreja ativa (valida membership).
+ * Resolve contexto para igreja ativa (valida membership + escopo de congregação).
  */
 export async function resolveChurchContextForUser(
   userId: string,
@@ -86,13 +101,13 @@ export async function resolveChurchContextForUser(
   if (activeChurchId) {
     const match = memberships.find((m) => m.churchId === activeChurchId);
     if (match) {
-      return { churchId: match.churchId, role: match.role };
+      return buildChurchContext(userId, match.churchId, match.role);
     }
     return null;
   }
 
   if (memberships.length === 1) {
-    return { churchId: memberships[0].churchId, role: memberships[0].role };
+    return buildChurchContext(userId, memberships[0].churchId, memberships[0].role);
   }
 
   return null;
@@ -107,7 +122,7 @@ export async function getChurchContextForUser(userId: string): Promise<ChurchCon
     return null;
   }
   const picked = pickHighestRole(memberships);
-  return { churchId: picked.churchId, role: picked.role };
+  return buildChurchContext(userId, picked.churchId, picked.role);
 }
 
 export function getActiveChurchIdFromRequest(req: Request): string | undefined {

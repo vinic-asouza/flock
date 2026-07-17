@@ -521,9 +521,27 @@ erDiagram
 | user_id | uuid | NOT NULL, UNIQUE, FK CASCADE → auth.users | — | Usuário Auth |
 | role | church_user_role | NOT NULL | — | owner/admin/editor/reader |
 | status | church_user_status | NOT NULL | `active` | active/invited/disabled |
+| access_all_congregations | boolean | NOT NULL | `false` | `true` = acesso dinâmico a todas as congregações |
 | created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
 
 **Índices:** `church_id`, `user_id`, `status`, UNIQUE `(church_id, user_id)`, UNIQUE `user_id`.
+
+**Escopo:** `owner`/`admin` são tratados como acesso total no código. Para `reader`/`editor`: ou `access_all_congregations=true`, ou ≥1 linha em `church_user_congregations`.
+
+---
+
+#### church_user_congregations
+> N:N entre vínculo de usuário e congregações permitidas (quando não é “todas”).
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_user_id | uuid | NOT NULL, FK CASCADE → church_users | — | Vínculo do usuário |
+| congregation_id | uuid | NOT NULL, FK CASCADE → congregations | — | Congregação permitida |
+| created_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** UNIQUE `(church_user_id, congregation_id)`; `congregation_id`; `church_user_id`.  
+**RLS:** `deny_anon` restritivo (padrão do projeto).
 
 ---
 

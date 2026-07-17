@@ -3,7 +3,11 @@ import PDFDocument from 'pdfkit';
 import { AuthRequest } from '../types';
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { getMemberReports } from './memberController';
-import { resolveCongregationFilter } from '../utils/primaryCongregation';
+import {
+  applyScopedCongregationFilter,
+  assertCongregationAccess,
+  resolveScopedCongregationFilter,
+} from '../utils/congregationScope';
 import { createMemberRegistrationFormPdf } from '../utils/memberRegistrationFormPdf';
 import { exportGroupsListFiltersSchema } from '../validators/groupValidator';
 
@@ -88,6 +92,11 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
         error: 'Membro não encontrado',
         details: errorMessage
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, member.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Buscar grupos do membro
@@ -646,6 +655,11 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
 
     const integrationMember = integrationMemberData as any;
 
+    const access = assertCongregationAccess(req.church!, integrationMember.expected_congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
     const doc = new PDFDocument({
       size: 'A4',
       margins: { top: 50, bottom: 50, left: 50, right: 50 }
@@ -866,6 +880,19 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
       .select(getIntegrationSelect())
       .eq('church_id', churchId);
 
+    const integrationScoped = resolveScopedCongregationFilter(
+      req.church!,
+      filters?.expectedCongregationId,
+      { includeNullAsChurchWide: true }
+    );
+    if (!integrationScoped.ok) {
+      return res.status(integrationScoped.status).json({
+        error: 'Filtro inválido',
+        details: integrationScoped.message,
+      });
+    }
+    query = applyScopedCongregationFilter(query, 'expected_congregation_id', integrationScoped);
+
     if (filters) {
       if (filters.search) {
         const safeSearch = filters.search.replace(/,/g, '');
@@ -873,15 +900,6 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
       }
       if (filters.status && filters.status !== 'todos') {
         query = query.eq('status', filters.status);
-      }
-      if (filters.expectedCongregationId) {
-        const congregationFilter = resolveCongregationFilter(filters.expectedCongregationId);
-        if (!congregationFilter.ok) {
-          return res.status(400).json({ error: 'Filtro inválido', details: congregationFilter.message });
-        }
-        if (congregationFilter.congregationId) {
-          query = query.eq('expected_congregation_id', congregationFilter.congregationId);
-        }
       }
       if (filters.mentorId) {
         query = query.eq('mentor_id', filters.mentorId);
@@ -1168,15 +1186,17 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     let reportSubtitle = 'Todos os membros da igreja';
 
     if (congregation_id) {
-      const congregationFilter = resolveCongregationFilter(String(congregation_id));
-      if (!congregationFilter.ok) {
-        return res.status(400).json({ error: 'Filtro inválido', details: congregationFilter.message });
+      const scoped = resolveScopedCongregationFilter(req.church!, String(congregation_id), {
+        includeNullAsChurchWide: false,
+      });
+      if (!scoped.ok) {
+        return res.status(scoped.status).json({ error: 'Filtro inválido', details: scoped.message });
       }
-      if (congregationFilter.congregationId) {
+      if (scoped.mode === 'single') {
         const { data: congregation } = await supabase
           .from('congregations')
           .select('name')
-          .eq('id', congregationFilter.congregationId)
+          .eq('id', scoped.congregationId)
           .eq('church_id', churchId)
           .single();
 
@@ -1629,16 +1649,16 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       .eq('church_id', churchId)
       .eq('status', true); // Apenas grupos ativos
 
-    // Aplicar filtro de congregação se necessário
-    if (congregation_id) {
-      const __cf = resolveCongregationFilter(String(congregation_id));
-      if (!__cf.ok) {
-        return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
-      }
-      if (__cf.congregationId) {
-        groupsQuery = groupsQuery.eq('congregation_id', __cf.congregationId);
-      }
+    const groupsScoped = resolveScopedCongregationFilter(req.church!, congregation_id as string | undefined, {
+      includeNullAsChurchWide: false,
+    });
+    if (!groupsScoped.ok) {
+      return res.status(groupsScoped.status).json({
+        error: 'Filtro inválido',
+        details: groupsScoped.message,
+      });
     }
+    groupsQuery = applyScopedCongregationFilter(groupsQuery, 'congregation_id', groupsScoped);
 
     const { data: groups, error: groupsError } = await groupsQuery;
 
@@ -1809,6 +1829,17 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       `)
       .eq('church_id', churchId);
 
+    const membersScoped = resolveScopedCongregationFilter(req.church!, filters?.congregation_id, {
+      includeNullAsChurchWide: false,
+    });
+    if (!membersScoped.ok) {
+      return res.status(membersScoped.status).json({
+        error: 'Filtro inválido',
+        details: membersScoped.message,
+      });
+    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', membersScoped);
+
     // Aplicar filtros
     if (filters) {
       if (filters.search) {
@@ -1816,15 +1847,6 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       }
       if (filters.status && filters.status !== 'all') {
         query = query.eq('active', filters.status === 'active');
-      }
-      if (filters.congregation_id) {
-          const __cf = resolveCongregationFilter(filters.congregation_id);
-          if (!__cf.ok) {
-            return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
-          }
-          if (__cf.congregationId) {
-            query = query.eq('congregation_id', __cf.congregationId);
-          }
       }
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
@@ -2289,16 +2311,17 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
       .eq('church_id', churchId)
       .in('type', filters.types);
 
-    // Aplicar filtros (mesma lógica de listGroups, com types multi-seleção)
-    if (filters.congregation_id) {
-      const __cf = resolveCongregationFilter(filters.congregation_id);
-      if (!__cf.ok) {
-        return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
-      }
-      if (__cf.congregationId) {
-        query = query.eq('congregation_id', __cf.congregationId);
-      }
+    const groupsScoped = resolveScopedCongregationFilter(req.church!, filters.congregation_id, {
+      includeNullAsChurchWide: false,
+    });
+    if (!groupsScoped.ok) {
+      return res.status(groupsScoped.status).json({
+        error: 'Filtro inválido',
+        details: groupsScoped.message,
+      });
     }
+    query = applyScopedCongregationFilter(query, 'congregation_id', groupsScoped);
+
     if (filters.status && filters.status !== 'all') {
       query = query.eq('status', filters.status === 'active');
     }
@@ -2552,6 +2575,15 @@ export const exportCongregationsList = async (req: AuthRequest, res: Response) =
       .select('*')
       .eq('church_id', churchId);
 
+    const scoped = resolveScopedCongregationFilter(req.church!, undefined);
+    if (!scoped.ok) {
+      return res.status(scoped.status).json({
+        error: 'Sem acesso',
+        details: scoped.message,
+      });
+    }
+    query = applyScopedCongregationFilter(query, 'id', scoped);
+
     if (search) {
       query = query.ilike('name', `%${search}%`);
     }
@@ -2759,6 +2791,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
         id,
         name,
         type,
+        congregation_id,
         congregations ( id, name, abbreviation ),
         members!groups_responsible_id_fkey ( id, name, email, phone, whatsapp )
       `)
@@ -2771,6 +2804,11 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
         error: 'Grupo não encontrado',
         details: 'Não foi possível encontrar o grupo solicitado'
       });
+    }
+
+    const access = assertCongregationAccess(req.church!, group.congregation_id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     const { data: memberGroups } = await supabase
@@ -3038,6 +3076,17 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       `)
       .eq('church_id', churchId);
 
+    const membersScoped = resolveScopedCongregationFilter(req.church!, filters?.congregation_id, {
+      includeNullAsChurchWide: false,
+    });
+    if (!membersScoped.ok) {
+      return res.status(membersScoped.status).json({
+        error: 'Filtro inválido',
+        details: membersScoped.message,
+      });
+    }
+    query = applyScopedCongregationFilter(query, 'congregation_id', membersScoped);
+
     // Aplicar filtros (mesma lógica do PDF)
     if (filters) {
       if (filters.search) {
@@ -3050,15 +3099,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
         } else if (filters.status === 'inactive') {
           query = query.eq('active', false);
         }
-      }
-      if (filters.congregation_id) {
-          const __cf = resolveCongregationFilter(filters.congregation_id);
-          if (!__cf.ok) {
-            return res.status(400).json({ error: 'Filtro inválido', details: __cf.message });
-          }
-          if (__cf.congregationId) {
-            query = query.eq('congregation_id', __cf.congregationId);
-          }
       }
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
