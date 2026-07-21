@@ -12,7 +12,7 @@ import { useProfessions } from '@/hooks/useProfessions';
 import { apiService } from '@/services/api';
 import { Group } from '@/types';
 import { fetchCEPData, validateDateFormat } from '@/utils/validations';
-import { formatDateToISO } from '@/utils';
+import { formatDateToISO, formatPhone, maskPhoneInput } from '@/utils';
 import { getPrimaryCongregationId, getCongregationDisplayName } from '@/utils/congregation';
 import { memberSchema, MemberFormData } from './memberFormSchema';
 
@@ -82,11 +82,6 @@ interface MemberFormProps {
   error?: string | null;
 }
 
-const formatPhone = (value: string): string => {
-  const n = value.replace(/\D/g, '');
-  if (n.length <= 10) return n.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-  return n.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-};
 
 const formatCEP = (value: string): string => {
   const n = value.replace(/\D/g, '');
@@ -378,9 +373,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   }, [member]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
-    const formatted = formatPhone(e.target.value);
-    if (field === 'phone') { setPhoneDisplay(formatted); setValue('phone', e.target.value.replace(/\D/g, '')); }
-    else { setWhatsappDisplay(formatted); setValue('whatsapp', e.target.value.replace(/\D/g, '')); }
+    const formatted = maskPhoneInput(e.target.value);
+    if (field === 'phone') { setPhoneDisplay(formatted); setValue('phone', e.target.value.replace(/\D/g, '').slice(0, 11)); }
+    else { setWhatsappDisplay(formatted); setValue('whatsapp', e.target.value.replace(/\D/g, '').slice(0, 11)); }
   };
 
   const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -746,7 +741,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           <div className="md:col-span-1">
             <Input
               label="Telefone"
-              placeholder="(11) 99999-9999"
+              placeholder="(11) 3333-3333"
               value={phoneDisplay}
               onChange={(e) => handlePhoneChange(e, 'phone')}
               maxLength={15}

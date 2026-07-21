@@ -362,9 +362,9 @@ export function TimelineCharts({
         Estatísticas de Membresia
       </h2>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-[#090725]/10 p-4">
-          <div className="space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+        <div className="bg-white rounded-lg border border-[#090725]/10 p-4 h-full flex flex-col">
+          <div className="space-y-4 flex-1 flex flex-col">
             <div>
               <h3 className="text-base font-medium text-gray-900">
                 Batismo e Recebimento
@@ -395,7 +395,7 @@ export function TimelineCharts({
             </div>
 
             {selectedYear && members.length > 0 && (
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-gray-100 pt-4 flex-1">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="text-sm font-medium text-gray-900">
                     Novos Membros ({members.length})
@@ -454,12 +454,12 @@ export function TimelineCharts({
             )}
 
             {selectedYear && members.length === 0 && (
-              <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500">
+              <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500 flex-1">
                 Nenhum membro encontrado para o filtro selecionado.
               </div>
             )}
 
-            <div className="border-t border-gray-100 pt-3 space-y-3">
+            <div className="border-t border-gray-100 pt-3 space-y-3 mt-auto">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-blue-50">
@@ -517,7 +517,7 @@ export function TimelineCharts({
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-[#090725]/10 p-4">
+        <div className="bg-white rounded-lg border border-[#090725]/10 p-4 h-full flex flex-col">
           {integrationUnavailable ? (
             <div className="py-6 px-4 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
               <h3 className="text-base font-medium text-amber-900">Integração</h3>
@@ -530,7 +530,7 @@ export function TimelineCharts({
               )}
             </div>
           ) : integrationTimeline ? (
-            <div className="space-y-4">
+            <div className="space-y-4 flex-1 flex flex-col">
               <div>
                 <h3 className="text-base font-medium text-gray-900">
                   Integração
@@ -561,7 +561,7 @@ export function TimelineCharts({
               </div>
 
               {integrationSelectedYear && integrationMembers.length > 0 ? (
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-4 flex-1">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-sm font-medium text-gray-900">
                       Integrantes em Progresso ({integrationMembers.length})
@@ -617,12 +617,12 @@ export function TimelineCharts({
                   </div>
                 </div>
               ) : (
-                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500">
+                <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-sm text-gray-500 flex-1">
                   Nenhum integrante em progresso para o filtro selecionado.
                 </div>
               )}
 
-              <div className="border-t border-gray-100 pt-3 space-y-3">
+              <div className="border-t border-gray-100 pt-3 space-y-3 mt-auto">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-blue-50">
                     <Clock size={18} className="text-blue-600" />

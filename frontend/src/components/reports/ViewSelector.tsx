@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { Building, Users } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
@@ -18,8 +18,8 @@ interface ViewSelectorProps {
 export function ViewSelector({ selectedView, selectedCongregationId, onViewChange }: ViewSelectorProps) {
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [loading, setLoading] = useState(false);
+  const singleCongregationApplied = useRef(false);
 
-  // Carregar congregações
   useEffect(() => {
     const loadCongregations = async () => {
       try {
@@ -43,6 +43,19 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
     loadCongregations();
   }, []);
 
+  // Usuário com acesso a apenas uma congregação: força visão e esconde seletor
+  useEffect(() => {
+    if (loading || congregations.length !== 1 || singleCongregationApplied.current) return;
+
+    const only = congregations[0];
+    singleCongregationApplied.current = true;
+    onViewChange('congregation', only.value, only.label);
+    // onViewChange é estável o suficiente para o one-shot; evita re-aplicação por identidade da callback
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, congregations]);
+
+  const isSingleCongregation = !loading && congregations.length === 1;
+
   const viewOptions = [
     {
       value: 'all',
@@ -60,7 +73,6 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
 
   const handleViewChange = (value: string) => {
     if (value === 'congregation') {
-      // Se selecionou congregação específica, não carregar dados até escolher uma congregação
       onViewChange('congregation', undefined);
     } else {
       onViewChange(value as ViewMode);
@@ -68,21 +80,29 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
   };
 
   const handleCongregationChange = (congregationId: string) => {
-    // Encontrar o nome da congregação selecionada
     const selectedCongregation = congregations.find(c => c.value === congregationId);
     const congregationName = selectedCongregation?.label;
-    
+
     onViewChange('congregation', congregationId, congregationName);
   };
 
+  if (isSingleCongregation) {
+    const name = congregations[0].label;
+    return (
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
+        <p className="text-sm text-gray-600">
+          Visualizando dados de <span className="font-medium text-gray-900">{name}</span>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      {/* Label acima */}
       <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
-      
-      {/* Bloco com botões e seletor alinhados horizontalmente */}
+
       <div className="flex flex-row flex-wrap items-center gap-3">
-        {/* Botões de visualização */}
         {viewOptions.map((option) => {
           const Icon = option.icon;
           const isSelected = selectedView === option.value;
@@ -104,7 +124,6 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
           );
         })}
 
-        {/* Seletor de Congregação (apenas quando congregação específica está selecionada) */}
         {selectedView === 'congregation' && (
           <div className="w-48 sm:w-64 flex-shrink-0">
             <Select

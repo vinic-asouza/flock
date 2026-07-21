@@ -187,6 +187,21 @@ export function formatPhone(phone?: string | null): string {
 }
 
 /**
+ * Máscara progressiva de telefone para campos de input.
+ * Fixo (≤10 dígitos): (DD) XXXX-XXXX · Celular (11): (DD) XXXXX-XXXX
+ */
+export function maskPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
+/**
  * Valida se um email é válido
  */
 export function isValidEmail(email: string): boolean {

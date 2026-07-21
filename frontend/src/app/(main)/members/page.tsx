@@ -455,7 +455,7 @@ function MembersPageContent() {
         title="Membros"
         subtitle="Visualize, cadastre e gerencie os membros da igreja."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button
             variant="secondary"
             onClick={handleDownloadRegistrationForm}

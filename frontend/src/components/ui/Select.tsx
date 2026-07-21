@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
 import { removeAccents } from '@/utils';
 
@@ -42,21 +43,64 @@ export function Select({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
   const selectRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Filtrar opções baseado no termo de busca (apenas se searchable for true)
-  // Busca desconsiderando acentos
-  const filteredOptions = searchable 
+  const filteredOptions = searchable
     ? options.filter(option =>
         removeAccents(option.label.toLowerCase()).includes(removeAccents(searchTerm.toLowerCase()))
       )
     : options;
 
-  // Fechar dropdown quando clicar fora
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updatePosition = useCallback(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const dropdownMaxHeight = 240;
+    const gap = 4;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < dropdownMaxHeight && rect.top > spaceBelow;
+
+    setDropdownStyle({
+      position: 'fixed',
+      left: rect.left,
+      width: rect.width,
+      zIndex: 60,
+      ...(openUpward
+        ? { bottom: window.innerHeight - rect.top + gap, top: 'auto' }
+        : { top: rect.bottom + gap, bottom: 'auto' }),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    updatePosition();
+
+    const handleReposition = () => updatePosition();
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
+
+    return () => {
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+    };
+  }, [isOpen, updatePosition, filteredOptions.length]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideTrigger = selectRef.current?.contains(target);
+      const insideDropdown = dropdownRef.current?.contains(target);
+      if (!insideTrigger && !insideDropdown) {
         setIsOpen(false);
         setSearchTerm('');
         if (onSearchChange) onSearchChange('');
@@ -67,17 +111,14 @@ export function Select({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onSearchChange]);
 
-  // Focar no input de busca quando abrir o dropdown (apenas se searchable for true)
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
-      // Pequeno delay para garantir que o input esteja renderizado
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 0);
     }
   }, [isOpen, searchable]);
 
-  // Resetar índice focado quando mudar as opções filtradas
   useEffect(() => {
     setFocusedIndex(-1);
   }, [filteredOptions]);
@@ -95,7 +136,6 @@ export function Select({
     setFocusedIndex(-1);
   };
 
-  // Navegação por teclado
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -115,13 +155,13 @@ export function Select({
         break;
       case 'ArrowDown':
         e.preventDefault();
-        setFocusedIndex(prev => 
+        setFocusedIndex(prev =>
           prev < filteredOptions.length - 1 ? prev + 1 : 0
         );
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setFocusedIndex(prev => 
+        setFocusedIndex(prev =>
           prev > 0 ? prev - 1 : filteredOptions.length - 1
         );
         break;
@@ -136,6 +176,73 @@ export function Select({
 
   const selectedOption = options.find(option => option.value === value);
 
+  const dropdown = isOpen && mounted ? createPortal(
+    <div
+      ref={dropdownRef}
+      style={dropdownStyle}
+      className="bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden"
+    >
+      {searchable && (
+        <div className="p-2 border-b border-gray-200">
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Buscar..."
+            value={searchTerm}
+            onChange={(e) => handleSearchUpdate(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setFocusedIndex(0);
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                setIsOpen(false);
+                handleSearchUpdate('');
+                setFocusedIndex(-1);
+              }
+            }}
+            className="w-full px-2 py-1 text-[15px] text-[#222] border border-gray-200 rounded-md focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      <div className="max-h-48 overflow-y-auto">
+        {filteredOptions.length > 0 ? (
+          filteredOptions.map((option, index) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleOptionClick(option.value)}
+              className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${
+                value === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-900'
+              } ${
+                focusedIndex === index ? 'bg-gray-100' : ''
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {value === option.value && (
+                  <Check size={14} className="text-blue-600 flex-shrink-0" />
+                )}
+                <span className="truncate">{option.label}</span>
+              </div>
+              {showCount && option.count !== undefined && (
+                <span className="text-xs bg-gray-100 px-2 py-1 rounded flex-shrink-0">
+                  {option.count}
+                </span>
+              )}
+            </button>
+          ))
+        ) : (
+          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+            Nenhuma opção encontrada
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <div className={`relative space-y-2 ${className}`} ref={selectRef}>
       {label && (
@@ -143,8 +250,9 @@ export function Select({
           {label}
         </label>
       )}
-      
+
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onKeyDown={handleKeyDown}
@@ -158,76 +266,14 @@ export function Select({
         <span className={selectedOption ? 'text-[#222]' : 'text-[#888]'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <ChevronDown 
-          size={16} 
-          className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+        <ChevronDown
+          size={16}
+          className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-hidden">
-          {/* Campo de busca - apenas se searchable for true */}
-          {searchable && (
-            <div className="p-2 border-b border-gray-200">
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => handleSearchUpdate(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    setFocusedIndex(0);
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    setIsOpen(false);
-                    handleSearchUpdate('');
-                    setFocusedIndex(-1);
-                  }
-                }}
-                className="w-full px-2 py-1 text-[15px] text-[#222] border border-gray-200 rounded-md focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none"
-                onClick={(e) => e.stopPropagation()}
-              />
-            </div>
-          )}
+      {dropdown}
 
-          {/* Lista de opções */}
-          <div className="max-h-48 overflow-y-auto">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((option, index) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleOptionClick(option.value)}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors ${
-                    value === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-900'
-                  } ${
-                    focusedIndex === index ? 'bg-gray-100' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {value === option.value && (
-                      <Check size={14} className="text-blue-600 flex-shrink-0" />
-                    )}
-                    <span className="truncate">{option.label}</span>
-                  </div>
-                  {showCount && option.count !== undefined && (
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded flex-shrink-0">
-                      {option.count}
-                    </span>
-                  )}
-                </button>
-              ))
-            ) : (
-              <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                Nenhuma opção encontrada
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      
       {error && (
         <p className="text-sm text-red-600">{error}</p>
       )}

@@ -319,13 +319,16 @@ export default function HomePage() {
                                 totalMembers={reportsData.summary.totalMembers}
                               />
 
-                              <div className="border-t border-gray-200" />
+                              {viewMode !== 'congregation' && (
+                                <>
+                                  <div className="border-t border-gray-200" />
 
-                              <ChurchStructureCharts
-                                data={reportsData.churchStructure}
-                                loading={loading}
-                                hideCongregations={viewMode === 'congregation'}
-                              />
+                                  <ChurchStructureCharts
+                                    data={reportsData.churchStructure}
+                                    loading={loading}
+                                  />
+                                </>
+                              )}
 
                               <div className="border-t border-gray-200" />
 
