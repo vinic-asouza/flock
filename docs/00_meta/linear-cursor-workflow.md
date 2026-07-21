@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-07-17
-versao: "1.3"
+ultima_atualizacao: 2026-07-21
+versao: "1.4"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -368,6 +368,19 @@ Nesta etapa podem atuar dois agentes:
 1. Technical Writer
 2. Documentation Writer
 
+#### Regra absoluta de status em Document
+
+Enquanto a Issue estiver na etapa `Document`:
+
+- O status Linear **deve permanecer `Document`**.
+- É **proibido** regredir para `In Progress`, `Review`, `Todo` ou `Backlog`.
+- Atualizar a Issue (descrição, comentário, anexos) **não** autoriza mudar o status.
+- No MCP `save_issue`: **omitir** o campo `state`, salvo correção explícita de regressão (voltar para `Document`) ou conclusão autorizada para `Done`.
+- **Nunca** passar `state` pelo tipo genérico (`started`, `unstarted`, etc.) — o Linear pode resolver para o status padrão da categoria (em geral `In Progress`). Sempre usar o **nome exato**: `Document`, `Done`, etc.
+- Se ao ler a Issue o status tiver regredido para `In Progress` (ex.: automação Git/PR) **durante** Document, o agente deve **restaurar para `Document`** imediatamente e registrar o fato no comentário/handoff.
+
+Única transição válida a partir de `Document`: `Document` → `Done` (quando os critérios do §16 forem cumpridos e houver autorização).
+
 ### 11.2 Done
 
 Após a etapa `Document` concluída (incluindo justificativa se nenhuma alteração documental for necessária), a Issue pode ser movida para `Done`.
@@ -399,6 +412,8 @@ Ele deve:
 
 O Technical Writer não deve criar documentação temporária por issue.
 
+O Technical Writer **não altera** o status da Issue para `In Progress`. Preserva `Document` (§11.1).
+
 ---
 
 ## 13. Documentation Writer
@@ -422,6 +437,8 @@ Ele deve:
    - Páginas alteradas
    - Links da documentação atualizada
    - Justificativa caso nenhuma atualização seja necessária
+
+O Documentation Writer **não altera** o status da Issue para `In Progress` (abrir PR Mintlify também não justifica). Preserva `Document` (§11.1).
 
 ---
 
@@ -455,6 +472,8 @@ Após a Issue estar em `Done` (ou em paralelo, se o time decidir publicar antes)
 - Criar arquivos temporários por Issue no repositório.
 - Duplicar histórico do Linear em arquivos `.md`.
 - Mover uma Issue de etapa sem estar autorizado ou sem cumprir os critérios.
+- **Regredir** Issue de `Document` (ou `Done`) para `In Progress` — nem por “começar a trabalhar”, nem ao atualizar descrição/comentário, nem por efeito colateral de PR/docs.
+- Passar `state` no MCP com tipo genérico (`started`) em vez do nome exato do status.
 - Ignorar refinamentos já feitos por agentes anteriores.
 - Implementar fora do escopo refinado sem sinalizar.
 - Atualizar documentação permanente sem necessidade real.
@@ -577,6 +596,14 @@ Permitido quando:
 - QA aprovado.
 - Não há bugs bloqueantes abertos.
 
+### Para permanecer em `Document` (obrigatório)
+
+Enquanto Technical Writer e/ou Documentation Writer estiverem atuando:
+
+- Status permanece `Document`.
+- Não mover para `In Progress` ao “iniciar” documentação, editar `docs/`, abrir PR Mintlify ou atualizar a Issue.
+- Se detectar regressão indevida para `In Progress`, restaurar `Document` (§11.1).
+
 ### Para concluir Document e mover para `Done`
 
 Permitido quando:
@@ -585,6 +612,7 @@ Permitido quando:
 - Documentation Writer avaliou documentação de usabilidade, se aplicável.
 - Alterações necessárias foram feitas.
 - Caso nada tenha sido alterado, a justificativa foi registrada no Linear.
+- A Issue ainda está (ou foi restaurada) em `Document` antes da transição para `Done`.
 
 ---
 

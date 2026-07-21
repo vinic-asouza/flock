@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-07-17
-versao: "1.2"
+ultima_atualizacao: 2026-07-21
+versao: "1.3"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -122,6 +122,8 @@ Formato mínimo de toda atualização (workflow §7):
 - Criar arquivo por Issue em `docs/`
 - Duplicar histórico do Linear no repositório
 - Mover status sem autorização / sem critérios
+- **Regredir `Document` → `In Progress`** (status deve permanecer `Document` até `Done`)
+- Passar `state` genérico (`started`) no MCP — usar nome exato do status
 - Deploy automático sem pedido explícito do usuário
 - Tratar publicação como status (`Released` não existe)
 - Inventar decisão bloqueante no lugar do usuário

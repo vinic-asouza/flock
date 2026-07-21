@@ -30,6 +30,7 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 5. Não fazer deploy automático sem pedido explícito do usuário.
 6. Não mover status Linear sem autorização / critérios do workflow §16.
 7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir a etapa, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **só então** conclua. Não invente a decisão; não feche a etapa com perguntas bloqueantes só no Linear.
+8. **Status em Document:** a Issue **permanece em `Document`** durante Technical/Documentation Writer. É proibido regredir para `In Progress`. Em `save_issue`, omitir `state` (exceto restaurar `Document` ou concluir para `Done`); nunca usar tipo genérico `started`. Se detectar regressão (ex.: automação Git/PR), restaurar `Document` imediatamente (workflow §11.1).
 
 ## Formato mínimo na Issue
 

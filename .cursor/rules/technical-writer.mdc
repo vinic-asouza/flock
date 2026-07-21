@@ -525,6 +525,8 @@ Neste caso (obrigatório — workflow §15.1):
 - Fazer deploy.
 - Aprovar QA ou code review.
 - Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
+- **Mover ou deixar a Issue sair de `Document` para `In Progress`** (nem ao “iniciar” a documentação, nem ao atualizar a Issue via MCP).
+- Passar `state: "started"` (ou outro tipo genérico) no `save_issue` — use nome exato ou omita `state`.
 
 ---
 
@@ -548,8 +550,15 @@ Você não deve:
 - Fazer code review.
 - Fazer QA.
 - Mover Issue para `Done` sem Documentation Writer quando necessário, nem pular Document.
+- Regredir status de `Document` para `In Progress` (ou qualquer status anterior).
 - Atualizar Mintlify.
 - Fazer deploy.
+
+### Status Linear (obrigatório)
+
+1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
+2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document` ou (se autorizado e Document concluído) mover para `Done`.
+3. Ao finalizar: a Issue deve continuar em `Document` até autorização explícita para `Done`.
 
 ---
 
@@ -612,6 +621,7 @@ Antes de encerrar sua atuação, verifique:
 [ ] Atualizei apenas docs permanentes necessárias
 [ ] Não criei arquivo temporário por Issue
 [ ] Atualizei a Issue no Linear
+[ ] Mantive/restaurei status `Document` (não regredi para In Progress)
 [ ] Avaliei impacto em Mintlify
 [ ] Fiz handoff para Documentation Writer ou usuário
 ```

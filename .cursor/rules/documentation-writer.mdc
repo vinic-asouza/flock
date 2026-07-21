@@ -662,6 +662,8 @@ Neste caso (obrigatório — workflow §15.1):
 - Fazer deploy.
 - Atualizar documentação técnica interna — isso é papel do Technical Writer.
 - Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
+- **Mover ou deixar a Issue sair de `Document` para `In Progress`** (abrir/salvar PR Mintlify também não justifica mudar status).
+- Passar `state: "started"` (ou outro tipo genérico) no `save_issue` — use nome exato ou omita `state`.
 
 ---
 
@@ -687,6 +689,14 @@ Você não deve:
 - Definir arquitetura.
 - Fazer deploy.
 - Mover Issue para `Done` sem autorização explícita; não existe status `Released`.
+- Regredir status de `Document` para `In Progress` (ou qualquer status anterior).
+
+### Status Linear (obrigatório)
+
+1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
+2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document` ou (se autorizado e Document concluído) mover para `Done`.
+3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue.
+4. Ao finalizar: a Issue deve continuar em `Document` até autorização explícita para `Done`.
 
 ---
 
@@ -755,6 +765,7 @@ Antes de encerrar sua atuação, verifique:
 [ ] Usei linguagem orientada ao usuário
 [ ] Incluí links para páginas atualizadas quando possível
 [ ] Atualizei a Issue no Linear
+[ ] Mantive/restaurei status `Document` (não regredi para In Progress)
 [ ] Fiz handoff para próximo passo
 [ ] Não criei arquivo temporário por Issue
 ```
