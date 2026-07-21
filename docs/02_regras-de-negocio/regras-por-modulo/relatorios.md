@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-07-16
-versao: "1.2"
+ultima_atualizacao: 2026-07-21
+versao: "1.3"
 total_regras: 10
 tags: [regras, modulo:relatorios]
 ver_tambem:
@@ -122,14 +122,14 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** —
 
 ### BR-REL-009: Vision UI painel
-- **Declaração:** Home pode filtrar `all` | `congregation` (por UUID) antes de exportar dashboard. Não há view mode `sede`.
+- **Declaração:** Home filtra `all` | `congregation` (por UUID) antes de exportar dashboard. Não há view mode `sede`. Se o usuário tiver apenas **uma** congregação selecionável (`listCongregations` com length ≤ 1), a UI **não** exibe o seletor de visualização — mostra texto `Visualizando dados de {nome}` e carrega o painel filtrado por essa congregação. Com congregação selecionada, a seção **Estrutura da Igreja** não é renderizada.
 - **Tipo:** Fato
 - **Gatilho:** Frontend /
-- **Comportamento esperado:** PDF/UI
-- **Comportamento em violação:** Bloqueio se view inválida
-- **Implementado em:** `frontend/src/app/page.tsx`
-- **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Comportamento esperado:** PDF/UI coerente com a visão ativa
+- **Comportamento em violação:** Bloqueio se view inválida / export sem congregação quando em modo `congregation`
+- **Implementado em:** `frontend/src/app/page.tsx`, `ViewSelector.tsx`, `ChurchStructureCharts` (condicional)
+- **Testado em:** N/A — smoke DEV-21
+- **Depende de:** Escopo de congregação (DEV-15)
 
 ### BR-REL-010: Export grupos exige types
 - **Declaração:** `POST /api/export/groups/list` exige `filters.types` como array com pelo menos um valor ∈ GroupType (whitelist). Tipos inválidos ou array vazio → 400. A UI abre modal de multi-seleção antes do download; a seleção afeta só o PDF (não a listagem). Demais filtros opcionais: `congregation_id`, `status`, `search`.
@@ -149,4 +149,4 @@ Oferecer indicadores demográficos/operacionais e exportações.
 
 ---
 
-*Atualizado em 2026-07-16 (DEV-14).*
+*Atualizado em 2026-07-21 (DEV-21).*

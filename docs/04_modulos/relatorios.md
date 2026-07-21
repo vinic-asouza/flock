@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-15
-versao: "1.0"
+ultima_atualizacao: 2026-07-21
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -280,7 +280,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**10** regras).
 | BR-REL-006 | Exports scoped ao `church_id` do contexto |
 | BR-REL-007 | PDF/CSV de lista exige `fields[]` não vazio |
 | BR-REL-008 | Lista vazia no filtro → **404** |
-| BR-REL-009 | Home filtra `all` \| `congregation` antes do dashboard |
+| BR-REL-009 | Home: `all` \| `congregation`; 1 cong. → texto; sem Estrutura no filtro |
 | BR-REL-010 | Export grupos exige `filters.types[]` (min 1, GroupType) |
 
 ---
@@ -498,6 +498,7 @@ graph LR
 | 2026-07-14 | 1.0 | Documentação inicial do módulo relatórios | — |
 | 2026-07-15 | 1.1 | Endpoint ficha de cadastro em branco (`GET /export/members/registration-form/pdf`) | DEV-10 |
 | 2026-07-20 | 1.2 | Removido audit log indevido na geração de relatório | DEV-16 |
+| 2026-07-21 | 1.3 | Painel: UI single-congregation + ocultar Estrutura da Igreja no filtro (BR-REL-009) | DEV-21 |
 
 ---
 

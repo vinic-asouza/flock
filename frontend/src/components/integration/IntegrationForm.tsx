@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { validatePhone, validateDateFormat } from '@/utils/validations';
-import { formatPhone, formatDateToISO } from '@/utils';
+import { formatPhone, formatDateToISO, maskPhoneInput } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 import {
   IntegrationMember,
@@ -250,14 +250,15 @@ export function IntegrationForm({
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
     const value = e.target.value;
-    const formatted = formatPhone(value);
+    const formatted = maskPhoneInput(value);
+    const digits = value.replace(/\D/g, '').slice(0, 11);
 
     if (field === 'phone') {
       setPhoneDisplay(formatted);
-      setValue('phone', value.replace(/\D/g, ''));
+      setValue('phone', digits);
     } else {
       setWhatsappDisplay(formatted);
-      setValue('whatsapp', value.replace(/\D/g, ''));
+      setValue('whatsapp', digits);
     }
   };
 
@@ -321,7 +322,7 @@ export function IntegrationForm({
 
         <Input
           label="Telefone"
-          placeholder="(00) 00000-0000"
+          placeholder="(11) 3333-3333"
           value={phoneDisplay}
           onChange={(e) => handlePhoneChange(e, 'phone')}
           maxLength={15}
@@ -331,7 +332,7 @@ export function IntegrationForm({
 
         <Input
           label="WhatsApp"
-          placeholder="(00) 00000-0000"
+          placeholder="(11) 99999-9999"
           value={whatsappDisplay}
           onChange={(e) => handlePhoneChange(e, 'whatsapp')}
           maxLength={15}

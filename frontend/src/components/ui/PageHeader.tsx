@@ -22,15 +22,20 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={clsx('flex items-center justify-between', className)}>
-      <div>
+    <div
+      className={clsx(
+        'flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between',
+        className
+      )}
+    >
+      <div className="min-w-0">
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         {subtitle && (
           <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
         )}
       </div>
       {actions && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0">
           {actions}
         </div>
       )}
