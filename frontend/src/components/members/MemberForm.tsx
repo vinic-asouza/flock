@@ -262,10 +262,11 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const showPreviousReligion = baptismType === 'novo_convertido';
 
   useEffect(() => {
-    if ((error || validationSummary) && errorRef.current) {
+    // Somente erro de API: validação client-side já faz scroll no handleInvalidSubmit
+    if (error && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-  }, [error, validationSummary]);
+  }, [error]);
 
   // Definir congregação principal como padrão ao criar
   useEffect(() => {
@@ -312,7 +313,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         : 'Solteiro'
     );
     setValue('hometown', asStr(member.hometown));
-    setValue('document', asStr(member.document));
     setValue('wedding_date', formatDateFromISO(member.wedding_date));
     setValue('spouse', asStr(member.spouse));
     setValue('spouse_is_member', asBool(member.spouse_is_member));
