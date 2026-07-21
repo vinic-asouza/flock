@@ -32,7 +32,7 @@ Administrar dados da igreja, conta Auth, equipe e auditoria.
 | BR-CFG-010 | Uma igreja por usuário | Restrição | Ativo |
 | BR-CFG-011 | Owner imutável | Restrição | Ativo |
 | BR-CFG-012 | Excluir conta | Restrição | Ativo |
-| BR-CFG-013 | Audit logs admin+ | Restrição | Ativo |
+| BR-CFG-013 | Histórico de atividades (audit logs) admin+ | Restrição | Ativo |
 | BR-CFG-014 | E-mail de convite | Gatilho | Ativo |
 | BR-CFG-015 | E-mail exclusão conta | Gatilho | Ativo |
 | BR-CFG-016 | Escopo de congregação em reader/editor | Restrição | Ativo |
@@ -171,14 +171,14 @@ Administrar dados da igreja, conta Auth, equipe e auditoria.
 
 ### 🔐 Regras de Acesso Específicas do Módulo
 
-### BR-CFG-013: Audit logs admin+
-- **Declaração:** Listar audit_logs só admin+ e church_id ativa.
+### BR-CFG-013: Histórico de atividades (audit logs) admin+
+- **Declaração:** Listar o Histórico de atividades (`audit_logs`) só admin+ e church_id ativa; resposta com `actor` legível e sem campos técnicos (`ip`/`user_agent`) no app da igreja.
 - **Tipo:** Restrição
-- **Gatilho:** GET /account/logs
-- **Comportamento esperado:** Lista
+- **Gatilho:** GET /account/logs · UI Configurações → Histórico
+- **Comportamento esperado:** Lista paginada de atividades do tenant
 - **Comportamento em violação:** 403
-- **Implementado em:** `routes/account.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Implementado em:** `routes/account.ts`, `accountController.getAuditLogs`, `AuditLogs.tsx`
+- **Testado em:** Validação manual DEV-16 (QA)
 - **Depende de:** [[BR-GEN-048]]
 
 ### 🔔 Regras de Notificação e Eventos

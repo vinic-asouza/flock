@@ -871,7 +871,28 @@ class ApiService {
     entity?: string;
     action?: string;
     member_status_change?: 'activate' | 'deactivate';
-  }): Promise<{ data: { id: string;[key: string]: unknown }[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNextPage: boolean } }> {
+  }): Promise<{
+    data: Array<{
+      id: string;
+      created_at: string;
+      user_id: string;
+      church_id: string;
+      entity: string;
+      entity_id: string;
+      action: string;
+      changes_before: Record<string, unknown> | null;
+      changes_after: Record<string, unknown> | null;
+      actor: { id: string; email: string | null; displayName: string };
+      [key: string]: unknown;
+    }>;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage?: boolean;
+    };
+  }> {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());

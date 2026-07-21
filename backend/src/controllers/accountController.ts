@@ -534,8 +534,69 @@ export const resendConfirmation = async (req: AuthRequest, res: Response) => {
   }
 };
 
+type AuditLogRow = {
+  id: string;
+  created_at: string;
+  user_id: string;
+  church_id: string;
+  entity: string;
+  entity_id: string;
+  action: string;
+  changes_before: Record<string, unknown> | null;
+  changes_after: Record<string, unknown> | null;
+  ip?: string | null;
+  user_agent?: string | null;
+};
+
+type AuditActor = {
+  id: string;
+  email: string | null;
+  displayName: string;
+};
+
+const resolveAuditActors = async (userIds: string[]): Promise<Record<string, AuditActor>> => {
+  const actors: Record<string, AuditActor> = {};
+
+  await Promise.all(
+    userIds.map(async (userId) => {
+      try {
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (error || !data?.user) {
+          actors[userId] = {
+            id: userId,
+            email: null,
+            displayName: 'Usuário indisponível'
+          };
+          return;
+        }
+
+        const email = data.user.email ?? null;
+        const meta = data.user.user_metadata as Record<string, unknown> | undefined;
+        const metaName =
+          (typeof meta?.full_name === 'string' && meta.full_name.trim()) ||
+          (typeof meta?.name === 'string' && meta.name.trim()) ||
+          null;
+
+        actors[userId] = {
+          id: userId,
+          email,
+          displayName: metaName || email || 'Usuário indisponível'
+        };
+      } catch {
+        actors[userId] = {
+          id: userId,
+          email: null,
+          displayName: 'Usuário indisponível'
+        };
+      }
+    })
+  );
+
+  return actors;
+};
+
 /**
- * Listar logs de auditoria da conta
+ * Listar histórico de atividades da igreja (audit_logs enriquecido para admin+)
  */
 export const getAuditLogs = async (req: AuthRequest, res: Response) => {
   try {
@@ -561,6 +622,8 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
       .from('audit_logs')
       .select('*', { count: 'exact' })
       .eq('church_id', churchId)
+      // Exclui logs legados de geração de relatório (church+import com summary)
+      .or('entity.neq.church,action.neq.import,changes_after->summary.is.null')
       .order('created_at', { ascending: false });
 
     // Filtro server-side de ativação/inativação de membros (ACHADO 06)
@@ -598,9 +661,30 @@ export const getAuditLogs = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const typedLogs = (logs || []) as AuditLogRow[];
+    const uniqueUserIds = [...new Set(typedLogs.map((log) => log.user_id).filter(Boolean))];
+    const actorsById = await resolveAuditActors(uniqueUserIds);
+
+    const data = typedLogs.map((log) => ({
+      id: log.id,
+      created_at: log.created_at,
+      user_id: log.user_id,
+      church_id: log.church_id,
+      entity: log.entity,
+      entity_id: log.entity_id,
+      action: log.action,
+      changes_before: log.changes_before,
+      changes_after: log.changes_after,
+      actor: actorsById[log.user_id] ?? {
+        id: log.user_id,
+        email: null,
+        displayName: 'Usuário indisponível'
+      }
+    }));
+
     res.json({
       message: 'Logs recuperados com sucesso',
-      data: logs || [],
+      data,
       pagination: {
         page,
         limit,

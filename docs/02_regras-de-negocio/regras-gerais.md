@@ -65,7 +65,7 @@ tags: [regras, transversal, global]
 | BR-GEN-045 | Health sem rate limit geral | Exceção | Ativo |
 | BR-GEN-046 | Auditoria em ações sensíveis | Gatilho de Ação | Ativo |
 | BR-GEN-047 | Audit log exige user + church + entity_id | Restrição | Ativo |
-| BR-GEN-048 | Logs de auditoria só admin+ | Restrição | Ativo |
+| BR-GEN-048 | Histórico de atividades (audit logs) só admin+ | Restrição | Ativo |
 | BR-GEN-049 | Correlação por X-Request-Id | Fato | Ativo |
 
 ---
@@ -547,13 +547,13 @@ tags: [regras, transversal, global]
 ## 📝 Regras de Auditoria
 
 ### BR-GEN-046: Auditoria em ações sensíveis
-- **Declaração:** Operações de create/update/delete/convert/import/deactivate sobre entidades listadas devem gerar registro em `audit_logs` quando houver usuário autenticado no contexto da igreja.
+- **Declaração:** Operações de create/update/delete/convert/import/export/deactivate sobre entidades listadas devem gerar registro em `audit_logs` quando houver usuário autenticado no contexto da igreja.
 - **Tipo:** Gatilho de Ação
-- **Contexto:** Rastreabilidade pastoral/administrativa.
-- **Comportamento esperado:** Linha com before/after, IP, user-agent.
+- **Contexto:** Rastreabilidade pastoral/administrativa (Histórico de atividades na UI).
+- **Comportamento esperado:** Linha com before/after; IP e user-agent podem ser gravados, mas não são o foco da UI do app.
 - **Comportamento em violação:** Falha de audit é logada mas tipicamente **não** reverte a operação (best-effort).
 - **Implementado em:** `utils/auditLogger.ts`; chamadas nos controllers
-- **Exceções conhecidas:** Entidades cobertas: member, congregation, integration_member, links, group, member_group, calendar_item, account, church — **não** cobre tudo (ex.: church_users) 🔍
+- **Exceções conhecidas:** Entidades cobertas: member, congregation, integration_member, links, group, member_group, calendar_item, account, church — **não** cobre tudo (ex.: church_users). Geração de relatório **não** gera audit log (DEV-16). Import/export de lista de membros: um log genérico por operação. 🔍
 - **Regras relacionadas:** BR-GEN-047, BR-GEN-048
 
 ### BR-GEN-047: Audit log exige user + church + entity_id
@@ -567,12 +567,12 @@ tags: [regras, transversal, global]
 - **Regras relacionadas:** BR-GEN-046
 
 ### BR-GEN-048: Logs de auditoria só admin+
-- **Declaração:** Somente `admin` ou superior deve listar audit logs da igreja.
+- **Declaração:** Somente `admin` ou superior deve listar o Histórico de atividades (`audit_logs`) da igreja.
 - **Tipo:** Restrição
-- **Contexto:** Dados sensíveis de operação.
-- **Comportamento esperado:** Lista paginada.
+- **Contexto:** Dados sensíveis de operação; UI Configurações → Histórico.
+- **Comportamento esperado:** Lista paginada enriquecida com `actor` (sem `ip`/`user_agent` no payload do app).
 - **Comportamento em violação:** `403`.
-- **Implementado em:** `routes/account.ts` `GET /logs` + `requireRole('admin')`
+- **Implementado em:** `routes/account.ts` `GET /logs` + `requireRole('admin')`; UI `settings` só admin/owner
 - **Exceções conhecidas:** —
 - **Regras relacionadas:** BR-GEN-012
 

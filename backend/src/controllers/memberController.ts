@@ -1818,21 +1818,6 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
       generatedAt: new Date().toISOString()
     });
 
-    // Log da operação de geração de relatório (escopo igreja — sem membro individual)
-    await logAudit(req, {
-      entity: 'church',
-      entityId: req.church!.churchId,
-      action: 'import',
-      changesAfter: {
-        filters: validatedFilters,
-        summary: {
-          totalMembers,
-          activeMembers,
-          inactiveMembers
-        }
-      }
-    });
-
   } catch (error) {
     logError('Erro ao gerar relatório:', error);
     res.status(500).json({

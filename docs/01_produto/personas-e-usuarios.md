@@ -53,7 +53,7 @@ owner  >  admin  >  editor  >  reader
 
 - **Identificador no código:** `'admin'`
 - **Descrição:** Administra a igreja sem ser o dono — equipe, billing e auditoria.
-- **Casos de uso principais:** Convidar/desativar usuários, editar dados da igreja, portal/sync/change-plan Stripe, ver logs de auditoria.
+- **Casos de uso principais:** Convidar/desativar usuários, editar dados da igreja, portal/sync/change-plan Stripe, ver Histórico de atividades.
 - **Acesso típico:** Escrita operacional (como editor) + gestão de usuários e billing; **não** pode atribuir/alterar o papel `owner`.
 - **Onboarding específico:** Adicionado por admin/owner (e-mail + papel); se o e-mail não existir, cria usuário Auth e envia e-mail de convite informativo.
 
@@ -62,7 +62,7 @@ owner  >  admin  >  editor  >  reader
 - **Identificador no código:** `'editor'`
 - **Descrição:** Operação do dia a dia (secretariado / liderança operacional).
 - **Casos de uso principais:** CRUD de membros, integração, congregações, grupos, calendário, links públicos de captação, importação CSV.
-- **Acesso típico:** Leitura + escrita nos módulos de negócio; **sem** gestão de equipe, edição cadastral da igreja, billing Stripe nem logs de auditoria.
+- **Acesso típico:** Leitura + escrita nos módulos de negócio; **sem** gestão de equipe, edição cadastral da igreja, billing Stripe nem Histórico de atividades.
 - **Onboarding específico:** Mesmo fluxo de convite por e-mail (papel `editor`).
 
 ### Reader (Leitor)
@@ -112,7 +112,7 @@ Legenda: ✅ permitido · ❌ negado · 🔶 parcial / com restrição. Baseado 
 | Listar/criar/editar/remover usuários da igreja | ✅ | ✅ | ❌ | ❌ |
 | Definir escopo de congregações do usuário | ✅ | ✅ | ❌ | ❌ |
 | Alterar papel do `owner` | ❌ | ❌ | ❌ | ❌ |
-| Ver audit logs (`GET /api/account/logs`) | ✅ | ✅ | ❌ | ❌ |
+| Ver Histórico de atividades (`GET /api/account/logs`) | ✅ | ✅ | ❌ | ❌ |
 | Gerenciar própria conta (e-mail, senha, telefone) | ✅ | ✅ | ✅ | ✅ |
 | Excluir própria conta Auth | 🔶 | 🔶 | 🔶 | 🔶 |
 

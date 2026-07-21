@@ -10,6 +10,7 @@ import {
 } from '../utils/congregationScope';
 import { createMemberRegistrationFormPdf } from '../utils/memberRegistrationFormPdf';
 import { exportGroupsListFiltersSchema } from '../validators/groupValidator';
+import { logAudit } from '../utils/auditLogger';
 
 /** Formata YYYY-MM-DD sem offset de fuso (America/Sao_Paulo). */
 function formatDateSafe(date: string | null | undefined): string {
@@ -1926,6 +1927,17 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
 
     console.log(`✅ ${members.length} membros encontrados`);
 
+    await logAudit(req, {
+      entity: 'church',
+      entityId: churchId,
+      action: 'export',
+      changesAfter: {
+        list_type: 'members',
+        format: 'pdf',
+        exportedRows: members.length
+      }
+    });
+
     // Criar documento PDF
     const doc = new PDFDocument({
       size: 'A4',
@@ -3176,6 +3188,17 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
     }
 
     console.log(`✅ ${members.length} membros encontrados`);
+
+    await logAudit(req, {
+      entity: 'church',
+      entityId: churchId,
+      action: 'export',
+      changesAfter: {
+        list_type: 'members',
+        format: 'csv',
+        exportedRows: members.length
+      }
+    });
 
     // Helper para calcular idade
     const calculateAge = (birth: string) => {

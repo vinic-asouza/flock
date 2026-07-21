@@ -1,7 +1,7 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-07-14
-versao: "1.1"
+ultima_atualizacao: 2026-07-20
+versao: "1.2"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 72
 ---
@@ -111,9 +111,10 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 **Lista de espera** *(código: `waitlist`)*  
 > Lead captado na landing antes/fora do funil completo de registro.
 
-**Log de auditoria** *(código: `audit_logs`)*  
-> Registro de ações sensíveis (create/update/delete/convert/import…) sobre entidades da igreja.  
-- **UI:** Configurações → Logs (admin/owner)
+**Histórico de atividades** *(código: `audit_logs`)*  
+> Trilha de atividades do tenant (create/update/delete/convert/import/export/deactivate…) sobre entidades da igreja, apresentada em linguagem natural para administradores.  
+- **UI:** Configurações → Histórico (admin/owner)  
+- **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos operacionais do time Flock ficam para um futuro projeto admin (fora do app da igreja).
 
 **Assinatura pendente** *(código: `pending_subscriptions`)*  
 > Intenção de plano criada no onboarding ainda não plenamente vinculada à igreja ativa.
