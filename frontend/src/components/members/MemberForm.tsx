@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -187,6 +187,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [availableGroups, setAvailableGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [occupationOtherError, setOccupationOtherError] = useState('');
+  const [validationSummary, setValidationSummary] = useState<string | null>(null);
   const prevMemberRef = useRef<Member | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -210,6 +211,42 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     shouldUnregister: false,
   });
 
+  const collectErrorMessages = (formErrors: FieldErrors<MemberFormData>): string[] => {
+    const messages: string[] = [];
+    const walk = (node: unknown) => {
+      if (!node || typeof node !== 'object') return;
+      const record = node as Record<string, unknown>;
+      if (typeof record.message === 'string' && record.message) {
+        messages.push(record.message);
+        return;
+      }
+      Object.values(record).forEach(walk);
+    };
+    walk(formErrors);
+    return messages;
+  };
+
+  const handleInvalidSubmit = (formErrors: FieldErrors<MemberFormData>) => {
+    const messages = collectErrorMessages(formErrors);
+    const unique = [...new Set(messages)];
+    setValidationSummary(
+      unique.length > 0
+        ? `Não foi possível salvar. Corrija: ${unique.slice(0, 4).join(' · ')}${unique.length > 4 ? '…' : ''}`
+        : 'Não foi possível salvar. Verifique os campos destacados.'
+    );
+
+    const firstField = Object.keys(formErrors)[0];
+    if (firstField) {
+      const el = document.querySelector<HTMLElement>(`[name="${firstField}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus?.();
+        return;
+      }
+    }
+    errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
   const selectedState = watch('state');
   const selectedOccupation = watch('occupation');
   const occupationOtherValue = watch('occupation_other');
@@ -225,10 +262,10 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const showPreviousReligion = baptismType === 'novo_convertido';
 
   useEffect(() => {
-    if (error && errorRef.current) {
+    if ((error || validationSummary) && errorRef.current) {
       errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-  }, [error]);
+  }, [error, validationSummary]);
 
   // Definir congregação principal como padrão ao criar
   useEffect(() => {
@@ -242,24 +279,59 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     if (!member) { prevMemberRef.current = null; return; }
     if (prevMemberRef.current?.id === member.id) return;
     prevMemberRef.current = member;
+    setValidationSummary(null);
+
+    const asStr = (value: string | null | undefined) => value ?? '';
+    const asBool = (value: boolean | null | undefined) =>
+      value === null || value === undefined ? undefined : value;
+    const genderValues = ['Masculino', 'Feminino'] as const;
+    const maritalValues = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável'] as const;
+    const baptismTypeValues = [
+      'catolica', 'adulto_nesta_igreja', 'adulto_outra_igreja',
+      'crianca_nesta_igreja', 'crianca_outra_igreja',
+      'novo_convertido', 'sem_religiao',
+    ] as const;
+    const sundayValues = ['todos_os_domingos', 'regularmente', 'as_vezes', 'nao'] as const;
+    const parentMemberValues = ['sim', 'nao', 'falecido'] as const;
 
     setValue('name', member.name);
-    setValue('email', member.email || '');
-    setValue('phone', member.phone || '');
-    setValue('whatsapp', member.whatsapp || '');
+    setValue('email', asStr(member.email));
+    setValue('phone', asStr(member.phone));
+    setValue('whatsapp', asStr(member.whatsapp));
     setValue('birth', formatDateFromISO(member.birth));
-    setValue('gender', member.gender as 'Masculino' | 'Feminino');
-    setValue('marital_status', member.marital_status as MemberFormData['marital_status']);
-    setValue('hometown', member.hometown || '');
+    setValue(
+      'gender',
+      genderValues.includes(member.gender as typeof genderValues[number])
+        ? (member.gender as typeof genderValues[number])
+        : 'Masculino'
+    );
+    setValue(
+      'marital_status',
+      maritalValues.includes(member.marital_status as typeof maritalValues[number])
+        ? (member.marital_status as typeof maritalValues[number])
+        : 'Solteiro'
+    );
+    setValue('hometown', asStr(member.hometown));
+    setValue('document', asStr(member.document));
     setValue('wedding_date', formatDateFromISO(member.wedding_date));
-    setValue('spouse', member.spouse || '');
-    setValue('spouse_is_member', member.spouse_is_member);
-    setValue('father_name', member.father_name || '');
-    setValue('father_is_member', member.father_is_member);
-    setValue('mother_name', member.mother_name || '');
-    setValue('mother_is_member', member.mother_is_member);
+    setValue('spouse', asStr(member.spouse));
+    setValue('spouse_is_member', asBool(member.spouse_is_member));
+    setValue('father_name', asStr(member.father_name));
+    setValue(
+      'father_is_member',
+      member.father_is_member && parentMemberValues.includes(member.father_is_member)
+        ? member.father_is_member
+        : undefined
+    );
+    setValue('mother_name', asStr(member.mother_name));
+    setValue(
+      'mother_is_member',
+      member.mother_is_member && parentMemberValues.includes(member.mother_is_member)
+        ? member.mother_is_member
+        : undefined
+    );
 
-    const occupation = member.occupation || '';
+    const occupation = asStr(member.occupation);
     const isStandard = professions.some(p => p.name === occupation);
     if (isStandard || occupation === '') {
       setValue('occupation', occupation);
@@ -269,37 +341,45 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       setValue('occupation_other', occupation);
     }
 
-    setValue('address', member.address || '');
-    setValue('address_number', member.address_number || '');
-    setValue('complement', member.complement || '');
-    setValue('neighborhood', member.neighborhood || '');
-    setValue('city', member.city || '');
-    setValue('state', member.state || '');
+    setValue('address', asStr(member.address));
+    setValue('address_number', asStr(member.address_number));
+    setValue('complement', asStr(member.complement));
+    setValue('neighborhood', asStr(member.neighborhood));
+    setValue('city', asStr(member.city));
+    setValue('state', asStr(member.state));
     setValue('cep', member.cep ? member.cep.replace(/\D/g, '') : '');
 
     // Informações Eclesiásticas
-    setValue('years_evangelical', member.years_evangelical || '');
-    setValue('evangelical_family', member.evangelical_family);
-    setValue('is_baptized', member.is_baptized);
-    setValue('baptism_type', member.baptism_type as MemberFormData['baptism_type']);
-    setValue('baptism_other_church_name', member.baptism_other_church_name || '');
-    setValue('previous_religion', member.previous_religion || '');
-    setValue('previous_church_active', member.previous_church_active);
-    setValue('reason_joining', member.reason_joining || '');
-    setValue('time_attending', member.time_attending || '');
-    setValue('sunday_attendance', member.sunday_attendance as MemberFormData['sunday_attendance']);
-    setValue('weekly_activities', member.weekly_activities);
-    setValue('weekly_activities_which', member.weekly_activities_which || '');
+    setValue('years_evangelical', asStr(member.years_evangelical));
+    setValue('evangelical_family', asBool(member.evangelical_family));
+    setValue('is_baptized', asBool(member.is_baptized));
+    setValue(
+      'baptism_type',
+      member.baptism_type && baptismTypeValues.includes(member.baptism_type as typeof baptismTypeValues[number])
+        ? (member.baptism_type as typeof baptismTypeValues[number])
+        : undefined
+    );
+    setValue('baptism_other_church_name', asStr(member.baptism_other_church_name));
+    setValue('previous_religion', asStr(member.previous_religion));
+    setValue('previous_church_active', asBool(member.previous_church_active));
+    setValue('reason_joining', asStr(member.reason_joining));
+    setValue('time_attending', asStr(member.time_attending));
+    setValue(
+      'sunday_attendance',
+      member.sunday_attendance && sundayValues.includes(member.sunday_attendance as typeof sundayValues[number])
+        ? (member.sunday_attendance as typeof sundayValues[number])
+        : undefined
+    );
+    setValue('weekly_activities', asBool(member.weekly_activities));
+    setValue('weekly_activities_which', asStr(member.weekly_activities_which));
 
     setValue('baptism_date', formatDateFromISO(member.baptism_date));
-    setValue('admission', member.admission || '');
+    setValue('admission', asStr(member.admission));
     setValue('admission_date', formatDateFromISO(member.admission_date));
 
-    const admissionType = member.admission || '';
+    const admissionType = asStr(member.admission);
     setIsInfantMember(['Batismo Infantil', 'Apresentação (sem batismo)', 'Batismo não professo (Criança)', 'Apresentação (Criança)'].includes(admissionType));
 
-    setValue('father_name', member.father_name || '');
-    setValue('mother_name', member.mother_name || '');
     setValue('active', member.active);
 
     if (member.children?.length) {
@@ -423,9 +503,12 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const handleFormSubmit = async (data: MemberFormData) => {
     if (data.occupation === 'Outra' && !data.occupation_other?.trim()) {
       setOccupationOtherError('Por favor, especifique a profissão');
+      setValidationSummary('Não foi possível salvar. Especifique a profissão.');
+      errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       return;
     }
     setOccupationOtherError('');
+    setValidationSummary(null);
 
     const childrenWithISO = children.map(c => ({
       name: c.name,
@@ -462,7 +545,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-6">
+    <form onSubmit={handleSubmit(handleFormSubmit, handleInvalidSubmit)} className="space-y-6 p-6">
 
       {/* ─── INFORMAÇÕES BÁSICAS ─── */}
       <div className="space-y-4">
@@ -1115,10 +1198,10 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         </div>
       </div>
 
-      {/* Erro */}
-      {error && (
-        <div ref={errorRef} className="p-4 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm font-medium text-red-600">{error}</p>
+      {/* Erro de API ou validação do formulário */}
+      {(error || validationSummary) && (
+        <div ref={errorRef} className="p-4 bg-red-50 border border-red-200 rounded-md" role="alert">
+          <p className="text-sm font-medium text-red-600">{error || validationSummary}</p>
         </div>
       )}
 
