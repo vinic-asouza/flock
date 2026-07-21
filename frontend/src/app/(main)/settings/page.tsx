@@ -31,7 +31,7 @@ function SettingsPageContent() {
             ...(canManagePlan ? [{ id: 'payment', title: 'Plano', description: 'Gerencie seu plano e assinatura', icon: CreditCard }] : []),
             { id: 'account', title: 'Conta', description: 'Configurações da sua conta', icon: Shield },
             ...(canSeeUsers ? [{ id: 'users', title: 'Usuários', description: 'Usuários com acesso à igreja', icon: Users }] : []),
-            ...(canSeeLogs ? [{ id: 'logs', title: 'Logs', description: 'Histórico de operações do sistema', icon: FileText }] : []),
+            ...(canSeeLogs ? [{ id: 'logs', title: 'Histórico', description: 'Atividades realizadas na igreja', icon: FileText }] : []),
         ];
         return base;
     }, [canSeeUsers, canSeeLogs, canManagePlan]);

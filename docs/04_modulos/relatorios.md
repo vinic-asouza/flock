@@ -484,7 +484,7 @@ graph LR
 3. **CPU/memória:** carrega membros (chunks de 1000 se >5000) e agrega em Node; PDFs síncronos sem fila — risco de timeout em tenants grandes.  
 4. **Exports sem rate limit** — flood de PDF/CSV possível (só reports tem RL).  
 5. **404 em lista vazia** — UX confunde com “recurso inexistente”; é regra BR-REL-008.  
-6. **Audit log** de reports usa `action: 'import'` em entity `church` — ruído em auditoria.  
+6. **Audit log de reports:** removido (DEV-16). Geração de relatório **não** grava em `audit_logs`. Import/export de lista de membros usam log genérico separado.  
 7. **`exportDashboardPDF` acopla** a `getMemberReports` via mock Response — frágil a mudanças de assinatura.  
 8. Handler de reports/birthdays vive em `memberController` / rota `members` — ao alterar membros, não quebrar contrato do painel.  
 9. `console.log` verbosos no exportController em produção.
@@ -497,6 +497,7 @@ graph LR
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo relatórios | — |
 | 2026-07-15 | 1.1 | Endpoint ficha de cadastro em branco (`GET /export/members/registration-form/pdf`) | DEV-10 |
+| 2026-07-20 | 1.2 | Removido audit log indevido na geração de relatório | DEV-16 |
 
 ---
 

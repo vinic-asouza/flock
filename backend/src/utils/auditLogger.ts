@@ -5,7 +5,7 @@ import { AuthRequest } from '../types';
 interface AuditLogData {
   entity: 'member' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'member_group' | 'calendar_item' | 'account' | 'church';
   entityId: string | null;
-  action: 'create' | 'update' | 'delete' | 'convert' | 'import' | 'deactivate';
+  action: 'create' | 'update' | 'delete' | 'convert' | 'import' | 'export' | 'deactivate';
   changesBefore?: any;
   changesAfter?: any;
   ip?: string;

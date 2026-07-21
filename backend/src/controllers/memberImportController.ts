@@ -177,16 +177,17 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
       { skipDuplicates }
     );
 
-    // Log de auditoria para a importação
+    // Um log genérico por importação de lista de membros
     if (importResult.importedRows > 0) {
       await logAudit(req, {
         entity: 'church',
         entityId: req.church!.churchId,
         action: 'import',
         changesAfter: {
+          list_type: 'members',
           importedRows: importResult.importedRows,
           totalRows: importResult.totalRows,
-          congregationId: congregationId || '—'
+          congregationId: congregationId || null
         }
       });
     }

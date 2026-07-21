@@ -45,7 +45,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Equipe: CRUD `church_users` (admin+); convite cria Auth user se necessário
 - Owner imutável nas rotas de users
 - Uma igreja por `user_id` (UNIQUE)
-- Audit logs paginados (`GET /account/logs`, admin+)
+- Histórico de atividades paginado (`GET /account/logs`, admin+) — UI Configurações → Histórico
 - E-mails best-effort (convite, exclusão, confirmações de mudança sensível)
 - Rate limits em church/account
 
@@ -146,7 +146,8 @@ Para `reader`/`editor`: body exige `accessAllCongregations: true` **ou** `congre
 
 ### audit_logs
 
-Trilha aplicacional (escrita por vários módulos via `logAudit`; **listagem** neste módulo).
+Trilha aplicacional do tenant (escrita por vários módulos via `logAudit`; **listagem** neste módulo).  
+Na UI do app: **Histórico de atividades** (Configurações → Histórico), voltada a Owner/Admin.
 
 | Campo | Tipo | Nullable | Default | Descrição |
 | --- | --- | --- | --- | --- |
@@ -155,9 +156,11 @@ Trilha aplicacional (escrita por vários módulos via `logAudit`; **listagem** n
 | user_id | uuid | NOT NULL | — | Ator |
 | church_id | uuid | NOT NULL | — | Tenant |
 | entity / entity_id | text / uuid | NOT NULL | — | Alvo |
-| action | text | NOT NULL | — | create/update/delete/… |
+| action | text | NOT NULL | — | create/update/delete/convert/import/export/deactivate |
 | changes_before / after | jsonb | NULL | — | Diff |
-| ip / user_agent | text | NULL | — | Contexto |
+| ip / user_agent | text | NULL | — | Contexto (gravado; **não** exposto no GET do app) |
+
+**Listagem (`GET /account/logs`):** enriquece cada item com `actor` (`id`, `email`, `displayName`); omite `ip`/`user_agent`. Exclui logs legados de geração de relatório (`church`+`import` com `summary`). Import/export de lista de membros usam um log genérico (`list_type: 'members'`).
 
 ---
 
@@ -206,7 +209,7 @@ Sem tabela local dedicada — `auth.users` + user_metadata.phone. GET `/account`
 | PUT | `/api/account/phone` | ✅ | auth | Troca telefone |
 | DELETE | `/api/account/` | ✅ | + sensitive RL | Exclui Auth user |
 | POST | `/api/account/resend-confirmation` | ✅ | auth | Reenvia confirmação |
-| GET | `/api/account/logs` | ✅ | ≥ admin | Audit logs |
+| GET | `/api/account/logs` | ✅ | ≥ admin | Histórico de atividades (`audit_logs` + `actor`) |
 
 ```typescript
 // PUT /email { newEmail, password }
@@ -218,7 +221,8 @@ Sem tabela local dedicada — `auth.users` + user_metadata.phone. GET `/account`
 
 ```typescript
 // GET /logs?page&limit≤100&entity&action&member_status_change=activate|deactivate
-// Response: { data, pagination }
+// Response: { data: [{ …, actor: { id, email, displayName } }], pagination }
+// Sem ip / user_agent no payload do app
 ```
 
 ### `/api/church-users` — todo o router `requireRole('admin')`
@@ -259,7 +263,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/igreja-config]] (**18** regras
 | BR-CFG-010 | Um user_id → uma igreja |
 | BR-CFG-011 | Owner imutável (PATCH/DELETE users) |
 | BR-CFG-012 | Delete conta: senha + EXCLUIR CONTA; bloqueia assinatura paga ativa |
-| BR-CFG-013 | Audit logs admin+ na church ativa |
+| BR-CFG-013 | Histórico de atividades (audit logs) admin+ na church ativa |
 | BR-CFG-014 | E-mail convite best-effort |
 | BR-CFG-015 | E-mail pós-exclusão de conta |
 | BR-CFG-016 | Escopo de congregação obrigatório p/ reader/editor |
@@ -479,6 +483,7 @@ graph LR
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial (config / igreja-config) | — |
+| 2026-07-20 | 1.1 | Histórico de atividades: UI legível + `actor` no GET; action `export`; sem log em relatório | DEV-16 |
 
 ---
 

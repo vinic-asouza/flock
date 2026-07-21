@@ -680,7 +680,7 @@ erDiagram
 | Member marital | Solteiro, Casado, Divorciado, Viúvo, Outro, União Estável | `members.marital_status` |
 | Group type | Ministério, Departamento, Equipe, Time, Comissão, Célula, … | `groups.type` |
 | Calendar type/status/recurrence | ver dicionário | `calendar_items` |
-| Audit entity/action | member, role, … / create, update, delete, convert, import, deactivate | `audit_logs` |
+| Audit entity/action | member, role, … / create, update, delete, convert, import, export, deactivate | `audit_logs` |
 | Webhook outcome | processing, success, released, failed | `processed_webhook_events` |
 
 > **Inconsistência documentada:** labels de gênero/estado civil diferem entre `members` (Title Case PT) e enums de `integration_members` (lowercase). Planos: waitlist usa `personalizado`; billing usa `custom`; churches aceita `100`, pending não.
@@ -716,6 +716,7 @@ erDiagram
 | 20260622220224 | `add_member_form_fields_v2` |
 | 20260708150233 | `update_sunday_attendance_check` |
 | 20260708202711 | `drop_secret_organization_columns` |
+| 20260720… | `audit_logs_action_allow_export` (CHECK action inclui `export`) |
 
 **Processo recomendado para nova migration:** escrever SQL idempotente → aplicar no projeto `flock-app-01` (staging/prod controlado) → atualizar tipos TS / validators → regenerar ou anotar dump `bd-structure.sql` se usado como referência → registrar no changelog da KB.
 
