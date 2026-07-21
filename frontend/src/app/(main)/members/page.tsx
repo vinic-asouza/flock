@@ -298,6 +298,7 @@ function MembersPageContent() {
     // A API retorna um Member completo, então fazemos cast através de unknown
     updateMemberOptimistic(memberData.id, memberData as unknown as Partial<Member>);
     setEditModalOpen(false);
+    toast.success('Membro atualizado com sucesso!');
     
     // Disparar evento para recarregar a lista
     setTimeout(() => {

@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-15
-versao: "1.0"
+ultima_atualizacao: 2026-07-21
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -537,7 +537,8 @@ graph LR
 5. **`updated_at` no type TS sem coluna DB** — não usar em sort SQL.  
 6. **Reports** na rota members; PDFs em `/export` (outro módulo) — não misturar.  
 7. Query pública de congregações com `.eq('active', true)` — tabelas `congregations` **pode não ter** `active` (verificar schema live).  
-8. Após hard delete, FKs SET NULL / CASCADE (calendar, groups) — familiarizar-se com efeitos.
+8. Após hard delete, FKs SET NULL / CASCADE (calendar, groups) — familiarizar-se com efeitos.  
+9. **UI edição (`MemberForm` mode=edit):** validação Zod no cliente antes do `PUT`. Campos opcionais vindos do Postgres como `null` (enums/booleanos) devem ser normalizados para `undefined`/string vazia no hydrate — senão o submit falha. Em submit inválido, exibir banner + scroll ao campo (`onInvalid`); sucesso mostra toast e fecha o modal. Não hidratar `document` no form (campo sem UI de edição).
 
 ---
 
@@ -547,6 +548,7 @@ graph LR
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
+| 2026-07-21 | 1.2 | UX edição: feedback de validação/sucesso; hydrate null-safe (enums) | DEV-23 |
 
 ---
 
