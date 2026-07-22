@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, Mail, MessageCircle, User, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
+import { Loader, Mail, MessageCircle, User, Users, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
 import apiService from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { calculateAge } from '@/utils';
@@ -266,7 +266,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                 </h4>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Primeira coluna */}
+                  {/* Coluna 1 */}
                   <div className="space-y-3">
                     <div>
                       <span className="text-sm font-medium text-gray-500">Gênero</span>
@@ -286,6 +286,10 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                         <p className="text-gray-900">{member.hometown}</p>
                       </div>
                     )}
+                  </div>
+
+                  {/* Coluna 2 */}
+                  <div className="space-y-3">
                     <div>
                       <span className="text-sm font-medium text-gray-500">Estado Civil</span>
                       <p className="text-gray-900">{member.marital_status || '-'}</p>
@@ -305,87 +309,88 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
 
-                  {/* Segunda coluna */}
-                  <div className="space-y-3">
-                    {member.spouse && (
+              {/* Família */}
+              {(member.spouse || member.father_name || member.mother_name || (member.children && member.children.length > 0)) && (
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                    <Users size={20} />
+                    Família
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      {member.spouse && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Cônjuge</span>
+                          <p className="text-gray-900">
+                            {member.spouse}
+                            {member.spouse_is_member === true && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
+                            {member.spouse_is_member === false && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
+                          </p>
+                        </div>
+                      )}
+                      {member.father_name && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Nome do Pai</span>
+                          <p className="text-gray-900">
+                            {member.father_name}
+                            {member.father_is_member === 'sim' && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
+                            {member.father_is_member === 'nao' && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
+                            {member.father_is_member === 'falecido' && <span className="ml-2 text-xs text-gray-400 font-medium">(Falecido)</span>}
+                          </p>
+                        </div>
+                      )}
+                      {member.mother_name && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-500">Nome da Mãe</span>
+                          <p className="text-gray-900">
+                            {member.mother_name}
+                            {member.mother_is_member === 'sim' && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
+                            {member.mother_is_member === 'nao' && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
+                            {member.mother_is_member === 'falecido' && <span className="ml-2 text-xs text-gray-400 font-medium">(Falecida)</span>}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {member.children && member.children.length > 0 && (
                       <div>
-                        <span className="text-sm font-medium text-gray-500">Cônjuge</span>
-                        <p className="text-gray-900">
-                          {member.spouse}
-                          {member.spouse_is_member === true && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
-                          {member.spouse_is_member === false && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
-                        </p>
+                        <span className="text-sm font-medium text-gray-500">Filhos</span>
+                        <div className="mt-1 space-y-3">
+                          {member.children.map((child, index) => {
+                            const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
+                            const childAge = birthISO ? calculateAge(birthISO) : null;
+                            return (
+                              <div key={index} className="space-y-1">
+                                <p className="text-gray-900">{child.name}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {childAge !== null && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                      {childAge} {childAge === 1 ? 'ano' : 'anos'}
+                                    </span>
+                                  )}
+                                  {child.dependent === true && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                      Reside junto
+                                    </span>
+                                  )}
+                                  {child.dependent === false && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                                      Não reside junto
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-
-                {(member.father_name || member.mother_name || (member.children && member.children.length > 0)) && (
-                  <div className="space-y-3 pt-2 border-t border-gray-100">
-                    <h5 className="text-sm font-semibold text-gray-800">Família</h5>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        {member.father_name && (
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Nome do Pai</span>
-                            <p className="text-gray-900">
-                              {member.father_name}
-                              {member.father_is_member === 'sim' && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
-                              {member.father_is_member === 'nao' && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
-                              {member.father_is_member === 'falecido' && <span className="ml-2 text-xs text-gray-400 font-medium">(Falecido)</span>}
-                            </p>
-                          </div>
-                        )}
-                        {member.mother_name && (
-                          <div>
-                            <span className="text-sm font-medium text-gray-500">Nome da Mãe</span>
-                            <p className="text-gray-900">
-                              {member.mother_name}
-                              {member.mother_is_member === 'sim' && <span className="ml-2 text-xs text-green-600 font-medium">(Membro)</span>}
-                              {member.mother_is_member === 'nao' && <span className="ml-2 text-xs text-gray-500 font-medium">(Não membro)</span>}
-                              {member.mother_is_member === 'falecido' && <span className="ml-2 text-xs text-gray-400 font-medium">(Falecida)</span>}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {member.children && member.children.length > 0 && (
-                        <div>
-                          <span className="text-sm font-medium text-gray-500">Filhos</span>
-                          <div className="mt-1 space-y-3">
-                            {member.children.map((child, index) => {
-                              const birthISO = child.birth ? converterDataParaISO(child.birth) : null;
-                              const childAge = birthISO ? calculateAge(birthISO) : null;
-                              return (
-                                <div key={index} className="space-y-1">
-                                  <p className="text-gray-900">{child.name}</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {childAge !== null && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                        {childAge} {childAge === 1 ? 'ano' : 'anos'}
-                                      </span>
-                                    )}
-                                    {child.dependent === true && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                        Reside junto
-                                      </span>
-                                    )}
-                                    {child.dependent === false && (
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                        Não reside junto
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Contato, Endereço e Informações Eclesiásticas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
