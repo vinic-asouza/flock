@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-21
-versao: "1.2"
+ultima_atualizacao: 2026-07-22
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -216,6 +216,16 @@ Capability de autocadastro.
 | **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 alinhado ao form v2 para impressão e preenchimento manual. |
 
 Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
+
+### UI — detalhe do membro (`ViewMemberModal`)
+
+Seções principais do modal de visualização (paridade com o PDF de perfil):
+
+1. **Informações Pessoais** — layout em duas colunas (gênero, idade, nascimento, naturalidade | estado civil, data de casamento/união, profissão).
+2. **Família** — seção de primeiro nível com cônjuge, pai, mãe e filhos; exibida apenas se houver ao menos um dado familiar.
+3. Contato / Endereço / Informações Eclesiásticas / Histórico Eclesiástico (quando houver dados).
+
+> O formulário create/edit (`MemberForm`) ainda pode agrupar cônjuge em Informações Básicas — alinhamento visual form ↔ view é follow-up separado.
 
 ### Contrato principal — `POST /api/members/`
 
@@ -549,6 +559,7 @@ graph LR
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
 | 2026-07-21 | 1.2 | UX edição: feedback de validação/sucesso; hydrate null-safe (enums) | DEV-23 |
+| 2026-07-22 | 1.3 | UI detalhe: Família top-level com cônjuge; Pessoais em 2 colunas | DEV-24 |
 
 ---
 
