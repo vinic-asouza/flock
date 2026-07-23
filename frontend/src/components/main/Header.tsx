@@ -67,6 +67,20 @@ export function Header() {
     };
   }, [loadMemberLimit]);
 
+  // Fecha o drawer ao cruzar para shell desktop (≥ md)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) {
+        setMobileNavOpen(false);
+      }
+    };
+
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   const handleLogout = async () => {
     await logout();
     router.push('/login');
@@ -77,7 +91,7 @@ export function Header() {
 
   return (
     <>
-      <header className="h-14 shrink-0 bg-white border-b border-gray-200 px-3 sm:px-6 flex items-center justify-between gap-2 pt-[env(safe-area-inset-top)] min-w-0">
+      <header className="min-h-14 shrink-0 bg-white border-b border-gray-200 px-3 sm:px-6 flex items-center justify-between gap-2 pt-[env(safe-area-inset-top)] min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
