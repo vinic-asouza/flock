@@ -42,7 +42,7 @@ export function ChurchSwitcher() {
         disabled={loading}
       >
         <Building2 className="h-4 w-4" />
-        <span className="max-w-[140px] truncate">
+        <span className="max-w-[100px] sm:max-w-[140px] truncate">
           {active?.churchName || user?.name || 'Igreja'}
         </span>
         <ChevronDown className="h-4 w-4" />
