@@ -48,13 +48,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <ChurchSelectionGate>
-    <div className="h-screen bg-app flex flex-col overflow-hidden">
+    <div className="h-screen h-dvh bg-app flex flex-col overflow-hidden">
       <Header />
       <div className="flex flex-1 min-h-0">
         <Sidebar churchName={user?.name || ''} />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)]">
           <div className="min-h-full flex flex-col">
-            <div className="flex-1 p-6 md:p-10">
+            <div className="flex-1 p-4 sm:p-6 md:p-10">
               {children}
             </div>
             <Footer />

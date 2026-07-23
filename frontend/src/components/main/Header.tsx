@@ -2,13 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { LogOut, User, AlertCircle, Crown, Gift, RefreshCw } from 'lucide-react';
+import { LogOut, User, AlertCircle, Crown, Gift, RefreshCw, Menu } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '@/services/api';
 import { ChurchSwitcher } from '@/components/main/ChurchSwitcher';
+import { MobileNavDrawer } from '@/components/main/MobileNavDrawer';
+
 interface MemberLimitInfo {
   currentCount: number;
   limit: number;
@@ -26,8 +28,8 @@ export function Header() {
   const [memberLimit, setMemberLimit] = useState<MemberLimitInfo | null>(null);
   const [memberLimitLoadFailed, setMemberLimitLoadFailed] = useState(false);
   const [isRetryingMemberLimit, setIsRetryingMemberLimit] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  // Função para carregar informações do limite
   const loadMemberLimit = useCallback(async () => {
     if (user) {
       try {
@@ -50,12 +52,10 @@ export function Header() {
     setIsRetryingMemberLimit(false);
   };
 
-  // Carregar informações do limite quando o usuário estiver autenticado
   useEffect(() => {
     loadMemberLimit();
   }, [loadMemberLimit]);
 
-  // Atualizar limite quando membros forem atualizados
   useEffect(() => {
     const handleMemberUpdate = () => {
       loadMemberLimit();
@@ -67,167 +67,186 @@ export function Header() {
     };
   }, [loadMemberLimit]);
 
+  // Fecha o drawer ao cruzar para shell desktop (≥ md)
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)');
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
+      if (event.matches) {
+        setMobileNavOpen(false);
+      }
+    };
+
+    handleChange(mediaQuery);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   const handleLogout = async () => {
     await logout();
     router.push('/login');
   };
 
-  // Determinar tipo de plano e limite
   const planType = user?.plan_type || memberLimit?.planType;
   const isFreePlan = planType === '100' || !planType;
 
   return (
-    <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
-      {/* Logo e Nome da Igreja */}
-      <div className="flex items-center gap-3">
-        <FlockLogo size={30} className="text-primary" />
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-semibold text-primary">Flock App</span>
-          <span className="text-gray-300">|</span>
-          <h1 className="text-sm font-normal text-gray-600" title={user?.name}>
-            {user?.name || 'Igreja'}
-          </h1>
-        </div>
-      </div>
-
-      {/* Dados do Usuário e Botão Sair */}
-      <div className="flex items-center gap-4">
-        <ChurchSwitcher />
-        {user?.subscription_status === 'past_due' && (
-          <Link
-            href="/settings?tab=payment"
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-yellow-50 text-yellow-800 border border-yellow-300 hover:bg-yellow-100"
-          >
-            <AlertCircle size={16} className="text-yellow-600 shrink-0" />
-            <span>Pagamento pendente — atualizar</span>
-          </Link>
-        )}
-        {/* Alerta de Limite de Membros */}
-        {memberLimit && memberLimit.limit !== Infinity && memberLimit.percentage >= 80 && (
-          <div
-            className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${
-              memberLimit.percentage >= 100
-                ? 'bg-red-50 text-red-700 border border-red-200'
-                : memberLimit.percentage >= 90
-                ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                : 'bg-gray-50 text-gray-700 border border-gray-200'
-            }`}
-          >
-            <AlertCircle
-              size={16}
-              className={
-                memberLimit.percentage >= 100
-                  ? 'text-red-600'
-                  : memberLimit.percentage >= 90
-                  ? 'text-orange-600'
-                  : 'text-gray-600'
-              }
-            />
-            <span>
-              {memberLimit.percentage >= 100 ? (
-                <>
-                  Limite de membros no plano atual atingido 
-                  (<strong>{memberLimit.limit}</strong>).
-                  {' '}
-                  <a
-                    href="/settings?tab=payment"
-                    className="underline hover:text-primary"
-                  >
-                    Atualize seu plano
-                  </a>
-                </>
-              ) : (
-                <>
-                  Limite de membros do plano atual quase atingido 
-                  (<strong>{memberLimit.currentCount}/{memberLimit.limit}</strong>).
-                  {' '}
-                  <a
-                    href="/settings?tab=payment"
-                    className="underline hover:text-primary"
-                  >
-                    Atualize seu plano
-                  </a>
-                </>
-              )}
-            </span>
-          </div>
-        )}
-        {memberLimitLoadFailed && (
+    <>
+      <header className="min-h-14 shrink-0 bg-white border-b border-gray-200 px-3 sm:px-6 flex items-center justify-between gap-2 pt-[env(safe-area-inset-top)] min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <button
             type="button"
-            onClick={handleRetryMemberLimit}
-            disabled={isRetryingMemberLimit}
-            title="Não foi possível carregar o limite de membros. Clique para tentar novamente."
-            className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-60"
+            onClick={() => setMobileNavOpen(true)}
+            className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 shrink-0"
+            aria-label="Abrir menu de navegação"
           >
-            <RefreshCw size={14} className={isRetryingMemberLimit ? 'animate-spin' : ''} />
-            <span>Limite indisponível</span>
+            <Menu size={22} />
           </button>
-        )}
-        {/* Badge do Plano */}
-        {user && (
-          <Link
-            href="/settings?tab=payment"
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all hover:opacity-80 cursor-pointer ${
-              isFreePlan
-                ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
-                : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200'
-            }`}
-          >
-            {isFreePlan ? (
-              <Gift size={12} className="text-green-600" />
-            ) : (
-              <Crown size={12} className="text-blue-600" />
-            )}
-            <span>{isFreePlan ? 'Versão Gratuita' : 'Versão PRO'}</span>
-            {/* <span className="text-[10px] font-medium opacity-90">
-              • Até {memberLimitValue} membros
-            </span> */}
-          </Link>
-        )}
 
-        {/* Email do Usuário + Papel */}
-        <div className="hidden sm:flex items-center gap-1 text-sm text-gray-600">
-          <User size={16} className="text-gray-600" />
-          <div className="flex items-center gap-2">
-            <span className="truncate max-w-48" title={session?.user?.email}>
-              {session?.user?.email || 'usuario@igreja.com'}
-            </span>
-            {currentRole && (
-              <span
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-700 border border-gray-200"
-                title={
-                  currentRole === 'owner'
-                    ? 'Conta Principal'
-                    : currentRole === 'admin'
-                    ? 'Administrador'
-                    : currentRole === 'editor'
-                    ? 'Editor'
-                    : 'Leitor'
-                }
-              >
-                {currentRole === 'owner'
-                  ? 'Conta Principal'
-                  : currentRole === 'admin'
-                  ? 'administrador'
-                  : currentRole === 'editor'
-                  ? 'editor'
-                  : 'leitor'}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <FlockLogo size={30} className="text-primary shrink-0" />
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-base sm:text-lg font-semibold text-primary shrink-0">
+                Flock App
               </span>
-            )}
+              <span className="text-gray-300 hidden sm:inline">|</span>
+              <h1
+                className="text-sm font-normal text-gray-600 truncate max-w-[28vw] sm:max-w-[40vw] md:max-w-none"
+                title={user?.name}
+              >
+                {user?.name || 'Igreja'}
+              </h1>
+            </div>
           </div>
         </div>
 
-        {/* Botão Sair */}
-        <Button
-          onClick={handleLogout}
-          size="sm"
-          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
-        >
-          <LogOut size={16} className="text-white" />
-          <span className="hidden sm:inline text-white">Sair</span>
-        </Button>
-      </div>
-    </header>
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0 min-w-0">
+          <ChurchSwitcher />
+          {user?.subscription_status === 'past_due' && (
+            <Link
+              href="/settings?tab=payment"
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-yellow-50 text-yellow-800 border border-yellow-300 hover:bg-yellow-100"
+            >
+              <AlertCircle size={16} className="text-yellow-600 shrink-0" />
+              <span>Pagamento pendente — atualizar</span>
+            </Link>
+          )}
+          {memberLimit && memberLimit.limit !== Infinity && memberLimit.percentage >= 80 && (
+            <div
+              className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${
+                memberLimit.percentage >= 100
+                  ? 'bg-red-50 text-red-700 border border-red-200'
+                  : memberLimit.percentage >= 90
+                    ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                    : 'bg-gray-50 text-gray-700 border border-gray-200'
+              }`}
+            >
+              <AlertCircle
+                size={16}
+                className={
+                  memberLimit.percentage >= 100
+                    ? 'text-red-600'
+                    : memberLimit.percentage >= 90
+                      ? 'text-orange-600'
+                      : 'text-gray-600'
+                }
+              />
+              <span>
+                {memberLimit.percentage >= 100 ? (
+                  <>
+                    Limite de membros no plano atual atingido (
+                    <strong>{memberLimit.limit}</strong>).{' '}
+                    <a href="/settings?tab=payment" className="underline hover:text-primary">
+                      Atualize seu plano
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    Limite de membros do plano atual quase atingido (
+                    <strong>
+                      {memberLimit.currentCount}/{memberLimit.limit}
+                    </strong>
+                    ).{' '}
+                    <a href="/settings?tab=payment" className="underline hover:text-primary">
+                      Atualize seu plano
+                    </a>
+                  </>
+                )}
+              </span>
+            </div>
+          )}
+          {memberLimitLoadFailed && (
+            <button
+              type="button"
+              onClick={handleRetryMemberLimit}
+              disabled={isRetryingMemberLimit}
+              title="Não foi possível carregar o limite de membros. Clique para tentar novamente."
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={isRetryingMemberLimit ? 'animate-spin' : ''} />
+              <span>Limite indisponível</span>
+            </button>
+          )}
+          {user && (
+            <Link
+              href="/settings?tab=payment"
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all hover:opacity-80 cursor-pointer ${
+                isFreePlan
+                  ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'
+                  : 'bg-blue-100 text-blue-700 border border-blue-200 hover:bg-blue-200'
+              }`}
+            >
+              {isFreePlan ? (
+                <Gift size={12} className="text-green-600" />
+              ) : (
+                <Crown size={12} className="text-blue-600" />
+              )}
+              <span>{isFreePlan ? 'Versão Gratuita' : 'Versão PRO'}</span>
+            </Link>
+          )}
+
+          <div className="hidden sm:flex items-center gap-1 text-sm text-gray-600">
+            <User size={16} className="text-gray-600" />
+            <div className="flex items-center gap-2">
+              <span className="truncate max-w-48" title={session?.user?.email}>
+                {session?.user?.email || 'usuario@igreja.com'}
+              </span>
+              {currentRole && (
+                <span
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-700 border border-gray-200"
+                  title={
+                    currentRole === 'owner'
+                      ? 'Conta Principal'
+                      : currentRole === 'admin'
+                        ? 'Administrador'
+                        : currentRole === 'editor'
+                          ? 'Editor'
+                          : 'Leitor'
+                  }
+                >
+                  {currentRole === 'owner'
+                    ? 'Conta Principal'
+                    : currentRole === 'admin'
+                      ? 'administrador'
+                      : currentRole === 'editor'
+                        ? 'editor'
+                        : 'leitor'}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <Button
+            onClick={handleLogout}
+            size="sm"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+          >
+            <LogOut size={16} className="text-white" />
+            <span className="hidden sm:inline text-white">Sair</span>
+          </Button>
+        </div>
+      </header>
+
+      <MobileNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+    </>
   );
 }

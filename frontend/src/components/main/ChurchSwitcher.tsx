@@ -41,11 +41,11 @@ export function ChurchSwitcher() {
         onClick={() => setOpen((v) => !v)}
         disabled={loading}
       >
-        <Building2 className="h-4 w-4" />
-        <span className="max-w-[140px] truncate">
+        <Building2 className="h-4 w-4 shrink-0" />
+        <span className="max-w-[72px] sm:max-w-[140px] truncate">
           {active?.churchName || user?.name || 'Igreja'}
         </span>
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown className="h-4 w-4 shrink-0" />
       </Button>
       {open && (
         <div className="absolute right-0 mt-1 w-56 rounded-md border border-gray-200 bg-white shadow-lg z-50">

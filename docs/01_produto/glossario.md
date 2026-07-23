@@ -304,7 +304,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - `backend/src/config/plans.ts`, `utils/planLimits.ts`
 - `backend/src/app.ts` (jobs)
 - `backend/src/controllers/churchUserController.ts` (labels de roles)
-- `frontend/src/components/main/Sidebar.tsx`, `Header.tsx`
+- `frontend/src/components/main/Sidebar.tsx`, `Header.tsx`, `MainNavLinks.tsx`, `MobileNavDrawer.tsx`, `navItems.ts`
 - `frontend/src/components/settings/ChurchUsersManagement.tsx`
 - `frontend/src/components/integration/*`, `members/ExportMembersModal.tsx`, `public/PublicMemberForm.tsx`
 - `docs/01_produto/visao-do-produto.md`, `personas-e-usuarios.md`, `jornadas-de-usuario.md`

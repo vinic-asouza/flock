@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-07-23
+versao: "1.1"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -16,7 +16,7 @@ tags: [produto, UX, fluxos, jornadas]
 ### Frontend (app — Next.js App Router)
 
 ```text
-/                              → Painel / Relatórios (ProtectedRoute)
+/                              → Painel / Relatórios (via `(main)/page.tsx`)
 ├── (auth)/
 │   ├── /login
 │   ├── /register
@@ -25,7 +25,8 @@ tags: [produto, UX, fluxos, jornadas]
 │   ├── /create-password
 │   └── /checkout              → Seleção/ativação de plano (AuthGuard especial)
 ├── /auth/callback             → Confirmação de e-mail / callback Auth
-├── (main)/                    → Shell: Header + Sidebar + Footer
+├── (main)/                    → Shell: Header + nav (Sidebar ≥ md / drawer < md) + Footer
+│   ├── /                      → Painel / Relatórios
 │   ├── /members
 │   ├── /integration
 │   ├── /groups
@@ -54,7 +55,7 @@ tags: [produto, UX, fluxos, jornadas]
 | --- | --- | --- |
 | Auth (deslogado) | login, register, forgot/reset/create-password | `AuthGuard` — se já logado → `/` (exceto checkout/`?redirect`) |
 | Onboarding / billing entry | register, checkout, subscription/* | Mistura público + auth |
-| App autenticado | `/`, `(main)/*` | `(main)/layout` + `ChurchSelectionGate`; `/` também `ProtectedRoute` |
+| App autenticado | `/`, `(main)/*` | `(main)/layout` + `ChurchSelectionGate` (Home `/` também sob `(main)`) |
 | Público / captação | `/public/*` | Token no path; sem JWT |
 | Marketing | landing `/`, `/waitlist` | Público |
 
@@ -62,13 +63,18 @@ tags: [produto, UX, fluxos, jornadas]
 
 ## 🧭 Arquitetura de Informação
 
-**Sidebar (sempre no shell authenticated):** Painel → Membros → Integração → Grupos → Congregações → Calendário → _(separador)_ → Configurações → Tutoriais.
+**Nav principal (shell autenticado):** Painel → Membros → Integração → Grupos → Congregações → Calendário → _(separador)_ → Configurações → Tutoriais.  
+Fonte única: `NAV_ITEMS` (`frontend/src/components/main/navItems.ts`), consumida por Sidebar e drawer mobile.
 
-**Header:** igreja ativa / switcher, alerta de limite de membros, badge de plano, papel, e-mail, logout; atalho para plano.
+**Desktop (≥ `md` / 768px):** Sidebar fixa à esquerda.
+
+**Mobile / tablet estreito (< `md`):** hamburger no Header abre drawer lateral (Headless UI) com os mesmos links; fecha ao navegar, Esc, overlay ou ao redimensionar para ≥ `md`.
+
+**Header:** igreja ativa / switcher, alerta de limite de membros (oculto < `md`), badge de plano, papel, e-mail, logout; atalho para plano; hamburger só < `md`.
 
 **Settings:** navegação por abas (`?tab=`); abas `payment`, `users`, `logs` só para `admin`/`owner`.
 
-**Sem:** breadcrumbs globais, busca global, wizard de primeiro acesso dedicado _(inferido)_.
+**Sem:** breadcrumbs globais, busca global, bottom tab bar, wizard de primeiro acesso dedicado _(inferido)_.
 
 **Contexts de fluxo:** `AuthContext` (sessão, role, igrejas), `MembersContext`, `IntegrationContext` — estado de listagens/filtros, não state machine formal.
 
@@ -219,7 +225,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 
 ## 📝 Notas para Agentes (produto / UX)
 
-1. Novas features do app devem caber no shell Sidebar ou em Settings tabs — evitar rotas órfãs.
+1. Novas features do app devem caber no shell de navegação (`NAV_ITEMS` / Sidebar+drawer) ou em Settings tabs — evitar rotas órfãs.
 2. Toda jornada de escrita precisa degradar bem para **reader** e respeitar **limite de plano**.
 3. Captação externa = jornada separada (`/public/*`); não misturar com shell autenticado.
 4. Onboarding de owner depende de **e-mail + plano**; não assumir acesso imediato pós-register.
@@ -227,13 +233,14 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 6. Estados vazios e erros devem permanecer acionáveis (CTA criar / limpar filtro / upgrade).
 7. Não há middleware Next.js global: proteção é layout + AuthContext + API — testar ambos.
 8. Billing é jornada de admin/owner; editor/reader não devem ser bloqueados no uso operacional salvo pelo limite de membros do tenant.
+9. Adaptação mobile de **conteúdo** de módulos é Issue própria; o shell (hamburger/drawer) é foundation compartilhada (breakpoint canônico do shell: `md`).
 
 ---
 
 ## Arquivos analisados
 
 - `frontend/src/app/**/page.tsx`, `layout.tsx` (árvore de rotas)
-- `frontend/src/components/main/Sidebar.tsx`, `Header.tsx`
+- `frontend/src/components/main/Sidebar.tsx`, `Header.tsx`, `MainNavLinks.tsx`, `MobileNavDrawer.tsx`, `navItems.ts`
 - `frontend/src/components/AuthGuard.tsx`, `ProtectedRoute.tsx`
 - `frontend/src/app/(main)/layout.tsx`
 - `frontend/src/components/auth/ChurchSelectionGate.tsx`
