@@ -117,7 +117,7 @@ function SubscriptionSuccessContent() {
 
   if (isAuthLoading || isLoading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-gray-50 px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
         <div className="text-center min-w-0">
           <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-base sm:text-lg font-medium text-gray-900 mb-2">Processando sua assinatura...</p>
@@ -136,7 +136,7 @@ function SubscriptionSuccessContent() {
   }
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-8 px-4 sm:py-12 sm:px-6 lg:px-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-hidden">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 sm:px-6 lg:px-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[max(3rem,env(safe-area-inset-top))] sm:pb-[max(3rem,env(safe-area-inset-bottom))]">
       <div className="max-w-md w-full min-w-0 bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
 
         <div className="text-center mb-6 sm:mb-8">
@@ -264,7 +264,7 @@ export default function SubscriptionSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-dvh flex items-center justify-center bg-gray-50 px-4">
+        <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="text-center">
             <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-base sm:text-lg font-medium text-gray-900 mb-2">Carregando...</p>

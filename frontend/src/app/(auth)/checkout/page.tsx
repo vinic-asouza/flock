@@ -170,7 +170,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="flex items-center justify-center w-full min-w-0">
-      <div className="w-full max-w-md sm:max-w-2xl bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+      <div className="w-full bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
         <div className="text-center mb-6">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-3">
             <CreditCard className="h-6 w-6 text-primary" />

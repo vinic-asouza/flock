@@ -19,7 +19,7 @@ export default function SubscriptionCancelPage() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-gray-50 py-8 px-4 sm:py-12 sm:px-6 lg:px-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] overflow-x-hidden">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 sm:px-6 lg:px-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[max(3rem,env(safe-area-inset-top))] sm:pb-[max(3rem,env(safe-area-inset-bottom))]">
       <div className="max-w-md w-full min-w-0 bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
         <div className="text-center mb-6 sm:mb-8">
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
