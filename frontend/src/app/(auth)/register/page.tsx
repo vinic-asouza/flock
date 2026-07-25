@@ -251,7 +251,7 @@ function RegisterPageContent() {
   // ACHADO 08: tela de confirmação de e-mail exibida após registro concluído
   if (registrationSuccess) {
     return (
-      <div className="space-y-6 text-center">
+      <div className="space-y-6 text-center min-w-0">
         <div className="flex justify-center">
           <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
             <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -266,10 +266,10 @@ function RegisterPageContent() {
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
           <div className="flex items-start gap-3">
             <Mail className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <p className="text-sm font-medium text-blue-800">Confirme seu e-mail para continuar</p>
-              <p className="text-sm text-blue-700 mt-1">
-                Enviamos um link de confirmação para <strong>{registeredEmail}</strong>.
+              <p className="text-sm text-blue-700 mt-1 break-words">
+                Enviamos um link de confirmação para <strong className="break-all">{registeredEmail}</strong>.
                 Clique no link do e-mail para ativar sua conta e acessar o sistema.
               </p>
             </div>
@@ -280,7 +280,7 @@ function RegisterPageContent() {
         </p>
         <Link
           href="/login"
-          className="inline-block w-full py-2 px-4 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors text-center"
+          className="inline-flex items-center justify-center w-full min-h-11 py-2.5 px-4 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors text-center"
         >
           Ir para o Login
         </Link>
@@ -289,10 +289,10 @@ function RegisterPageContent() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Registrar Igreja</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Registrar Igreja</h1>
+        <p className="mt-2 text-sm sm:text-base text-gray-600">
           Crie sua conta para começar a gerenciar sua igreja
         </p>
       </div>
@@ -359,7 +359,7 @@ function RegisterPageContent() {
             Denominação
           </label>
           <select
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isOperationLoading}
             {...register('denomination')}
           >
@@ -403,11 +403,11 @@ function RegisterPageContent() {
           {...register('address')}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="min-w-0">
             <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
             <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               {...register('state')}
               disabled={isLoadingStates || isOperationLoading}
             >
@@ -419,10 +419,10 @@ function RegisterPageContent() {
             {errors.state && <p className="text-sm text-red-600 mt-1">{errors.state.message}</p>}
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
             <select
-              className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               {...register('city')}
               disabled={!selectedState || isLoadingCities || isOperationLoading}
             >
@@ -441,26 +441,27 @@ function RegisterPageContent() {
           <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ</label>
           <input
             type="text"
+            inputMode="numeric"
             placeholder="00.000.000/0000-00"
             value={cnpjDisplay}
             onChange={handleCNPJChange}
-            className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             maxLength={18}
             disabled={isOperationLoading}
           />
-          {errors.cnpj && <p className="text-sm text-red-600 mt-1">{errors.cnpj.message}</p>}
+          {errors.cnpj && <p className="text-sm text-red-600 mt-1 break-words">{errors.cnpj.message}</p>}
         </div>
 
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm font-medium text-red-600">{error}</p>
-            {errorDetails && <p className="text-sm text-red-500 mt-1">{errorDetails}</p>}
+            <p className="text-sm font-medium text-red-600 break-words">{error}</p>
+            {errorDetails && <p className="text-sm text-red-500 mt-1 break-words">{errorDetails}</p>}
           </div>
         )}
 
         <Button
           type="submit"
-          className="w-full"
+          className="w-full min-h-11"
           isLoading={isOperationLoading || isSubmitting}
           disabled={isSubmitting}
         >
