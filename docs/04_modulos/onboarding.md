@@ -3,8 +3,8 @@ type: modulo
 nome: onboarding
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-25
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, onboarding]
 depende_de: [auth, billing, igreja-config]
@@ -88,8 +88,11 @@ backend/src/
 └── config/plans.ts                 → catálogo de planos (UI)
 
 frontend/src/
-├── app/(auth)/register/page.tsx    → form Zod + session_id / plan / link_token
-├── app/(auth)/checkout/page.tsx    → escolha de plano (autenticado; free vs pago)
+├── app/(auth)/layout.tsx           → shell do funil (marketing `lg+`; form scrollável + safe-area no mobile)
+├── app/(auth)/register/page.tsx    → form Zod + session_id / plan / link_token (stack touch-friendly < `sm`)
+├── app/(auth)/checkout/page.tsx    → escolha de plano (autenticado; free vs pago; grade responsiva)
+├── app/subscription/success/       → retorno pós-Stripe (polling status)
+├── app/subscription/cancel/        → abandono do Checkout Stripe
 └── utils/planFunnel.ts             → persistência de plano no funil
 
 landing/src/

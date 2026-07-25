@@ -84,13 +84,15 @@ backend/src/
 
 frontend/src/
 ├── app/(auth)/
+│   ├── layout.tsx              → shell compartilhado (marketing `lg+`; form mobile com scroll/safe-area)
 │   ├── login/
 │   ├── forgot-password/
 │   ├── reset-password/
 │   ├── create-password/
+│   ├── checkout/               → escolha de plano; domínio onboarding/billing entry
 │   └── register/               → UI; domínio onboarding
 ├── app/auth/callback/          → lê hash tokens → POST /api/auth/callback
-└── context/AuthContext.tsx     → estado de sessão no client
+├── context/AuthContext.tsx     → estado de sessão no client
 └── services/api.ts             → Axios withCredentials
 
 Testes backend dedicados: inexistentes.

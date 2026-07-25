@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-07-23
-versao: "1.1"
+ultima_atualizacao: 2026-07-25
+versao: "1.2"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -69,6 +69,8 @@ Fonte única: `NAV_ITEMS` (`frontend/src/components/main/navItems.ts`), consumid
 **Desktop (≥ `md` / 768px):** Sidebar fixa à esquerda.
 
 **Mobile / tablet estreito (< `md`):** hamburger no Header abre drawer lateral (Headless UI) com os mesmos links; fecha ao navegar, Esc, overlay ou ao redimensionar para ≥ `md`.
+
+**Funil auth / onboarding (`(auth)` + `/subscription/*`):** layout próprio (não usa shell `(main)`). Em mobile, painel de formulário com scroll, safe-area e alvos touch; painel marketing do `(auth)` só a partir de **`lg` (1024px)**. Rotas: login, register, checkout, forgot/reset/create-password; retorno Stripe em `/subscription/success|cancel`.
 
 **Header:** igreja ativa / switcher, alerta de limite de membros (oculto < `md`), badge de plano, papel, e-mail, logout; atalho para plano; hamburger só < `md`.
 
@@ -233,7 +235,8 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 6. Estados vazios e erros devem permanecer acionáveis (CTA criar / limpar filtro / upgrade).
 7. Não há middleware Next.js global: proteção é layout + AuthContext + API — testar ambos.
 8. Billing é jornada de admin/owner; editor/reader não devem ser bloqueados no uso operacional salvo pelo limite de membros do tenant.
-9. Adaptação mobile de **conteúdo** de módulos é Issue própria; o shell (hamburger/drawer) é foundation compartilhada (breakpoint canônico do shell: `md`).
+9. Adaptação mobile de **conteúdo** de módulos autenticados é Issue própria; o shell (hamburger/drawer) é foundation compartilhada (breakpoint canônico do shell: `md`).
+10. Funil de cadastro/planos (J1/J2) usa layout `(auth)` — responsividade própria (`lg` para marketing sidebar); não depender do drawer do shell.
 
 ---
 
