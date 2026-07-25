@@ -3,8 +3,8 @@ type: modulo
 nome: auth
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-25
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, auth]
 depende_de: []
