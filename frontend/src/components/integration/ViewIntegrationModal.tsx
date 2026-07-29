@@ -171,7 +171,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
       closeOnOverlayClick={!loading}
       closeOnEscape={!loading}
     >
-      <div className="flex flex-col min-h-[60vh]">
+      <div className="flex flex-col min-h-0">
         {loading && (
           <div className="flex items-center justify-center py-12">
             <Loader className="animate-spin text-primary" size={32} />
@@ -179,16 +179,16 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
         )}
 
         {error && (
-          <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
-            <p className="text-sm font-medium text-red-600">{error}</p>
+          <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md mx-4 sm:mx-6 mt-4 sm:mt-6">
+            <p className="text-sm font-medium text-red-600 break-words">{error}</p>
           </div>
         )}
 
         {member && !loading && (
-          <div className="flex-1 p-6 space-y-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 uppercase">{formatMemberName(member.name)}</h3>
+          <div className="flex-1 p-4 sm:p-6 space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900 uppercase break-words">{formatMemberName(member.name)}</h3>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[member.status] ?? 'bg-gray-100 text-gray-700'}`}>
                     {statusLabels[member.status] ?? member.status}
@@ -208,13 +208,13 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={handleExportPDF}
                   disabled={exporting}
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
                 >
                   {exporting ? (
                     <>
@@ -224,7 +224,8 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
                   ) : (
                     <>
                       <Download size={16} />
-                      Exportar PDF
+                      <span className="hidden sm:inline">Exportar PDF</span>
+                      <span className="sm:hidden">PDF</span>
                     </>
                   )}
                 </Button>
@@ -282,14 +283,14 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
             {/* Footer com ações para integrantes em progresso */}
             {member && member.status === 'em_progresso' && (
               <div className="border-t border-gray-200 pt-4 mt-6">
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                   <Button
                     variant="danger"
                     size="sm"
                     onClick={handleDiscard}
                     disabled={discarding || readOnly}
                     title={readOnly ? READER_TOOLTIP : undefined}
-                    className="inline-flex items-center gap-2"
+                    className="inline-flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
                   >
                     {discarding ? (
                       <>
@@ -309,7 +310,7 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
                     onClick={handleConvert}
                     disabled={readOnly}
                     title={readOnly ? READER_TOOLTIP : undefined}
-                    className="inline-flex items-center gap-2"
+                    className="inline-flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
                   >
                     <UserPlus size={16} />
                     Integrar
@@ -321,14 +322,14 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
             {/* Footer com ações para integrantes integrados */}
             {member && member.status === 'integrado' && (
               <div className="border-t border-gray-200 pt-4 mt-6">
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                   <Button
                     variant="danger"
                     size="sm"
                     onClick={handleDeleteClick}
                     disabled={readOnly}
                     title={readOnly ? READER_TOOLTIP : undefined}
-                    className="inline-flex items-center gap-2"
+                    className="inline-flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
                   >
                     <Trash2 size={16} />
                     Remover da lista

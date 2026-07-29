@@ -3,8 +3,8 @@ type: modulo
 nome: integracao
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-29
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, integracao]
 depende_de: [auth, igreja-config, membros, congregacoes]
@@ -356,6 +356,12 @@ stateDiagram-v2
   Inativo --> [*]: DELETE
 ```
 
+### UI — hub e modais (`/integration`)
+
+Hub autenticado em `frontend/src/app/(main)/integration/page.tsx` + `components/integration/*`.
+
+**Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, Convert, View, export PDF da lista e links de autocadastro usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno). Export de lista PDF passa por esse `Modal` (não overlay ad hoc). Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Autocadastro público: `/public/integration/[token]` com safe-area + `PublicIntegrationForm` (CTAs full-width no mobile).
+
 ---
 
 ## 8. 🔗 Integrações
@@ -469,7 +475,8 @@ graph LR
 4. **Convert** exige formulário Member completo (obrigatórios Joi de membros); incompleto no integrante ≠ pronto.  
 5. Query `.eq('active', true)` em congregations no público — coluna `active` pode não existir (mesmo risco do módulo membros).  
 6. Soft disable de link ≠ delete; DELETE de integrante é permanente.  
-7. Export PDF não está neste módulo.
+7. Export PDF de **ficha individual** fica em Relatórios / detalhe; export de **lista** PDF é UI do hub (`ExportIntegrationModal`).  
+8. **Mobile / `Modal`:** evitar `min-h` fixo alto dentro do conteúdo do `Modal` (conflita com flex + `dvh`). Preferir `min-h-0` e body scrollável; Convert usa `MemberForm` (form longo — validar teclado no device).
 
 ---
 
@@ -478,6 +485,7 @@ graph LR
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo integração | — |
+| 2026-07-29 | 1.1 | UX mobile/tablet: hub, Convert, Modal sheet, public integration, export via Modal | DEV-29 |
 
 ---
 

@@ -137,22 +137,22 @@ export function ConvertIntegrationModal({
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >
-      <div className="flex flex-col min-h-0 space-y-4">
+      <div className="flex flex-col min-h-0">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-sm">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 mx-4 sm:mx-6 mt-4 rounded-md text-sm break-words">
             {error}
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto">
-          {integrationMember && (
-            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 text-sm">
-              <p className="font-medium">
-                Os campos abaixo foram preenchidos com as informações fornecidas durante a integração. Complete os dados obrigatórios para concluir o cadastro.
-              </p>
-            </div>
-          )}
+        {integrationMember && (
+          <div className="bg-blue-50 border-b border-blue-200 text-blue-800 px-4 sm:px-6 py-3 text-sm">
+            <p className="font-medium">
+              Os campos abaixo foram preenchidos com as informações fornecidas durante a integração. Complete os dados obrigatórios para concluir o cadastro.
+            </p>
+          </div>
+        )}
 
+        <div className="flex-1 min-h-0 p-4 sm:p-6">
           <MemberForm
             key={integrationMember?.id || 'new'}
             mode="create"
