@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Download, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
 
 interface ExportMembersModalProps {
   isOpen: boolean;
@@ -65,7 +66,9 @@ export function ExportMembersModal({ isOpen, onClose, onExport }: ExportMembersM
   const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'phone', 'email']);
   const [exporting, setExporting] = useState(false);
 
-  if (!isOpen) return null;
+  const handleClose = () => {
+    if (!exporting) onClose();
+  };
 
   const handleToggleField = (fieldId: string) => {
     setSelectedFields(prev => {
@@ -106,96 +109,19 @@ export function ExportMembersModal({ isOpen, onClose, onExport }: ExportMembersM
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <div className="bg-white rounded-t-xl sm:rounded-lg shadow-xl w-full max-w-2xl max-h-[min(100dvh,100%)] sm:max-h-[min(90dvh,90vh)] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-gray-200 shrink-0">
-          <div className="min-w-0">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Exportar Lista de Membros</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Selecione os campos que deseja incluir no PDF
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 inline-flex items-center justify-center min-h-11 min-w-11 text-gray-400 hover:text-gray-600 transition-colors"
-            disabled={exporting}
-            aria-label="Fechar"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Body - Scrollable */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-          {/* Actions */}
-          <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-gray-600">
-              <span className="font-medium text-gray-900">{selectedFields.length}</span> campos selecionados
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={handleSelectAll}
-                className="text-sm text-primary hover:text-primary/80 font-medium transition-colors min-h-9 px-2"
-                disabled={exporting}
-              >
-                Selecionar todos
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={handleClearAll}
-                className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                disabled={exporting}
-              >
-                Limpar seleção
-              </button>
-            </div>
-          </div>
-
-          {/* Field Selection by Category */}
-          <div className="space-y-6">
-            {(Object.keys(CATEGORIES) as Array<keyof typeof CATEGORIES>).map((category) => (
-              <div key={category}>
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  {CATEGORIES[category]}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {getFieldsByCategory(category).map((field) => (
-                    <label
-                      key={field.id}
-                      className={`
-                        flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
-                        ${selectedFields.includes(field.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }
-                        ${exporting ? 'opacity-50 cursor-not-allowed' : ''}
-                      `}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedFields.includes(field.id)}
-                        onChange={() => handleToggleField(field.id)}
-                        disabled={exporting}
-                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
-                      />
-                      <span className="text-sm font-medium text-gray-700">
-                        {field.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50 shrink-0">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Exportar Lista de Membros"
+      description="Selecione os campos que deseja incluir no PDF"
+      size="lg"
+      closeOnOverlayClick={!exporting}
+      closeOnEscape={!exporting}
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 p-4 sm:p-6">
           <Button
             variant="secondary"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={exporting}
             className="min-h-11 w-full sm:w-auto"
           >
@@ -219,8 +145,70 @@ export function ExportMembersModal({ isOpen, onClose, onExport }: ExportMembersM
             )}
           </Button>
         </div>
+      }
+    >
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-gray-600">
+            <span className="font-medium text-gray-900">{selectedFields.length}</span> campos selecionados
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              className="text-sm text-primary hover:text-primary/80 font-medium transition-colors min-h-9 px-2"
+              disabled={exporting}
+            >
+              Selecionar todos
+            </button>
+            <span className="text-gray-300 hidden sm:inline">|</span>
+            <button
+              type="button"
+              onClick={handleClearAll}
+              className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors min-h-9 px-2"
+              disabled={exporting}
+            >
+              Limpar seleção
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {(Object.keys(CATEGORIES) as Array<keyof typeof CATEGORIES>).map((category) => (
+            <div key={category}>
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                {CATEGORIES[category]}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {getFieldsByCategory(category).map((field) => (
+                  <label
+                    key={field.id}
+                    className={`
+                      flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all min-h-11
+                      ${selectedFields.includes(field.id)
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }
+                      ${exporting ? 'opacity-50 cursor-not-allowed' : ''}
+                    `}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedFields.includes(field.id)}
+                      onChange={() => handleToggleField(field.id)}
+                      disabled={exporting}
+                      className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      {field.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
-

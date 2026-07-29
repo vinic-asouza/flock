@@ -8,7 +8,9 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  description?: React.ReactNode;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
@@ -19,7 +21,9 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  description,
   children,
+  footer,
   size = 'md',
   showCloseButton = true,
   closeOnOverlayClick = true,
@@ -111,8 +115,13 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between gap-3 shrink-0 px-4 py-4 sm:p-6 border-b border-gray-200">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900 min-w-0 break-words">{title}</h2>
+        <div className="flex items-start justify-between gap-3 shrink-0 px-4 py-4 sm:p-6 border-b border-gray-200">
+          <div className="min-w-0">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 break-words">{title}</h2>
+            {description ? (
+              <div className="text-sm text-gray-500 mt-1">{description}</div>
+            ) : null}
+          </div>
           {showCloseButton && (
             <button
               type="button"
@@ -129,6 +138,12 @@ export function Modal({
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
           {children}
         </div>
+
+        {footer ? (
+          <div className="shrink-0 border-t border-gray-200 bg-gray-50">
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   );

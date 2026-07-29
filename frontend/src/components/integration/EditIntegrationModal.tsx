@@ -56,7 +56,7 @@ export function EditIntegrationModal({
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >
-      <div className="flex flex-col min-h-[70vh] p-6 space-y-4">
+      <div className="flex flex-col min-h-0 p-6 space-y-4">
         {error && (
           <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm font-medium text-red-600">{error}</p>

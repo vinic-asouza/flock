@@ -250,7 +250,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
             <Button onClick={loadGroup} className="mt-4">Tentar novamente</Button>
           </div>
         ) : group ? (
-          <div className="flex h-full min-h-[55vh] max-h-[calc(90vh-120px)] gap-6 p-6">
+          <div className="flex h-full min-h-0 gap-6 p-6">
             {/* Coluna Esquerda - Informações (30%) */}
             <div className="w-[30%] flex-shrink-0 border-r border-gray-200 pr-6 overflow-y-auto">
               <div className="space-y-6">
