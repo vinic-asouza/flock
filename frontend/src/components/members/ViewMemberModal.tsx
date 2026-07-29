@@ -210,7 +210,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
       closeOnOverlayClick={!loading}
       closeOnEscape={!loading}
     >
-      <div className="flex flex-col min-h-[70vh]">
+      <div className="flex flex-col min-h-0">
         {loading && (
           <div className="flex items-center justify-center py-12">
             <Loader className="animate-spin text-primary" size={32} />

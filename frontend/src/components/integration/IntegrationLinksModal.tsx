@@ -216,9 +216,9 @@ export function IntegrationLinksModal({ isOpen, onClose, canEdit = true }: Integ
       closeOnOverlayClick={!isSubmitting}
       closeOnEscape={!isSubmitting}
     >
-      <div className="flex flex-col min-h-[70vh] p-6">
+      <div className="flex flex-col min-h-0 p-6">
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6 -mx-6 -mt-6">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
             <p className="text-sm font-medium text-red-600">{error}</p>
           </div>
         )}

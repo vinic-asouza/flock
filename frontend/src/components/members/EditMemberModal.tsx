@@ -133,7 +133,7 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       closeOnOverlayClick={!isLoading && !isLoadingMember}
       closeOnEscape={!isLoading && !isLoadingMember}
     >
-      <div className="flex flex-col min-h-[75vh]">
+      <div className="flex flex-col min-h-0">
         {isLoadingMember && (
           <div className="flex items-center justify-center py-12">
             <LoaderCircle className="animate-spin text-primary" size={32} />

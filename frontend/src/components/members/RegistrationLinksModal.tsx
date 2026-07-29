@@ -217,9 +217,9 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       closeOnOverlayClick={!isSubmitting}
       closeOnEscape={!isSubmitting}
     >
-      <div className="flex flex-col min-h-[70vh] p-6">
+      <div className="flex flex-col min-h-0 p-4 sm:p-6">
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6 -mx-6 -mt-6">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
             <p className="text-sm font-medium text-red-600">{error}</p>
           </div>
         )}
@@ -227,12 +227,12 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
         {!showCreateForm ? (
           <>
             {links.length > 0 && (
-              <div className="flex justify-between items-center mb-6 gap-4">
-                <p className="text-sm text-gray-600 flex-1">
+              <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:justify-between sm:items-center">
+                <p className="text-sm text-gray-600 flex-1 min-w-0">
                   Crie links e compartilhe com a igreja para que membros possam se cadastrar utilizando o autocadastro.
                 </p>
                 {!readOnly && (
-                <Button onClick={handleCreate} className="inline-flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
+                <Button onClick={handleCreate} className="inline-flex items-center justify-center gap-2 shrink-0 min-h-11 w-full sm:w-auto">
                   <Plus size={18} />
                   Novo Link
                 </Button>
@@ -253,7 +253,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                 )}
               </div>
             ) : (
-              <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-2">
+              <div className="space-y-4 overflow-y-auto max-h-[min(60vh,50dvh)] sm:max-h-[60vh] pr-1 sm:pr-2">
                 {links.map((link) => (
                   <div
                     key={link.id}
@@ -263,11 +263,11 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                         : 'bg-white border-gray-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <LinkIcon size={18} className="text-gray-500" />
-                          <h3 className="font-medium text-gray-900">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <LinkIcon size={18} className="text-gray-500 shrink-0" />
+                          <h3 className="font-medium text-gray-900 break-words">
                             {link.notes || `Link criado em ${formatDate(link.created_at)}`}
                           </h3>
                           {!link.is_active && (
@@ -286,7 +286,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                        <div className="flex flex-col gap-1 text-sm text-gray-600 mb-2 sm:flex-row sm:items-center sm:gap-4">
                           <div className="flex items-center gap-1">
                             <Calendar size={14} />
                             <span>Expira em: {formatDate(link.expires_at)}</span>
@@ -298,19 +298,19 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 mt-3">
+                        <div className="flex flex-col gap-2 mt-3 sm:flex-row sm:items-center">
                           <input
                             type="text"
                             value={link.url}
                             readOnly
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50"
+                            className="w-full min-w-0 flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50"
                           />
                           {link.is_active && (
                             <Button
                               variant="primary"
                               size="sm"
                               onClick={() => handleCopyLink(link.url, link.id)}
-                              className="inline-flex items-center gap-1"
+                              className="inline-flex items-center justify-center gap-1 min-h-11 w-full sm:w-auto"
                             >
                               {copiedLinkId === link.id ? (
                                 <>
@@ -327,15 +327,14 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        {!readOnly && (
-                        <>
+                      {!readOnly && (
+                      <div className="flex flex-wrap items-center gap-2 sm:ml-4 sm:shrink-0">
                         <Button
                           variant="secondary"
                           size="sm"
                           onClick={() => handleEdit(link)}
                           disabled={loading}
-                          className="inline-flex items-center gap-1"
+                          className="inline-flex items-center justify-center gap-1 min-h-11 flex-1 sm:flex-initial"
                         >
                           <Edit size={16} />
                           Editar
@@ -346,7 +345,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                             size="sm"
                             onClick={() => handleDeactivate(link.id)}
                             disabled={loading}
-                            className="inline-flex items-center gap-1"
+                            className="inline-flex items-center justify-center gap-1 min-h-11 flex-1 sm:flex-initial"
                             title="Desativar link"
                           >
                             <PowerOff size={16} />
@@ -359,7 +358,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                               size="sm"
                               onClick={() => handleReactivate(link.id)}
                               disabled={loading}
-                              className="inline-flex items-center gap-1"
+                              className="inline-flex items-center justify-center gap-1 min-h-11 flex-1 sm:flex-initial"
                               title="Reativar link"
                             >
                               <Power size={16} />
@@ -370,7 +369,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                               size="sm"
                               onClick={() => handleDeleteClick(link.id)}
                               disabled={loading}
-                              className="inline-flex items-center gap-1"
+                              className="inline-flex items-center justify-center gap-1 min-h-11 flex-1 sm:flex-initial"
                               title="Excluir permanentemente"
                             >
                               <Trash2 size={16} />
@@ -378,9 +377,8 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                             </Button>
                           </>
                         )}
-                        </>
-                        )}
                       </div>
+                      )}
                     </div>
                   </div>
                 ))}

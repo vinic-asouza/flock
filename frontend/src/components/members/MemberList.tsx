@@ -161,34 +161,39 @@ export function MemberList({
   return (
     <div className="flex flex-col gap-2">
       {/* Seletor de modo de visualização e botão exportar */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between min-w-0">
         {typeof pagination?.total === 'number' && (
-          <div className="text-gray-500 text-sm">{pagination.total} membros encontrados</div>
+          <div className="text-gray-500 text-sm shrink-0">{pagination.total} membros encontrados</div>
         )}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0">
           <button
+            type="button"
             onClick={handleRefresh}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-1 min-h-9 px-3 py-1.5 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm hover:bg-gray-50"
           >
             <RefreshCcw size={12} />
             Atualizar
           </button>
           <button
+            type="button"
             onClick={onExport}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+            className="inline-flex items-center justify-center gap-1 min-h-9 px-3 py-1.5 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
           >
             <Download size={12} />
-            Exportar PDF
+            <span className="hidden xs:inline sm:inline">Exportar PDF</span>
+            <span className="sm:hidden">PDF</span>
           </button>
           {onExportCSV && (
             <button
+              type="button"
               onClick={onExportCSV}
               disabled={readOnly}
               title={readOnly ? READER_TOOLTIP : undefined}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center gap-1 min-h-9 px-3 py-1.5 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <FileSpreadsheet size={12} />
-              Exportar CSV
+              <span className="hidden sm:inline">Exportar CSV</span>
+              <span className="sm:hidden">CSV</span>
             </button>
           )}
           {viewModeSelector}

@@ -105,7 +105,7 @@ export default function PublicRegisterPage() {
   if (isValidating) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-4 sm:px-6 flex items-center justify-center z-50 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-3">
               <FlockLogo size={30} className="text-white" />
@@ -118,8 +118,8 @@ export default function PublicRegisterPage() {
             )}
           </div>
         </header>
-        <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+        <div className="flex items-center justify-center p-4 min-h-[100dvh] pt-[calc(3.5rem+1rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-md w-full text-center">
             <Loader className="animate-spin text-primary mx-auto mb-4" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Validando link...</h2>
             <p className="text-gray-600">Por favor, aguarde enquanto verificamos o link de registro.</p>
@@ -132,7 +132,7 @@ export default function PublicRegisterPage() {
   if (!isValid && errorType === 'link') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-4 sm:px-6 flex items-center justify-center z-50 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-3">
               <FlockLogo size={30} className="text-white" />
@@ -145,8 +145,8 @@ export default function PublicRegisterPage() {
             )}
           </div>
         </header>
-        <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+        <div className="flex items-center justify-center p-4 min-h-[100dvh] pt-[calc(3.5rem+1rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-md w-full text-center">
             <XCircle className="text-red-500 mx-auto mb-4" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Link Inválido ou Expirado</h2>
             <p className="text-gray-600 mb-4">
@@ -172,7 +172,7 @@ export default function PublicRegisterPage() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-4 sm:px-6 flex items-center justify-center z-50 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex flex-col items-center gap-1">
             <div className="flex items-center gap-3">
               <FlockLogo size={30} className="text-white" />
@@ -185,8 +185,8 @@ export default function PublicRegisterPage() {
             )}
           </div>
         </header>
-        <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+        <div className="flex items-center justify-center p-4 min-h-[100dvh] pt-[calc(3.5rem+1rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-md w-full text-center">
             <CheckCircle className="text-green-500 mx-auto mb-4" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Cadastro Realizado com Sucesso!</h2>
             <p className="text-gray-600 mb-4">
@@ -234,7 +234,7 @@ export default function PublicRegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-      <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
+      <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-4 sm:px-6 flex items-center justify-center z-50 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <div className="flex flex-col items-center gap-1">
           <div className="flex items-center gap-3">
             <FlockLogo size={30} className="text-white" />
@@ -248,10 +248,10 @@ export default function PublicRegisterPage() {
         </div>
       </header>
 
-      <div className="py-8 px-4 pt-[calc(3.5rem+2rem)]">
+      <div className="py-6 sm:py-8 px-3 sm:px-4 pt-[calc(3.5rem+1.5rem+env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               Cadastro de Membro
             </h1>
             {linkInfo?.church_name && (

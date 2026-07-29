@@ -55,10 +55,14 @@ export function MemberFiltersBar({
   const updateDropdownPlacement = useCallback(() => {
     if (!activeDropdown || !triggerRef?.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    const width = 192;
+    const width = Math.min(192, Math.max(rect.width, 160));
+    const left = Math.min(
+      Math.max(8, rect.right - width),
+      window.innerWidth - width - 8
+    );
     setDropdownPlacement({
       top: rect.bottom + 4,
-      left: rect.right - width,
+      left,
       width,
     });
   }, [activeDropdown, triggerRef]);
@@ -131,16 +135,16 @@ export function MemberFiltersBar({
   };
 
   return (
-    <div ref={containerRef} className="flex flex-nowrap gap-2 items-center overflow-visible">
+    <div ref={containerRef} className="flex flex-wrap gap-2 items-end overflow-visible">
       {/* Status */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex flex-col gap-1 overflow-visible min-w-[8.5rem] flex-1 sm:flex-initial">
         <label className="block text-xs font-medium text-gray-600">Status</label>
         <div className="relative overflow-visible">
           <button
             ref={statusTriggerRef}
             type="button"
             onClick={() => setOpenSelect(openSelect === 'status' ? null : 'status')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="h-11 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
           >
             <span>
               {filters.status === 'active' ? 'Ativo' : filters.status === 'inactive' ? 'Inativo' : 'Todos'}
@@ -154,14 +158,14 @@ export function MemberFiltersBar({
       </div>
       
       {/* Congregação */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex flex-col gap-1 overflow-visible min-w-[10rem] flex-1 sm:flex-initial sm:min-w-[12rem]">
         <label className="block text-xs font-medium text-gray-600">Congregação</label>
         <div className="relative overflow-visible">
           <button
             ref={congregationTriggerRef}
             type="button"
             onClick={() => setOpenSelect(openSelect === 'congregation' ? null : 'congregation')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-11 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={filtersLoading}
           >
             <span>
@@ -179,14 +183,14 @@ export function MemberFiltersBar({
       </div>
       
       {/* Ordenar */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex flex-col gap-1 overflow-visible min-w-[9rem] flex-1 sm:flex-initial">
         <label className="block text-xs font-medium text-gray-600">Ordenar por</label>
         <div className="relative overflow-visible">
           <button
             ref={sortTriggerRef}
             type="button"
             onClick={() => setShowSortingDropdown(!showSortingDropdown)}
-            className="h-10 inline-flex items-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0"
+            className="h-11 inline-flex items-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0 w-full sm:w-auto"
           >
             <ArrowUpDown size={16} />
             {getSortingLabel()}
@@ -196,12 +200,12 @@ export function MemberFiltersBar({
       </div>
       
       {/* Mais opções */}
-      <div className="flex flex-col gap-1 overflow-visible">
-        <label className="block text-xs font-medium text-gray-600 opacity-0">Ações</label>
+      <div className="flex flex-col gap-1 overflow-visible min-w-[9rem] flex-1 sm:flex-initial">
+        <label className="block text-xs font-medium text-gray-600 opacity-0 sm:opacity-0">Ações</label>
         <button
           type="button"
           onClick={onShowAdvanced}
-          className={`h-10 inline-flex items-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0 ${showAdvanced ? 'bg-gray-50 border-gray-300' : ''}`}
+          className={`h-11 inline-flex items-center justify-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0 w-full sm:w-auto ${showAdvanced ? 'bg-gray-50 border-gray-300' : ''}`}
         >
           <Filter size={16} />
           Mais opções

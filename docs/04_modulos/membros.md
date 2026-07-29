@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-22
-versao: "1.3"
+ultima_atualizacao: 2026-07-29
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -216,6 +216,8 @@ Capability de autocadastro.
 | **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 alinhado ao form v2 para impressão e preenchimento manual. |
 
 Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
+
+**Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, import, export PDF/CSV e links de autocadastro usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; props opcionais `description` / `footer`). Export de lista PDF/CSV também passa por esse `Modal` (não overlay ad hoc). Desktop (≥`md`/`sm` conforme componente) permanece equivalente.
 
 ### UI — detalhe do membro (`ViewMemberModal`)
 
@@ -549,6 +551,7 @@ graph LR
 7. Query pública de congregações com `.eq('active', true)` — tabelas `congregations` **pode não ter** `active` (verificar schema live).  
 8. Após hard delete, FKs SET NULL / CASCADE (calendar, groups) — familiarizar-se com efeitos.  
 9. **UI edição (`MemberForm` mode=edit):** validação Zod no cliente antes do `PUT`. Campos opcionais vindos do Postgres como `null` (enums/booleanos) devem ser normalizados para `undefined`/string vazia no hydrate — senão o submit falha. Em submit inválido, exibir banner + scroll ao campo (`onInvalid`); sucesso mostra toast e fecha o modal. Não hidratar `document` no form (campo sem UI de edição).
+10. **Mobile / `Modal`:** evitar `min-h-[70–75vh]` dentro do conteúdo do `Modal` (conflita com flex + `dvh`). Preferir `min-h-0` e deixar o body do Modal rolar; CTAs longos no footer sticky (`footer` prop) ou empilhados no form.
 
 ---
 
@@ -560,6 +563,7 @@ graph LR
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
 | 2026-07-21 | 1.2 | UX edição: feedback de validação/sucesso; hydrate null-safe (enums) | DEV-23 |
 | 2026-07-22 | 1.3 | UI detalhe: Família top-level com cônjuge; Pessoais em 2 colunas | DEV-24 |
+| 2026-07-29 | 1.4 | UX mobile/tablet: hub, Modal sheet, public register, export via Modal | DEV-28 |
 
 ---
 

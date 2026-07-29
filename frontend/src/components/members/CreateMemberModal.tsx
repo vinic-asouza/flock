@@ -53,8 +53,8 @@ export function CreateMemberModal({ isOpen, onClose, onSuccess }: CreateMemberMo
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >
-      <div className="flex flex-col min-h-[75vh]">
-        <div className="flex-1">
+      <div className="flex flex-col min-h-0">
+        <div className="flex-1 min-h-0">
           <MemberForm
             mode="create"
             onSubmit={handleSubmit}
