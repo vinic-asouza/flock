@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-07-29
-versao: "1.3"
+versao: "1.4"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -144,6 +144,8 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 3. Editor converte integrante → membro oficial
 4. Continua na jornada J6
 
+**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Autointegração pública: ver J11.
+
 ### J8 — Estrutura e agenda
 
 - Congregações: CRUD + vínculos de membros  
@@ -173,7 +175,9 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 3. Submit cria membro/integrante na igreja do link
 4. Rate limit e validade/usos do token
 
-**Mobile (`/public/register/[token]`):** header com safe-area, formulário scrollável (`PublicMemberForm`) e CTAs full-width — uso típico no celular do visitante.
+**Mobile:**
+- `/public/register/[token]`: header com safe-area, formulário scrollável (`PublicMemberForm`) e CTAs full-width.
+- `/public/integration/[token]`: mesmo padrão (`PublicIntegrationForm`) — uso típico no celular do visitante.
 
 ### J12 — Tutoriais (aprendizado in-app)
 
@@ -242,6 +246,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 9. Adaptação mobile de **conteúdo** de módulos autenticados é Issue própria; o shell (hamburger/drawer) é foundation compartilhada (breakpoint canônico do shell: `md`).
 10. Funil de cadastro/planos (J1/J2) usa layout `(auth)` — responsividade própria (`lg` para marketing sidebar); não depender do drawer do shell.
 11. Módulo **Membros** (J6/J11 register): hub `/members`, modais CRUD/import/export/links e `/public/register/[token]` são operáveis em ~375px via `Modal` sheet + form responsivo — sem migrar CRUD para rotas full-page.
+12. Módulo **Integração** (J7/J11 integration): hub `/integration`, modais CRUD/Convert/export/links e `/public/integration/[token]` seguem o mesmo padrão mobile (~375px) — sem migrar Convert/CRUD para rotas full-page.
 
 ---
 
