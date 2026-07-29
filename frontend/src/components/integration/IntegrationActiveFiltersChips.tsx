@@ -53,7 +53,8 @@ export function IntegrationActiveFiltersChips({
           <button
             type="button"
             onClick={() => onRemoveFilter(chip.key)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="inline-flex items-center justify-center min-h-8 min-w-8 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={`Remover filtro ${chip.label}`}
           >
             <X size={14} />
           </button>
@@ -62,7 +63,7 @@ export function IntegrationActiveFiltersChips({
       <button
         type="button"
         onClick={onClearAll}
-        className="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-primary transition-colors"
+        className="inline-flex items-center gap-1 min-h-11 text-xs font-medium text-gray-500 hover:text-primary transition-colors px-1"
       >
         <RefreshCcw size={14} />
         Limpar filtros

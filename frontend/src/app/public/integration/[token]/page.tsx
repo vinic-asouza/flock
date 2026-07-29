@@ -26,6 +26,24 @@ function isLimitError(err: unknown): boolean {
   return status === 403 || status === 409 || message.includes('limite');
 }
 
+function PublicHeader({ churchName }: { churchName?: string }) {
+  return (
+    <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-4 sm:px-6 flex items-center justify-center z-50 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="flex flex-col items-center gap-1">
+        <div className="flex items-center gap-3">
+          <FlockLogo size={30} className="text-white" />
+          <span className="text-lg font-semibold text-white">Flock App</span>
+        </div>
+        {churchName && (
+          <h1 className="text-sm font-normal text-white/90">
+            {churchName}
+          </h1>
+        )}
+      </div>
+    </header>
+  );
+}
+
 export default function PublicIntegrationPage() {
   const params = useParams();
   const token = params.token as string;
@@ -105,21 +123,9 @@ export default function PublicIntegrationPage() {
   if (isValidating) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-3">
-              <FlockLogo size={30} className="text-white" />
-              <span className="text-lg font-semibold text-white">Flock App</span>
-            </div>
-            {linkInfo?.church_name && (
-              <h1 className="text-sm font-normal text-white/90">
-                {linkInfo.church_name}
-              </h1>
-            )}
-          </div>
-        </header>
-        <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+        <PublicHeader churchName={linkInfo?.church_name} />
+        <div className="flex items-center justify-center p-4 min-h-[100dvh] pt-[calc(3.5rem+1rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-md w-full text-center">
             <Loader className="animate-spin text-primary mx-auto mb-4" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Validando link...</h2>
             <p className="text-gray-600">Por favor, aguarde enquanto verificamos o link de integração.</p>
@@ -129,25 +135,12 @@ export default function PublicIntegrationPage() {
     );
   }
 
-  // Erro de validação do link (link inválido/expirado)
   if (!isValid && errorType === 'link') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-3">
-              <FlockLogo size={30} className="text-white" />
-              <span className="text-lg font-semibold text-white">Flock App</span>
-            </div>
-            {linkInfo?.church_name && (
-              <h1 className="text-sm font-normal text-white/90">
-                {linkInfo.church_name}
-              </h1>
-            )}
-          </div>
-        </header>
-        <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+        <PublicHeader churchName={linkInfo?.church_name} />
+        <div className="flex items-center justify-center p-4 min-h-[100dvh] pt-[calc(3.5rem+1rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-md w-full text-center">
             <XCircle className="text-red-500 mx-auto mb-4" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Link Inválido ou Expirado</h2>
             <p className="text-gray-600 mb-4">
@@ -160,7 +153,7 @@ export default function PublicIntegrationPage() {
               </p>
             </div>
             <div className="mt-6">
-              <Button onClick={() => window.location.reload()}>
+              <Button onClick={() => window.location.reload()} className="min-h-11 w-full sm:w-auto">
                 Tentar Novamente
               </Button>
             </div>
@@ -173,27 +166,15 @@ export default function PublicIntegrationPage() {
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-        <header className="fixed top-0 left-0 right-0 bg-primary border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-3">
-              <FlockLogo size={30} className="text-white" />
-              <span className="text-lg font-semibold text-white">Flock App</span>
-            </div>
-            {linkInfo?.church_name && (
-              <h1 className="text-sm font-normal text-white/90">
-                {linkInfo.church_name}
-              </h1>
-            )}
-          </div>
-        </header>
-        <div className="flex items-center justify-center p-4 min-h-screen pt-[calc(3.5rem+1rem)]">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full text-center">
+        <PublicHeader churchName={linkInfo?.church_name} />
+        <div className="flex items-center justify-center p-4 min-h-[100dvh] pt-[calc(3.5rem+1rem+env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+          <div className="bg-white rounded-lg shadow-md p-6 sm:p-8 max-w-md w-full text-center">
             <CheckCircle className="text-green-500 mx-auto mb-4" size={48} />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Cadastro Realizado com Sucesso!</h2>
             <p className="text-gray-600 mb-4">
               Obrigado! Seu cadastro foi enviado com sucesso para a <strong>{linkInfo?.church_name}</strong>
             </p>
-            
+
             <div className="mt-6 space-y-4">
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
@@ -201,7 +182,7 @@ export default function PublicIntegrationPage() {
                   Lembre-se de realizar um cadastro individual para cada pessoa da família, como cônjuge e filhos (se houver).
                 </p>
               </div>
-              
+
               <div className="flex flex-col gap-3">
                 <Button
                   onClick={() => {
@@ -212,6 +193,7 @@ export default function PublicIntegrationPage() {
                   }}
                   variant="primary"
                   disabled={linkExhausted}
+                  className="min-h-11 w-full"
                 >
                   Realizar Novo Cadastro
                 </Button>
@@ -221,7 +203,7 @@ export default function PublicIntegrationPage() {
                     Este link atingiu o limite de cadastros permitidos.
                   </p>
                 )}
-                
+
                 <p className="text-xs text-gray-500">
                   Ou você já pode fechar esta página.
                 </p>
@@ -235,25 +217,12 @@ export default function PublicIntegrationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-[#0d0a3a] to-primary">
-      <header className="fixed top-0 left-0 right-0 bg-primary backdrop-blur-sm border-b border-white/20 px-6 flex items-center justify-center z-50 py-3">
-        <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-3">
-            <FlockLogo size={30} className="text-white" />
-            <span className="text-lg font-semibold text-white">Flock App</span>
-          </div>
-          {linkInfo?.church_name && (
-            <h1 className="text-sm font-normal text-white/90">
-              {linkInfo.church_name}
-            </h1>
-          )}
-        </div>
-      </header>
-      
-      <div className="py-8 px-4 pt-[calc(3.5rem+2rem)]">
+      <PublicHeader churchName={linkInfo?.church_name} />
+
+      <div className="py-6 sm:py-8 px-3 sm:px-4 pt-[calc(3.5rem+1.5rem+env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <div className="max-w-4xl mx-auto">
-          {/* Header do conteúdo */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
               Cadastro de Integração
             </h1>
             {linkInfo?.church_name && (
@@ -265,7 +234,7 @@ export default function PublicIntegrationPage() {
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
                   <AlertCircle className="inline mr-2" size={16} />
-                  {linkInfo.remaining_uses > 0 
+                  {linkInfo.remaining_uses > 0
                     ? `${linkInfo.remaining_uses} ${linkInfo.remaining_uses === 1 ? 'cadastro restante' : 'cadastros restantes'}`
                     : 'Limite de cadastros atingido'
                   }
@@ -274,32 +243,30 @@ export default function PublicIntegrationPage() {
             )}
           </div>
 
-        {/* Formulário */}
-        <div className="bg-white rounded-lg shadow-md">
-          <PublicIntegrationForm
-            onSubmit={handleSubmit}
-            isLoading={isSubmitting}
-            churchName={linkInfo?.church_name}
-            congregations={linkInfo?.congregations ?? []}
-            submitDisabled={linkExhausted}
-          />
-          
-          {error && errorType === 'submission' && (
-            <div className="px-6 pb-6">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-red-600">{error}</p>
-                  <p className="text-xs text-red-600">
-                    <AlertCircle className="inline mr-1" size={14} />
-                    Se o problema persistir, entre em contato com a secretaria da igreja para obter assistência.
-                  </p>
+          <div className="bg-white rounded-lg shadow-md">
+            <PublicIntegrationForm
+              onSubmit={handleSubmit}
+              isLoading={isSubmitting}
+              churchName={linkInfo?.church_name}
+              congregations={linkInfo?.congregations ?? []}
+              submitDisabled={linkExhausted}
+            />
+
+            {error && errorType === 'submission' && (
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-red-600 break-words">{error}</p>
+                    <p className="text-xs text-red-600">
+                      <AlertCircle className="inline mr-1" size={14} />
+                      Se o problema persistir, entre em contato com a secretaria da igreja para obter assistência.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-          {/* Footer com informações */}
           <div className="mt-6 text-center text-sm text-gray-500">
             <p>Seus dados serão tratados com confidencialidade e segurança.</p>
           </div>
@@ -308,4 +275,3 @@ export default function PublicIntegrationPage() {
     </div>
   );
 }
-

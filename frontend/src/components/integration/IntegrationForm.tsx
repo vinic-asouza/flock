@@ -395,11 +395,11 @@ export function IntegrationForm({
         />
       </div>
 
-      <div className="flex justify-end gap-3">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading} className="min-h-11 w-full sm:w-auto">
           Cancelar
         </Button>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="min-h-11 w-full sm:w-auto">
           {mode === 'create' ? 'Cadastrar integrante' : 'Salvar alterações'}
         </Button>
       </div>

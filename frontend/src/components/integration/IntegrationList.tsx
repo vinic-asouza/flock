@@ -63,8 +63,9 @@ export function IntegrationList({
         <p className="text-lg font-medium text-gray-900 mb-2">Erro ao carregar</p>
         <p className="text-sm text-gray-500 mb-4">{error}</p>
         <button
+          type="button"
           onClick={() => onRetry ? onRetry() : window.location.reload()}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center justify-center min-h-11 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
         >
           Tentar novamente
         </button>
@@ -89,16 +90,17 @@ export function IntegrationList({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between mb-2">
+    <div className="flex flex-col gap-2 min-w-0">
+      <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-center sm:justify-between">
         {typeof pagination?.total === 'number' && (
           <div className="text-gray-500 text-sm">{pagination.total} integrantes encontrados</div>
         )}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <button
+            type="button"
             onClick={handleRefresh}
             disabled={loading}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-1 min-h-11 px-3 py-2 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} />
             Atualizar
@@ -107,7 +109,7 @@ export function IntegrationList({
             type="button"
             onClick={onExport}
             disabled={isExporting}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center gap-1 min-h-11 px-3 py-2 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isExporting ? (
               <>
@@ -117,7 +119,8 @@ export function IntegrationList({
             ) : (
               <>
                 <Download size={12} />
-                Exportar lista
+                <span className="hidden sm:inline">Exportar lista</span>
+                <span className="sm:hidden">Exportar</span>
               </>
             )}
           </button>

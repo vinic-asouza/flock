@@ -180,31 +180,33 @@ function IntegrationPageContent() {
         title="Integração"
         subtitle="Gerencie integrantes em processo de integração e converta-os em membros."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Button
               onClick={() => setIntegrationLinksModalOpen(true)}
               variant="secondary"
-              className="inline-flex items-center gap-2"
+              className="inline-flex items-center justify-center gap-2 min-h-11"
               title={canEdit === false ? 'Visualizar e copiar links de autocadastro' : undefined}
             >
-              <LinkIcon size={18} />
-              Links de Autocadastro
+              <LinkIcon size={18} className="shrink-0" />
+              <span className="hidden sm:inline">Links de Autocadastro</span>
+              <span className="sm:hidden">Links</span>
             </Button>
             <Button
               onClick={() => setCreateModalOpen(true)}
-              className="inline-flex items-center gap-2"
+              className="inline-flex items-center justify-center gap-2 min-h-11"
               disabled={canEdit === false}
               title={canEdit === false ? READER_TOOLTIP : undefined}
             >
-              <Plus size={18} />
-              Novo integrante
+              <Plus size={18} className="shrink-0" />
+              <span className="hidden sm:inline">Novo integrante</span>
+              <span className="sm:hidden">Novo</span>
             </Button>
           </div>
         }
       />
 
-      <div className="flex flex-nowrap items-end gap-2 w-full overflow-x-auto">
-        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+      <div className="flex flex-col gap-3 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="w-full min-w-0 sm:min-w-[200px] sm:flex-1 flex flex-col gap-1">
           <label htmlFor="integration-search" className="block text-xs font-medium text-gray-600">
             Busca
           </label>
@@ -215,7 +217,7 @@ function IntegrationPageContent() {
             isLoading={loading}
           />
         </div>
-        <div className="flex-shrink-0">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-shrink-0">
           <IntegrationFiltersBar
             filters={filters}
             onChange={handleFilterChange}

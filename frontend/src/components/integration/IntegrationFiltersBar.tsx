@@ -91,17 +91,17 @@ export function IntegrationFiltersBar({
   const currentStatus = filters.status ?? 'todos';
 
   return (
-    <div ref={containerRef} className="flex flex-nowrap gap-2 items-end overflow-visible">
-      <div className="flex flex-col gap-1 overflow-visible">
+    <div ref={containerRef} className="flex flex-col gap-2 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-end overflow-visible">
+      <div className="flex flex-col gap-1 w-full min-w-0 sm:w-auto sm:min-w-[10rem] overflow-visible">
         <label className="block text-xs font-medium text-gray-600">Status</label>
         <div className="relative overflow-visible">
           <button
             ref={statusTriggerRef}
             type="button"
             onClick={() => handleToggle('status')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="h-11 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
           >
-            <span>{statusLabels[currentStatus]}</span>
+            <span className="truncate">{statusLabels[currentStatus]}</span>
             <ChevronDown
               size={16}
               className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'status' ? 'rotate-180' : ''}`}
@@ -110,16 +110,16 @@ export function IntegrationFiltersBar({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex flex-col gap-1 w-full min-w-0 sm:w-auto sm:min-w-[14rem] overflow-visible">
         <label className="block text-xs font-medium text-gray-600">Congregação prevista</label>
         <div className="relative overflow-visible">
           <button
             ref={congregationTriggerRef}
             type="button"
             onClick={() => handleToggle('congregation')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="h-11 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
           >
-            <span>
+            <span className="truncate">
               {filters.expectedCongregationId
                 ? getCongregationDisplayName(congregations.find(c => c.id === filters.expectedCongregationId)) || 'Congregação selecionada'
                 : 'Todas as congregações'}
@@ -155,7 +155,7 @@ export function IntegrationFiltersBar({
                     onChange({ status: option });
                     setOpenSelect(null);
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${currentStatus === option ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                  className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${currentStatus === option ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   {statusLabels[option]}
                 </button>
@@ -170,7 +170,7 @@ export function IntegrationFiltersBar({
                   onChange({ expectedCongregationId: '' });
                   setOpenSelect(null);
                 }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.expectedCongregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.expectedCongregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
               >
                 Todas as congregações
               </button>
@@ -182,7 +182,7 @@ export function IntegrationFiltersBar({
                     onChange({ expectedCongregationId: congregation.id });
                     setOpenSelect(null);
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.expectedCongregationId === congregation.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                  className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.expectedCongregationId === congregation.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   {getCongregationDisplayName(congregation)}
                 </button>

@@ -48,14 +48,14 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >
-      <div className="flex flex-col min-h-0 p-6 space-y-4">
+      <div className="flex flex-col min-h-0 p-4 sm:p-6 space-y-4">
         {error && (
           <div className="flex-shrink-0 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm font-medium text-red-600">{error}</p>
+            <p className="text-sm font-medium text-red-600 break-words">{error}</p>
           </div>
         )}
 
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <IntegrationForm
             mode="create"
             onSubmit={handleSubmit}

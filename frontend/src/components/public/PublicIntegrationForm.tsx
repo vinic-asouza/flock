@@ -162,7 +162,7 @@ export function PublicIntegrationForm({
   }, [register]);
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-4 sm:p-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Nome completo"
@@ -228,13 +228,13 @@ export function PublicIntegrationForm({
         />
       </div>
 
-      <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-6 border-t border-gray-200">
         {onCancel && (
-          <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading} className="min-h-11 w-full sm:w-auto">
             Cancelar
           </Button>
         )}
-        <Button type="submit" isLoading={isLoading} disabled={isLoading || submitDisabled}>
+        <Button type="submit" isLoading={isLoading} disabled={isLoading || submitDisabled} className="min-h-11 w-full sm:w-auto">
           Enviar Cadastro
         </Button>
       </div>
