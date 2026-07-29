@@ -3,8 +3,8 @@ type: modulo
 nome: auth
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-25
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, auth]
 depende_de: []
@@ -84,13 +84,15 @@ backend/src/
 
 frontend/src/
 ├── app/(auth)/
+│   ├── layout.tsx              → shell compartilhado (marketing `lg+`; form mobile com scroll/safe-area)
 │   ├── login/
 │   ├── forgot-password/
 │   ├── reset-password/
 │   ├── create-password/
+│   ├── checkout/               → escolha de plano; domínio onboarding/billing entry
 │   └── register/               → UI; domínio onboarding
 ├── app/auth/callback/          → lê hash tokens → POST /api/auth/callback
-└── context/AuthContext.tsx     → estado de sessão no client
+├── context/AuthContext.tsx     → estado de sessão no client
 └── services/api.ts             → Axios withCredentials
 
 Testes backend dedicados: inexistentes.

@@ -9,13 +9,10 @@ export default function AuthLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="h-screen bg-gray-50 overflow-hidden">
-        <div className="flex h-screen">
-          {/* Sidebar com informações da aplicação */}
-          <div
-            className="hidden lg:flex lg:w-1/2 bg-primary bg-gradient-to-r from-primary via-[#0d0a3a] to-primary p-8 text-white"
-
-          >
+      <div className="min-h-dvh bg-gray-50 overflow-x-hidden">
+        <div className="flex min-h-dvh">
+          {/* Sidebar com informações da aplicação — desktop lg+ */}
+          <div className="hidden lg:flex lg:w-1/2 bg-primary bg-gradient-to-r from-primary via-[#0d0a3a] to-primary p-8 text-white">
             <div className="flex flex-col justify-center max-w-md mx-auto">
               <div className="mb-8">
                 <div className="flex items-center mb-2 gap-3">
@@ -67,9 +64,9 @@ export default function AuthLayout({
             </div>
           </div>
 
-          {/* Área de formulário */}
-          <div className="flex-1 flex justify-center p-8 overflow-y-auto">
-            <div className="w-full max-w-md py-8 pb-16 my-auto">
+          {/* Área de formulário — scrollável (teclado / forms longos) */}
+          <div className="flex-1 min-h-0 min-w-0 flex justify-center overflow-y-auto overflow-x-hidden px-4 sm:px-6 lg:px-8 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] sm:pt-[calc(2rem+env(safe-area-inset-top))] sm:pb-[calc(2rem+env(safe-area-inset-bottom))]">
+            <div className="w-full max-w-md py-4 sm:py-8 pb-12 my-auto min-w-0">
               {children}
             </div>
           </div>
@@ -77,4 +74,4 @@ export default function AuthLayout({
       </div>
     </AuthGuard>
   );
-} 
+}

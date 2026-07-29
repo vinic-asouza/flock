@@ -117,10 +117,10 @@ function SubscriptionSuccessContent() {
 
   if (isAuthLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
+      <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <div className="text-center min-w-0">
           <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-lg font-medium text-gray-900 mb-2">Processando sua assinatura...</p>
+          <p className="text-base sm:text-lg font-medium text-gray-900 mb-2">Processando sua assinatura...</p>
           <p className="text-sm text-gray-500">Aguarde enquanto confirmamos seu pagamento</p>
         </div>
       </div>
@@ -136,19 +136,19 @@ function SubscriptionSuccessContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 sm:px-6 lg:px-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[max(3rem,env(safe-area-inset-top))] sm:pb-[max(3rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-md w-full min-w-0 bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
 
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           {missingSessionId ? (
             <>
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gray-100 mb-4">
                 <XCircle className="h-8 w-8 text-gray-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 Sessão de pagamento não encontrada
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 Não foi possível validar seu pagamento nesta página. Verifique sua assinatura nas configurações.
               </p>
             </>
@@ -157,10 +157,10 @@ function SubscriptionSuccessContent() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
                 <Clock className="h-8 w-8 text-yellow-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 Verificação Pendente
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 Seu pagamento pode ter sido recebido, mas a confirmação automática está demorando.
               </p>
             </>
@@ -169,10 +169,10 @@ function SubscriptionSuccessContent() {
               <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
                 <CheckCircle2 className="h-8 w-8 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                 Pagamento Confirmado!
               </h1>
-              <p className="text-gray-600">
+              <p className="text-sm sm:text-base text-gray-600">
                 Sua assinatura foi ativada com sucesso
               </p>
             </>
@@ -240,11 +240,11 @@ function SubscriptionSuccessContent() {
 
         <div className="space-y-3">
           {(error || missingSessionId) && (
-            <Button onClick={() => router.push('/settings?tab=payment')} variant="secondary" className="w-full">
+            <Button onClick={() => router.push('/settings?tab=payment')} variant="secondary" className="w-full min-h-11">
               Ir para Configurações → Plano
             </Button>
           )}
-          <Button onClick={() => router.push('/')} className="w-full">
+          <Button onClick={() => router.push('/')} className="w-full min-h-11">
             Ir para o Sistema
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
@@ -264,10 +264,10 @@ export default function SubscriptionSuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="text-center">
             <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-900 mb-2">Carregando...</p>
+            <p className="text-base sm:text-lg font-medium text-gray-900 mb-2">Carregando...</p>
           </div>
         </div>
       }

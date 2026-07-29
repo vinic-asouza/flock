@@ -137,7 +137,7 @@ export default function CheckoutPage() {
           </p>
           {plansLoadError && (
             <Button
-              className="mt-4"
+              className="mt-4 min-h-11"
               variant="secondary"
               onClick={() => {
                 setIsLoadingPlans(true);
@@ -169,39 +169,40 @@ export default function CheckoutPage() {
   const selectedPlanData = planOptions.find(p => p.value === selectedPlan);
 
   return (
-    <div className="flex items-center justify-center w-full">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
+    <div className="flex items-center justify-center w-full min-w-0">
+      <div className="w-full bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
         <div className="text-center mb-6">
           <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary/10 mb-3">
             <CreditCard className="h-6 w-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Escolha seu Plano</h1>
+          <h1 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">Escolha seu Plano</h1>
           <p className="text-sm text-gray-600">Selecione o plano ideal para sua igreja</p>
         </div>
 
         {!canManagePlan && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">{READER_TOOLTIP}</p>
+            <p className="text-sm text-amber-800 break-words">{READER_TOOLTIP}</p>
           </div>
         )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-800">{error}</p>
+            <p className="text-sm text-red-800 break-words">{error}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {planOptions.map((plan) => {
             const isSelected = selectedPlan === plan.value;
             const isFree = plan.value === '100';
             return (
               <button
                 key={plan.value}
+                type="button"
                 onClick={() => setSelectedPlan(plan.value as '100' | '200' | '500' | '800')}
                 disabled={!canManagePlan}
-                className={`relative p-3 rounded-lg border transition-all ${
+                className={`relative min-h-11 p-4 rounded-lg border transition-all ${
                   isSelected
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-gray-200 hover:border-primary/40 hover:bg-gray-50'
@@ -231,12 +232,12 @@ export default function CheckoutPage() {
 
         {selectedPlanData && (
           <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <div className="min-w-0">
                 <p className="text-xs text-gray-500 mb-0.5">Plano selecionado</p>
-                <p className="text-base font-semibold text-gray-900">{selectedPlanData.name}</p>
+                <p className="text-base font-semibold text-gray-900 break-words">{selectedPlanData.name}</p>
               </div>
-              <div className="text-right">
+              <div className="sm:text-right shrink-0">
                 <p className="text-xs text-gray-500 mb-0.5">Valor</p>
                 <p className={`text-lg font-bold ${selectedPlan === '100' ? 'text-green-600' : 'text-primary'}`}>
                   {selectedPlanData.price}
@@ -263,7 +264,7 @@ export default function CheckoutPage() {
           onClick={handleCheckout}
           disabled={isLoading || !selectedPlan || !canManagePlan}
           title={!canManagePlan ? READER_TOOLTIP : undefined}
-          className="w-full"
+          className="w-full min-h-11"
         >
           {isLoading ? (
             <>

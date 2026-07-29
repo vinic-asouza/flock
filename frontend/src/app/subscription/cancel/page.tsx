@@ -19,21 +19,21 @@ export default function SubscriptionCancelPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center mb-8">
+    <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 sm:px-6 lg:px-8 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))] sm:pt-[max(3rem,env(safe-area-inset-top))] sm:pb-[max(3rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-md w-full min-w-0 bg-white rounded-lg shadow-lg p-4 sm:p-6 md:p-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-yellow-100 mb-4">
             <XCircle className="h-8 w-8 text-yellow-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             Pagamento Cancelado
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Você cancelou o processo de pagamento
           </p>
         </div>
 
-        <div className="space-y-4 mb-8">
+        <div className="space-y-4 mb-6 sm:mb-8">
           <div className="p-4 bg-yellow-50 rounded-lg">
             <p className="text-sm text-yellow-800">
               <strong>Nenhum pagamento foi processado.</strong>
@@ -56,7 +56,7 @@ export default function SubscriptionCancelPage() {
         <div className="space-y-3">
           <Button
             onClick={() => router.push(checkoutPath())}
-            className="w-full"
+            className="w-full min-h-11"
           >
             <CreditCard className="w-5 h-5 mr-2" />
             Tentar Novamente
