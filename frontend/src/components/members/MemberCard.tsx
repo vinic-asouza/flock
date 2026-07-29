@@ -39,16 +39,16 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
   const readOnly = canEdit === false;
   const idade = calculateAge(member.birth);
   return (
-    <div className={`flex flex-col gap-1 border border-gray-200 rounded-lg px-6 py-4 md:flex-row md:items-center md:justify-between ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
+    <div className={`flex flex-col gap-1 border border-gray-200 rounded-lg px-4 py-3 sm:px-6 sm:py-4 md:flex-row md:items-center md:justify-between min-w-0 ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e selos */}
         <CardHeader
           title={formatMemberName(member.name)}
           badges={[
             <StatusBadge key="status" variant={member.active ? 'active' : 'inactive'} size="sm" />,
-            <span key="congregation" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-              <Church size={12} className="text-gray-600" />
-              {getCongregationDisplayName(member.congregation) || '—'}
+            <span key="congregation" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 max-w-full">
+              <Church size={12} className="text-gray-600 shrink-0" />
+              <span className="truncate">{getCongregationDisplayName(member.congregation) || '—'}</span>
             </span>,
             ...(member.groups && member.groups.length > 0
               ? member.groups
@@ -89,29 +89,32 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
         </div>
       </div>
       {/* Ações */}
-      <div className="flex gap-2 mt-3 md:mt-0 md:ml-4">
+      <div className="flex flex-wrap gap-1 mt-3 md:mt-0 md:ml-4 shrink-0">
         {member.active ? (
           <>
             <button
+              type="button"
               title="Visualizar"
               onClick={onView}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
             >
               <Eye size={18} />
             </button>
             <button
+              type="button"
               title={readOnly ? READER_TOOLTIP : 'Editar'}
               onClick={onEdit}
               disabled={readOnly}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Edit size={18} />
             </button>
             <button
+              type="button"
               title={readOnly ? READER_TOOLTIP : 'Inativar'}
               onClick={onDeactivate}
               disabled={readOnly}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <UserMinus size={18} />
             </button>
@@ -119,17 +122,19 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
         ) : (
           <>
             <button
+              type="button"
               title="Visualizar"
               onClick={onView}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
             >
               <Eye size={18} />
             </button>
             <button
+              type="button"
               title={readOnly ? READER_TOOLTIP : 'Reativar'}
               onClick={onReactivate}
               disabled={readOnly}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <UserPlus size={18} />
             </button>

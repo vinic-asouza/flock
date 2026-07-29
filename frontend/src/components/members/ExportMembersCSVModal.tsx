@@ -108,27 +108,29 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <div className="bg-white rounded-t-xl sm:rounded-lg shadow-xl w-full max-w-2xl max-h-[min(100dvh,100%)] sm:max-h-[min(90dvh,90vh)] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Exportar Lista de Membros (CSV)</h2>
+        <div className="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-gray-200 shrink-0">
+          <div className="min-w-0">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Exportar Lista de Membros (CSV)</h2>
             <p className="text-sm text-gray-500 mt-1">
               Selecione os campos e configure as opções do CSV
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="shrink-0 inline-flex items-center justify-center min-h-11 min-w-11 text-gray-400 hover:text-gray-600 transition-colors"
             disabled={exporting}
+            aria-label="Fechar"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Body - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           {/* Configurações do CSV */}
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Configurações do CSV</h3>
@@ -137,8 +139,8 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Delimitador
               </label>
-              <div className="flex gap-3">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+                <label className="flex items-center gap-2 cursor-pointer min-h-11">
                   <input
                     type="radio"
                     name="delimiter"
@@ -150,7 +152,7 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
                   />
                   <span className="text-sm text-gray-700">Vírgula (,)</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer min-h-11">
                   <input
                     type="radio"
                     name="delimiter"
@@ -162,7 +164,7 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
                   />
                   <span className="text-sm text-gray-700">Ponto e vírgula (;)</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex items-center gap-2 cursor-pointer min-h-11">
                   <input
                     type="radio"
                     name="delimiter"
@@ -178,7 +180,7 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
             </div>
 
             <div>
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer min-h-11">
                 <input
                   type="checkbox"
                   checked={includeHeaders}
@@ -194,22 +196,22 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-gray-600">
               <span className="font-medium text-gray-900">{selectedFields.length}</span> campos selecionados
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleSelectAll}
-                className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                className="text-sm text-primary hover:text-primary/80 font-medium transition-colors min-h-9 px-2"
                 disabled={exporting}
               >
                 Selecionar todos
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden sm:inline">|</span>
               <button
                 onClick={handleClearAll}
-                className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                className="text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors min-h-9 px-2"
                 disabled={exporting}
               >
                 Limpar seleção
@@ -224,12 +226,12 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">
                   {CATEGORIES[category]}
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {getFieldsByCategory(category).map((field) => (
                     <label
                       key={field.id}
                       className={`
-                        flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all
+                        flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all min-h-11
                         ${selectedFields.includes(field.id)
                           ? 'border-primary bg-primary/5'
                           : 'border-gray-200 hover:border-gray-300 bg-white'
@@ -256,18 +258,19 @@ export function ExportMembersCSVModal({ isOpen, onClose, onExport }: ExportMembe
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 p-4 sm:p-6 border-t border-gray-200 bg-gray-50 shrink-0">
           <Button
             variant="secondary"
             onClick={onClose}
             disabled={exporting}
+            className="min-h-11 w-full sm:w-auto"
           >
             Cancelar
           </Button>
           <Button
             onClick={handleExport}
             disabled={exporting || selectedFields.length === 0}
-            className="inline-flex items-center gap-2"
+            className="inline-flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
           >
             {exporting ? (
               <>

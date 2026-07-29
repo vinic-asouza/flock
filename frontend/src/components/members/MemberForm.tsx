@@ -545,7 +545,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit, handleInvalidSubmit)} className="space-y-6 p-6">
+    <form onSubmit={handleSubmit(handleFormSubmit, handleInvalidSubmit)} className="space-y-6 p-4 sm:p-6">
 
       {/* ─── INFORMAÇÕES BÁSICAS ─── */}
       <div className="space-y-4">
@@ -1206,9 +1206,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       )}
 
       {/* Botões */}
-      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>Cancelar</Button>
-        <Button type="submit" isLoading={isLoading}>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-6 border-t border-gray-200">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading} className="min-h-11 w-full sm:w-auto">Cancelar</Button>
+        <Button type="submit" isLoading={isLoading} className="min-h-11 w-full sm:w-auto">
           {mode === 'create' ? 'Criar Membro' : 'Salvar Alterações'}
         </Button>
       </div>

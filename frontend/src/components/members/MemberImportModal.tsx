@@ -118,7 +118,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
       closeOnOverlayClick={!validating && !importing}
       closeOnEscape={!validating && !importing}
     >
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Step 1: Upload */}
         {step === 'upload' && (
           <div className="space-y-6">
@@ -243,13 +243,14 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               </div>
             )}
 
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" onClick={handleClose} disabled={validating}>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+              <Button variant="secondary" onClick={handleClose} disabled={validating} className="min-h-11 w-full sm:w-auto">
                 Cancelar
               </Button>
               <Button
                 onClick={handleValidate}
                 disabled={!file || !selectedCongregationId || validating || loadingCongregations}
+                className="min-h-11 w-full sm:w-auto"
               >
                 {validating ? (
                   <>
@@ -302,22 +303,22 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                   <h3 className="text-lg font-medium text-gray-900 mb-3">
                     Resultado da Validação
                   </h3>
-              <div className="flex gap-3 overflow-x-auto">
-                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg flex-shrink-0 min-w-0">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg min-w-0">
                   <List className="h-5 w-5 text-blue-600 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-500">Total de Linhas</p>
                     <p className="text-lg font-semibold text-gray-900">{validationResult.totalRows}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg flex-shrink-0 min-w-0">
+                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg min-w-0">
                   <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-500">Válidas</p>
                     <p className="text-lg font-semibold text-gray-900">{validationResult.validRows}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg flex-shrink-0 min-w-0">
+                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg min-w-0">
                   <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
                   <div>
                     <p className="text-xs text-gray-500">Com Erros</p>
@@ -333,7 +334,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                 <h4 className="text-sm font-medium text-gray-900 mb-2">
                   Preview dos Dados ({validationResult.preview.length} {validationResult.preview.length === 1 ? 'linha válida' : 'linhas válidas'})
                 </h4>
-                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                <div className="max-h-60 overflow-auto border border-gray-200 rounded-md">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50 sticky top-0 z-10">
                       <tr>
@@ -414,12 +415,12 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               </div>
             )}
 
-                <div className="flex justify-end gap-3">
-                  <Button variant="secondary" onClick={() => setStep('upload')} disabled={importing}>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+                  <Button variant="secondary" onClick={() => setStep('upload')} disabled={importing} className="min-h-11 w-full sm:w-auto">
                     Voltar
                   </Button>
                   {validationResult.validRows > 0 && !error && (
-                    <Button onClick={handleImport} disabled={importing}>
+                    <Button onClick={handleImport} disabled={importing} className="min-h-11 w-full sm:w-auto">
                       {importing ? (
                         <>
                           <Loader2 className="animate-spin mr-2" size={16} />
@@ -463,7 +464,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               <h4 className="text-sm font-medium text-gray-900 mb-3">
                 Resultado da Importação
               </h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
                   <Users className="h-5 w-5 text-blue-600 flex-shrink-0" />
                   <div>
@@ -562,7 +563,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
             )}
 
             <div className="flex justify-end">
-              <Button onClick={handleSuccess}>
+              <Button onClick={handleSuccess} className="min-h-11 w-full sm:w-auto">
                 Concluir
               </Button>
             </div>

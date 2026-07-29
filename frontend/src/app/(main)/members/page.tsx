@@ -460,12 +460,13 @@ function MembersPageContent() {
           <Button
             variant="secondary"
             onClick={handleDownloadRegistrationForm}
-            className="inline-flex items-center gap-2"
+            className="inline-flex items-center justify-center gap-2 min-h-11"
             isLoading={registrationFormLoading}
             title="Baixar ficha em branco para impressão e preenchimento manual"
           >
-            <FileText size={18} />
-            Ficha de Cadastro
+            <FileText size={18} className="shrink-0" />
+            <span className="hidden sm:inline">Ficha de Cadastro</span>
+            <span className="sm:hidden">Ficha</span>
           </Button>
           {/* Mostrar botões apenas se:
               - Não houver limite definido (memberLimit === null) OU
@@ -477,7 +478,7 @@ function MembersPageContent() {
               - erro ao carregar = mostrar aviso discreto em vez de esconder botões indevidamente
               - carregado = verificar canAdd */}
           {memberLimitLoadError ? (
-            <div className="text-sm text-amber-600 italic px-3 py-2 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="text-sm text-amber-600 italic px-3 py-2 bg-amber-50 rounded-lg border border-amber-200 max-w-full break-words">
               Não foi possível verificar o limite de membros.
             </div>
           ) : memberLimit === null || memberLimit.canAdd === true || memberLimit.limit === Infinity ? (
@@ -485,35 +486,38 @@ function MembersPageContent() {
               <Button
                 variant="secondary"
                 onClick={() => setRegistrationLinksModalOpen(true)}
-                className="inline-flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 min-h-11"
                 title={canEdit === false ? 'Visualizar e copiar links de autocadastro' : undefined}
               >
-                <LinkIcon size={18} />
-                Links de Autocadastro
+                <LinkIcon size={18} className="shrink-0" />
+                <span className="hidden sm:inline">Links de Autocadastro</span>
+                <span className="sm:hidden">Links</span>
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => setImportModalOpen(true)}
-                className="inline-flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 min-h-11"
                 disabled={canEdit === false}
                 title={canEdit === false ? 'Seu usuário tem permissão apenas de leitura nesta igreja.' : undefined}
               >
-                <Upload size={18} />
-                Importar CSV
+                <Upload size={18} className="shrink-0" />
+                <span className="hidden sm:inline">Importar CSV</span>
+                <span className="sm:hidden">Importar</span>
               </Button>
               <Button
                 onClick={() => setCreateModalOpen(true)}
-                className="inline-flex items-center gap-2"
+                className="inline-flex items-center justify-center gap-2 min-h-11"
                 disabled={canEdit === false}
                 title={canEdit === false ? 'Seu usuário tem permissão apenas de leitura nesta igreja.' : undefined}
               >
-                <Plus size={18} />
-                Adicionar Membro
+                <Plus size={18} className="shrink-0" />
+                <span className="hidden sm:inline">Adicionar Membro</span>
+                <span className="sm:hidden">Adicionar</span>
               </Button>
             </>
           ) : (
             <div
-              className={`text-sm italic px-3 py-2 rounded-lg border ${
+              className={`text-sm italic px-3 py-2 rounded-lg border max-w-full break-words ${
                 memberLimit.isPastDue
                   ? 'text-yellow-800 bg-yellow-50 border-yellow-200'
                   : 'text-gray-500 bg-gray-50 border-gray-200'
@@ -534,8 +538,8 @@ function MembersPageContent() {
           </div>
         }
       />
-      <div className="flex flex-nowrap items-end gap-2 w-full overflow-x-auto">
-        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+      <div className="flex flex-col gap-3 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="w-full min-w-0 sm:min-w-[200px] sm:flex-1 flex flex-col gap-1">
           <label htmlFor="members-search" className="block text-xs font-medium text-gray-600">
             Busca
           </label>
@@ -546,7 +550,7 @@ function MembersPageContent() {
             isLoading={false}
           />
         </div>
-        <div className="flex-shrink-0">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-shrink-0 overflow-x-auto">
           <MemberFiltersBar
             filters={filters}
             onChange={handleFilterChange}

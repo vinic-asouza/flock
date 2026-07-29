@@ -280,7 +280,7 @@ export function PublicMemberForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-4 sm:p-6">
 
       {/* ─── INFORMAÇÕES BÁSICAS ─── */}
       <div className="space-y-4">
@@ -938,11 +938,11 @@ export function PublicMemberForm({
         </div>
       )}
 
-      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-6 border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
         {onCancel && (
-          <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading}>Cancelar</Button>
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading} className="min-h-11 w-full sm:w-auto">Cancelar</Button>
         )}
-        <Button type="submit" isLoading={isLoading} disabled={isLoading || submitDisabled}>
+        <Button type="submit" isLoading={isLoading} disabled={isLoading || submitDisabled} className="min-h-11 w-full sm:w-auto">
           Enviar Cadastro
         </Button>
       </div>
