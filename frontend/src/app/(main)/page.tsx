@@ -150,11 +150,13 @@ export default function HomePage() {
 
   return (
     <>
-      <div>
+      <div className="min-w-0">
         <h1 className="text-xl font-semibold text-gray-900">Relatórios</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-gray-500 mt-1 break-words">
           Análise detalhada dos membros da igreja
-          {lastUpdated && <span className="ml-2">• Atualizado em {lastUpdated}</span>}
+          {lastUpdated && (
+            <span className="block sm:inline sm:ml-2">• Atualizado em {lastUpdated}</span>
+          )}
         </p>
       </div>
 
@@ -190,18 +192,18 @@ export default function HomePage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-end flex-shrink-0">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-stretch sm:justify-end flex-shrink-0 w-full lg:w-auto">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                       onClick={handleRefresh}
                       disabled={loading || waitingForCongregation}
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      className={`inline-flex items-center justify-center gap-1.5 min-h-11 flex-1 sm:flex-initial px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors ${
                         loading || waitingForCongregation
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+                      <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                       Atualizar
                     </button>
 
@@ -211,7 +213,7 @@ export default function HomePage() {
                       title={
                         isExportBlocked ? 'Selecione uma congregação para exportar' : undefined
                       }
-                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      className={`inline-flex items-center justify-center gap-1.5 min-h-11 flex-1 sm:flex-initial px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors ${
                         exporting || loading || isExportBlocked
                           ? 'bg-gray-400 text-white cursor-not-allowed'
                           : 'bg-primary text-white hover:bg-primary/90'
@@ -219,13 +221,15 @@ export default function HomePage() {
                     >
                       {exporting ? (
                         <>
-                          <Loader size={12} className="animate-spin" />
-                          Exportando...
+                          <Loader size={14} className="animate-spin" />
+                          <span className="sm:hidden">…</span>
+                          <span className="hidden sm:inline">Exportando...</span>
                         </>
                       ) : (
                         <>
-                          <Download size={12} />
-                          Exportar PDF
+                          <Download size={14} />
+                          <span className="sm:hidden">PDF</span>
+                          <span className="hidden sm:inline">Exportar PDF</span>
                         </>
                       )}
                     </button>

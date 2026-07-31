@@ -406,7 +406,7 @@ export function TimelineCharts({
                       <button
                         onClick={() => setMembersPage(prev => Math.max(1, prev - 1))}
                         disabled={membersPage === 1}
-                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 rounded touch-manipulation hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft size={14} className="text-gray-600" />
                       </button>
@@ -416,7 +416,7 @@ export function TimelineCharts({
                       <button
                         onClick={() => setMembersPage(prev => Math.min(membersTotalPages, prev + 1))}
                         disabled={membersPage === membersTotalPages}
-                        className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 rounded touch-manipulation hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <ChevronRight size={14} className="text-gray-600" />
                       </button>
@@ -426,25 +426,31 @@ export function TimelineCharts({
 
                 <div className="space-y-1.5">
                   {membersPaginated.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 rounded">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          {getMemberEntryType(member) === 'baptism' ? (
-                            <Droplets size={12} className="text-blue-600 flex-shrink-0" />
-                          ) : (
-                            <UserPlus size={12} className="text-green-600 flex-shrink-0" />
-                          )}
-                          <div className="text-[13px] font-medium text-gray-900 truncate uppercase">
+                    <div key={member.id} className="py-1.5 px-2.5 bg-gray-50 rounded">
+                      <div className="flex items-start gap-2 min-w-0">
+                        {getMemberEntryType(member) === 'baptism' ? (
+                          <Droplets size={12} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <UserPlus size={12} className="text-green-600 flex-shrink-0 mt-0.5" />
+                        )}
+                        <div className="flex-1 min-w-0 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                          <div className="text-[13px] font-medium text-gray-900 truncate uppercase min-w-0">
                             {formatMemberName(member.name)}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {formatAdmissionDate(member.admission_date)
-                              ? `${formatAdmissionDate(member.admission_date)}`
-                              : ''}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="text-xs text-gray-500 whitespace-nowrap">
+                              {formatAdmissionDate(member.admission_date)
+                                ? `${formatAdmissionDate(member.admission_date)}`
+                                : ''}
+                            </div>
+                            <span
+                              className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium truncate max-w-[10rem] ${getCongregationColor()}`}
+                            >
+                              {member.congregation
+                                ? getCongregationDisplayName(member.congregation)
+                                : '—'}
+                            </span>
                           </div>
-                          <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
-                            {member.congregation ? getCongregationDisplayName(member.congregation) : '—'}
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -572,7 +578,7 @@ export function TimelineCharts({
                         <button
                           onClick={() => setIntegrationMembersPage(prev => Math.max(1, prev - 1))}
                           disabled={integrationMembersPage === 1}
-                          className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 rounded touch-manipulation hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <ChevronLeft size={14} className="text-gray-600" />
                         </button>
@@ -582,7 +588,7 @@ export function TimelineCharts({
                         <button
                           onClick={() => setIntegrationMembersPage(prev => Math.min(integrationMembersTotalPages, prev + 1))}
                           disabled={integrationMembersPage === integrationMembersTotalPages}
-                          className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 rounded touch-manipulation hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <ChevronRight size={14} className="text-gray-600" />
                         </button>
@@ -591,21 +597,22 @@ export function TimelineCharts({
                   </div>
 
                   <div className="space-y-1.5">
-                    {integrationMembersPaginated.map(member => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 rounded"
-                      >
-                        <div className="flex-1 min-w-0">
+                    {integrationMembersPaginated.map((member) => (
+                      <div key={member.id} className="py-1.5 px-2.5 bg-gray-50 rounded">
+                        <div className="flex-1 min-w-0 flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2 sm:flex-wrap">
+                          <div className="text-[13px] font-medium text-gray-900 truncate uppercase min-w-0">
+                            {formatMemberName(member.name)}
+                          </div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <div className="text-[13px] font-medium text-gray-900 truncate uppercase">
-                              {formatMemberName(member.name)}
-                            </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-gray-500 whitespace-nowrap">
                               {formatIntegrationDate(member.created_at)}
                             </div>
-                            <span className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium ${getCongregationColor()}`}>
-                              {member.expected_congregation ? getCongregationDisplayName(member.expected_congregation) : 'Não definida'}
+                            <span
+                              className={`inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium truncate max-w-[10rem] ${getCongregationColor()}`}
+                            >
+                              {member.expected_congregation
+                                ? getCongregationDisplayName(member.expected_congregation)
+                                : 'Não definida'}
                             </span>
                             <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700">
                               Em progresso

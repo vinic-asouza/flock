@@ -218,53 +218,44 @@ export function MemberModalWithSelect({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
-      {/* Modal */}
-      <div 
-        className="relative bg-white rounded-lg shadow-xl w-full max-h-[90vh] h-[90vh] flex flex-col mx-4 max-w-6xl"
+
+      <div
+        className="relative bg-white rounded-t-xl sm:rounded-lg shadow-xl w-full max-h-[90dvh] h-[90dvh] sm:h-[90vh] flex flex-col mx-0 sm:mx-auto max-w-6xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#090725]/10">
-              {icon}
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {title}
-            </h2>
+        <div className="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-lg bg-[#090725]/10 flex-shrink-0">{icon}</div>
+            <h2 className="text-base sm:text-xl font-semibold text-gray-900 truncate">{title}</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowExportModal(true)}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors bg-primary text-white hover:bg-primary/90"
             >
-              <Download size={12} />
+              <Download size={14} />
               Exportar
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg touch-manipulation transition-colors"
+              aria-label="Fechar"
             >
               <X size={20} className="text-gray-500" />
             </button>
           </div>
         </div>
 
-        {/* Filtros Horizontais */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50 flex-shrink-0 max-h-[45%] overflow-y-auto overscroll-contain">
           <div className="space-y-4">
-            {/* Seletores e Campos de Busca */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filters.map((filter) => (
+              {filters.map((filter) =>
                 filter.useSearch ? (
-                  // Campo de busca para ocupação
                   <div key={filter.key} className="space-y-1">
                     <Input
                       type="text"
@@ -277,7 +268,6 @@ export function MemberModalWithSelect({
                     />
                   </div>
                 ) : (
-                  // Select padrão para outros filtros
                   <Select
                     key={filter.key}
                     label={filter.label}
@@ -290,25 +280,26 @@ export function MemberModalWithSelect({
                     searchable={true}
                   />
                 )
-              ))}
+              )}
             </div>
 
-            {/* Filtros ativos na mesma linha dos seletores */}
             {hasActiveFilters && (
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <span className="text-xs font-medium text-gray-700">Filtros ativos:</span>
                   {filters.map((filter) => {
                     const value = selectedValues[filter.key];
                     if (!value) return null;
-                    
-                    // Se for busca, mostrar o valor digitado, senão buscar na lista de opções
-                    const displayValue = filter.useSearch 
-                      ? value 
-                      : (filter.options.find(opt => opt.value === value)?.label || value);
-                    
+
+                    const displayValue = filter.useSearch
+                      ? value
+                      : filter.options.find((opt) => opt.value === value)?.label || value;
+
                     return (
-                      <span key={filter.key as string} className="bg-white px-2 py-1 rounded border border-gray-300 text-xs text-gray-700">
+                      <span
+                        key={filter.key as string}
+                        className="bg-white px-2 py-1 rounded border border-gray-300 text-xs text-gray-700 max-w-full truncate"
+                      >
                         {filter.label}: <span className="font-medium">{displayValue}</span>
                       </span>
                     );
@@ -316,7 +307,7 @@ export function MemberModalWithSelect({
                 </div>
                 <button
                   onClick={clearAllFilters}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-white px-2 py-1 rounded border border-gray-300 transition-colors whitespace-nowrap"
+                  className="inline-flex items-center justify-center gap-1 min-h-11 text-xs text-gray-500 hover:text-gray-700 hover:bg-white px-3 py-2 rounded border border-gray-300 touch-manipulation transition-colors whitespace-nowrap self-start sm:self-auto"
                 >
                   <XCircle size={12} />
                   Limpar
@@ -326,8 +317,7 @@ export function MemberModalWithSelect({
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-hidden p-6 min-h-0 flex flex-col">
+        <div className="flex-1 overflow-hidden p-4 sm:p-6 min-h-0 flex flex-col">
           {loading ? (
             <div className="flex items-center justify-center flex-1">
               <div className="flex items-center gap-2 text-gray-500">
@@ -337,30 +327,32 @@ export function MemberModalWithSelect({
             </div>
           ) : (
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
                 {members.length > 0 ? (
                   <div className="space-y-3">
                     {members.map((member) => (
-                      <MemberCardCompact 
-                        key={member.id} 
-                        member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
+                      <MemberCardCompact
+                        key={member.id}
+                        member={member as Parameters<typeof MemberCardCompact>[0]['member']}
                       />
                     ))}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center flex-1 text-gray-500">
-                    <div className="text-center">
+                  <div className="flex items-center justify-center flex-1 text-gray-500 py-8">
+                    <div className="text-center px-2">
                       <Users size={48} className="mx-auto mb-2 text-gray-300" />
                       <p>
                         {(() => {
-                          const searchFilters = filters.filter(f => f.useSearch);
+                          const searchFilters = filters.filter((f) => f.useSearch);
                           const hasOnlySearch = searchFilters.length === filters.length;
-                          const searchHasValue = searchFilters.some(f => selectedValues[f.key] && selectedValues[f.key].trim() !== '');
-                          
+                          const searchHasValue = searchFilters.some(
+                            (f) => selectedValues[f.key] && selectedValues[f.key].trim() !== ''
+                          );
+
                           if (hasOnlySearch && !searchHasValue) {
                             return 'Digite uma ocupação para buscar membros';
                           }
-                          return hasActiveFilters 
+                          return hasActiveFilters
                             ? 'Nenhum membro encontrado para os filtros selecionados'
                             : 'Nenhum membro encontrado';
                         })()}
@@ -370,37 +362,34 @@ export function MemberModalWithSelect({
                 )}
               </div>
 
-              {/* Paginação */}
               {pagination && pagination.totalPages > 1 && (
                 <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, pagination.total)} de {pagination.total} membro(s)
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      Mostrando {((currentPage - 1) * itemsPerPage) + 1} a{' '}
+                      {Math.min(currentPage * itemsPerPage, pagination.total)} de {pagination.total}{' '}
+                      membro(s)
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 self-end sm:self-auto">
                       <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                        className="inline-flex items-center justify-center min-h-11 min-w-11 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 touch-manipulation transition-colors"
                         title="Página anterior"
                       >
                         <ChevronLeft size={16} className="text-gray-600" />
                       </button>
                       <div className="flex items-center gap-1 px-2">
-                        <span className="text-sm text-gray-700 font-medium">
-                          {currentPage}
-                        </span>
-                        <span className="text-sm text-gray-400">
-                          de
-                        </span>
-                        <span className="text-sm text-gray-700 font-medium">
-                          {pagination.totalPages}
-                        </span>
+                        <span className="text-sm text-gray-700 font-medium">{currentPage}</span>
+                        <span className="text-sm text-gray-400">de</span>
+                        <span className="text-sm text-gray-700 font-medium">{pagination.totalPages}</span>
                       </div>
                       <button
-                        onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.min(pagination.totalPages, prev + 1))
+                        }
                         disabled={currentPage === pagination.totalPages}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                        className="inline-flex items-center justify-center min-h-11 min-w-11 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 touch-manipulation transition-colors"
                         title="Próxima página"
                       >
                         <ChevronRight size={16} className="text-gray-600" />

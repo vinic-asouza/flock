@@ -160,42 +160,107 @@ export function MembersModal({
 
   if (!isOpen) return null;
 
+  const renderPagination = () =>
+    pagination && pagination.totalPages > 1 ? (
+      <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs sm:text-sm text-gray-600">
+            Mostrando {((currentPage - 1) * itemsPerPage) + 1} a{' '}
+            {Math.min(currentPage * itemsPerPage, pagination.total)} de {pagination.total} membro(s)
+          </div>
+          <div className="flex items-center gap-1 self-end sm:self-auto">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex items-center justify-center min-h-11 min-w-11 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 touch-manipulation transition-colors"
+              title="Página anterior"
+            >
+              <ChevronLeft size={16} className="text-gray-600" />
+            </button>
+            <div className="flex items-center gap-1 px-2">
+              <span className="text-sm text-gray-700 font-medium">{currentPage}</span>
+              <span className="text-sm text-gray-400">de</span>
+              <span className="text-sm text-gray-700 font-medium">{pagination.totalPages}</span>
+            </div>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(pagination.totalPages, prev + 1))}
+              disabled={currentPage === pagination.totalPages}
+              className="inline-flex items-center justify-center min-h-11 min-w-11 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 touch-manipulation transition-colors"
+              title="Próxima página"
+            >
+              <ChevronRight size={16} className="text-gray-600" />
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
+  const renderMembersList = () =>
+    loading ? (
+      <div className="flex items-center justify-center flex-1">
+        <div className="flex items-center gap-2 text-gray-500">
+          <Loader2 size={20} className="animate-spin" />
+          Carregando membros...
+        </div>
+      </div>
+    ) : (
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto min-h-0 overscroll-contain">
+          {members.length > 0 ? (
+            <div className="space-y-3">
+              {members.map((member) => (
+                <MemberCardCompact
+                  key={member.id}
+                  member={member as Parameters<typeof MemberCardCompact>[0]['member']}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center flex-1 text-gray-500 py-8">
+              <div className="text-center px-2">
+                <Users size={48} className="mx-auto mb-2 text-gray-300" />
+                <p>Nenhum membro encontrado</p>
+                <p className="text-sm text-gray-400">
+                  para {tabs.find((t) => t.value === activeTab)?.label || 'esta categoria'}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+        {renderPagination()}
+      </div>
+    );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop com blur padrão do sistema */}
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
-      {/* Modal */}
-      <div 
-        className={`relative bg-white rounded-lg shadow-xl w-full max-h-[90vh] h-[90vh] flex flex-col mx-4 ${
+
+      <div
+        className={`relative bg-white rounded-t-xl sm:rounded-lg shadow-xl w-full max-h-[90dvh] h-[90dvh] sm:h-[90vh] flex flex-col mx-0 sm:mx-auto ${
           sideLayout ? 'max-w-6xl' : 'max-w-4xl'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#090725]/10">
-              {icon}
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {title}
-            </h2>
+        <div className="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-lg bg-[#090725]/10 flex-shrink-0">{icon}</div>
+            <h2 className="text-base sm:text-xl font-semibold text-gray-900 truncate">{title}</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowExportModal(true)}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90"
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors bg-primary text-white hover:bg-primary/90"
             >
-              <Download size={12} />
+              <Download size={14} />
               Exportar
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg touch-manipulation transition-colors"
+              aria-label="Fechar"
             >
               <X size={20} className="text-gray-500" />
             </button>
@@ -203,16 +268,16 @@ export function MembersModal({
         </div>
 
         {sideLayout ? (
-          <div className="flex-1 flex overflow-hidden min-h-0">
-            {/* Sidebar com Tabs */}
-            <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50 flex-shrink-0">
-              <div className="flex-1 overflow-y-auto p-4 bg-gray-50 min-h-0">
-                <div className="space-y-2">
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+            {/* Mobile: chips horizontais; md+: sidebar vertical */}
+            <div className="w-full md:w-80 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col bg-gray-50 flex-shrink-0 md:h-full max-h-36 md:max-h-none">
+              <div className="overflow-x-auto md:overflow-x-visible md:overflow-y-auto md:flex-1 p-3 md:p-4 min-h-0 overscroll-contain">
+                <div className="flex md:flex-col gap-2 min-w-max md:min-w-0">
                   {tabs.map((tab) => (
                     <button
                       key={tab.value}
                       onClick={() => setActiveTab(tab.value)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                      className={`inline-flex md:w-full items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 min-h-11 text-sm font-medium rounded-lg touch-manipulation transition-colors flex-shrink-0 ${
                         activeTab === tab.value
                           ? 'bg-white text-gray-900 shadow-sm border border-gray-200'
                           : 'text-gray-600 hover:bg-white hover:shadow-sm'
@@ -222,9 +287,11 @@ export function MembersModal({
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: tab.color }}
                       />
-                      <div className="flex-1 text-left">
-                        <div className="font-medium">{tab.label}</div>
-                        <div className="text-xs opacity-75">{tab.count} membro(s)</div>
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="font-medium truncate">{tab.label}</div>
+                        <div className="text-xs opacity-75 whitespace-nowrap">
+                          {tab.count} membro(s)
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -232,107 +299,32 @@ export function MembersModal({
               </div>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div className="flex-1 overflow-hidden p-6 min-h-0 flex flex-col">
-                {loading ? (
-                  <div className="flex items-center justify-center flex-1">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Loader2 size={20} className="animate-spin" />
-                      Carregando membros...
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    <div className="flex-1 overflow-y-auto min-h-0">
-                      {members.length > 0 ? (
-                        <div className="space-y-3">
-                          {members.map((member) => (
-                            <MemberCardCompact 
-                              key={member.id} 
-                              member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center flex-1 text-gray-500">
-                          <div className="text-center">
-                            <Users size={48} className="mx-auto mb-2 text-gray-300" />
-                            <p>Nenhum membro encontrado</p>
-                            <p className="text-sm text-gray-400">
-                              para {tabs.find(t => t.value === activeTab)?.label || 'esta categoria'}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Paginação */}
-                    {pagination && pagination.totalPages > 1 && (
-                      <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-600">
-                            Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, pagination.total)} de {pagination.total} membro(s)
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                              disabled={currentPage === 1}
-                              className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
-                              title="Página anterior"
-                            >
-                              <ChevronLeft size={16} className="text-gray-600" />
-                            </button>
-                            <div className="flex items-center gap-1 px-2">
-                              <span className="text-sm text-gray-700 font-medium">
-                                {currentPage}
-                              </span>
-                              <span className="text-sm text-gray-400">
-                                de
-                              </span>
-                              <span className="text-sm text-gray-700 font-medium">
-                                {pagination.totalPages}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-                              disabled={currentPage === pagination.totalPages}
-                              className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
-                              title="Próxima página"
-                            >
-                              <ChevronRight size={16} className="text-gray-600" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="flex-1 overflow-hidden p-4 sm:p-6 min-h-0 flex flex-col">
+                {renderMembersList()}
               </div>
             </div>
           </div>
         ) : (
           <>
-            {/* Tabs */}
-            <div className="px-6 pt-4 flex-shrink-0">
+            <div className="px-4 sm:px-6 pt-4 flex-shrink-0">
               <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg">
                 {tabs.map((tab) => (
                   <button
                     key={tab.value}
                     onClick={() => setActiveTab(tab.value)}
-                    className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={`flex-1 min-w-[7.5rem] min-h-11 px-3 sm:px-4 py-2 text-sm font-medium rounded-md touch-manipulation transition-colors ${
                       activeTab === tab.value
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
-                    style={{ minWidth: '120px' }}
                   >
                     <div className="flex items-center justify-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: tab.color }}
                       />
-                      <span className="trucate text-center leading-tight">
+                      <span className="truncate text-center leading-tight">
                         {tab.label} ({tab.count})
                       </span>
                     </div>
@@ -341,81 +333,8 @@ export function MembersModal({
               </div>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-hidden p-6 min-h-0 flex flex-col">
-              {loading ? (
-                <div className="flex items-center justify-center flex-1">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <Loader2 size={20} className="animate-spin" />
-                    Carregando membros...
-                  </div>
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  <div className="flex-1 overflow-y-auto min-h-0">
-                    {members.length > 0 ? (
-                      <div className="space-y-3">
-                        {members.map((member) => (
-                          <MemberCardCompact 
-                            key={member.id} 
-                            member={member as Parameters<typeof MemberCardCompact>[0]['member']} 
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center flex-1 text-gray-500">
-                        <div className="text-center">
-                          <Users size={48} className="mx-auto mb-2 text-gray-300" />
-                          <p>Nenhum membro encontrado</p>
-                          <p className="text-sm text-gray-400">
-                            para {tabs.find(t => t.value === activeTab)?.label || 'esta categoria'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Paginação */}
-                  {pagination && pagination.totalPages > 1 && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
-                          Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, pagination.total)} de {pagination.total} membro(s)
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
-                            title="Página anterior"
-                          >
-                            <ChevronLeft size={16} className="text-gray-600" />
-                          </button>
-                          <div className="flex items-center gap-1 px-2">
-                            <span className="text-sm text-gray-700 font-medium">
-                              {currentPage}
-                            </span>
-                            <span className="text-sm text-gray-400">
-                              de
-                            </span>
-                            <span className="text-sm text-gray-700 font-medium">
-                              {pagination.totalPages}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
-                            disabled={currentPage === pagination.totalPages}
-                            className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
-                            title="Próxima página"
-                          >
-                            <ChevronRight size={16} className="text-gray-600" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className="flex-1 overflow-hidden p-4 sm:p-6 min-h-0 flex flex-col">
+              {renderMembersList()}
             </div>
           </>
         )}
