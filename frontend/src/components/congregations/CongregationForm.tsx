@@ -79,6 +79,11 @@ interface CongregationFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   mode: 'create' | 'edit';
+  /** id do <form> para submit externo via Modal footer */
+  formId?: string;
+  /** quando false, CTAs ficam no footer do Modal (melhor c/ teclado mobile) */
+  showActions?: boolean;
+  onSubmitBlockedChange?: (blocked: boolean) => void;
 }
 
 // Função para formatar telefone
@@ -91,7 +96,16 @@ const formatPhone = (value: string): string => {
   }
 };
 
-export function CongregationForm({ congregation, onSubmit, onCancel, isLoading = false, mode }: CongregationFormProps) {
+export function CongregationForm({
+  congregation,
+  onSubmit,
+  onCancel,
+  isLoading = false,
+  mode,
+  formId,
+  showActions = true,
+  onSubmitBlockedChange,
+}: CongregationFormProps) {
   const {
     states,
     cities,
@@ -130,6 +144,10 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   const locationTouchedInEdit = mode === 'edit' && (Boolean(dirtyFields.state) || Boolean(dirtyFields.city));
   const shouldBlockByLocation = mode === 'create' || locationTouchedInEdit;
   const isSubmitBlocked = isLoading || (shouldBlockByLocation && (loadingStates || isStatesUnavailable || isCitiesUnavailable));
+
+  useEffect(() => {
+    onSubmitBlockedChange?.(isSubmitBlocked);
+  }, [isSubmitBlocked, onSubmitBlockedChange]);
 
   // Resetar formulário quando congregation mudar (para modo edit)
   useEffect(() => {
@@ -200,7 +218,11 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-4 sm:p-6">
+    <form
+      id={formId}
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="space-y-6 p-4 sm:p-6"
+    >
       {/* Informações Básicas */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
@@ -344,30 +366,32 @@ export function CongregationForm({ congregation, onSubmit, onCancel, isLoading =
         )}
       </div>
 
-      {/* Botões */}
-      <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end sm:gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="min-h-11 w-full sm:w-auto"
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          isLoading={isLoading}
-          disabled={isSubmitBlocked}
-          className="min-h-11 w-full sm:w-auto"
-        >
-          {mode === 'create' ? 'Criar Congregação' : 'Salvar Alterações'}
-        </Button>
-      </div>
       {shouldBlockByLocation && isCitiesUnavailable && (
         <p className="text-sm text-amber-700">
           Aguarde o carregamento das cidades ou resolva o erro de integração com o IBGE antes de enviar.
         </p>
+      )}
+
+      {showActions && (
+        <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-col-reverse gap-2 border-t border-gray-200 bg-white/95 px-4 py-4 backdrop-blur-sm sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:gap-3 sm:px-6 sm:py-4">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            isLoading={isLoading}
+            disabled={isSubmitBlocked}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            {mode === 'create' ? 'Criar Congregação' : 'Salvar Alterações'}
+          </Button>
+        </div>
       )}
     </form>
   );

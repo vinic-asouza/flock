@@ -147,7 +147,58 @@ export function CongregationModal({
     ? [congregation.address, congregation.city, congregation.state].filter(Boolean).join(', ')
     : '';
 
+  const renderActionButtons = (layoutClassName: string) => {
+    if (!congregation || (!onEdit && !onDelete)) return null;
+    return (
+      <div className={layoutClassName}>
+        {onEdit && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              handleClose();
+              onEdit(congregation.id);
+            }}
+            className="min-h-11 w-full"
+            disabled={readOnly}
+            title={readOnly ? READER_TOOLTIP : undefined}
+          >
+            <Edit size={16} className="mr-2 shrink-0" />
+            Editar
+          </Button>
+        )}
+        {onDelete && (
+          <Button
+            variant="danger"
+            onClick={() => {
+              handleClose();
+              onDelete(
+                congregation.id,
+                congregation.name,
+                congregation.activeMembersCount ?? 0,
+                congregation.is_primary
+              );
+            }}
+            className="min-h-11 w-full"
+            disabled={readOnly || congregation.is_primary}
+            title={
+              congregation.is_primary
+                ? 'A congregação principal não pode ser excluída'
+                : readOnly
+                  ? READER_TOOLTIP
+                  : undefined
+            }
+          >
+            <Trash2 size={16} className="mr-2 shrink-0" />
+            Excluir
+          </Button>
+        )}
+      </div>
+    );
+  };
+
   if (!isOpen) return null;
+
+  const showMobileStickyActions = Boolean(congregation && !loading && !error && (onEdit || onDelete));
 
   return (
     <Modal
@@ -159,6 +210,13 @@ export function CongregationModal({
           : 'Carregando...'
       }
       size="xl"
+      footer={
+        showMobileStickyActions
+          ? renderActionButtons(
+              'flex flex-col gap-2 p-4 md:hidden'
+            )
+          : undefined
+      }
     >
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -230,46 +288,8 @@ export function CongregationModal({
                 <p className="break-words text-gray-900">{congregation.leader || '-'}</p>
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
-                <div className="flex flex-col gap-2">
-                  {onEdit && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        handleClose();
-                        onEdit(congregation.id);
-                      }}
-                      className="min-h-11 w-full"
-                      disabled={readOnly}
-                      title={readOnly ? READER_TOOLTIP : undefined}
-                    >
-                      <Edit size={16} className="mr-2 shrink-0" />
-                      Editar
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      variant="danger"
-                      onClick={() => {
-                        handleClose();
-                        onDelete(congregation.id, congregation.name, congregation.activeMembersCount ?? 0, congregation.is_primary);
-                      }}
-                      className="min-h-11 w-full"
-                      disabled={readOnly || congregation.is_primary}
-                      title={
-                        congregation.is_primary
-                          ? 'A congregação principal não pode ser excluída'
-                          : readOnly
-                            ? READER_TOOLTIP
-                            : undefined
-                      }
-                    >
-                      <Trash2 size={16} className="mr-2 shrink-0" />
-                      Excluir
-                    </Button>
-                  )}
-                </div>
-              </div>
+              {/* Ações no painel — só desktop; mobile usa footer sticky do Modal */}
+              {renderActionButtons('hidden border-t border-gray-200 pt-4 md:flex md:flex-col md:gap-2')}
             </div>
           </div>
 

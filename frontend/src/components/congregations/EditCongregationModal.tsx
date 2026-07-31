@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { CongregationForm } from './CongregationForm';
 import { LoaderCircle } from 'lucide-react';
 import apiService, { formatApiError } from '@/services/api';
+
+const FORM_ID = 'edit-congregation-form';
 
 interface Congregation {
   id: string;
@@ -31,6 +34,11 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCongregation, setIsLoadingCongregation] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitBlocked, setSubmitBlocked] = useState(false);
+
+  const handleSubmitBlockedChange = useCallback((blocked: boolean) => {
+    setSubmitBlocked(blocked);
+  }, []);
 
   // Carregar dados da congregação quando modal abrir
   useEffect(() => {
@@ -76,6 +84,8 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
     }
   };
 
+  const showFormFooter = Boolean(congregation && !isLoadingCongregation);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -84,6 +94,30 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       size="xl"
       closeOnOverlayClick={!isLoading && !isLoadingCongregation}
       closeOnEscape={!isLoading && !isLoadingCongregation}
+      footer={
+        showFormFooter ? (
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              isLoading={isLoading}
+              disabled={isLoading || submitBlocked}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Salvar Alterações
+            </Button>
+          </div>
+        ) : undefined
+      }
     >
       {isLoadingCongregation && (
         <div className="flex items-center justify-center py-12">
@@ -99,11 +133,14 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
 
       {congregation && !isLoadingCongregation && (
         <CongregationForm
+          formId={FORM_ID}
+          showActions={false}
           congregation={congregation}
           mode="edit"
           onSubmit={handleSubmit}
           onCancel={handleClose}
           isLoading={isLoading}
+          onSubmitBlockedChange={handleSubmitBlockedChange}
         />
       )}
     </Modal>
