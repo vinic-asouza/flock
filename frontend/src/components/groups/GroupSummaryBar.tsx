@@ -17,8 +17,8 @@ export function GroupSummaryBar({ groups, onRefreshClick, onExportClick, exporti
   const emptyCount = groups.filter(g => (g.memberCount ?? 0) === 0).length;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4">
-      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
+    <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+      <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm text-gray-500">
         <span>
           {totalGroups} grupo{totalGroups !== 1 ? 's' : ''}
         </span>
@@ -32,14 +32,14 @@ export function GroupSummaryBar({ groups, onRefreshClick, onExportClick, exporti
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {onRefreshClick && (
           <button
             type="button"
             onClick={onRefreshClick}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 text-xs font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
-            <RefreshCcw size={12} />
+            <RefreshCcw size={14} />
             Atualizar
           </button>
         )}
@@ -48,14 +48,15 @@ export function GroupSummaryBar({ groups, onRefreshClick, onExportClick, exporti
             type="button"
             onClick={onExportClick}
             disabled={exporting}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60"
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
             {exporting ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" />
             ) : (
-              <Download size={12} />
+              <Download size={14} />
             )}
-            Exportar PDF
+            <span className="sm:hidden">PDF</span>
+            <span className="hidden sm:inline">Exportar PDF</span>
           </button>
         )}
       </div>

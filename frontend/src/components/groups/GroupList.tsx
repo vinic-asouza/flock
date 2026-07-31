@@ -58,7 +58,7 @@ export function GroupList({ groups, onGroupClick, hasActiveFilters = false, onCl
           <button
             type="button"
             onClick={onClearFilters}
-            className="mt-3 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            className="mt-3 inline-flex min-h-11 items-center justify-center px-3 text-sm font-medium text-primary transition-colors hover:text-primary/80"
           >
             Limpar filtros
           </button>
@@ -80,7 +80,7 @@ export function GroupList({ groups, onGroupClick, hasActiveFilters = false, onCl
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => toggleType(type)}
-                  className="flex items-center gap-2 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+                  className="flex min-h-11 items-center gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-gray-50"
                   aria-label={isExpanded ? 'Recolher' : 'Expandir'}
                 >
                   {isExpanded ? (

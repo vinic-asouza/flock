@@ -34,7 +34,7 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
   return (
     <div
       onClick={onClick}
-      className={`relative flex flex-col bg-white border rounded-lg px-6 py-4 h-full cursor-pointer transition-all hover:shadow-md ${
+      className={`relative flex h-full min-w-0 cursor-pointer flex-col rounded-lg border bg-white px-4 py-4 transition-all hover:shadow-md sm:px-6 ${
         !group.status ? 'border-gray-200 bg-gray-50 opacity-75' : 'border-gray-200 hover:border-primary'
       }`}
     >
@@ -44,17 +44,17 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
           e.stopPropagation();
           onClick?.();
         }}
-        className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+        className="absolute top-3 right-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-primary/10 hover:text-primary"
         title="Ver detalhes"
       >
         <Eye size={18} />
       </button>
 
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         {/* Linha 1: Nome do grupo */}
-        <div className="mb-2 pr-8">
+        <div className="mb-2 pr-12">
           <div className="mb-2">
-            <span className="font-semibold text-gray-900 text-base truncate block" title={group.name}>
+            <span className="block truncate text-base font-semibold text-gray-900" title={group.name}>
               {group.name}
             </span>
           </div>
