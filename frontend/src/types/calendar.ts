@@ -129,6 +129,14 @@ export const typeColors = {
   'Reunião': 'bg-gray-100 text-gray-800 border-gray-300'
 };
 
+/** Dots compactos no grid mensal (mobile) */
+export const typeDotColors: Record<CalendarItemType, string> = {
+  'Programação': 'bg-blue-500',
+  'Evento': 'bg-green-500',
+  'Encontro': 'bg-orange-500',
+  'Reunião': 'bg-gray-500'
+};
+
 // Ícones por tipo (usando lucide-react)
 export const typeIcons = {
   'Programação': 'Calendar',

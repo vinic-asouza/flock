@@ -20,6 +20,8 @@ import { parseCalendarDateForDisplay } from '@/utils/calendarDate';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
+const CREATE_FORM_ID = 'calendar-item-create-form';
+const EDIT_FORM_ID = 'calendar-item-edit-form';
 
 export default function CalendarPage() {
   const { canEdit } = useAuth();
@@ -46,6 +48,8 @@ export default function CalendarPage() {
   const [selectedItem, setSelectedItem] = useState<CalendarItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultStartDate, setDefaultStartDate] = useState<string | undefined>();
+  const [createSubmitDisabled, setCreateSubmitDisabled] = useState(false);
+  const [editSubmitDisabled, setEditSubmitDisabled] = useState(false);
 
   const loadItems = useCallback(async () => {
     const requestId = ++loadItemsRequestIdRef.current;
@@ -244,7 +248,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-6 sm:py-8 min-w-0">
       {/* Header */}
       <PageHeader
         title="Calendário"
@@ -253,18 +257,19 @@ export default function CalendarPage() {
           <Button
             variant="primary"
             onClick={() => handleCreateQuick()}
-            className="flex items-center gap-2"
+            className="flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
             disabled={canEdit === false}
             title={canEdit === false ? READER_TOOLTIP : undefined}
           >
             <Plus size={20} />
-            Novo Item
+            <span className="sm:hidden">Novo</span>
+            <span className="hidden sm:inline">Novo Item</span>
           </Button>
         }
       />
 
       {/* Filtros Horizontais */}
-      <div className="mt-8 mb-6">
+      <div className="mt-6 sm:mt-8 mb-6 min-w-0">
         <CalendarFiltersHorizontal
           filters={filters}
           onFiltersChange={setFilters}
@@ -319,18 +324,21 @@ export default function CalendarPage() {
             {/* Controles de navegação de ano */}
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-200">
               <button
+                type="button"
                 onClick={() => setCurrentYear(currentYear - 1)}
-                className="px-2 py-1.5 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 text-gray-600 transition-colors"
+                className="min-h-11 min-w-11 inline-flex items-center justify-center text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 text-gray-600 transition-colors"
                 title="Ano anterior"
+                aria-label="Ano anterior"
               >
                 <ChevronLeft size={16} />
               </button>
-              <div className="flex items-center gap-1.5 px-3 py-1.5">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 min-h-11">
                 <span className="text-sm font-medium text-gray-700">{currentYear}</span>
                 {currentYear !== new Date().getFullYear() && (
                   <button
+                    type="button"
                     onClick={() => setCurrentYear(new Date().getFullYear())}
-                    className="text-xs text-gray-500 hover:text-primary underline"
+                    className="text-xs text-gray-500 hover:text-primary underline min-h-9 px-1"
                     title="Ir para o ano atual"
                   >
                     Hoje
@@ -338,9 +346,11 @@ export default function CalendarPage() {
                 )}
               </div>
               <button
+                type="button"
                 onClick={() => setCurrentYear(currentYear + 1)}
-                className="px-2 py-1.5 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 text-gray-600 transition-colors"
+                className="min-h-11 min-w-11 inline-flex items-center justify-center text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 text-gray-600 transition-colors"
                 title="Próximo ano"
+                aria-label="Próximo ano"
               >
                 <ChevronRight size={16} />
               </button>
@@ -358,8 +368,38 @@ export default function CalendarPage() {
         }}
         title="Criar Novo Item do Calendário"
         size="lg"
+        closeOnOverlayClick={!isSubmitting}
+        closeOnEscape={!isSubmitting}
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setCreateModalOpen(false);
+                setDefaultStartDate(undefined);
+              }}
+              disabled={isSubmitting}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form={CREATE_FORM_ID}
+              variant="primary"
+              isLoading={isSubmitting}
+              disabled={createSubmitDisabled}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Criar
+            </Button>
+          </div>
+        }
       >
         <CalendarItemForm
+          formId={CREATE_FORM_ID}
+          showActions={false}
           mode="create"
           onSubmit={handleCreateItem}
           onCancel={() => {
@@ -368,6 +408,7 @@ export default function CalendarPage() {
           }}
           isLoading={isSubmitting}
           defaultStartDate={defaultStartDate}
+          onSubmitDisabledChange={setCreateSubmitDisabled}
         />
       </Modal>
 
@@ -381,13 +422,48 @@ export default function CalendarPage() {
           }}
           title={selectedItem.title}
           size="lg"
+          footer={
+            !loadingItemDetails ? (
+              <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                  }}
+                  className="min-h-11 w-full sm:w-auto"
+                >
+                  Fechar
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleEditClick}
+                  className="flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
+                  disabled={canEdit === false}
+                  title={canEdit === false ? READER_TOOLTIP : undefined}
+                >
+                  <Edit size={16} />
+                  Editar
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleDeleteClick}
+                  className="flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
+                  disabled={canEdit === false}
+                  title={canEdit === false ? READER_TOOLTIP : undefined}
+                >
+                  <Trash2 size={16} />
+                  Excluir
+                </Button>
+              </div>
+            ) : undefined
+          }
         >
           {loadingItemDetails ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-6">
             {/* Header com badges */}
             <div className="flex flex-wrap items-center gap-3">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${typeColors[selectedItem.type]}`}>
@@ -659,16 +735,18 @@ export default function CalendarPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={() => setParticipantsPage(p => Math.max(1, p - 1))}
                         disabled={participantsPage === 1}
-                        className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft size={16} className="text-gray-700" />
                       </button>
                       <button
+                        type="button"
                         onClick={() => setParticipantsPage(p => Math.min(paginatedParticipants.totalPages, p + 1))}
                         disabled={participantsPage === paginatedParticipants.totalPages}
-                        className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="p-1.5 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronRight size={16} className="text-gray-700" />
                       </button>
@@ -677,38 +755,6 @@ export default function CalendarPage() {
                 )}
               </div>
             )}
-
-            {/* Botões de Ação */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setViewModalOpen(false);
-                }}
-              >
-                Fechar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleEditClick}
-                className="flex items-center gap-2"
-                disabled={canEdit === false}
-                title={canEdit === false ? READER_TOOLTIP : undefined}
-              >
-                <Edit size={16} />
-                Editar
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleDeleteClick}
-                className="flex items-center gap-2"
-                disabled={canEdit === false}
-                title={canEdit === false ? READER_TOOLTIP : undefined}
-              >
-                <Trash2 size={16} />
-                Excluir
-              </Button>
-            </div>
           </div>
           )}
         </Modal>
@@ -724,8 +770,38 @@ export default function CalendarPage() {
           }}
           title="Editar Item do Calendário"
           size="lg"
+          closeOnOverlayClick={!isSubmitting}
+          closeOnEscape={!isSubmitting}
+          footer={
+            <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setEditModalOpen(false);
+                  setSelectedItem(null);
+                }}
+                disabled={isSubmitting}
+                className="min-h-11 w-full sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                form={EDIT_FORM_ID}
+                variant="primary"
+                isLoading={isSubmitting}
+                disabled={editSubmitDisabled}
+                className="min-h-11 w-full sm:w-auto"
+              >
+                Salvar
+              </Button>
+            </div>
+          }
         >
           <CalendarItemForm
+            formId={EDIT_FORM_ID}
+            showActions={false}
             mode="edit"
             item={selectedItem}
             onSubmit={handleUpdateItem}
@@ -734,6 +810,7 @@ export default function CalendarPage() {
               setSelectedItem(null);
             }}
             isLoading={isSubmitting}
+            onSubmitDisabledChange={setEditSubmitDisabled}
           />
         </Modal>
       )}
@@ -748,13 +825,10 @@ export default function CalendarPage() {
           }}
           title="Excluir Item do Calendário"
           size="md"
-        >
-          <div className="p-6">
-            <p className="text-gray-700 mb-6">
-              Tem certeza que deseja excluir o item <strong>{selectedItem.title}</strong>? 
-              Esta ação não poderá ser desfeita.
-            </p>
-            <div className="flex justify-end gap-3 pt-4 border-t">
+          closeOnOverlayClick={!isSubmitting}
+          closeOnEscape={!isSubmitting}
+          footer={
+            <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -762,6 +836,7 @@ export default function CalendarPage() {
                   setSelectedItem(null);
                 }}
                 disabled={isSubmitting}
+                className="min-h-11 w-full sm:w-auto"
               >
                 Cancelar
               </Button>
@@ -769,12 +844,19 @@ export default function CalendarPage() {
                 variant="danger"
                 onClick={handleDeleteItem}
                 isLoading={isSubmitting}
-                className="flex items-center gap-2"
+                className="flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
               >
                 <Trash2 size={16} />
                 Excluir
               </Button>
             </div>
+          }
+        >
+          <div className="p-4 sm:p-6">
+            <p className="text-gray-700 break-words">
+              Tem certeza que deseja excluir o item <strong className="break-words">{selectedItem.title}</strong>?
+              Esta ação não poderá ser desfeita.
+            </p>
           </div>
         </Modal>
       )}

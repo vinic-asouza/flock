@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-07-31
-versao: "1.6"
+versao: "1.7"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -158,6 +158,8 @@ Readers só consultam; writers mutam.
 
 **Mobile (Grupos):** hub `/groups` e modais (CRUD, view com membros, delete, exports) usam layout responsivo (wrap de busca/filtros/summary, sheet do `Modal` base, CTAs touch). No view, info + gestão de membros empilham em `<md` (2 colunas em `md+`); Export/Editar/Excluir ficam no footer sticky do modal no mobile. Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
 
+**Mobile (Calendário):** hub `/calendar` (filtros, tabs Calendário/Listas, visão mês e lista anual) e modais (CRUD, view, delete, aniversariantes) usam layout responsivo (wrap de filtros, sheet do `Modal` base, CTAs touch). No mobile, o grid mensal densifica (dots + contagem); tap no dia abre modal leve “Itens do dia”; em `md+` os chips com título permanecem. Create/Edit/View/Delete usam footer sticky do Modal (CTAs fora do scroll / teclado).
+
 ### J9 — Inteligência (Painel)
 
 1. `/` carrega cards e gráficos (filtro por congregação)
@@ -253,6 +255,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 12. Módulo **Integração** (J7/J11 integration): hub `/integration`, modais CRUD/Convert/export/links e `/public/integration/[token]` seguem o mesmo padrão mobile (~375px) — sem migrar Convert/CRUD para rotas full-page.
 13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete e export PDF da lista são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 14. Módulo **Grupos** (J8): hub `/groups`, modais CRUD/view (add/remove membros), delete e exports PDF são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
+15. Módulo **Calendário** (J8): hub `/calendar`, visão mês densificada (dots + modal do dia), lista anual, modais CRUD/view/delete e aniversariantes são operáveis em ~375px — footer sticky nos CTAs; sem migrar CRUD para rotas full-page; UI de export PDF do calendário ainda não existe no app.
 
 ---
 

@@ -146,6 +146,12 @@ interface CalendarItemFormProps {
   isLoading?: boolean;
   mode: 'create' | 'edit';
   defaultStartDate?: string; // Para criação rápida ao clicar no dia
+  /** id do <form> para submit externo via Modal footer */
+  formId?: string;
+  /** quando false, CTAs ficam no footer do Modal (melhor c/ teclado mobile) */
+  showActions?: boolean;
+  /** espelha disabled do submit interno (filters/groups loading) no footer do Modal */
+  onSubmitDisabledChange?: (disabled: boolean) => void;
 }
 
 const CALENDAR_ITEM_TYPES: CalendarItemType[] = ['Programação', 'Evento', 'Encontro', 'Reunião'];
@@ -242,7 +248,10 @@ export function CalendarItemForm({
   onCancel,
   isLoading = false,
   mode,
-  defaultStartDate
+  defaultStartDate,
+  formId,
+  showActions = true,
+  onSubmitDisabledChange,
 }: CalendarItemFormProps) {
   const { congregations, loading: filtersLoading } = useFiltersData();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -310,6 +319,12 @@ export function CalendarItemForm({
       loadGroups();
     }
   }, [selectedCongregation]);
+
+  const submitDisabled = filtersLoading || loadingGroups || isLoading;
+
+  useEffect(() => {
+    onSubmitDisabledChange?.(submitDisabled);
+  }, [submitDisabled, onSubmitDisabledChange]);
 
   // Criar opções de membros (incluindo o membro selecionado mesmo que não esteja na lista atual)
   const memberOptions = useMemo(() => {
@@ -609,7 +624,7 @@ export function CalendarItemForm({
   );
 
   return (
-    <form onSubmit={handleFormSubmit} className="p-6 space-y-6">
+    <form id={formId} onSubmit={handleFormSubmit} className="p-4 sm:p-6 space-y-6">
       {/* Mensagem de erro geral */}
       {errors.root && (
         <Alert
@@ -620,7 +635,7 @@ export function CalendarItemForm({
       )}
 
       {/* Título e Tipo - lado a lado */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
             Título <span className="text-red-500">*</span>
@@ -684,7 +699,7 @@ export function CalendarItemForm({
       {/* Data/Hora - diferente para recorrentes e não recorrentes */}
       {!isRecurring ? (
         // Eventos não recorrentes: Data e Hora de Início e Fim
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
               Data e Hora de Início <span className="text-red-500">*</span>
@@ -712,7 +727,7 @@ export function CalendarItemForm({
         </div>
       ) : (
         // Eventos recorrentes: Data de início da recorrência e Horário
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
               Data de Início da Recorrência <span className="text-red-500">*</span>
@@ -772,7 +787,7 @@ export function CalendarItemForm({
 
           {/* Campos específicos por padrão */}
           {watch('recurrence_pattern') === 'weekly' && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="recurrence_day_of_week" className="block text-sm font-medium text-gray-700 mb-1">
                   Dia da Semana <span className="text-red-500">*</span>
@@ -872,7 +887,7 @@ export function CalendarItemForm({
                   /* Semana do mês: dia da semana + ordem (Primeira, Segunda, Terceira ou Última) — ex.: todo terceiro sábado */
                   <div className="space-y-3">
                     <p className="text-xs text-gray-500">Ex.: evento repete todo terceiro sábado do mês.</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="recurrence_week_of_month" className="block text-sm font-medium text-gray-700 mb-1">
                           Ordem no mês <span className="text-red-500">*</span>
@@ -935,7 +950,7 @@ export function CalendarItemForm({
       )}
 
       {/* Local e Congregação - duas colunas */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
             Local
@@ -966,7 +981,7 @@ export function CalendarItemForm({
       </div>
 
       {/* Grupo e Responsável - duas colunas */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="group_id" className="block text-sm font-medium text-gray-700 mb-1">
             Grupo / Ministério (opcional)
@@ -1022,25 +1037,29 @@ export function CalendarItemForm({
         />
       </div>
 
-      {/* Botões */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          variant="primary"
-          isLoading={isLoading}
-          disabled={filtersLoading || loadingGroups}
-        >
-          {mode === 'create' ? 'Criar' : 'Salvar'}
-        </Button>
-      </div>
+      {/* Botões — fallback se não houver footer sticky do Modal */}
+      {showActions && (
+        <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-4 sm:flex-row sm:justify-end sm:gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            isLoading={isLoading}
+            disabled={submitDisabled}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            {mode === 'create' ? 'Criar' : 'Salvar'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

@@ -97,7 +97,7 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
       title={`Aniversariantes de ${capitalizedMonthName} ${year}`}
       size="lg"
     >
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -126,13 +126,13 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                     return (
                       <div
                         key={birthday.id}
-                        className="border rounded-lg px-4 py-3 transition-all bg-pink-50 border-pink-300 shadow-md"
+                        className="border rounded-lg px-3 sm:px-4 py-3 transition-all bg-pink-50 border-pink-300 shadow-md"
                       >
                         {/* Header: Nome/badges à esquerda, data à direita */}
                         <div className="flex items-start justify-between gap-3 mb-2">
                           {/* Nome e badges */}
                           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-                            <span className="font-medium text-gray-900 text-sm truncate max-w-xs uppercase" title={birthday.name}>
+                            <span className="font-medium text-gray-900 text-sm truncate uppercase" title={birthday.name}>
                               {formatMemberName(birthday.name)}
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -148,15 +148,15 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                         </div>
                         
                         {/* Idade e contatos */}
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-600">
                           {idade !== null && <span>{idade} Anos</span>}
                           {birthday.phone && (
                             <a
                               href={`tel:${birthday.phone.replace(/\D/g, '')}`}
-                              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+                              className="inline-flex items-center gap-1 min-h-9 px-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
                             >
-                              <Phone size={14} className="transition-colors" />
-                              {birthday.phone}
+                              <Phone size={14} className="transition-colors shrink-0" />
+                              <span className="truncate max-w-[140px]">{birthday.phone}</span>
                             </a>
                           )}
                           {birthday.whatsapp && (
@@ -164,19 +164,19 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                               href={`https://wa.me/${birthday.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
+                              className="inline-flex items-center gap-1 min-h-9 px-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
                             >
-                              <MessageCircle size={14} className="transition-colors" />
-                              {birthday.whatsapp}
+                              <MessageCircle size={14} className="transition-colors shrink-0" />
+                              <span className="truncate max-w-[140px]">{birthday.whatsapp}</span>
                             </a>
                           )}
                           {birthday.email && (
                             <a
                               href={`mailto:${birthday.email}`}
-                              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+                              className="inline-flex items-center gap-1 min-h-9 px-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors min-w-0"
                             >
-                              <Mail size={14} className="transition-colors" />
-                              {birthday.email}
+                              <Mail size={14} className="transition-colors shrink-0" />
+                              <span className="truncate max-w-[160px]">{birthday.email}</span>
                             </a>
                           )}
                         </div>
@@ -205,7 +205,7 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                         <div className="flex items-start justify-between gap-3 mb-2">
                           {/* Nome e badges */}
                           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-                            <span className="font-medium text-gray-900 text-sm truncate max-w-xs uppercase" title={birthday.name}>
+                                                        <span className="font-medium text-gray-900 text-sm truncate uppercase" title={birthday.name}>
                               {formatMemberName(birthday.name)}
                             </span>
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -221,15 +221,15 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                         </div>
                         
                         {/* Idade e contatos */}
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-600">
                           {idade !== null && <span>{idade} Anos</span>}
                           {birthday.phone && (
                             <a
                               href={`tel:${birthday.phone.replace(/\D/g, '')}`}
-                              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+                              className="inline-flex items-center gap-1 min-h-9 px-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
                             >
-                              <Phone size={14} className="transition-colors" />
-                              {birthday.phone}
+                              <Phone size={14} className="transition-colors shrink-0" />
+                              <span className="truncate max-w-[140px]">{birthday.phone}</span>
                             </a>
                           )}
                           {birthday.whatsapp && (
@@ -237,19 +237,19 @@ export function BirthdaysModal({ isOpen, onClose, birthdays, loading, month, yea
                               href={`https://wa.me/${birthday.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
+                              className="inline-flex items-center gap-1 min-h-9 px-1 cursor-pointer text-gray-600 hover:text-green-600 transition-colors"
                             >
-                              <MessageCircle size={14} className="transition-colors" />
-                              {birthday.whatsapp}
+                              <MessageCircle size={14} className="transition-colors shrink-0" />
+                              <span className="truncate max-w-[140px]">{birthday.whatsapp}</span>
                             </a>
                           )}
                           {birthday.email && (
                             <a
                               href={`mailto:${birthday.email}`}
-                              className="flex items-center gap-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors"
+                              className="inline-flex items-center gap-1 min-h-9 px-1 cursor-pointer text-gray-600 hover:text-blue-600 transition-colors min-w-0"
                             >
-                              <Mail size={14} className="transition-colors" />
-                              {birthday.email}
+                              <Mail size={14} className="transition-colors shrink-0" />
+                              <span className="truncate max-w-[160px]">{birthday.email}</span>
                             </a>
                           )}
                         </div>
