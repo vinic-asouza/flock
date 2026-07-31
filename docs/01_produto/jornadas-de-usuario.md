@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-07-29
-versao: "1.4"
+ultima_atualizacao: 2026-07-31
+versao: "1.5"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -154,6 +154,8 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 
 Readers só consultam; writers mutam.
 
+**Mobile (Congregações):** hub `/congregations` e modais (Create/Edit/View/Delete) usam layout responsivo (cards/summary wrap, sheet do `Modal` base, CTAs touch). No view, info + lista de membros empilham em `<md` (2 colunas em `md+`); Editar/Excluir ficam no footer sticky do modal no mobile. Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
+
 ### J9 — Inteligência (Painel)
 
 1. `/` carrega cards e gráficos (filtro por congregação)
@@ -247,6 +249,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 10. Funil de cadastro/planos (J1/J2) usa layout `(auth)` — responsividade própria (`lg` para marketing sidebar); não depender do drawer do shell.
 11. Módulo **Membros** (J6/J11 register): hub `/members`, modais CRUD/import/export/links e `/public/register/[token]` são operáveis em ~375px via `Modal` sheet + form responsivo — sem migrar CRUD para rotas full-page.
 12. Módulo **Integração** (J7/J11 integration): hub `/integration`, modais CRUD/Convert/export/links e `/public/integration/[token]` seguem o mesmo padrão mobile (~375px) — sem migrar Convert/CRUD para rotas full-page.
+13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete e export PDF da lista são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 
 ---
 

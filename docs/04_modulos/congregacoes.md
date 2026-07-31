@@ -3,8 +3,8 @@ type: modulo
 nome: congregacoes
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-07-16
-versao: "1.1"
+ultima_atualizacao: 2026-07-31
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, congregacoes]
 depende_de: [auth, igreja-config]
@@ -273,6 +273,18 @@ stateDiagram-v2
   Existente --> [*]: DELETE (não primary, não última, sem membros ativos)
 ```
 
+### UI — hub e modais (`/congregations`)
+
+Hub autenticado em `frontend/src/app/(main)/congregations/page.tsx` + `components/congregations/*`.
+
+**Responsividade (mobile/tablet):** header com label curta em `<sm`; summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/View/Delete usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
+
+- **View (`CongregationModal`):** empilha info + lista de membros em `<md`; restaura layout 2 colunas (info ~30% + membros) em `md+`. No mobile, Editar/Excluir ficam no `footer` do Modal (sempre alcançáveis); no desktop permanecem no painel lateral.
+- **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário), mitigando teclado virtual.
+- **Export PDF:** botão na summary bar (conteúdo do PDF inalterado; BR-CON-014 nome completo).
+
+Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
+
 ---
 
 ## 8. 🔗 Integrações
@@ -373,7 +385,8 @@ graph LR
 3. Formúlaris públicos às vezes filtram `.eq('active', true)` em congregations — **coluna não existe**; bug potencial nos módulos consumidores, não neste CRUD.  
 4. DELETE seta FKs SET NULL em members/groups/etc. — só após passar o gate de ativos.  
 5. Unicidade de **nome** é **aplicacional** (não UNIQUE DB composto church_id+name) — race possível sob concorrência. Unicidade de **abreviação** tem unique parcial no banco.  
-6. Export PDF de congregações não vive aqui; PDF usa **nome completo** (não abreviação).
+6. Export PDF de congregações não vive aqui; PDF usa **nome completo** (não abreviação).  
+7. **Modal view:** layout 2 colunas em `md+`; no mobile as ações Editar/Excluir estão no footer sticky — não duplicar CTAs na coluna info (`md:hidden` / `hidden md:flex`).
 
 ---
 
@@ -383,6 +396,7 @@ graph LR
 | --- | --- | --- | --- |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo congregações | — |
 | 2026-07-16 | 1.1 | Campo `abbreviation` + regras BR-CON-013/014 + display compacto | DEV-20 |
+| 2026-07-31 | 1.2 | UX mobile/tablet: hub, view stack, Modal footer sticky Create/Edit/View | DEV-30 |
 
 ---
 
