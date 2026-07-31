@@ -144,16 +144,16 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
   }
 
   return (
-    <div ref={containerRef} className="flex flex-nowrap gap-2 items-end overflow-visible">
+    <div ref={containerRef} className="flex flex-wrap items-end gap-2 overflow-visible">
       {/* Congregação */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[12rem]">
         <label className="block text-xs font-medium text-gray-600">Congregação</label>
         <div className="relative overflow-visible">
           <button
             ref={congregationTriggerRef}
             type="button"
             onClick={() => handleToggle('congregation')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex h-11 min-h-11 w-full min-w-0 items-center justify-between rounded-lg border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             disabled={filtersLoading}
           >
             <span>
@@ -170,14 +170,14 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
       </div>
 
       {/* Tipo */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[10rem]">
         <label className="block text-xs font-medium text-gray-600">Tipo</label>
         <div className="relative overflow-visible">
           <button
             ref={typeTriggerRef}
             type="button"
             onClick={() => handleToggle('type')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="inline-flex h-11 min-h-11 w-full min-w-0 items-center justify-between rounded-lg border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
           >
             <span>{filters.type || 'Todos os tipos'}</span>
             <ChevronDown
@@ -189,14 +189,14 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
       </div>
 
       {/* Status */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex min-w-[7rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[9rem]">
         <label className="block text-xs font-medium text-gray-600">Status</label>
         <div className="relative overflow-visible">
           <button
             ref={statusTriggerRef}
             type="button"
             onClick={() => handleToggle('status')}
-            className="h-10 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
+            className="inline-flex h-11 min-h-11 w-full min-w-0 items-center justify-between rounded-lg border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
           >
             <span>{statusLabels[filters.status]}</span>
             <ChevronDown
@@ -208,14 +208,14 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
       </div>
 
       {/* Ordenar */}
-      <div className="flex flex-col gap-1 overflow-visible">
+      <div className="flex min-w-[8rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[10rem]">
         <label className="block text-xs font-medium text-gray-600">Ordenar por</label>
         <div className="relative overflow-visible">
           <button
             ref={sortTriggerRef}
             type="button"
             onClick={() => handleToggle('sorting')}
-            className="h-10 inline-flex items-center gap-2 px-3 border border-gray-200 rounded-lg text-sm font-medium bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors min-w-0"
+            className="inline-flex h-11 min-h-11 min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
           >
             <ArrowUpDown size={16} />
             {SORT_LABELS[sorting.sort_by]}
@@ -248,7 +248,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                     onChange({ congregationId: '' });
                     setOpenSelect(null);
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.congregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                  className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.congregationId ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   Todas as congregações
                 </button>
@@ -260,7 +260,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                       onChange({ congregationId: cong.id });
                       setOpenSelect(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
                     {getCongregationDisplayName(cong)}
                   </button>
@@ -275,7 +275,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                     onChange({ type: '' });
                     setOpenSelect(null);
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.type ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                  className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.type ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                 >
                   Todos os tipos
                 </button>
@@ -287,7 +287,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                       onChange({ type: t });
                       setOpenSelect(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.type === t ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.type === t ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
                     {t}
                   </button>
@@ -304,7 +304,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                       onChange({ status: option });
                       setOpenSelect(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === option ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === option ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
                     {statusLabels[option]}
                   </button>
@@ -323,7 +323,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                         sorting.sort_by === field && sorting.sort_order === 'desc' ? 'asc' : 'desc'
                       )
                     }
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center justify-between ${sorting.sort_by === field ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                    className={`flex min-h-11 w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50 ${sorting.sort_by === field ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
                     <span>{SORT_LABELS[field]}</span>
                     {sorting.sort_by === field && (

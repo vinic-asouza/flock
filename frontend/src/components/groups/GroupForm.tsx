@@ -52,6 +52,10 @@ interface GroupFormProps {
   isLoading?: boolean;
   mode: 'create' | 'edit';
   selectedCongregationId?: string; // Para filtrar membros por congregação
+  /** id do <form> para submit externo via Modal footer */
+  formId?: string;
+  /** quando false, CTAs ficam no footer do Modal (melhor c/ teclado mobile) */
+  showActions?: boolean;
 }
 
 const GROUP_TYPES: GroupType[] = [
@@ -76,7 +80,9 @@ export function GroupForm({
   onCancel, 
   isLoading = false, 
   mode,
-  selectedCongregationId 
+  selectedCongregationId,
+  formId,
+  showActions = true,
 }: GroupFormProps) {
   const { congregations, loading: filtersLoading } = useFiltersData();
   const [selectedResponsibleLabel, setSelectedResponsibleLabel] = useState<string>('');
@@ -199,14 +205,18 @@ export function GroupForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-6">
+    <form
+      id={formId}
+      onSubmit={handleSubmit(handleFormSubmit)}
+      className="space-y-6 p-4 sm:p-6"
+    >
       {/* Informações Básicas */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Informações Básicas
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <Select
               label="Tipo do Grupo *"
@@ -260,7 +270,7 @@ export function GroupForm({
           Vínculos
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Select
             label="Congregação *"
             value={watch('congregation_id') || ''}
@@ -300,14 +310,14 @@ export function GroupForm({
           Status
         </h3>
 
-        <div className="flex items-center gap-3">
+        <div className="flex min-h-11 items-center gap-3">
           <input
             type="checkbox"
             id="status"
             checked={watch('status')}
             onChange={(e) => setValue('status', e.target.checked)}
             disabled={isLoading}
-            className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
           />
           <label htmlFor="status" className="text-sm font-medium text-gray-700">
             Grupo ativo
@@ -315,23 +325,27 @@ export function GroupForm({
         </div>
       </div>
 
-      {/* Botões */}
-      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          isLoading={isLoading}
-        >
-          {mode === 'create' ? 'Criar Grupo' : 'Salvar Alterações'}
-        </Button>
-      </div>
+      {/* Botões — fallback se não houver footer sticky do Modal */}
+      {showActions && (
+        <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end sm:gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            isLoading={isLoading}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            {mode === 'create' ? 'Criar Grupo' : 'Salvar Alterações'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

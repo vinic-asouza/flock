@@ -229,8 +229,11 @@ export default function GroupsPage() {
     sorting.sort_by !== initialSorting.sort_by ||
     sorting.sort_order !== initialSorting.sort_order;
 
+  const createFormId = 'create-group-form';
+  const editFormId = 'edit-group-form';
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       {/* Header */}
       <PageHeader
         title="Grupos"
@@ -240,15 +243,17 @@ export default function GroupsPage() {
             onClick={() => setCreateModalOpen(true)}
             disabled={canEdit === false}
             title={canEdit === false ? READER_TOOLTIP : undefined}
+            className="inline-flex min-h-11 items-center justify-center"
           >
-            <Plus size={18} className="mr-2" />
-            Criar Grupo
+            <Plus size={18} className="mr-2 shrink-0" />
+            <span className="sm:hidden">Criar</span>
+            <span className="hidden sm:inline">Criar Grupo</span>
           </Button>
         }
       />
 
-      <div className="flex flex-nowrap items-end gap-2 w-full overflow-x-auto">
-        <div className="min-w-[200px] flex-1 flex flex-col gap-1">
+      <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="flex w-full min-w-0 flex-col gap-1 sm:min-w-[200px] sm:flex-1">
           <label htmlFor="groups-search" className="block text-xs font-medium text-gray-600">
             Busca
           </label>
@@ -260,7 +265,7 @@ export default function GroupsPage() {
             placeholder="Busque por nome do grupo"
           />
         </div>
-        <div className="flex-shrink-0">
+        <div className="w-full min-w-0 sm:w-auto sm:flex-shrink-0">
           <GroupFiltersBar
             filters={filters}
             onChange={handleFilterChange}
@@ -313,8 +318,34 @@ export default function GroupsPage() {
         onClose={() => setCreateModalOpen(false)}
         title="Criar Novo Grupo"
         size="lg"
+        closeOnOverlayClick={!isSubmitting}
+        closeOnEscape={!isSubmitting}
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setCreateModalOpen(false)}
+              disabled={isSubmitting}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form={createFormId}
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Criar Grupo
+            </Button>
+          </div>
+        }
       >
         <GroupForm
+          formId={createFormId}
+          showActions={false}
           mode="create"
           onSubmit={handleCreateGroup}
           onCancel={() => setCreateModalOpen(false)}
@@ -347,8 +378,37 @@ export default function GroupsPage() {
           }}
           title="Editar Grupo"
           size="lg"
+          closeOnOverlayClick={!isSubmitting}
+          closeOnEscape={!isSubmitting}
+          footer={
+            <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setEditModalOpen(false);
+                  setSelectedGroupId('');
+                }}
+                disabled={isSubmitting}
+                className="min-h-11 w-full sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                form={editFormId}
+                isLoading={isSubmitting}
+                disabled={isSubmitting}
+                className="min-h-11 w-full sm:w-auto"
+              >
+                Salvar Alterações
+              </Button>
+            </div>
+          }
         >
           <GroupForm
+            formId={editFormId}
+            showActions={false}
             mode="edit"
             group={groups.find(g => g.id === selectedGroupId) || null}
             onSubmit={handleEditGroup}
@@ -379,13 +439,10 @@ export default function GroupsPage() {
         }}
         title="Excluir Grupo"
         size="md"
-      >
-        <div className="p-6">
-          <p className="text-gray-700 mb-6">
-            Tem certeza que deseja excluir o grupo <strong>{selectedGroupName}</strong>?
-            Esta ação não poderá ser desfeita.
-          </p>
-          <div className="flex justify-end gap-3">
+        closeOnOverlayClick={!isSubmitting}
+        closeOnEscape={!isSubmitting}
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
             <Button
               variant="secondary"
               onClick={() => {
@@ -394,6 +451,7 @@ export default function GroupsPage() {
                 setSelectedGroupName('');
               }}
               disabled={isSubmitting}
+              className="min-h-11 w-full sm:w-auto"
             >
               Cancelar
             </Button>
@@ -401,11 +459,19 @@ export default function GroupsPage() {
               variant="danger"
               onClick={handleDeleteGroup}
               isLoading={isSubmitting}
+              className="min-h-11 w-full sm:w-auto"
             >
-              <Trash2 size={16} className="mr-2" />
+              <Trash2 size={16} className="mr-2 shrink-0" />
               Excluir
             </Button>
           </div>
+        }
+      >
+        <div className="p-4 sm:p-6">
+          <p className="break-words text-gray-700">
+            Tem certeza que deseja excluir o grupo <strong>{selectedGroupName}</strong>?
+            Esta ação não poderá ser desfeita.
+          </p>
         </div>
       </Modal>
     </div>
