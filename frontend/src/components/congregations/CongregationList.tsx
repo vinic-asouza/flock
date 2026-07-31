@@ -85,7 +85,7 @@ export function CongregationList({
         <p className="text-sm text-gray-500 mb-4">{error}</p>
         <button
           onClick={loadCongregations}
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          className="inline-flex items-center justify-center min-h-11 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
         >
           Tentar novamente
         </button>
@@ -114,24 +114,24 @@ export function CongregationList({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 min-w-0">
       <CongregationSummaryBar
         congregations={congregations}
         onExportClick={onExport}
         onRefreshClick={loadCongregations}
         exporting={exporting}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {congregations.map((congregation) => (
-        <CongregationCard
-          key={congregation.id}
-          congregation={congregation}
-          canEdit={canEdit}
-          onView={onView ? () => onView(congregation.id) : undefined}
-          onEdit={() => handleEdit(congregation.id)}
-          onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0, congregation.is_primary)}
-        />
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
+        {congregations.map((congregation) => (
+          <CongregationCard
+            key={congregation.id}
+            congregation={congregation}
+            canEdit={canEdit}
+            onView={onView ? () => onView(congregation.id) : undefined}
+            onEdit={() => handleEdit(congregation.id)}
+            onDelete={() => handleDelete(congregation.id, congregation.name, congregation.activeMembersCount || 0, congregation.is_primary)}
+          />
+        ))}
       </div>
     </div>
   );

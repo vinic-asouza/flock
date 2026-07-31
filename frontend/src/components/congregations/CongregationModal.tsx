@@ -172,22 +172,22 @@ export function CongregationModal({
           </Button>
         </div>
       ) : congregation ? (
-        <div className="flex h-full min-h-0 gap-6 p-6">
-          {/* Coluna Esquerda - Informações (30%) */}
-          <div className="w-[30%] flex-shrink-0 border-r border-gray-200 pr-6 overflow-y-auto">
-            <div className="space-y-6">
+        <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:flex-row md:gap-6 md:p-6">
+          {/* Info — stack no mobile; 30% em md+ */}
+          <div className="w-full shrink-0 overflow-y-auto border-b border-gray-200 pb-4 md:w-[30%] md:border-b-0 md:border-r md:pb-0 md:pr-6">
+            <div className="space-y-4 md:space-y-6">
               {congregation.abbreviation?.trim() && (
-                <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
+                <div className="min-w-0">
+                  <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
                     Nome completo
                   </label>
-                  <p className="text-gray-900 break-words">{congregation.name}</p>
+                  <p className="break-words text-gray-900">{congregation.name}</p>
                 </div>
               )}
 
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
-                  <Users size={18} className="text-gray-400 flex-shrink-0" />
+                <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <Users size={18} className="shrink-0 text-gray-400" />
                   Quantidade
                 </label>
                 <p className="text-gray-900">
@@ -195,17 +195,17 @@ export function CongregationModal({
                 </p>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
-                  <MapPin size={18} className="text-gray-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <MapPin size={18} className="shrink-0 text-gray-400" />
                   Endereço
                 </label>
-                <p className="text-gray-900 break-words">{fullAddress || '-'}</p>
+                <p className="break-words text-gray-900">{fullAddress || '-'}</p>
               </div>
 
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
-                  <Phone size={18} className="text-gray-400 flex-shrink-0" />
+                <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <Phone size={18} className="shrink-0 text-gray-400" />
                   Contato
                 </label>
                 <p className="text-gray-900">
@@ -222,15 +222,15 @@ export function CongregationModal({
                 </p>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-500 mb-1">
-                  <User size={18} className="text-gray-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <User size={18} className="shrink-0 text-gray-400" />
                   Líder
                 </label>
-                <p className="text-gray-900">{congregation.leader || '-'}</p>
+                <p className="break-words text-gray-900">{congregation.leader || '-'}</p>
               </div>
 
-              <div className="pt-4 border-t border-gray-200">
+              <div className="border-t border-gray-200 pt-4">
                 <div className="flex flex-col gap-2">
                   {onEdit && (
                     <Button
@@ -239,11 +239,11 @@ export function CongregationModal({
                         handleClose();
                         onEdit(congregation.id);
                       }}
-                      className="w-full"
+                      className="min-h-11 w-full"
                       disabled={readOnly}
                       title={readOnly ? READER_TOOLTIP : undefined}
                     >
-                      <Edit size={16} className="mr-2" />
+                      <Edit size={16} className="mr-2 shrink-0" />
                       Editar
                     </Button>
                   )}
@@ -254,7 +254,7 @@ export function CongregationModal({
                         handleClose();
                         onDelete(congregation.id, congregation.name, congregation.activeMembersCount ?? 0, congregation.is_primary);
                       }}
-                      className="w-full"
+                      className="min-h-11 w-full"
                       disabled={readOnly || congregation.is_primary}
                       title={
                         congregation.is_primary
@@ -264,7 +264,7 @@ export function CongregationModal({
                             : undefined
                       }
                     >
-                      <Trash2 size={16} className="mr-2" />
+                      <Trash2 size={16} className="mr-2 shrink-0" />
                       Excluir
                     </Button>
                   )}
@@ -273,47 +273,47 @@ export function CongregationModal({
             </div>
           </div>
 
-          {/* Coluna Direita - Listagem de membros (70%) */}
-          <div className="flex-1 flex flex-col min-h-0 p-2 overflow-hidden">
-            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-              <h3 className="text-lg font-semibold text-gray-900">
+          {/* Membros — empilhados no mobile; flex-1 em md+ */}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden md:p-2">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 shrink-0">
                 Membros ({congregation.activeMembersCount ?? totalMembers ?? 0})
               </h3>
-              <div className="relative flex-1 min-w-[200px] max-w-sm">
+              <div className="relative w-full min-w-0 sm:min-w-[200px] sm:max-w-sm sm:flex-1">
                 <Search
                   size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
                   type="text"
                   value={membersSearch}
                   onChange={(e) => setMembersSearch(e.target.value)}
                   placeholder="Buscar membros por nome..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
+                  className="h-11 w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               {loadingMembers ? (
-                <div className="flex items-center justify-center flex-1">
+                <div className="flex flex-1 items-center justify-center py-8">
                   <div className="flex items-center gap-2 text-gray-500">
                     <Loader2 size={20} className="animate-spin" />
                     Carregando membros...
                   </div>
                 </div>
               ) : errorMembers ? (
-                <div className="flex items-center justify-center flex-1">
+                <div className="flex flex-1 items-center justify-center py-8">
                   <div className="max-w-md rounded-lg border border-red-200 bg-red-50 p-4 text-center">
-                    <p className="text-sm font-medium text-red-700 mb-3">{errorMembers}</p>
-                    <Button onClick={loadMembers} variant="secondary">
+                    <p className="mb-3 text-sm font-medium text-red-700">{errorMembers}</p>
+                    <Button onClick={loadMembers} variant="secondary" className="min-h-11">
                       Tentar novamente
                     </Button>
                   </div>
                 </div>
               ) : members.length > 0 ? (
                 <>
-                  <div className="flex-1 overflow-y-auto min-h-0">
+                  <div className="min-h-0 flex-1 overflow-y-auto">
                     <div className="space-y-3">
                       {members.map((member) => (
                         <MemberCardCompact
@@ -326,10 +326,9 @@ export function CongregationModal({
                     </div>
                   </div>
 
-                  {/* Paginação */}
                   {totalPages > 1 && (
-                    <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-                      <div className="flex items-center justify-between">
+                    <div className="mt-4 shrink-0 border-t border-gray-200 pt-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="text-sm text-gray-600">
                           Mostrando{' '}
                           {(membersPage - 1) * MEMBERS_PER_PAGE + 1} a{' '}
@@ -340,20 +339,20 @@ export function CongregationModal({
                           <button
                             onClick={() => setMembersPage((prev) => Math.max(1, prev - 1))}
                             disabled={!hasPrevPage}
-                            className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-gray-300 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:opacity-50"
                             title="Página anterior"
                           >
                             <ChevronLeft size={16} className="text-gray-600" />
                           </button>
                           <div className="flex items-center gap-1 px-2">
-                            <span className="text-sm text-gray-700 font-medium">{membersPage}</span>
+                            <span className="text-sm font-medium text-gray-700">{membersPage}</span>
                             <span className="text-sm text-gray-400">de</span>
-                            <span className="text-sm text-gray-700 font-medium">{totalPages}</span>
+                            <span className="text-sm font-medium text-gray-700">{totalPages}</span>
                           </div>
                           <button
                             onClick={() => setMembersPage((prev) => Math.min(totalPages, prev + 1))}
                             disabled={!hasNextPage}
-                            className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-200 transition-colors"
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-gray-300 text-sm font-medium transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:opacity-50"
                             title="Próxima página"
                           >
                             <ChevronRight size={16} className="text-gray-600" />
@@ -364,8 +363,8 @@ export function CongregationModal({
                   )}
                 </>
               ) : (
-                <div className="flex items-center justify-center flex-1 text-gray-500">
-                  <div className="text-center">
+                <div className="flex flex-1 items-center justify-center py-8 text-gray-500">
+                  <div className="px-2 text-center">
                     <Users size={48} className="mx-auto mb-2 text-gray-300" />
                     <p>Nenhum membro vinculado a esta congregação</p>
                   </div>

@@ -92,8 +92,8 @@ export function EditCongregationModal({ isOpen, onClose, congregationId, onSucce
       )}
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md mx-6 mt-6">
-          <p className="text-sm font-medium text-red-600">{error}</p>
+        <div className="mx-4 mt-4 rounded-md border border-red-200 bg-red-50 p-4 sm:mx-6 sm:mt-6">
+          <p className="break-words text-sm font-medium text-red-600">{error}</p>
         </div>
       )}
 
