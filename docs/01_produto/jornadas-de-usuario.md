@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-07-31
-versao: "1.7"
+versao: "1.8"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -163,10 +163,12 @@ Readers só consultam; writers mutam.
 ### J9 — Inteligência (Painel)
 
 1. `/` carrega cards e gráficos (filtro por congregação)
-2. Drill-down para `/congregations`, `/groups`, etc.
+2. Drill-down para membros via modais (demografia, geografia, ocupações); navegação para `/congregations`, `/groups`, etc. quando aplicável
 3. Export PDF do dashboard
 
 Estado vazio: “Nenhum dado disponível” quando não há membros.
+
+**Mobile (Relatórios / Painel):** hub `/` (ViewSelector geral/congregação, Atualizar, Exportar PDF) e seções (cards, timeline, demografia, grupos, estrutura, geografia, ocupações) usam layout responsivo e CTAs touch. Drill-downs (`MembersModal`, `MemberModalWithSelect`) abrem em sheet/`dvh` no mobile; no `MembersModal` com sideLayout (demografia), categorias viram chips horizontais scrolláveis em `<md` e sidebar em `md+`. Sem migrar drill-downs para rotas full-page.
 
 ### J10 — Billing em conta existente
 
@@ -256,6 +258,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete e export PDF da lista são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 14. Módulo **Grupos** (J8): hub `/groups`, modais CRUD/view (add/remove membros), delete e exports PDF são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 15. Módulo **Calendário** (J8): hub `/calendar`, visão mês densificada (dots + modal do dia), lista anual, modais CRUD/view/delete e aniversariantes são operáveis em ~375px — footer sticky nos CTAs; sem migrar CRUD para rotas full-page; UI de export PDF do calendário ainda não existe no app.
+16. Módulo **Relatórios** (J9): hub `/`, seções do painel e modais de drill-down são operáveis em ~375px — CTAs touch, sheet/`dvh`, sideLayout com chips no mobile; sem migrar drill-downs para rotas full-page; `ReportsFilters` não está montado na Home.
 
 ---
 
