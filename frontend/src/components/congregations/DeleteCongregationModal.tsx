@@ -63,15 +63,15 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-6">
-            <p className="text-sm font-medium text-red-600">{error}</p>
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4">
+            <p className="break-words text-sm font-medium text-red-600">{error}</p>
           </div>
         )}
 
         <div className="text-center">
-          <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${
+          <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
             isPrimary || activeMembersCount > 0 ? 'bg-orange-100' : 'bg-red-100'
           }`}>
             <AlertTriangle className={`h-6 w-6 ${
@@ -79,20 +79,20 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
             }`} />
           </div>
           
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="mb-2 text-lg font-medium text-gray-900">
             {isPrimary || activeMembersCount > 0 ? 'Não é possível excluir a congregação' : 'Excluir Congregação'}
           </h3>
           
           {isPrimary ? (
-            <div className="space-y-2 mb-6">
-              <p className="text-sm text-gray-600">
+            <div className="mb-6 space-y-2">
+              <p className="break-words text-sm text-gray-600">
                 <strong className="font-semibold text-gray-900">{congregationName}</strong> é a congregação principal da igreja e não pode ser excluída.
               </p>
             </div>
           ) : activeMembersCount > 0 ? (
             <div className="space-y-4">
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-md">
-                <p className="text-sm text-orange-700">
+              <div className="rounded-md border border-orange-200 bg-orange-50 p-4">
+                <p className="break-words text-sm text-orange-700">
                   Esta congregação possui <strong>{activeMembersCount} membro{activeMembersCount !== 1 ? 's' : ''} ativo{activeMembersCount !== 1 ? 's' : ''}</strong> vinculado{activeMembersCount !== 1 ? 's' : ''}.
                 </p>
               </div>
@@ -101,18 +101,18 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
                 Para excluir esta congregação, você precisa primeiro:
               </p>
               
-              <ul className="text-sm text-gray-600 text-left space-y-1">
+              <ul className="space-y-1 text-left text-sm text-gray-600">
                 <li>• Remover a congregação dos membros vinculados, ou</li>
                 <li>• Atribuir outra congregação a esses membros</li>
               </ul>
               
-              <p className="text-xs text-gray-500 mt-3">
+              <p className="mt-3 text-xs text-gray-500">
                 Acesse a seção <strong>Membros</strong> para fazer essas alterações.
               </p>
             </div>
           ) : (
-            <div className="space-y-2 mb-6">
-              <p className="text-sm text-gray-500">
+            <div className="mb-6 space-y-2">
+              <p className="break-words text-sm text-gray-500">
                 Tem certeza que deseja excluir a congregação <strong className="font-semibold text-gray-900">{congregationName}</strong>?
               </p>
               <p className="text-xs text-gray-400">
@@ -121,12 +121,13 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
             </div>
           )}
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             {isPrimary ? (
               <Button
                 variant="secondary"
                 onClick={handleClose}
                 disabled={isLoading}
+                className="min-h-11 w-full sm:w-auto"
               >
                 Entendi
               </Button>
@@ -136,15 +137,16 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
                   variant="secondary"
                   onClick={handleClose}
                   disabled={isLoading}
+                  className="min-h-11 w-full sm:w-auto"
                 >
                   Entendi
                 </Button>
                 <Button
                   onClick={handleGoToMembers}
                   disabled={isLoading}
-                  className="inline-flex items-center gap-2"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 sm:w-auto"
                 >
-                  <Users size={16} />
+                  <Users size={16} className="shrink-0" />
                   Ir para Membros
                 </Button>
               </>
@@ -154,6 +156,7 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
                   variant="secondary"
                   onClick={handleClose}
                   disabled={isLoading}
+                  className="min-h-11 w-full sm:w-auto"
                 >
                   Cancelar
                 </Button>
@@ -161,6 +164,7 @@ export function DeleteCongregationModal({ isOpen, onClose, congregationId, congr
                   variant="danger"
                   onClick={handleDelete}
                   isLoading={isLoading}
+                  className="min-h-11 w-full sm:w-auto"
                 >
                   Excluir
                 </Button>

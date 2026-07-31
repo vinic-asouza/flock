@@ -20,27 +20,27 @@ export function CongregationSummaryBar({
   const totalMembers = congregations.reduce((sum, c) => sum + (c.activeMembersCount ?? 0), 0);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
-      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-        <span>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-2 min-w-0">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-gray-500 min-w-0">
+        <span className="shrink-0">
           {totalCongregations} {totalCongregations === 1 ? 'congregação' : 'congregações'}
         </span>
-        <span className="text-gray-300" aria-hidden>|</span>
-        <span>
+        <span className="text-gray-300 hidden sm:inline" aria-hidden>|</span>
+        <span className="min-w-0">
           {totalMembers === 0
             ? 'Nenhum membro'
             : `${totalMembers} membro${totalMembers !== 1 ? 's' : ''} em congregações`}
         </span>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         {onRefreshClick && (
           <button
             type="button"
             onClick={onRefreshClick}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50"
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 px-3 rounded-md text-xs font-medium transition-colors bg-white text-gray-700 shadow-sm border border-gray-200 hover:bg-gray-50"
           >
-            <RefreshCcw size={12} />
+            <RefreshCcw size={14} className="shrink-0" />
             Atualizar
           </button>
         )}
@@ -49,14 +49,15 @@ export function CongregationSummaryBar({
             type="button"
             onClick={onExportClick}
             disabled={exporting}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-1.5 min-h-11 px-3 rounded-md text-xs font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-60"
           >
             {exporting ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin shrink-0" />
             ) : (
-              <Download size={12} />
+              <Download size={14} className="shrink-0" />
             )}
-            Exportar PDF
+            <span className="hidden sm:inline">Exportar PDF</span>
+            <span className="sm:hidden">PDF</span>
           </button>
         )}
       </div>

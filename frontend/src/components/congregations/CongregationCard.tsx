@@ -30,22 +30,22 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
   return (
     <div
       onClick={onView}
-      className="relative flex flex-col bg-white border border-gray-200 rounded-lg px-6 py-4 h-full cursor-pointer transition-all hover:shadow-md hover:border-primary"
+      className="relative flex flex-col bg-white border border-gray-200 rounded-lg px-4 sm:px-6 py-4 h-full min-w-0 cursor-pointer transition-all hover:shadow-md hover:border-primary"
     >
       <button
         onClick={(e) => {
           e.stopPropagation();
           onView?.();
         }}
-        className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+        className="absolute top-3 right-3 inline-flex items-center justify-center min-h-11 min-w-11 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
         title="Ver detalhes"
       >
         <Eye size={18} />
       </button>
 
-      <div className="flex-1 min-w-0 pr-8">
-        <div className="flex flex-wrap items-center gap-2 mb-2">
-          <span className="font-semibold text-gray-900 text-base truncate" title={congregation.name}>
+      <div className="flex-1 min-w-0 pr-10">
+        <div className="flex flex-wrap items-center gap-2 mb-2 min-w-0">
+          <span className="font-semibold text-gray-900 text-base truncate min-w-0" title={congregation.name}>
             {displayName}
           </span>
           {congregation.is_primary && (
@@ -100,7 +100,7 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
             <span>Atualizado em: {formatDate(congregation.updated_at)}</span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1">
           <button
             title={readOnly ? READER_TOOLTIP : 'Editar'}
             onClick={(e) => {
@@ -108,7 +108,7 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
               onEdit?.();
             }}
             disabled={readOnly}
-            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Edit size={18} />
           </button>
@@ -119,7 +119,7 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
               onDelete?.();
             }}
             disabled={deleteDisabled}
-            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Trash2 size={18} />
           </button>

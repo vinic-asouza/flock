@@ -90,14 +90,14 @@ export default function CongregationsPage() {
   }, [search]);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 min-w-0">
       <PageHeader
         title="Congregações"
         subtitle="Organize as congregações e acompanhe suas informações."
         actions={
           <Button
             onClick={() => setCreateModalOpen(true)}
-            className="inline-flex items-center gap-2"
+            className="inline-flex items-center justify-center gap-2 min-h-11"
             disabled={canCreateCongregations === false}
             title={
               canCreateCongregations === false
@@ -107,18 +107,21 @@ export default function CongregationsPage() {
                 : undefined
             }
           >
-            <Plus size={18} />
-            Adicionar Congregação
+            <Plus size={18} className="shrink-0" />
+            <span className="hidden sm:inline">Adicionar Congregação</span>
+            <span className="sm:hidden">Adicionar</span>
           </Button>
         }
       />
 
-      <MemberSearchInput
-        value={search}
-        onChange={setSearch}
-        isLoading={false}
-        placeholder="Busque por nome da congregação"
-      />
+      <div className="w-full min-w-0">
+        <MemberSearchInput
+          value={search}
+          onChange={setSearch}
+          isLoading={false}
+          placeholder="Busque por nome da congregação"
+        />
+      </div>
 
       <CongregationList 
         search={search}
