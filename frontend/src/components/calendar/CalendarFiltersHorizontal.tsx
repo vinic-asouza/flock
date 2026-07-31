@@ -118,7 +118,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             
             {/* Dropdown de Tipo */}
             {openSelect === 'type' && (
-              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[min(40dvh,15rem)] overflow-y-auto overscroll-contain">
                 <div className="py-1">
                   {CALENDAR_ITEM_TYPES.map(type => (
                     <button
@@ -162,7 +162,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             
             {/* Dropdown de Congregação */}
             {openSelect === 'congregation' && (
-              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[min(40dvh,15rem)] overflow-y-auto overscroll-contain">
                 <div className="py-1">
                   <button
                     type="button"
@@ -227,7 +227,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             
             {/* Dropdown de Grupo */}
             {openSelect === 'group' && (
-              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[min(40dvh,15rem)] overflow-y-auto overscroll-contain">
                 <div className="py-1">
                   <button
                     type="button"

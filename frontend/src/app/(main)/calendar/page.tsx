@@ -48,6 +48,8 @@ export default function CalendarPage() {
   const [selectedItem, setSelectedItem] = useState<CalendarItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultStartDate, setDefaultStartDate] = useState<string | undefined>();
+  const [createSubmitDisabled, setCreateSubmitDisabled] = useState(false);
+  const [editSubmitDisabled, setEditSubmitDisabled] = useState(false);
 
   const loadItems = useCallback(async () => {
     const requestId = ++loadItemsRequestIdRef.current;
@@ -387,6 +389,7 @@ export default function CalendarPage() {
               form={CREATE_FORM_ID}
               variant="primary"
               isLoading={isSubmitting}
+              disabled={createSubmitDisabled}
               className="min-h-11 w-full sm:w-auto"
             >
               Criar
@@ -405,6 +408,7 @@ export default function CalendarPage() {
           }}
           isLoading={isSubmitting}
           defaultStartDate={defaultStartDate}
+          onSubmitDisabledChange={setCreateSubmitDisabled}
         />
       </Modal>
 
@@ -787,6 +791,7 @@ export default function CalendarPage() {
                 form={EDIT_FORM_ID}
                 variant="primary"
                 isLoading={isSubmitting}
+                disabled={editSubmitDisabled}
                 className="min-h-11 w-full sm:w-auto"
               >
                 Salvar
@@ -805,6 +810,7 @@ export default function CalendarPage() {
               setSelectedItem(null);
             }}
             isLoading={isSubmitting}
+            onSubmitDisabledChange={setEditSubmitDisabled}
           />
         </Modal>
       )}

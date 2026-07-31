@@ -383,10 +383,12 @@ export function CalendarMonth({
                   <button
                     type="button"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       onDayClick(day);
                     }}
-                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-0.5 sm:p-1 hover:bg-gray-100 rounded transition-opacity min-h-6 min-w-6 inline-flex items-center justify-center"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-0.5 sm:p-1 hover:bg-gray-100 rounded transition-opacity min-h-7 min-w-7 inline-flex items-center justify-center touch-manipulation"
                     title="Adicionar evento"
                     aria-label="Adicionar evento"
                   >
@@ -478,28 +480,32 @@ export function CalendarMonth({
           </div>
         }
       >
-        <div className="p-4 sm:p-6 space-y-2 max-h-[50dvh] overflow-y-auto">
-          {daySheet?.items.map((item) => {
-            const displayDate = getCalendarItemDisplayDate(item);
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setDaySheet(null);
-                  onItemClick(item);
-                }}
-                className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium border min-h-11 ${typeColors[item.type]}`}
-              >
-                <span className="block truncate">{item.title}</span>
-                <span className="block text-xs font-normal opacity-80 mt-0.5">
-                  {item.type}
-                  {' · '}
-                  {format(displayDate, 'HH:mm')}
-                </span>
-              </button>
-            );
-          })}
+        <div className="p-4 sm:p-6 space-y-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {daySheet && daySheet.items.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-6">Nenhum item neste dia.</p>
+          ) : (
+            daySheet?.items.map((item, index) => {
+              const displayDate = getCalendarItemDisplayDate(item);
+              return (
+                <button
+                  key={`${item.id}-${format(daySheet.date, 'yyyy-MM-dd')}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setDaySheet(null);
+                    onItemClick(item);
+                  }}
+                  className={`w-full text-left px-3 py-3 rounded-lg text-sm font-medium border min-h-11 touch-manipulation ${typeColors[item.type]}`}
+                >
+                  <span className="block truncate">{item.title}</span>
+                  <span className="block text-xs font-normal opacity-80 mt-0.5">
+                    {item.type}
+                    {' · '}
+                    {format(displayDate, 'HH:mm')}
+                  </span>
+                </button>
+              );
+            })
+          )}
         </div>
       </Modal>
 

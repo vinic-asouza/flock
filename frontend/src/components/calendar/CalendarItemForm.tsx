@@ -150,6 +150,8 @@ interface CalendarItemFormProps {
   formId?: string;
   /** quando false, CTAs ficam no footer do Modal (melhor c/ teclado mobile) */
   showActions?: boolean;
+  /** espelha disabled do submit interno (filters/groups loading) no footer do Modal */
+  onSubmitDisabledChange?: (disabled: boolean) => void;
 }
 
 const CALENDAR_ITEM_TYPES: CalendarItemType[] = ['Programação', 'Evento', 'Encontro', 'Reunião'];
@@ -249,6 +251,7 @@ export function CalendarItemForm({
   defaultStartDate,
   formId,
   showActions = true,
+  onSubmitDisabledChange,
 }: CalendarItemFormProps) {
   const { congregations, loading: filtersLoading } = useFiltersData();
   const [groups, setGroups] = useState<Group[]>([]);
@@ -316,6 +319,12 @@ export function CalendarItemForm({
       loadGroups();
     }
   }, [selectedCongregation]);
+
+  const submitDisabled = filtersLoading || loadingGroups || isLoading;
+
+  useEffect(() => {
+    onSubmitDisabledChange?.(submitDisabled);
+  }, [submitDisabled, onSubmitDisabledChange]);
 
   // Criar opções de membros (incluindo o membro selecionado mesmo que não esteja na lista atual)
   const memberOptions = useMemo(() => {
@@ -1044,7 +1053,7 @@ export function CalendarItemForm({
             type="submit"
             variant="primary"
             isLoading={isLoading}
-            disabled={filtersLoading || loadingGroups}
+            disabled={submitDisabled}
             className="min-h-11 w-full sm:w-auto"
           >
             {mode === 'create' ? 'Criar' : 'Salvar'}
