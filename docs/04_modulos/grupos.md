@@ -3,8 +3,8 @@ type: modulo
 nome: grupos
 status: Ativo
 complexidade: Média
-ultima_atualizacao: 2026-07-16
-versao: "1.1"
+ultima_atualizacao: 2026-07-31
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, grupos]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -356,6 +356,18 @@ stateDiagram-v2
   end note
 ```
 
+### UI — hub e modais (`/groups`)
+
+Hub autenticado em `frontend/src/app/(main)/groups/page.tsx` + `components/groups/*`.
+
+**Responsividade (mobile/tablet):** header com label curta em `<sm`; busca + filtros fazem wrap (sem `overflow-x` forçado); summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/View/Delete e exports usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
+
+- **View (`GroupModal`):** empilha info + gestão de membros em `<md`; restaura layout 2 colunas (info ~30% + membros) em `md+`. No mobile, Export/Editar/Excluir ficam no `footer` do Modal; no desktop permanecem no painel lateral. Add membro empilha Select + CTA em `<sm`.
+- **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário), mitigando teclado virtual.
+- **Exports:** `ExportGroupsTypesModal` (lista) e `ExportGroupMembersModal` (membros do grupo) via `Modal` sheet; conteúdo/payload PDF inalterado (BR-REL).
+
+Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
+
 ---
 
 ## 8. 🔗 Integrações
@@ -473,7 +485,8 @@ graph LR
 4. Lista **sem paginação**; `memberCount` carrega todos os `member_groups` dos IDs listados (ok para volumes típicos, revisar se escalar). Ordenação no banco **antes** do enrichment de `memberCount`.  
 5. Responsável **não** é auto-inserido em `member_groups` — só FK `responsible_id`.  
 6. Remover membro: se vínculo inexistente, delete “silencia” e ainda pode retornar 204 (sem 404 explícito de vínculo).  
-7. Export no front (`ExportGroupMembersModal`) não faz parte deste módulo de API.
+7. Export no front (`ExportGroupMembersModal`) não faz parte deste módulo de API.  
+8. **Modal view:** layout 2 colunas em `md+`; no mobile as ações Export/Editar/Excluir estão no footer sticky — não duplicar CTAs na coluna info (`md:hidden` / `hidden md:flex`).
 
 ---
 
@@ -481,6 +494,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-07-31 | 1.2 | UX mobile/tablet: hub wrap, view stack, Modal footer sticky Create/Edit/View, exports via Modal | DEV-31 |
 | 2026-07-16 | 1.1 | Ordenação na listagem (`sort_by` / `sort_order` + whitelist; default `name` asc) | DEV-13 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo grupos | — |
 
