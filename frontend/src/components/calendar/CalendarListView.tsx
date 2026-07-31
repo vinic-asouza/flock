@@ -255,7 +255,7 @@ export function CalendarListView({
                     <button
                       onClick={() => setMonthPage(monthKey, Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
-                      className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
+                      className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
                     >
                       <ChevronLeft size={18} className="text-gray-700" />
                     </button>
@@ -265,7 +265,7 @@ export function CalendarListView({
                     <button
                       onClick={() => setMonthPage(monthKey, Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
-                      className="p-2 rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
+                      className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
                     >
                       <ChevronRight size={18} className="text-gray-700" />
                     </button>
@@ -279,28 +279,30 @@ export function CalendarListView({
       })}
       </div>
 
-      {/* Botões flutuantes de navegação - sempre visíveis */}
-      <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
-        {/* Botão: Ir para o mês atual */}
+      {/* Botões flutuantes de navegação — safe-area no mobile */}
+      <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 flex flex-col gap-2 sm:gap-3 z-40 pb-[env(safe-area-inset-bottom)]">
         <button
+          type="button"
           onClick={scrollToCurrentMonth}
-          className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+          className="flex items-center justify-center gap-2 min-h-11 px-3 sm:px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
         >
-          <CalendarDays size={20} className="text-gray-700" />
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+          <CalendarDays size={20} className="text-gray-700 shrink-0" />
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">
             Ir até o mês atual
           </span>
+          <span className="text-sm font-medium text-gray-700 sm:hidden">Mês</span>
         </button>
 
-        {/* Botão: Voltar ao topo */}
         <button
+          type="button"
           onClick={scrollToTop}
-          className="flex items-center gap-2 px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+          className="flex items-center justify-center gap-2 min-h-11 px-3 sm:px-4 py-3 bg-white border border-gray-300 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
         >
-          <ArrowUp size={20} className="text-gray-700" />
-          <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+          <ArrowUp size={20} className="text-gray-700 shrink-0" />
+          <span className="text-sm font-medium text-gray-700 whitespace-nowrap hidden sm:inline">
             Voltar ao topo
           </span>
+          <span className="text-sm font-medium text-gray-700 sm:hidden">Topo</span>
         </button>
       </div>
     </>

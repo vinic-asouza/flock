@@ -99,15 +99,15 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
   return (
     <div ref={containerRef} className="flex flex-col gap-4">
       {/* Barra de filtros horizontal */}
-      <div className="flex flex-wrap gap-4 items-start w-full">
+      <div className="flex flex-wrap gap-3 sm:gap-4 items-stretch sm:items-start w-full">
         {/* Tipo */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 w-full sm:w-auto min-w-0 sm:min-w-[160px] flex-1 basis-full sm:basis-0">
           <label className="block text-xs font-medium text-gray-600">Tipo</label>
           <div className="relative">
             <button
               type="button"
               onClick={() => setOpenSelect(openSelect === 'type' ? null : 'type')}
-              className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer min-w-[160px]"
+              className="inline-flex items-center justify-between w-full min-h-11 px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
             >
               <span className="truncate">{getTypeLabel()}</span>
               <ChevronDown 
@@ -118,14 +118,14 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             
             {/* Dropdown de Tipo */}
             {openSelect === 'type' && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
                 <div className="py-1">
                   {CALENDAR_ITEM_TYPES.map(type => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => handleTypeChange(type)}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                      className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${
                         filters.type?.includes(type) ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                       }`}
                     >
@@ -139,13 +139,13 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
         </div>
 
         {/* Congregação */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 w-full sm:w-auto min-w-0 sm:min-w-[160px] flex-1 basis-full sm:basis-0">
           <label className="block text-xs font-medium text-gray-600">Congregação</label>
           <div className="relative">
             <button
               type="button"
               onClick={() => setOpenSelect(openSelect === 'congregation' ? null : 'congregation')}
-              className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px]"
+              className="inline-flex items-center justify-between w-full min-h-11 px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               <span className="truncate">
@@ -162,7 +162,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             
             {/* Dropdown de Congregação */}
             {openSelect === 'congregation' && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                 <div className="py-1">
                   <button
                     type="button"
@@ -170,7 +170,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                       onFiltersChange({ ...filters, congregation_id: undefined });
                       setOpenSelect(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                    className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${
                       !filters.congregation_id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                     }`}
                   >
@@ -187,7 +187,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                           onFiltersChange({ ...filters, congregation_id: cong.id });
                           setOpenSelect(null);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                        className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${
                           filters.congregation_id === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                         }`}
                       >
@@ -202,13 +202,13 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
         </div>
 
         {/* Grupo */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 w-full sm:w-auto min-w-0 sm:min-w-[160px] flex-1 basis-full sm:basis-0">
           <label className="block text-xs font-medium text-gray-600">Grupo / Ministério</label>
           <div className="relative">
             <button
               type="button"
               onClick={() => setOpenSelect(openSelect === 'group' ? null : 'group')}
-              className="inline-flex items-center justify-between w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px]"
+              className="inline-flex items-center justify-between w-full min-h-11 px-3 py-2.5 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
               <span className="truncate">
@@ -227,7 +227,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             
             {/* Dropdown de Grupo */}
             {openSelect === 'group' && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                 <div className="py-1">
                   <button
                     type="button"
@@ -235,7 +235,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                       onFiltersChange({ ...filters, group_id: undefined });
                       setOpenSelect(null);
                     }}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                    className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${
                       !filters.group_id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                     }`}
                   >
@@ -252,7 +252,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                           onFiltersChange({ ...filters, group_id: group.id });
                           setOpenSelect(null);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
+                        className={`w-full min-h-11 px-3 py-2 text-left text-sm hover:bg-gray-50 ${
                           filters.group_id === group.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                         }`}
                       >
@@ -273,37 +273,40 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
           {filters.type?.map(type => (
             <span
               key={type}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-9 bg-blue-100 text-blue-800 rounded-full text-xs font-medium"
             >
               {type}
               <button
                 onClick={() => removeType(type)}
-                className="hover:text-blue-900"
+                className="hover:text-blue-900 p-0.5 min-h-6 min-w-6 inline-flex items-center justify-center"
                 type="button"
+                aria-label={`Remover filtro ${type}`}
               >
                 <X size={12} />
               </button>
             </span>
           ))}
           {filters.congregation_id && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
-              {getCongregationDisplayName(congregations.find(c => c.id === filters.congregation_id)) || 'Congregação'}
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-9 bg-purple-100 text-purple-800 rounded-full text-xs font-medium max-w-full">
+              <span className="truncate">{getCongregationDisplayName(congregations.find(c => c.id === filters.congregation_id)) || 'Congregação'}</span>
               <button
                 onClick={() => onFiltersChange({ ...filters, congregation_id: undefined })}
-                className="hover:text-purple-900"
+                className="hover:text-purple-900 p-0.5 min-h-6 min-w-6 inline-flex items-center justify-center shrink-0"
                 type="button"
+                aria-label="Remover filtro de congregação"
               >
                 <X size={12} />
               </button>
             </span>
           )}
           {filters.group_id && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-              {groups.find(g => g.id === filters.group_id)?.name || 'Grupo'}
+            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-9 bg-orange-100 text-orange-800 rounded-full text-xs font-medium max-w-full">
+              <span className="truncate">{groups.find(g => g.id === filters.group_id)?.name || 'Grupo'}</span>
               <button
                 onClick={() => onFiltersChange({ ...filters, group_id: undefined })}
-                className="hover:text-orange-900"
+                className="hover:text-orange-900 p-0.5 min-h-6 min-w-6 inline-flex items-center justify-center shrink-0"
                 type="button"
+                aria-label="Remover filtro de grupo"
               >
                 <X size={12} />
               </button>
@@ -312,7 +315,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="text-xs text-gray-600 hover:text-gray-900 font-medium underline"
+              className="text-xs text-gray-600 hover:text-gray-900 font-medium underline min-h-9 px-1"
               type="button"
             >
               Limpar todos

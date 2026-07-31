@@ -434,7 +434,7 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
                   maxLength={255}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Telefone
@@ -463,10 +463,11 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
 
           {/* Botão do formulário para convidado */}
           {participantType === 'guest' && (
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-stretch sm:justify-end pt-2">
               <Button
                 type="button"
                 variant="primary"
+                className="min-h-11 w-full sm:w-auto"
                 size="sm"
                 onClick={handleAddParticipant}
                 disabled={loading}
