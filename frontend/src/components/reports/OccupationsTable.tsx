@@ -194,7 +194,7 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
             {/* Botão para visualizar membros */}
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center gap-2 min-h-11 px-3 py-2 text-sm font-medium text-[#090725] bg-gray-100 hover:bg-gray-200 rounded-lg touch-manipulation transition-colors"
             >
               <Eye size={14} />
               Visualizar
@@ -216,7 +216,7 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
                       {index + 1}
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-gray-900 truncate max-w-[12rem] sm:max-w-none">
                         {occupation.occupation}
                       </h4>
                     </div>
@@ -248,7 +248,7 @@ export function OccupationsTable({ data, loading = false, viewMode = 'all', sele
                       {index + 6}
                     </div>
                     <div>
-                      <h4 className="text-sm font-medium text-gray-900">
+                      <h4 className="text-sm font-medium text-gray-900 truncate max-w-[12rem] sm:max-w-none">
                         {occupation.occupation}
                       </h4>
                     </div>

@@ -102,30 +102,32 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
     <div className="flex flex-col gap-3">
       <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
 
-      <div className="flex flex-row flex-wrap items-center gap-3">
-        {viewOptions.map((option) => {
-          const Icon = option.icon;
-          const isSelected = selectedView === option.value;
+      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
+        <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          {viewOptions.map((option) => {
+            const Icon = option.icon;
+            const isSelected = selectedView === option.value;
 
-          return (
-            <button
-              key={option.value}
-              onClick={() => handleViewChange(option.value)}
-              className={`inline-flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isSelected
-                  ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-              title={option.description}
-            >
-              <Icon size={16} />
-              {option.label}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={option.value}
+                onClick={() => handleViewChange(option.value)}
+                className={`inline-flex items-center justify-center gap-2 min-h-11 flex-1 sm:flex-initial px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors ${
+                  isSelected
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={option.description}
+              >
+                <Icon size={16} />
+                <span className="truncate">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
         {selectedView === 'congregation' && (
-          <div className="w-48 sm:w-64 flex-shrink-0">
+          <div className="w-full sm:w-64 flex-shrink-0 min-w-0">
             <Select
               value={selectedCongregationId || ''}
               onChange={handleCongregationChange}

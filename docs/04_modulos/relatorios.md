@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-21
-versao: "1.3"
+ultima_atualizacao: 2026-07-31
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -25,8 +25,16 @@ Oferece visão executiva da igreja (totais, demografia, estrutura, timeline, int
 
 Resolve a necessidade de indicadores e extratos imprimíveis/compartilháveis sem planilhas manuais.
 
-No sistema é **consumidor read-only** dos módulos de domínio; a Home do frontend (`page.tsx`) é a UI principal do painel.  
+No sistema é **consumidor read-only** dos módulos de domínio; a Home do frontend (`app/(main)/page.tsx`) é a UI principal do painel.  
 Produto: [[01_produto/visao-do-produto]].
+
+**Responsividade (mobile/tablet):** hub com `ViewSelector` e CTAs Atualizar / Exportar PDF tocáveis (`min-h-11`; label curta “PDF” no mobile). Seções (SummaryCards, Timeline, Demographics, Groups, ChurchStructure, Geography, Occupations) empilham em viewport estreita. Drill-downs usam modais custom em sheet/`dvh` no mobile:
+
+- **`MembersModal` (sideLayout — demografia):** em `<md`, categorias como chips horizontais scrolláveis; em `md+`, sidebar `w-80` (layout desktop).
+- **`MemberModalWithSelect` (geografia / ocupações):** filtros stack + lista scrollável; CTAs Exportar/Fechar tocáveis.
+- **`ReportsFilters`:** componente existe mas **não está montado** na Home — não documentar como ação de tela.
+
+Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
 
 ---
 
@@ -487,7 +495,9 @@ graph LR
 6. **Audit log de reports:** removido (DEV-16). Geração de relatório **não** grava em `audit_logs`. Import/export de lista de membros usam log genérico separado.  
 7. **`exportDashboardPDF` acopla** a `getMemberReports` via mock Response — frágil a mudanças de assinatura.  
 8. Handler de reports/birthdays vive em `memberController` / rota `members` — ao alterar membros, não quebrar contrato do painel.  
-9. `console.log` verbosos no exportController em produção.
+9. `console.log` verbosos no exportController em produção.  
+10. **Modais de drill-down** são custom (não usam `Modal` base compartilhado); no mobile usam sheet/`dvh` próprio.  
+11. **`ReportsFilters`** não montado na Home — não reativar sem Issue de produto.
 
 ---
 
@@ -495,6 +505,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-07-31 | 1.4 | UX mobile/tablet: hub CTAs/ViewSelector touch, sideLayout chips, drill-down sheet/dvh | DEV-33 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo relatórios | — |
 | 2026-07-15 | 1.1 | Endpoint ficha de cadastro em branco (`GET /export/members/registration-form/pdf`) | DEV-10 |
 | 2026-07-20 | 1.2 | Removido audit log indevido na geração de relatório | DEV-16 |
