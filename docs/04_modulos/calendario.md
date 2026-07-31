@@ -3,8 +3,8 @@ type: modulo
 nome: calendario
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-07-31
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, calendario]
 depende_de: [auth, igreja-config, congregacoes, grupos, membros]
@@ -399,6 +399,20 @@ stateDiagram-v2
   end note
 ```
 
+### UI — hub e modais (`/calendar`)
+
+Hub autenticado em `frontend/src/app/(main)/calendar/page.tsx` + `components/calendar/*`.
+
+**Responsividade (mobile/tablet):** header com label curta em `<sm` (“Novo”); filtros horizontais wrap/`min-h-11`; tabs tocáveis. Create/Edit/View/Delete e aniversariantes usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
+
+- **Visão mês (`CalendarMonth`):** em `<md`, grid densificado (weekdays abreviados, dots coloridos + `+N`); tap no dia abre modal leve “Itens do dia”; “+” sempre visível no touch. Em `md+`, chips com título (layout desktop) e “+” no hover.
+- **Visão lista (`CalendarListView`):** cards responsivos; FAB de navegação compacto com safe-area no mobile.
+- **Create/Edit (`CalendarItemForm`):** grids `1 → md:2`; CTAs no `footer` do Modal; `onSubmitDisabledChange` espelha loading de filtros/grupos no submit sticky.
+- **View/Delete:** ações no `footer` sticky; textos com `break-words` no delete.
+- **Export PDF:** API existe; **sem UI** no módulo atualmente (fora do escopo mobile).
+
+Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
+
 ---
 
 ## 8. 🔗 Integrações
@@ -528,7 +542,9 @@ graph LR
 5. Add participant avulso valida membro na igreja, mas o alinhamento fino à congregação do item é mais estrito no **create com participants** (`validateParticipants`) do que no add avulso (só church).  
 6. Bulk retorna sucesso parcial (`success`/`errors`/`duplicates`) — não é all-or-nothing.  
 7. Ordem de rotas: `/groups` e `/export/pdf` **antes** de `/:id` — não reordenar.  
-8. Biblioteca **date-fns** no expander e **pdfkit** no export — dependências do backend.
+8. Biblioteca **date-fns** no expander e **pdfkit** no export — dependências do backend.  
+9. **Modal “Itens do dia”:** só no fluxo mobile (`matchMedia` `<md`); no desktop o usuário abre itens pelos chips. Nested modal (dia → view) é esperado.  
+10. **UI de export PDF** ainda não existe no frontend — não documentar como ação de tela até haver CTA.
 
 ---
 
@@ -536,6 +552,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-07-31 | 1.1 | UX mobile/tablet: mês densificado, modal do dia, Modal footer sticky CRUD/view, filtros/lista touch | DEV-32 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo calendário | — |
 
 ---
