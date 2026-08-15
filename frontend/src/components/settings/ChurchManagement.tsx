@@ -399,7 +399,7 @@ export function ChurchManagement() {
             </div>
           ) : (
             /* Modo edição (formulário) */
-            <div className="space-y-4">
+            <div className="space-y-4 [&_input]:scroll-mb-28">
               {/* Informações básicas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -515,25 +515,26 @@ export function ChurchManagement() {
                 </div>
               </div>
 
-              {/* Botões de ação */}
-              <div className="mt-6 flex flex-col-reverse gap-2 border-t border-gray-200 pt-4 sm:flex-row sm:justify-end sm:gap-3">
-                <Button
-                  onClick={handleCancel}
-                  variant="secondary"
-                  disabled={isSaving}
-                  className="min-h-11 w-full sm:w-auto"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  variant="primary"
-                  disabled={isSaving || !canManageChurch}
-                  title={!canManageChurch ? READER_TOOLTIP : undefined}
-                  className="min-h-11 w-full sm:w-auto"
-                >
-                  {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
+              <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4 sm:shadow-none sm:pb-0">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+                  <Button
+                    onClick={handleCancel}
+                    variant="secondary"
+                    disabled={isSaving}
+                    className="min-h-11 w-full sm:w-auto"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    variant="primary"
+                    disabled={isSaving || !canManageChurch}
+                    title={!canManageChurch ? READER_TOOLTIP : undefined}
+                    className="min-h-11 w-full sm:w-auto"
+                  >
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

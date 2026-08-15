@@ -67,6 +67,70 @@ function getStatusBadgeClass(status: string): string {
     : 'bg-gray-50 text-gray-600 border border-gray-200';
 }
 
+function UserIdentity({
+  item,
+  layout,
+}: {
+  item: ChurchUserListItem;
+  layout: 'card' | 'table';
+}) {
+  const isOwner = item.role === 'owner';
+  const isCard = layout === 'card';
+  const label = item.email ?? item.user_id;
+
+  return (
+    <div className={`flex min-w-0 gap-3 ${isCard ? 'items-start' : 'items-center'}`}>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+        {item.email?.[0]?.toUpperCase() ?? 'U'}
+      </div>
+      {isCard ? (
+        <div className="min-w-0 flex-1">
+          <p className="break-all text-sm font-medium text-gray-900">{label}</p>
+          {isOwner && (
+            <span className="mt-1 inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+              Conta Principal
+            </span>
+          )}
+        </div>
+      ) : (
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="truncate text-sm font-medium text-gray-900">{label}</span>
+          {isOwner && (
+            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+              Conta Principal
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RoleBadge({ role, roleLabel }: { role: string; roleLabel: string }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(role)}`}
+    >
+      {roleLabel}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(status)}`}
+    >
+      <span
+        className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
+          status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+        }`}
+      />
+      {status === 'active' ? 'Ativo' : 'Desativado'}
+    </span>
+  );
+}
+
 function UserRowActions({
   item,
   onEdit,
@@ -465,37 +529,10 @@ export function ChurchUsersManagement() {
                       isOwner ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
                     }`}
                   >
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
-                        {item.email?.[0]?.toUpperCase() ?? 'U'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="break-all text-sm font-medium text-gray-900">
-                          {item.email ?? item.user_id}
-                        </p>
-                        {isOwner && (
-                          <span className="mt-1 inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
-                            Conta Principal
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    <UserIdentity item={item} layout="card" />
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(item.role)}`}
-                      >
-                        {item.roleLabel}
-                      </span>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
-                      >
-                        <span
-                          className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                            item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
-                          }`}
-                        />
-                        {item.status === 'active' ? 'Ativo' : 'Desativado'}
-                      </span>
+                      <RoleBadge role={item.role} roleLabel={item.roleLabel} />
+                      <StatusBadge status={item.status} />
                       <span className="text-xs text-gray-600">Congregações: {scopeLabel}</span>
                     </div>
                     <div className="mt-3">
@@ -532,45 +569,16 @@ export function ChurchUsersManagement() {
                         className={`${isOwner ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white hover:border-primary/60'} rounded-lg border`}
                       >
                         <td className="px-4 py-2 align-middle">
-                          <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
-                              {item.email?.[0]?.toUpperCase() ?? 'U'}
-                            </div>
-                            <div className="flex min-w-0 flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="truncate text-sm font-medium text-gray-900">
-                                  {item.email ?? item.user_id}
-                                </span>
-                                {isOwner && (
-                                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
-                                    Conta Principal
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
+                          <UserIdentity item={item} layout="table" />
                         </td>
                         <td className="px-4 py-2 text-center align-middle">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(item.role)}`}
-                          >
-                            {item.roleLabel}
-                          </span>
+                          <RoleBadge role={item.role} roleLabel={item.roleLabel} />
                         </td>
                         <td className="px-4 py-2 text-center align-middle">
                           <span className="text-xs text-gray-600">{scopeLabel}</span>
                         </td>
                         <td className="px-4 py-2 text-center align-middle">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
-                          >
-                            <span
-                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                                item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
-                              }`}
-                            />
-                            {item.status === 'active' ? 'Ativo' : 'Desativado'}
-                          </span>
+                          <StatusBadge status={item.status} />
                         </td>
                         <td className="px-4 py-2 text-right align-middle">
                           <UserRowActions

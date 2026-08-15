@@ -521,7 +521,7 @@ export function AccountManagement() {
           </div>
         }
       >
-        <div className="space-y-4 p-4 sm:p-6">
+        <div className="space-y-4 p-4 sm:p-6 [&_input]:scroll-mb-24">
           {emailError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{emailError}</p>
@@ -570,7 +570,7 @@ export function AccountManagement() {
           </div>
         }
       >
-        <div className="space-y-4 p-4 sm:p-6">
+        <div className="space-y-4 p-4 sm:p-6 [&_input]:scroll-mb-24">
           {passwordError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{passwordError}</p>
@@ -626,7 +626,7 @@ export function AccountManagement() {
           </div>
         }
       >
-        <div className="space-y-4 p-4 sm:p-6">
+        <div className="space-y-4 p-4 sm:p-6 [&_input]:scroll-mb-24">
           {phoneError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{phoneError}</p>
@@ -687,7 +687,7 @@ export function AccountManagement() {
           </div>
         }
       >
-        <div className="space-y-4 p-4 sm:p-6">
+        <div className="space-y-4 p-4 sm:p-6 [&_input]:scroll-mb-24">
           {deleteError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{deleteError}</p>
