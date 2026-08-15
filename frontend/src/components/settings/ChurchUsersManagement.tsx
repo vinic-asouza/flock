@@ -25,6 +25,10 @@ const STATUS_OPTIONS = [
   { value: 'disabled', label: 'Desativado' },
 ];
 
+const ADD_USER_FORM_ID = 'add-church-user-form';
+const MODAL_FOOTER_CLASS =
+  'flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6';
+
 function validateCongregationScope(
   userRole: ChurchUserRole,
   accessAll: boolean,
@@ -50,6 +54,61 @@ function formatUserScope(
   return `${names.length} congregações`;
 }
 
+function getRoleBadgeClass(role: string): string {
+  if (role === 'admin') return 'bg-blue-100 text-blue-700';
+  if (role === 'editor') return 'bg-emerald-100 text-emerald-700';
+  if (role === 'reader') return 'bg-gray-100 text-gray-700';
+  return 'bg-sky-100 text-sky-800';
+}
+
+function getStatusBadgeClass(status: string): string {
+  return status === 'active'
+    ? 'bg-green-50 text-green-700 border border-green-200'
+    : 'bg-gray-50 text-gray-600 border border-gray-200';
+}
+
+function UserRowActions({
+  item,
+  onEdit,
+  onDelete,
+  layout,
+}: {
+  item: ChurchUserListItem;
+  onEdit: (item: ChurchUserListItem) => void;
+  onDelete: (item: ChurchUserListItem) => void;
+  layout: 'card' | 'table';
+}) {
+  if (item.role === 'owner') {
+    return (
+      <span className="text-[11px] text-gray-400">Sem ações disponíveis</span>
+    );
+  }
+
+  const isCard = layout === 'card';
+
+  return (
+    <div className={`flex items-center gap-2 ${isCard ? 'w-full' : 'justify-end'}`}>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => onEdit(item)}
+        className={isCard ? 'min-h-11 flex-1' : undefined}
+      >
+        Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={() => onDelete(item)}
+        className={`text-red-600 hover:bg-red-50 ${isCard ? 'min-h-11 px-3' : ''}`}
+        aria-label="Remover usuário"
+      >
+        <Trash2 size={14} />
+      </Button>
+    </div>
+  );
+}
+
 type CongregationScopePickerProps = {
   accessAllCongregations: boolean;
   onAccessAllChange: (value: boolean) => void;
@@ -72,7 +131,7 @@ function CongregationScopePicker({
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700">Congregações</label>
-      <label className="flex items-center gap-2 cursor-pointer">
+      <label className="flex min-h-11 cursor-pointer items-center gap-2">
         <input
           type="checkbox"
           checked={accessAllCongregations}
@@ -81,7 +140,7 @@ function CongregationScopePicker({
             if (e.target.checked) onSelectedIdsChange([]);
           }}
           disabled={disabled || loading}
-          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+          className="h-4 w-4 shrink-0 rounded border-gray-300 text-primary focus:ring-primary"
         />
         <span className="text-sm text-gray-700">Todas as congregações</span>
       </label>
@@ -101,7 +160,7 @@ function CongregationScopePicker({
                 return (
                   <label
                     key={cong.id}
-                    className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                    className={`flex min-h-11 items-center gap-2 rounded p-2 cursor-pointer transition-colors ${
                       isSelected ? 'bg-primary/5' : 'hover:bg-gray-50'
                     } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
@@ -342,11 +401,11 @@ export function ChurchUsersManagement() {
 
   return (
     <div className="space-y-6">
-      <Card className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <UserPlus size={20} />
+      <Card className="p-4 sm:p-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 space-y-2">
+            <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <UserPlus size={20} className="shrink-0" />
               Adicionar usuário
             </h3>
             <p className="text-sm text-gray-600">
@@ -356,35 +415,33 @@ export function ChurchUsersManagement() {
               O usuário convidado receberá um email informando o acesso. Se ainda não tiver conta, poderá definir a senha pela opção
               {' '}<span className="font-medium">&quot;Esqueci minha senha&quot;</span> na tela de login.
             </p>
-            <div className="flex flex-col gap-1 text-sm text-gray-500">
-              <div className="mt-2 inline-flex flex-wrap gap-2 text-xs">
-                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                  <span className="font-semibold">Leitor</span>: apenas visualiza dados e relatórios
-                </span>
-                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                  <span className="font-semibold">Editor</span>: pode cadastrar, editar e excluir dados
-                </span>
-                <span className="px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                  <span className="font-semibold">Administrador</span>: tudo do editor + configurações e plano
-                </span>
-              </div>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">
+                <span className="font-semibold">Leitor</span>: apenas visualiza dados e relatórios
+              </span>
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">
+                <span className="font-semibold">Editor</span>: pode cadastrar, editar e excluir dados
+              </span>
+              <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-700">
+                <span className="font-semibold">Administrador</span>: tudo do editor + configurações e plano
+              </span>
             </div>
           </div>
           <Button
             variant="primary"
             size="sm"
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 whitespace-nowrap"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 md:w-auto"
           >
             <UserPlus size={18} />
-            <span className="whitespace-nowrap">Novo usuário</span>
+            Novo usuário
           </Button>
         </div>
       </Card>
 
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Shield size={20} />
+      <Card className="p-4 sm:p-6">
+        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-900">
+          <Shield size={20} className="shrink-0" />
           Usuários da igreja
         </h3>
         {loading ? (
@@ -392,120 +449,144 @@ export function ChurchUsersManagement() {
             <Loader2 size={32} className="animate-spin text-primary" />
           </div>
         ) : sortedList.length === 0 ? (
-          <div className="py-8 text-center text-gray-500 text-sm">
+          <div className="py-8 text-center text-sm text-gray-500">
             Nenhum usuário extra configurado ainda. Use o formulário acima para convidar alguém.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border-separate border-spacing-y-1">
-              <thead>
-                <tr className="text-gray-500">
-                  <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Usuário</th>
-                  <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Papel</th>
-                  <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Congregações</th>
-                  <th className="py-1 pr-4 text-xs font-semibold uppercase tracking-wide text-center">Status</th>
-                  <th className="py-1 w-32 text-xs font-semibold uppercase tracking-wide text-center">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedList.map((item) => {
-                  const isOwner = item.role === 'owner';
+          <>
+            <ul className="space-y-3 md:hidden">
+              {sortedList.map((item) => {
+                const isOwner = item.role === 'owner';
+                const scopeLabel = formatUserScope(item, congregationMap);
+                return (
+                  <li
+                    key={item.id}
+                    className={`rounded-lg border p-4 ${
+                      isOwner ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+                        {item.email?.[0]?.toUpperCase() ?? 'U'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="break-all text-sm font-medium text-gray-900">
+                          {item.email ?? item.user_id}
+                        </p>
+                        {isOwner && (
+                          <span className="mt-1 inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+                            Conta Principal
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(item.role)}`}
+                      >
+                        {item.roleLabel}
+                      </span>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                      >
+                        <span
+                          className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
+                            item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                          }`}
+                        />
+                        {item.status === 'active' ? 'Ativo' : 'Desativado'}
+                      </span>
+                      <span className="text-xs text-gray-600">Congregações: {scopeLabel}</span>
+                    </div>
+                    <div className="mt-3">
+                      <UserRowActions
+                        item={item}
+                        onEdit={openEditModal}
+                        onDelete={openDeleteModal}
+                        layout="card"
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
 
-                  const roleBadgeClass =
-                    item.role === 'admin'
-                      ? 'bg-blue-100 text-blue-700'
-                      : item.role === 'editor'
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : item.role === 'reader'
-                          ? 'bg-gray-100 text-gray-700'
-                          : 'bg-sky-100 text-sky-800';
-
-                  const statusBadgeClass =
-                    item.status === 'active'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200';
-
-                  const scopeLabel = formatUserScope(item, congregationMap);
-
-                  return (
-                    <tr
-                      key={item.id}
-                      className={`${isOwner ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200 hover:border-primary/60'} border rounded-lg`}
-                    >
-                      <td className="px-4 py-2 align-middle">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold">
-                            {item.email?.[0]?.toUpperCase() ?? 'U'}
-                          </div>
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-900 truncate">
-                                {item.email ?? item.user_id}
-                              </span>
-                              {isOwner && (
-                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-blue-100 text-blue-800">
-                                  Conta Principal
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full border-separate border-spacing-y-1 text-sm">
+                <thead>
+                  <tr className="text-gray-500">
+                    <th className="py-1 pr-4 text-center text-xs font-semibold uppercase tracking-wide">Usuário</th>
+                    <th className="py-1 pr-4 text-center text-xs font-semibold uppercase tracking-wide">Papel</th>
+                    <th className="py-1 pr-4 text-center text-xs font-semibold uppercase tracking-wide">Congregações</th>
+                    <th className="py-1 pr-4 text-center text-xs font-semibold uppercase tracking-wide">Status</th>
+                    <th className="w-32 py-1 text-center text-xs font-semibold uppercase tracking-wide">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedList.map((item) => {
+                    const isOwner = item.role === 'owner';
+                    const scopeLabel = formatUserScope(item, congregationMap);
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`${isOwner ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white hover:border-primary/60'} rounded-lg border`}
+                      >
+                        <td className="px-4 py-2 align-middle">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+                              {item.email?.[0]?.toUpperCase() ?? 'U'}
+                            </div>
+                            <div className="flex min-w-0 flex-col">
+                              <div className="flex items-center gap-2">
+                                <span className="truncate text-sm font-medium text-gray-900">
+                                  {item.email ?? item.user_id}
                                 </span>
-                              )}
+                                {isOwner && (
+                                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-800">
+                                    Conta Principal
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-
-                      <td className="px-4 py-2 align-middle text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeClass}`}
-                        >
-                          {item.roleLabel}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-2 align-middle text-center">
-                        <span className="text-xs text-gray-600">{scopeLabel}</span>
-                      </td>
-
-                      <td className="px-4 py-2 align-middle text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass}`}
-                        >
+                        </td>
+                        <td className="px-4 py-2 text-center align-middle">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                              item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
-                            }`}
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getRoleBadgeClass(item.role)}`}
+                          >
+                            {item.roleLabel}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-center align-middle">
+                          <span className="text-xs text-gray-600">{scopeLabel}</span>
+                        </td>
+                        <td className="px-4 py-2 text-center align-middle">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                          >
+                            <span
+                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
+                                item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                              }`}
+                            />
+                            {item.status === 'active' ? 'Ativo' : 'Desativado'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2 text-right align-middle">
+                          <UserRowActions
+                            item={item}
+                            onEdit={openEditModal}
+                            onDelete={openDeleteModal}
+                            layout="table"
                           />
-                          {item.status === 'active' ? 'Ativo' : 'Desativado'}
-                        </span>
-                      </td>
-
-                      <td className="px-4 py-2 align-middle text-right">
-                        {isOwner ? (
-                          <span className="text-[11px] text-gray-400">Sem ações disponíveis</span>
-                        ) : (
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => openEditModal(item)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => openDeleteModal(item)}
-                              className="text-red-600 hover:bg-red-50"
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 
@@ -516,8 +597,29 @@ export function ChurchUsersManagement() {
         }}
         title="Adicionar usuário"
         size="md"
+        footer={
+          <div className={MODAL_FOOTER_CLASS}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={adding}
+              onClick={closeAddModal}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form={ADD_USER_FORM_ID}
+              disabled={adding}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {adding ? <Loader2 size={18} className="animate-spin" /> : 'Adicionar usuário'}
+            </Button>
+          </div>
+        }
       >
-        <form onSubmit={handleAdd} className="space-y-4 p-6">
+        <form id={ADD_USER_FORM_ID} onSubmit={handleAdd} className="space-y-4 p-4 sm:p-6">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">Email</label>
             <Input
@@ -552,25 +654,10 @@ export function ChurchUsersManagement() {
               disabled={adding}
             />
           )}
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>
-              O convidado receberá um email informando o acesso. Se ainda não tiver conta, poderá definir a senha pela opção
-              {' '}<span className="font-medium">&quot;Esqueci minha senha&quot;</span> na tela de login.
-            </p>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={adding}
-              onClick={closeAddModal}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={adding}>
-              {adding ? <Loader2 size={18} className="animate-spin" /> : 'Adicionar usuário'}
-            </Button>
-          </div>
+          <p className="text-xs text-gray-500">
+            O convidado receberá um email informando o acesso. Se ainda não tiver conta, poderá definir a senha pela opção
+            {' '}<span className="font-medium">&quot;Esqueci minha senha&quot;</span> na tela de login.
+          </p>
         </form>
       </Modal>
 
@@ -584,22 +671,48 @@ export function ChurchUsersManagement() {
         }}
         title="Editar usuário"
         size="md"
+        footer={
+          <div className={MODAL_FOOTER_CLASS}>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={savingEdit}
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setEditingUser(null);
+              }}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={savingEdit}
+              onClick={handleUpdate}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {savingEdit ? <Loader2 size={16} className="mr-1 animate-spin" /> : null}
+              {savingEdit ? 'Salvando...' : 'Salvar alterações'}
+            </Button>
+          </div>
+        }
       >
-        <div className="space-y-4 p-6">
+        <div className="space-y-4 p-4 sm:p-6">
           {editingUser && (
             <>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-100">
-                <div className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold">
+              <div className="flex items-center gap-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
                   {(editingUser.email ?? editingUser.user_id)?.[0]?.toUpperCase() ?? 'U'}
                 </div>
-                <div className="flex flex-col">
-                  <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide">Usuário</p>
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="min-w-0 flex-col">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-blue-800">Usuário</p>
+                  <p className="break-all text-sm font-medium text-gray-900">
                     {editingUser.email ?? editingUser.user_id}
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-gray-700">Papel</label>
                   <Select
@@ -635,28 +748,6 @@ export function ChurchUsersManagement() {
                   disabled={savingEdit}
                 />
               )}
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={savingEdit}
-                  onClick={() => {
-                    setIsEditModalOpen(false);
-                    setEditingUser(null);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  disabled={savingEdit}
-                  onClick={handleUpdate}
-                >
-                  {savingEdit ? <Loader2 size={16} className="animate-spin mr-1" /> : null}
-                  {savingEdit ? 'Salvando...' : 'Salvar alterações'}
-                </Button>
-              </div>
             </>
           )}
         </div>
@@ -672,16 +763,8 @@ export function ChurchUsersManagement() {
         }}
         title="Remover usuário"
         size="sm"
-      >
-        <div className="p-6 space-y-4">
-          <p className="text-sm text-gray-700">
-            Tem certeza de que deseja remover{' '}
-            <span className="font-medium">
-              {deletingUser?.email ?? 'este usuário'}
-            </span>{' '}
-            da igreja? Esta ação não remove a conta do usuário no sistema, apenas o acesso a esta igreja.
-          </p>
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        footer={
+          <div className={MODAL_FOOTER_CLASS}>
             <Button
               type="button"
               variant="secondary"
@@ -690,6 +773,7 @@ export function ChurchUsersManagement() {
                 setIsDeleteModalOpen(false);
                 setDeletingUser(null);
               }}
+              className="min-h-11 w-full sm:w-auto"
             >
               Cancelar
             </Button>
@@ -698,11 +782,22 @@ export function ChurchUsersManagement() {
               variant="danger"
               disabled={removing}
               onClick={handleRemove}
+              className="min-h-11 w-full sm:w-auto"
             >
-              {removing ? <Loader2 size={16} className="animate-spin mr-1" /> : null}
+              {removing ? <Loader2 size={16} className="mr-1 animate-spin" /> : null}
               {removing ? 'Removendo...' : 'Remover usuário'}
             </Button>
           </div>
+        }
+      >
+        <div className="space-y-4 p-4 sm:p-6">
+          <p className="break-words text-sm text-gray-700">
+            Tem certeza de que deseja remover{' '}
+            <span className="font-medium">
+              {deletingUser?.email ?? 'este usuário'}
+            </span>{' '}
+            da igreja? Esta ação não remove a conta do usuário no sistema, apenas o acesso a esta igreja.
+          </p>
         </div>
       </Modal>
     </div>

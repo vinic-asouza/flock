@@ -74,19 +74,20 @@ function SettingsPageContent() {
                 subtitle="Gerencie as configurações da sua igreja e personalização do sistema."
             />
 
-            <nav className="flex flex-wrap gap-2 mb-6">
+            <nav className="mb-6 flex flex-wrap gap-2">
                 {settingsSections.map((section) => {
                     const IconComponent = section.icon;
                     return (
                         <button
                             key={section.id}
+                            type="button"
                             onClick={() => handleSectionChange(section.id)}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${activeSection === section.id
+                            className={`inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${activeSection === section.id
                                     ? 'bg-primary text-white shadow-sm'
                                     : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 border border-gray-200'
                                 }`}
                         >
-                            <IconComponent size={16} />
+                            <IconComponent size={16} className="shrink-0" />
                             <span>{section.title}</span>
                         </button>
                     );

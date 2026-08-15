@@ -428,18 +428,18 @@ export function AccountManagement() {
           {accountData && (
             <div className="space-y-4">
               {/* Email */}
-              <div className="flex items-center justify-between py-3">
-                <div className="flex items-center gap-3">
-                  <Mail className="text-gray-500" size={20} />
-                  <div>
-                    <p className="font-medium text-gray-900">{accountData.email}</p>
+              <div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Mail className="shrink-0 text-gray-500" size={20} />
+                  <div className="min-w-0">
+                    <p className="break-all font-medium text-gray-900">{accountData.email}</p>
                   </div>
                 </div>
                 <Button
                   onClick={() => setShowEmailModal(true)}
                   variant="secondary"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 sm:w-auto"
                 >
                   <Edit size={16} />
                   Alterar
@@ -450,18 +450,18 @@ export function AccountManagement() {
               <div className="border-t border-gray-200"></div>
 
               {/* Telefone - Desabilitado temporariamente */}
-              <div className="flex items-center justify-between py-3 opacity-50">
-                <div className="flex items-center gap-3">
-                  <Phone className="text-gray-400" size={20} />
-                  <div>
-                    <p className="font-medium text-gray-500">{accountData.phone || 'Não informado'}</p>
+              <div className="flex flex-col gap-3 py-3 opacity-50 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Phone className="shrink-0 text-gray-400" size={20} />
+                  <div className="min-w-0">
+                    <p className="break-all font-medium text-gray-500">{accountData.phone || 'Não informado'}</p>
                   </div>
                 </div>
                 <Button
                   onClick={() => setShowPhoneModal(true)}
                   variant="secondary"
                   size="sm"
-                  className="flex items-center gap-2 cursor-not-allowed"
+                  className="flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 sm:w-auto"
                   disabled
                 >
                   <Edit size={16} />
@@ -470,12 +470,12 @@ export function AccountManagement() {
               </div>
 
               {/* Ações de segurança */}
-              <div className="flex flex-wrap gap-3 pt-3">
+              <div className="flex flex-col gap-2 pt-3 sm:flex-row sm:flex-wrap sm:gap-3">
                 <Button
                   onClick={() => setShowPasswordModal(true)}
                   variant="secondary"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 sm:w-auto"
                 >
                   <Key size={16} />
                   Alterar Senha
@@ -485,7 +485,7 @@ export function AccountManagement() {
                   onClick={() => setShowDeleteModal(true)}
                   variant="secondary"
                   size="sm"
-                  className="flex items-center gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 border-red-200 text-red-600 hover:bg-red-50 sm:w-auto"
                 >
                   <Trash2 size={16} />
                   Excluir Conta
@@ -501,8 +501,27 @@ export function AccountManagement() {
         isOpen={showEmailModal}
         onClose={handleCloseEmailModal}
         title="Alterar Email"
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              onClick={handleCloseEmailModal}
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangeEmail}
+              disabled={isSaving}
+              variant="primary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {isSaving ? 'Alterando...' : 'Alterar Email'}
+            </Button>
+          </div>
+        }
       >
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 sm:p-6">
           {emailError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{emailError}</p>
@@ -523,21 +542,6 @@ export function AccountManagement() {
             onChange={(e) => setEmailData(prev => ({ ...prev, password: e.target.value }))}
             placeholder="Digite sua senha atual"
           />
-          <div className="flex justify-end gap-3 pt-3">
-            <Button
-              onClick={handleCloseEmailModal}
-              variant="secondary"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangeEmail}
-              disabled={isSaving}
-              variant="primary"
-            >
-              {isSaving ? 'Alterando...' : 'Alterar Email'}
-            </Button>
-          </div>
         </div>
       </Modal>
 
@@ -546,8 +550,27 @@ export function AccountManagement() {
         isOpen={showPasswordModal}
         onClose={handleClosePasswordModal}
         title="Alterar Senha"
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              onClick={handleClosePasswordModal}
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              disabled={isSaving}
+              variant="primary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {isSaving ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </div>
+        }
       >
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 sm:p-6">
           {passwordError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{passwordError}</p>
@@ -575,21 +598,6 @@ export function AccountManagement() {
             onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
             placeholder="Confirme a nova senha"
           />
-          <div className="flex justify-end gap-3 pt-3">
-            <Button
-              onClick={handleClosePasswordModal}
-              variant="secondary"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangePassword}
-              disabled={isSaving}
-              variant="primary"
-            >
-              {isSaving ? 'Alterando...' : 'Alterar Senha'}
-            </Button>
-          </div>
         </div>
       </Modal>
 
@@ -598,8 +606,27 @@ export function AccountManagement() {
         isOpen={showPhoneModal}
         onClose={() => setShowPhoneModal(false)}
         title="Alterar Telefone"
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              onClick={() => setShowPhoneModal(false)}
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePhone}
+              disabled={isSaving}
+              variant="primary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {isSaving ? 'Alterando...' : 'Alterar Telefone'}
+            </Button>
+          </div>
+        }
       >
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 sm:p-6">
           {phoneError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{phoneError}</p>
@@ -620,21 +647,6 @@ export function AccountManagement() {
             onChange={(e) => setPhoneData(prev => ({ ...prev, password: e.target.value }))}
             placeholder="Digite sua senha atual"
           />
-          <div className="flex justify-end gap-3 pt-3">
-            <Button
-              onClick={() => setShowPhoneModal(false)}
-              variant="secondary"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangePhone}
-              disabled={isSaving}
-              variant="primary"
-            >
-              {isSaving ? 'Alterando...' : 'Alterar Telefone'}
-            </Button>
-          </div>
         </div>
       </Modal>
 
@@ -648,8 +660,34 @@ export function AccountManagement() {
           setDeleteData({ password: '', confirmation: '' });
         }}
         title="Excluir Conta"
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeleteError(null);
+                setSuccess(null);
+                setDeleteData({ password: '', confirmation: '' });
+              }}
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            {!hasActivePaidPlan() && (
+              <Button
+                onClick={handleDeleteAccount}
+                disabled={isSaving}
+                variant="primary"
+                className="min-h-11 w-full bg-red-600 text-white hover:bg-red-700 sm:w-auto"
+              >
+                {isSaving ? 'Excluindo...' : 'Excluir Conta'}
+              </Button>
+            )}
+          </div>
+        }
       >
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 sm:p-6">
           {deleteError && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{deleteError}</p>
@@ -695,7 +733,7 @@ export function AccountManagement() {
                 <Button
                   onClick={handleOpenPortal}
                   variant="primary"
-                  className="flex items-center justify-center gap-2"
+                  className="flex min-h-11 items-center justify-center gap-2"
                 >
                   <ExternalLink size={16} />
                   Gerenciar Assinatura no Stripe
@@ -704,7 +742,7 @@ export function AccountManagement() {
                   onClick={handleSyncSubscription}
                   disabled={isSyncing}
                   variant="secondary"
-                  className="flex items-center justify-center gap-2"
+                  className="flex min-h-11 items-center justify-center gap-2"
                 >
                   <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
                   {isSyncing ? 'Sincronizando...' : 'Já realizei o cancelamento'}
@@ -732,30 +770,6 @@ export function AccountManagement() {
               />
             </>
           )}
-          
-          <div className="flex justify-end gap-3 pt-3">
-            <Button
-              onClick={() => {
-                setShowDeleteModal(false);
-                setDeleteError(null);
-                setSuccess(null);
-                setDeleteData({ password: '', confirmation: '' });
-              }}
-              variant="secondary"
-            >
-              Cancelar
-            </Button>
-            {!hasActivePaidPlan() && (
-              <Button
-                onClick={handleDeleteAccount}
-                disabled={isSaving}
-                variant="primary"
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                {isSaving ? 'Excluindo...' : 'Excluir Conta'}
-              </Button>
-            )}
-          </div>
         </div>
       </Modal>
     </>
