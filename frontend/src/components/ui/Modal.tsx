@@ -29,7 +29,33 @@ export function Modal({
   closeOnOverlayClick = true,
   closeOnEscape = true,
 }: ModalProps) {
+  const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Encolher o overlay à visual viewport (teclado iOS)
+  useEffect(() => {
+    if (!isOpen) return;
+    const overlay = overlayRef.current;
+    const vv = window.visualViewport;
+    if (!overlay || !vv) return;
+
+    const sync = () => {
+      overlay.style.top = `${vv.offsetTop}px`;
+      overlay.style.height = `${vv.height}px`;
+      overlay.style.bottom = 'auto';
+    };
+
+    sync();
+    vv.addEventListener('resize', sync);
+    vv.addEventListener('scroll', sync);
+    return () => {
+      vv.removeEventListener('resize', sync);
+      vv.removeEventListener('scroll', sync);
+      overlay.style.height = '';
+      overlay.style.top = '';
+      overlay.style.bottom = '';
+    };
+  }, [isOpen]);
 
   // Fechar modal com Escape
   useEffect(() => {
@@ -95,7 +121,10 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
@@ -107,7 +136,7 @@ export function Modal({
         ref={modalRef}
         className={clsx(
           'relative bg-white shadow-xl w-full overflow-hidden flex flex-col',
-          'max-h-[min(100dvh,100%)] sm:max-h-[min(90dvh,90vh)]',
+          'max-h-full sm:max-h-[min(90dvh,90%)]',
           'rounded-t-xl sm:rounded-lg',
           'mx-0 sm:mx-auto',
           sizeClasses[size]
@@ -135,7 +164,7 @@ export function Modal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain [&_input]:scroll-mb-24 [&_select]:scroll-mb-24 [&_textarea]:scroll-mb-24">
           {children}
         </div>
 

@@ -3,8 +3,8 @@ type: modulo
 nome: config
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-15
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, config, igreja-config]
 depende_de: [auth]
@@ -89,7 +89,8 @@ backend/src/
 app.ts:
   /api/church, /api/account, /api/church-users
 
-frontend: (main)/settings/ (+ subscription page → billing)
+frontend: (main)/settings/page.tsx + components/settings/{Church,Account,ChurchUsers,AuditLogs,Payment}*
+  (+ subscription page → billing; conteúdo de Plano = [[04_modulos/billing]] / DEV-35)
 
 Testes: inexistentes.
 ```
@@ -359,6 +360,19 @@ stateDiagram-v2
   end note
 ```
 
+### UI — hub `/settings`
+
+Hub autenticado em `frontend/src/app/(main)/settings/page.tsx` + `components/settings/*`. Abas: `church` | `payment` (chrome) | `account` | `users` | `logs`. Permissões de aba (`canSee*` / toast de tab sem permissão) intactas.
+
+**Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+`) permanece equivalente. Sem migrar CRUD de equipe/conta para rotas full-page. **Não** adaptar conteúdo de `PaymentManagement` neste módulo (→ [[04_modulos/billing]] / DEV-35).
+
+- **Nav de abas:** no `<md`, scroll horizontal contido no nav (`overflow-x-auto`, chips `shrink-0` / `nowrap`) — evita 2ª linha alta com 5 abas admin e scroll da página. Em `md+`, wrap.
+- **Igreja (`ChurchManagement`):** header título + “Editar Dados” empilham no mobile. Form de edição: CTAs Salvar/Cancelar sticky no rodapé (`sm:static` no desktop) + `scroll-mb` nos inputs (teclado). Reader/editor continuam somente leitura.
+- **Conta (`AccountManagement`):** linhas e-mail/telefone empilham; e-mail `break-all`. Modais e-mail/senha/telefone/excluir usam `footer` sticky do `Modal`. Telefone da conta permanece `disabled` (só reflow).
+- **Usuários (`ChurchUsersManagement`):** **cards no `<md`**; tabela em `md+`. Conteúdo compartilhado (`UserIdentity` / `RoleBadge` / `StatusBadge` / `UserRowActions`). Owner sem Editar/Remover. Modais add/edit/delete + picker de congregação: `footer` sticky; add via `form` id + `type=submit`.
+- **Histórico (`AuditLogs`):** filtros `w-full sm:w-40`; paginação `min-h-11`.
+- **`Modal` compartilhado:** overlay sincroniza `window.visualViewport` (sheet encolhe com o teclado iOS); body `scroll-mb` nos campos; footer `shrink-0`. Afeta todos os sheets do app, não só Config.
+
 ---
 
 ## 8. 🔗 Integrações
@@ -474,7 +488,10 @@ graph LR
 4. `user_id` em churches é legado; autorização moderna é `church_users`.  
 5. GET member-limit expõe status de assinatura a reader+ — alinhado a quota UX, mas não sanitiza como GET church.  
 6. Dual path memberships (`authUserOnly`) vs rotas com church context — não chamar setActive sem cookie jar no client.  
-7. Templates HTML de e-mail precisam ficar em sync com copy de produto.
+7. Templates HTML de e-mail precisam ficar em sync com copy de produto.  
+8. **Mobile / `Modal`:** overlay acompanha `visualViewport` (teclado iOS). Não reintroduzir CTAs de convite/excluir conta no body do modal — usar prop `footer`.  
+9. **Aba Plano:** chrome no hub `/settings`; conteúdo (`PaymentManagement`) é [[04_modulos/billing]] (DEV-35) — não misturar neste módulo.  
+10. Lista de usuários renderiza cards **e** tabela (ocultos por breakpoint). Aceitável para equipe pequena; manter a mesma fonte de ações (`UserRowActions`).
 
 ---
 
@@ -482,8 +499,9 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
-| 2026-07-14 | 1.0 | Documentação inicial (config / igreja-config) | — |
+| 2026-08-15 | 1.2 | UX mobile/tablet: abas scroll, cards de usuários `<md`, form Igreja sticky, Modal visualViewport | DEV-34 |
 | 2026-07-20 | 1.1 | Histórico de atividades: UI legível + `actor` no GET; action `export`; sem log em relatório | DEV-16 |
+| 2026-07-14 | 1.0 | Documentação inicial (config / igreja-config) | — |
 
 ---
 

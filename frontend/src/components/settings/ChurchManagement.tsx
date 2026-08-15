@@ -283,8 +283,8 @@ export function ChurchManagement() {
       <Card>
         <div className="p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <h2 className="text-xl font-semibold text-gray-900">
                 Dados da Igreja
               </h2>
@@ -299,6 +299,7 @@ export function ChurchManagement() {
                 variant="primary"
                 disabled={!canManageChurch}
                 title={!canManageChurch ? READER_TOOLTIP : undefined}
+                className="min-h-11 w-full sm:w-auto"
               >
                 Editar Dados
               </Button>
@@ -328,7 +329,7 @@ export function ChurchManagement() {
                     <Building2 className="w-5 h-5 text-gray-400" />
                     <span className="text-sm font-medium text-gray-500">Nome da Igreja</span>
                   </div>
-                  <p className="text-base text-gray-900">{formData.name || 'Não informado'}</p>
+                  <p className="text-base text-gray-900 break-words">{formData.name || 'Não informado'}</p>
                 </div>
                 
                 <div>
@@ -346,7 +347,7 @@ export function ChurchManagement() {
                   <MapPin className="w-5 h-5 text-gray-400" />
                   <span className="text-sm font-medium text-gray-500">Endereço</span>
                 </div>
-                <p className="text-base text-gray-900">
+                <p className="text-base text-gray-900 break-words">
                   {formData.address || 'Não informado'}
                   {formData.city && formData.state && (
                     <span className="text-gray-600">
@@ -373,7 +374,7 @@ export function ChurchManagement() {
                     <Mail className="w-5 h-5 text-gray-400" />
                     <span className="text-sm font-medium text-gray-500">Email da Igreja</span>
                   </div>
-                  <p className="text-base text-gray-900">{formData.email_church || 'Não informado'}</p>
+                  <p className="text-base text-gray-900 break-all">{formData.email_church || 'Não informado'}</p>
                 </div>
                 
                 <div>
@@ -388,21 +389,17 @@ export function ChurchManagement() {
               </div>
 
               {/* Plano */}
-              <div className="pt-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="w-5 h-5 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-500">Plano Atual</span>
-                    </div>
-                    <p className="text-base text-gray-900">{planName}</p>
-                  </div>
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CreditCard className="h-5 w-5 shrink-0 text-gray-400" />
+                  <span className="text-sm font-medium text-gray-500">Plano Atual</span>
                 </div>
+                <p className="break-words text-base text-gray-900">{planName}</p>
               </div>
             </div>
           ) : (
             /* Modo edição (formulário) */
-            <div className="space-y-4">
+            <div className="space-y-4 [&_input]:scroll-mb-28">
               {/* Informações básicas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -518,23 +515,26 @@ export function ChurchManagement() {
                 </div>
               </div>
 
-              {/* Botões de ação */}
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                <Button
-                  onClick={handleCancel}
-                  variant="secondary"
-                  disabled={isSaving}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  variant="primary"
-                  disabled={isSaving || !canManageChurch}
-                  title={!canManageChurch ? READER_TOOLTIP : undefined}
-                >
-                  {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-                </Button>
+              <div className="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-gray-200 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:py-0 sm:pt-4 sm:shadow-none sm:pb-0">
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+                  <Button
+                    onClick={handleCancel}
+                    variant="secondary"
+                    disabled={isSaving}
+                    className="min-h-11 w-full sm:w-auto"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    variant="primary"
+                    disabled={isSaving || !canManageChurch}
+                    title={!canManageChurch ? READER_TOOLTIP : undefined}
+                    className="min-h-11 w-full sm:w-auto"
+                  >
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

@@ -420,20 +420,20 @@ export default function AuditLogs() {
         </p>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Filter className="w-4 h-4 text-gray-400" />
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <Filter className="hidden h-4 w-4 shrink-0 text-gray-400 sm:block" />
         <Select
           value={filters.entity}
           onChange={(value) => handleFilterChange('entity', value)}
           options={ENTITY_FILTER_OPTIONS}
-          className="w-40"
+          className="w-full sm:w-40"
           disabled={loading}
         />
         <Select
           value={filters.action}
           onChange={(value) => handleFilterChange('action', value)}
           options={ACTION_FILTER_OPTIONS}
-          className="w-40"
+          className="w-full sm:w-40"
           disabled={loading}
         />
       </div>
@@ -452,6 +452,7 @@ export default function AuditLogs() {
             onClick={() => fetchLogs(pagination.page || 1)}
             variant="secondary"
             disabled={loading}
+            className="min-h-11"
           >
             Tentar novamente
           </Button>
@@ -477,13 +478,13 @@ export default function AuditLogs() {
               <li key={log.id} className="py-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="break-words text-sm font-medium text-gray-900">
                       {getSummaryLine(log)}
                     </p>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                      <span className="inline-flex items-center gap-1">
-                        <User className="h-3.5 w-3.5" />
-                        {getActorLabel(log)}
+                      <span className="inline-flex min-w-0 items-center gap-1">
+                        <User className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{getActorLabel(log)}</span>
                       </span>
                       <span>{formatDate(log.created_at)}</span>
                       {preview && !isExpanded && (
@@ -495,7 +496,7 @@ export default function AuditLogs() {
                     <button
                       type="button"
                       onClick={() => toggleExpanded(log.id)}
-                      className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:opacity-80"
+                      className="inline-flex min-h-11 shrink-0 items-center gap-1 px-2 text-xs font-medium text-primary hover:opacity-80"
                     >
                       {isExpanded ? (
                         <>
@@ -524,7 +525,7 @@ export default function AuditLogs() {
       )}
 
       {pagination.totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+        <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-gray-500">
             {loading
               ? 'Carregando...'
@@ -536,11 +537,12 @@ export default function AuditLogs() {
               size="sm"
               onClick={() => handlePageChange(pagination.page - 1)}
               disabled={pagination.page <= 1 || loading}
+              className="min-h-11 flex-1 sm:flex-none"
             >
               <ChevronLeft className="h-4 w-4" />
               Anterior
             </Button>
-            <span className="inline-flex items-center gap-1 px-1 text-xs text-gray-500">
+            <span className="inline-flex shrink-0 items-center gap-1 px-1 text-xs text-gray-500">
               {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {pagination.page}/{pagination.totalPages}
             </span>
@@ -549,6 +551,7 @@ export default function AuditLogs() {
               size="sm"
               onClick={() => handlePageChange(pagination.page + 1)}
               disabled={pagination.page >= pagination.totalPages || loading}
+              className="min-h-11 flex-1 sm:flex-none"
             >
               Próximo
               <ChevronRight className="h-4 w-4" />
