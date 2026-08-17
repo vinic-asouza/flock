@@ -18,7 +18,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col min-w-0 overflow-x-hidden">
       <Header onOpenWaitlist={scrollToWaitlist} />
       <main className="flex-1">
         <Hero onOpenWaitlist={scrollToWaitlist} />

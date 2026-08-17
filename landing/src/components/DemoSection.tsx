@@ -92,8 +92,8 @@ export function DemoSection() {
   const currentItem = demoItems[currentIndex];
 
   return (
-    <section id="demo" className="py-20 px-4 bg-[#f5f5f5fe]">
-      <div className="max-w-7xl mx-auto">
+    <section id="demo" className="py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Veja o Flock em Ação
@@ -113,18 +113,26 @@ export function DemoSection() {
               }}
             >
               <div className="mb-6">
-                <div className="flex gap-2 mb-4">
+                <div className="flex flex-wrap gap-2 mb-4">
                   {demoItems.map((_, index) => (
                     <button
                       key={index}
+                      type="button"
                       onClick={() => goToSlide(index)}
-                      className={`h-2 rounded-full transition-all duration-300 ${
+                      className={`min-h-11 min-w-11 flex items-center justify-center rounded-full transition-all duration-300 ${
                         index === currentIndex
-                          ? 'bg-white w-8'
-                          : 'bg-white/30 w-2 hover:bg-white/50'
+                          ? 'bg-white/40 px-3'
+                          : 'bg-white/10 hover:bg-white/20'
                       }`}
                       aria-label={`Ir para slide ${index + 1}`}
-                    />
+                      aria-current={index === currentIndex ? 'true' : undefined}
+                    >
+                      <span
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          index === currentIndex ? 'bg-white w-6' : 'bg-white/60 w-2'
+                        }`}
+                      />
+                    </button>
                   ))}
                 </div>
                 <h3 className="text-xl md:text-2xl font-bold mb-4">
@@ -137,15 +145,17 @@ export function DemoSection() {
 
               <div className="flex gap-3 mt-auto lg:hidden">
                 <button
+                  type="button"
                   onClick={prevSlide}
-                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
                   aria-label="Slide anterior"
                 >
                   <ChevronLeft size={20} />
                 </button>
                 <button
+                  type="button"
                   onClick={nextSlide}
-                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
                   aria-label="Próximo slide"
                 >
                   <ChevronRight size={20} />
@@ -153,25 +163,27 @@ export function DemoSection() {
               </div>
             </div>
 
-            <div className="lg:col-span-7 p-4 sm:p-6 md:p-8 lg:p-12 bg-white flex items-center justify-center">
-              <div className="relative w-full max-w-5xl">
+            <div className="lg:col-span-7 p-4 sm:p-6 md:p-8 lg:p-12 bg-white flex items-center justify-center min-w-0 overflow-hidden">
+              <div className="relative w-full max-w-5xl min-w-0">
                 <button
+                  type="button"
                   onClick={prevSlide}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 z-10 p-2 sm:p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 z-10 inline-flex min-h-11 min-w-11 items-center justify-center bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex"
                   aria-label="Slide anterior"
                 >
                   <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
                 <button
+                  type="button"
                   onClick={nextSlide}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 z-10 p-2 sm:p-3 bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex items-center justify-center"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 z-10 inline-flex min-h-11 min-w-11 items-center justify-center bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex"
                   aria-label="Próximo slide"
                 >
                   <ChevronRight size={20} className="sm:w-6 sm:h-6" />
                 </button>
 
-                <div className="w-full bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video relative">
+                <div className="w-full min-w-0 bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video relative">
                   {currentItem.image && !imageFailed ? (
                     <>
                       <Image
@@ -222,7 +234,7 @@ export function DemoSection() {
                 }
               }, 100);
             }}
-            className="inline-flex items-center justify-center gap-2 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl w-full sm:w-auto"
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold sm:hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
             style={{
               backgroundColor: '#090725',
               backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',

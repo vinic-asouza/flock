@@ -12,6 +12,12 @@ const inter = Inter({
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://flockapp.com.br';
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover' as const,
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
@@ -137,7 +143,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
         />
         {children}
-        <Toaster position="top-right" />
+        <Toaster
+          position="top-center"
+          containerStyle={{
+            top: 'calc(4.5rem + env(safe-area-inset-top, 0px))',
+          }}
+          toastOptions={{
+            style: {
+              maxWidth: 'min(100vw - 2rem, 24rem)',
+            },
+          }}
+        />
       </body>
     </html>
   );
