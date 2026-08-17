@@ -3,8 +3,8 @@ type: modulo
 nome: aquisicao
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-17
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
 depende_de: [billing, onboarding]
@@ -76,6 +76,7 @@ landing/                                  → Next.js :3000
 │   └── plans.ts                          → GET /api/plans
 ├── src/utils/
 │   ├── planFunnel.ts                     → register/login URLs + sessionStorage
+│   ├── landingLinks.ts                   → anchors `/#seção` fora de `/`
 │   ├── waitlistPlan.ts                   → parse plan URL
 │   └── formatWaitlistError.ts
 └── src/hooks/useIbgeData.ts              → UFs/cidades IBGE
@@ -252,6 +253,20 @@ stateDiagram-v2
   end note
 ```
 
+### UI — landing pública (`/` e `/waitlist`)
+
+App isolada `landing/` (Next.js :3000). **Não** reutiliza shell/`Modal`/`MobileNavDrawer` do app autenticado ([[04_modulos/config]] / DEV-26). Breakpoint canônico desta superfície: **`md` (768px)** — nav desktop vs hamburger.
+
+**Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+` / `sm+` conforme bloco) permanece equivalente. Sem migrar funil para rotas full-page nem Stripe hosted no botão de pricing.
+
+- **Header:** logo à esquerda, hamburger à direita (`justify-between`); menu empilhado com alvos ≥44px; `env(safe-area-inset-top)` no sticky; fecha ao navegar.
+- **Root:** `overflow-x-hidden` + `min-w-0`; `viewportFit: cover` no layout; toast abaixo do header sticky (~4.5rem + safe-area).
+- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado.
+- **WaitlistForm** (home `#waitlist` + `/waitlist`): inputs `text-base` (≥16px, evita zoom iOS) + `min-h-11`; chips de plano touch; estados erro/sucesso/toast preservados.
+- **DemoSection:** setas/dots com alvos touch; container sem overflow.
+- **StatsGraphics:** SVG pizza `w-full h-full` (sem overflow horizontal); altura mobile reduzida (`min-h-[280px]`).
+- **`/waitlist` P1:** Header/Footer usam `landingLinks.ts` — anchors viram `/#features`, `/#pricing`, etc.
+
 ---
 
 ## 8. 🔗 Integrações
@@ -370,7 +385,8 @@ graph LR
 4. Plano waitlist `personalizado` ≠ plan_type billing `custom` — nomenclaturas diferentes.  
 5. Sem painel admin para listar/exportar waitlist no código app.  
 6. IBGE só no client — offline/quebra API deixa estados vazios.  
-7. Templates e-mail em `emailTemplates.ts` (HTML helpers) — manter sync com copy.
+7. Templates e-mail em `emailTemplates.ts` (HTML helpers) — manter sync com copy.  
+8. **Mobile / landing:** menu hamburger próprio (não importar drawer do app). Inputs waitlist precisam de `text-base` (≥16px) — regressão comum em iOS Safari.
 
 ---
 
@@ -378,6 +394,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-17 | 1.1 | UX mobile/tablet da landing (`/`, `/waitlist`): header touch, overflow, waitlist 16px, `landingLinks`, toast/safe-area | DEV-36 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo aquisição | — |
 
 ---
