@@ -90,7 +90,7 @@ app.ts:
   /api/church, /api/account, /api/church-users
 
 frontend: (main)/settings/page.tsx + components/settings/{Church,Account,ChurchUsers,AuditLogs,Payment}*
-  (+ subscription page → billing; conteúdo de Plano = [[04_modulos/billing]] / DEV-35)
+  (+ subscription page → billing; conteúdo de Plano = [[04_modulos/billing]])
 
 Testes: inexistentes.
 ```
@@ -364,7 +364,7 @@ stateDiagram-v2
 
 Hub autenticado em `frontend/src/app/(main)/settings/page.tsx` + `components/settings/*`. Abas: `church` | `payment` (chrome) | `account` | `users` | `logs`. Permissões de aba (`canSee*` / toast de tab sem permissão) intactas.
 
-**Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+`) permanece equivalente. Sem migrar CRUD de equipe/conta para rotas full-page. **Não** adaptar conteúdo de `PaymentManagement` neste módulo (→ [[04_modulos/billing]] / DEV-35).
+**Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+`) permanece equivalente. Sem migrar CRUD de equipe/conta para rotas full-page. **Não** adaptar conteúdo de `PaymentManagement` neste módulo (→ [[04_modulos/billing]]).
 
 - **Nav de abas:** no `<md`, scroll horizontal contido no nav (`overflow-x-auto`, chips `shrink-0` / `nowrap`) — evita 2ª linha alta com 5 abas admin e scroll da página. Em `md+`, wrap.
 - **Igreja (`ChurchManagement`):** header título + “Editar Dados” empilham no mobile. Form de edição: CTAs Salvar/Cancelar sticky no rodapé (`sm:static` no desktop) + `scroll-mb` nos inputs (teclado). Reader/editor continuam somente leitura.
@@ -490,7 +490,7 @@ graph LR
 6. Dual path memberships (`authUserOnly`) vs rotas com church context — não chamar setActive sem cookie jar no client.  
 7. Templates HTML de e-mail precisam ficar em sync com copy de produto.  
 8. **Mobile / `Modal`:** overlay acompanha `visualViewport` (teclado iOS). Não reintroduzir CTAs de convite/excluir conta no body do modal — usar prop `footer`.  
-9. **Aba Plano:** chrome no hub `/settings`; conteúdo (`PaymentManagement`) é [[04_modulos/billing]] (DEV-35) — não misturar neste módulo.  
+9. **Aba Plano:** chrome no hub `/settings`; conteúdo (`PaymentManagement`) é [[04_modulos/billing]] — não misturar neste módulo.  
 10. Lista de usuários renderiza cards **e** tabela (ocultos por breakpoint). Aceitável para equipe pequena; manter a mesma fonte de ações (`UserRowActions`).
 
 ---

@@ -3,8 +3,8 @@ type: modulo
 nome: billing
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-17
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, billing]
 depende_de: [auth, config]
@@ -94,6 +94,11 @@ app.ts:
   crons se ENABLE_CRON_JOBS !== 'false'
 
 Testes: inexistentes no backend.
+
+frontend:
+  components/settings/PaymentManagement.tsx  → aba Plano (`/settings?tab=payment`)
+  app/subscription/success|cancel            → retorno Stripe (P1; já `dvh` / safe-area)
+  app/(auth)/checkout                        → funil de cadastro ([[04_modulos/onboarding]])
 ```
 
 ---
@@ -365,6 +370,18 @@ stateDiagram-v2
   active --> active: change-plan upgrade/downgrade
 ```
 
+### UI — aba Plano (`/settings?tab=payment`)
+
+Conteúdo autenticado em `frontend/src/components/settings/PaymentManagement.tsx`. Chrome das abas do hub `/settings` é [[04_modulos/config]] (DEV-34). Aba visível só para `admin`/`owner` (`canManagePlan`). Portal Stripe e Checkout Session continuam **hosted** (fora do app).
+
+**Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+` / `sm+` conforme bloco) permanece equivalente. Sem migrar troca de plano para rota full-page.
+
+- **Cards:** status, plano atual, datas, `past_due`, sync falho, vazia, expirada — `p-4 sm:p-6`, `min-w-0` / `overflow-x-hidden`; nome e preço do plano empilham no mobile.
+- **CTAs:** Gerenciar Assinatura / Trocar de Plano / Sincronizar / Assinar / Reativar / Atualizar pagamento — empilham em `<sm`, full-width; row em `sm+`.
+- **Modais Trocar de Plano e Confirmar:** `footer` sticky do `Modal` compartilhado (`flex-col-reverse` no mobile). Alerta de downgrade (BR-BILL-006) permanece no body scrollável. Overlay `visualViewport` (teclado iOS) já no `Modal` (DEV-34).
+- **Histórico de assinatura:** wrap `flex-col sm:flex-row`; `min-w-0`.
+- **Retorno Stripe:** `/subscription/success` e `/subscription/cancel` já usam `min-h-dvh`, safe-area e CTAs `min-h-11` (funil / P1).
+
 ---
 
 ## 8. 🔗 Integrações
@@ -509,7 +526,8 @@ graph LR
 6. Sync sobe `last_stripe_event_created` para “now” — webhooks atrasados são ignorados (intencional SL07).  
 7. Proration/comportamento detalhado do `updateSubscription` — conferir `stripe.ts` ao mudar planos.  
 8. Owner e-mail nos jobs usa `churches.user_id` (legado), não necessariamente admin ativo em `church_users`.  
-9. Sem suite de testes — mudanças em webhook são alto risco.
+9. Sem suite de testes — mudanças em webhook são alto risco.  
+10. **Mobile / aba Plano:** CTAs de troca de plano ficam no `footer` do `Modal` — não reintroduzir no body. Portal Stripe permanece hosted (`window.open`). Chrome das abas é [[04_modulos/config]].
 
 ---
 
@@ -517,6 +535,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-17 | 1.1 | UX mobile/tablet da aba Plano (`PaymentManagement`): CTAs touch, footer sticky nos modais, cards sem overflow | DEV-35 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo billing | — |
 
 ---

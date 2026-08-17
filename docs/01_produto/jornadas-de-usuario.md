@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-08-15
-versao: "1.9"
+ultima_atualizacao: 2026-08-17
+versao: "1.10"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -126,7 +126,7 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 3. Convidado faz login (conta criada se necessário)
 4. Acessa módulos conforme role (`canEdit` para writer)
 
-**Mobile (Configurações):** hub `/settings` (abas Igreja, Conta, Usuários, Histórico; chrome da aba Plano) operável em ~375px. No mobile as abas rolam no próprio nav (wrap em `md+`). Lista de usuários em **cards** no `<md` (tabela em `md+`). Form Igreja com CTAs sticky no mobile. Modais de convite/editar/remover usuário e de e-mail/senha/excluir conta usam `footer` sticky do `Modal` (overlay acompanha o teclado iOS). Sem migrar CRUD para rotas full-page. Conteúdo da aba Plano → jornada J10 / DEV-35.
+**Mobile (Configurações):** hub `/settings` (abas Igreja, Plano, Conta, Usuários, Histórico) operável em ~375px. No mobile as abas rolam no próprio nav (wrap em `md+`). Lista de usuários em **cards** no `<md` (tabela em `md+`). Form Igreja com CTAs sticky no mobile. Modais de convite/editar/remover usuário e de e-mail/senha/excluir conta usam `footer` sticky do `Modal` (overlay acompanha o teclado iOS). Sem migrar CRUD para rotas full-page. Conteúdo da aba Plano → jornada J10.
 
 ### J6 — Ciclo de vida do membro (core)
 
@@ -177,6 +177,8 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 1. `/settings?tab=payment` (admin/owner)
 2. Upgrade/change-plan, portal Stripe, sync, ativar free
 3. Header mostra status/limite; e-mails de aviso ~80/90/100%
+
+**Mobile (Plano):** aba `/settings?tab=payment` (`PaymentManagement`) operável em ~375px — cards empilhados, CTAs full-width/`min-h-11`, histórico sem overflow. Modais Trocar de Plano e Confirmar usam `footer` sticky do `Modal`. Portal Stripe continua em nova aba (hosted). Sem migrar troca de plano para rota full-page. `/checkout` e landing são Issues próprias (onboarding / aquisição).
 
 ### J11 — Captação pública
 
@@ -261,7 +263,8 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 14. Módulo **Grupos** (J8): hub `/groups`, modais CRUD/view (add/remove membros), delete e exports PDF são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 15. Módulo **Calendário** (J8): hub `/calendar`, visão mês densificada (dots + modal do dia), lista anual, modais CRUD/view/delete e aniversariantes são operáveis em ~375px — footer sticky nos CTAs; sem migrar CRUD para rotas full-page; UI de export PDF do calendário ainda não existe no app.
 16. Módulo **Relatórios** (J9): hub `/`, seções do painel e modais de drill-down são operáveis em ~375px — CTAs touch, sheet/`dvh`, sideLayout com chips no mobile; sem migrar drill-downs para rotas full-page; `ReportsFilters` não está montado na Home.
-17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page; conteúdo da aba **Plano** é Issue própria (DEV-35).
+17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
+18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` e landing são módulos próprios.
 
 ---
 
