@@ -38,8 +38,8 @@ const benefits = [
 
 export function ProcessSection() {
   return (
-    <section className="py-20 px-4 bg-[#fffffffe]">
-      <div className="max-w-7xl mx-auto">
+    <section className="py-20 px-4 bg-[#fffffffe] min-w-0 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto min-w-0">
         {/* Bloco 1: Processos */}
         <div className="mb-12 md:mb-20 rounded-xl p-6 sm:p-8 md:p-12" style={{ 
           backgroundColor: '#090725',

@@ -40,9 +40,9 @@ export function CheckoutButton({
       onClick={handleCheckout}
       disabled={isLoading}
       className={`
-        w-full text-white px-4 md:px-6 py-2.5 md:py-3 rounded-lg text-sm md:text-base 
+        w-full text-white px-4 md:px-6 py-2.5 md:py-3 min-h-11 rounded-lg text-sm md:text-base 
         font-semibold transition-all duration-300 shadow-lg hover:shadow-xl 
-        hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
+        sm:hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
         flex items-center justify-center gap-2
         ${className}
       `}

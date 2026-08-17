@@ -179,7 +179,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
   }
 
   return (
-    <form onSubmit={handleSubmit(internalOnSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(internalOnSubmit)} className="space-y-4 min-w-0">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
           Nome Completo *
@@ -188,7 +188,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           id="name"
           type="text"
           {...register('name')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm"
+          className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
           placeholder="Seu nome completo"
         />
         {errors.name && (
@@ -204,8 +204,9 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           <input
             id="email"
             type="email"
+            autoComplete="email"
             {...register('email')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm"
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             placeholder="seu@email.com"
           />
           {errors.email && (
@@ -220,10 +221,12 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           <input
             id="phone"
             type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
             value={phoneValue}
             onChange={handlePhoneChange}
             maxLength={15}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm"
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             placeholder="(11) 99999-9999"
           />
           {errors.phone && (
@@ -240,7 +243,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           id="churchName"
           type="text"
           {...register('churchName')}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm"
+          className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
           placeholder="Nome da sua igreja"
         />
         {errors.churchName && (
@@ -256,7 +259,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           <select
             id="state"
             {...register('state')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
             disabled={loadingStates}
           >
             <option value="">Selecione um estado</option>
@@ -286,7 +289,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           <select
             id="city"
             {...register('city')}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed text-sm"
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
             disabled={!watchedState || loadingCities}
           >
             <option value="">Selecione uma cidade</option>
@@ -331,7 +334,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
                 type="button"
                 onClick={() => setValue('plan', plan.value as '200' | '500' | '800' | 'personalizado', { shouldValidate: true })}
                 className={`
-                  relative p-3 sm:p-2 rounded-lg border-1 transition-all duration-200 text-left
+                  relative min-h-11 p-3 sm:p-2 rounded-lg border-1 transition-all duration-200 text-left
                   ${isSelected
                     ? 'border-primary bg-primary/5 shadow-md'
                     : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md'
@@ -379,7 +382,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           id="message"
           {...register('message')}
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm resize-none"
+          className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none"
           placeholder="Deixe uma mensagem adicional (opcional)"
         />
         {errors.message && (
@@ -393,7 +396,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
           disabled={isLoading || (errorStates !== null && states.length === 0)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="group w-full bg-primary text-white px-6 py-3 rounded-lg text-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:scale-105 relative overflow-hidden"
+          className="group w-full bg-primary text-white px-6 py-3 min-h-11 rounded-lg text-base font-semibold hover:bg-[#0d0a3a] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl sm:hover:scale-105 relative overflow-hidden"
         >
           {isLoading ? (
             <>

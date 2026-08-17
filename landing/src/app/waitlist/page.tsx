@@ -15,12 +15,12 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
   const { plan } = await searchParams;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col min-w-0 overflow-x-hidden">
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
+      <main className="flex-1 flex items-center justify-center py-12 px-4 min-w-0">
+        <div className="w-full max-w-md min-w-0">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-primary mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2 break-words">
               Fale Conosco
             </h1>
             <p className="text-muted">

@@ -12,8 +12,8 @@ export function StatsGraphics() {
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[400px] sm:min-h-[500px] lg:min-h-[600px] flex items-center justify-center">
-      <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 w-full max-w-2xl transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+    <div className="relative w-full h-full min-h-[280px] sm:min-h-[360px] lg:min-h-[600px] flex items-center justify-center min-w-0 overflow-hidden">
+      <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 w-full max-w-2xl min-w-0 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         {/* Card 1 - Estatísticas de Membros */}
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -125,9 +125,9 @@ export function StatsGraphics() {
             <PieChart className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
             <span className="text-xs sm:text-sm font-semibold text-gray-700">Distribuição</span>
           </div>
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center min-w-0">
             <div className="relative w-24 h-24 sm:w-32 sm:h-32">
-              <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 {/* Segmento 1 - 48% Masculino */}
                 <circle
                   cx="50"

@@ -75,8 +75,8 @@ export function Pricing() {
   }, []);
 
   return (
-    <section id="pricing" className="py-20 px-4 bg-[#f5f5f5fe]">
-      <div className="max-w-7xl mx-auto">
+    <section id="pricing" className="py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Planos e Preços
@@ -100,7 +100,7 @@ export function Pricing() {
               </div>
               <Link
                 href={buildFreeRegisterUrl(FRONTEND_URL)}
-                className="inline-flex justify-center bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-colors text-sm"
+                className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-colors text-sm sm:text-base"
               >
                 Comece grátis
               </Link>
@@ -119,9 +119,9 @@ export function Pricing() {
                 key={plan.id}
                 className="bg-white rounded-xl border-2 border-gray-200 hover:border-primary/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col relative"
               >
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 max-w-[calc(100%-1rem)]">
                   <div
-                    className="text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg whitespace-nowrap flex items-center gap-1.5"
+                    className="text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full shadow-lg flex items-center justify-center gap-1.5 text-center"
                     style={{
                       backgroundColor: '#090725',
                       backgroundImage: 'linear-gradient(to right, #090725,rgb(22, 18, 85), #090725)',
@@ -165,7 +165,7 @@ export function Pricing() {
                   </CheckoutButton>
                   <Link
                     href={buildLoginCheckoutUrl(planId, FRONTEND_URL)}
-                    className="block w-full text-center text-sm text-primary hover:text-[#0d0a3a] font-medium py-2"
+                    className="flex min-h-11 w-full items-center justify-center text-center text-sm text-primary hover:text-[#0d0a3a] font-medium py-2"
                   >
                     Já tenho conta
                   </Link>

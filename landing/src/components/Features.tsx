@@ -35,8 +35,8 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="py-20 px-4 bg-[#fffffffe]">
-      <div className="max-w-7xl mx-auto">
+    <section id="features" className="py-20 px-4 bg-[#fffffffe] min-w-0 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Recursos Completos para sua Igreja
@@ -49,7 +49,7 @@ export function Features() {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="group p-6 sm:p-8 rounded-xl bg-white border border-gray-200 hover:border-primary/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              className="group p-4 sm:p-6 md:p-8 rounded-xl bg-white border border-gray-200 hover:border-primary/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 min-w-0"
             >
               <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary rounded-xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
                 <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
