@@ -440,10 +440,10 @@ export function PaymentManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Gerenciamento de Plano</h2>
+      <div className="min-w-0">
+        <h2 className="text-xl font-semibold text-gray-900 break-words">Gerenciamento de Plano</h2>
         <p className="mt-1 text-sm text-gray-500">
           Gerencie seu plano, assinatura e pagamentos.
         </p>
@@ -466,7 +466,7 @@ export function PaymentManagement() {
               onClick={handleManageSubscription}
               disabled={isLoadingPortal || !canManagePlan}
               title={!canManagePlan ? READER_TOOLTIP : undefined}
-              className="shrink-0"
+              className="min-h-11 w-full shrink-0 sm:w-auto"
               isLoading={isLoadingPortal}
             >
               <CreditCard className="w-4 h-4 mr-2" />
@@ -490,7 +490,7 @@ export function PaymentManagement() {
               <Button
                 onClick={() => handleSyncSubscription(true)}
                 variant="secondary"
-                className="mt-3"
+                className="mt-3 min-h-11 w-full sm:w-auto"
                 disabled={isSyncing}
               >
                 {isSyncing ? 'Sincronizando...' : 'Sincronizar agora'}
@@ -543,7 +543,7 @@ export function PaymentManagement() {
         <>
           {/* Seção para assinatura expirada */}
           {isSubscriptionExpired() ? (
-            <div className="bg-white rounded-lg border border-red-200 p-6 space-y-6">
+            <div className="bg-white rounded-lg border border-red-200 p-4 sm:p-6 space-y-6 min-w-0">
               <div className="text-center py-6">
                 <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
@@ -557,22 +557,22 @@ export function PaymentManagement() {
                     <p className="text-sm text-gray-700 mb-2">
                       <strong>Último plano utilizado:</strong>
                     </p>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900 break-words">
                       {planNamesState[planType] || planType}
-                      {planPricesState[planType] && (
-                        <span className="text-sm text-gray-600 ml-2">
-                          - {planPricesState[planType]}
-                          <span className="text-gray-500">/mês</span>
-                        </span>
-                      )}
                     </p>
+                    {planPricesState[planType] && (
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        {planPricesState[planType]}
+                        <span className="text-gray-500">/mês</span>
+                      </p>
+                    )}
                   </div>
                 )}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
                   <Button
                     onClick={handleReactivateSubscription}
                     variant="primary"
-                    className="w-full sm:w-auto"
+                    className="min-h-11 w-full sm:w-auto"
                   >
                     <RefreshCw className="w-5 h-5 mr-2" />
                     Reativar Assinatura
@@ -584,7 +584,7 @@ export function PaymentManagement() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 space-y-6 min-w-0">
               {/* Status */}
               <div>
             <h3 className="text-sm font-medium text-gray-700 mb-3">Status da Assinatura</h3>
@@ -651,22 +651,20 @@ export function PaymentManagement() {
 
           {/* Plano Atual */}
           {planType && (
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-medium text-gray-700 mb-2">Plano Atual</h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <Package className="w-5 h-5 text-gray-400 mr-2" />
-                  <div>
-                    <span className="text-lg font-semibold text-gray-900">
-                      {planNamesState[planType] || planType}
-                    </span>
-                    {planPricesState[planType] && (
-                      <span className="text-sm text-gray-600 ml-2">
-                        - {planPricesState[planType]}
-                        {planType && planType !== '100' && <span className="text-gray-500">/mês</span>}
-                      </span>
-                    )}
-                  </div>
+              <div className="flex items-start gap-2 min-w-0">
+                <Package className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold text-gray-900 break-words">
+                    {planNamesState[planType] || planType}
+                  </p>
+                  {planPricesState[planType] && (
+                    <p className="text-sm text-gray-600 mt-0.5">
+                      {planPricesState[planType]}
+                      {planType && planType !== '100' && <span className="text-gray-500">/mês</span>}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -695,7 +693,7 @@ export function PaymentManagement() {
                 onClick={handleManageSubscription}
                 disabled={isLoadingPortal || isSyncing || isChangingPlan || !canManagePlan}
                 title={!canManagePlan ? READER_TOOLTIP : undefined}
-                className="flex-1"
+                className="min-h-11 w-full sm:flex-1"
                 isLoading={isLoadingPortal}
               >
                 {isLoadingPortal ? (
@@ -717,7 +715,7 @@ export function PaymentManagement() {
                   disabled={isChangingPlan || subscriptionStatus !== 'active' || isLoadingPortal || isSyncing || !canManagePlan}
                   title={!canManagePlan ? READER_TOOLTIP : undefined}
                   variant="secondary"
-                  className="flex-1"
+                  className="min-h-11 w-full sm:flex-1"
                   isLoading={isChangingPlan}
                 >
                   <ArrowUpDown className="w-5 h-5 mr-2" />
@@ -729,7 +727,7 @@ export function PaymentManagement() {
                 disabled={isSyncing || isLoadingPortal || isChangingPlan || !canManagePlan}
                 title={!canManagePlan ? READER_TOOLTIP : undefined}
                 variant="secondary"
-                className="flex-1"
+                className="min-h-11 w-full sm:flex-1"
                 isLoading={isSyncing}
               >
                 {isSyncing ? (
@@ -761,7 +759,7 @@ export function PaymentManagement() {
           )}
         </>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
           <div className="text-center py-8">
             <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -779,7 +777,7 @@ export function PaymentManagement() {
                   disabled={isSyncing || !canManagePlan}
                   title={!canManagePlan ? READER_TOOLTIP : 'Sincroniza apenas se não houver cache válido (últimos 5 minutos)'}
                   variant="secondary"
-                  className="w-full sm:w-auto"
+                  className="min-h-11 w-full sm:w-auto"
                 >
                   {isSyncing ? (
                     <>
@@ -798,7 +796,7 @@ export function PaymentManagement() {
                 onClick={() => window.location.href = '/checkout?plan=200'}
                 disabled={!canManagePlan}
                 title={!canManagePlan ? READER_TOOLTIP : undefined}
-                className="w-full sm:w-auto"
+                className="min-h-11 w-full sm:w-auto"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
                 Assinar Plano
@@ -810,8 +808,8 @@ export function PaymentManagement() {
 
       {/* Histórico de assinatura (admin/owner) */}
       {canManagePlan && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
+          <div className="flex flex-col gap-1 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-sm font-medium text-gray-700">Histórico de assinatura</h3>
             <span className="text-xs text-gray-500">Criações e alterações de plano</span>
           </div>
@@ -827,13 +825,13 @@ export function PaymentManagement() {
           ) : (
             <ul className="divide-y divide-gray-100">
               {subscriptionEvents.map((evt) => (
-                <li key={evt.id} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
+                <li key={evt.id} className="py-3 first:pt-0 last:pb-0 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 min-w-0">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 break-words">
                         {eventTypeLabels[evt.event_type] ?? evt.event_type}
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-500 mt-0.5 break-words">
                         {evt.old_plan && evt.new_plan && evt.old_plan !== evt.new_plan
                           ? `Plano ${evt.old_plan} → ${evt.new_plan}`
                           : evt.new_plan
@@ -881,8 +879,42 @@ export function PaymentManagement() {
         }}
         title="Trocar de Plano"
         size="md"
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              onClick={() => {
+                setShowChangePlanModal(false);
+                setSelectedPlan(null);
+                setError(null);
+                setDowngradeBlockInfo(null);
+              }}
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={isChangingPlan}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handlePlanSelection}
+              disabled={!selectedPlan || isChangingPlan || selectedPlan === planType || isLoadingPortal}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {isLoadingPortal ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin mr-2" />
+                  Carregando...
+                </>
+              ) : (
+                <>
+                  <ArrowUpDown className="w-5 h-5 mr-2" />
+                  Continuar
+                </>
+              )}
+            </Button>
+          </div>
+        }
       >
-        <div className="p-6 space-y-4">
+        <div className="space-y-4 p-4 sm:p-6">
           <p className="text-sm text-gray-600">
             Selecione o novo plano para sua assinatura. A alteração será aplicada imediatamente e você será cobrado proporcionalmente.
           </p>
@@ -895,9 +927,10 @@ export function PaymentManagement() {
               return (
                 <button
                   key={planKey}
+                  type="button"
                   onClick={() => setSelectedPlan(planKey)}
                   disabled={isCurrentPlan}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
+                  className={`w-full min-h-11 p-4 rounded-lg border-2 text-left transition-all ${
                     isCurrentPlan
                       ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
                       : isSelected
@@ -905,9 +938,9 @@ export function PaymentManagement() {
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900">
+                  <div className="flex items-start justify-between gap-3 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 break-words">
                         {planNamesState[planKey]}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
@@ -915,9 +948,9 @@ export function PaymentManagement() {
                         {planKey !== '100' && <span className="text-gray-500"> /mês</span>}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       {isCurrentPlan && (
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Plano Atual</span>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded whitespace-nowrap">Plano Atual</span>
                       )}
                       {isSelected && !isCurrentPlan && (
                         <CheckCircle2 className="w-5 h-5 text-primary" />
@@ -959,39 +992,6 @@ export function PaymentManagement() {
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={() => {
-                setShowChangePlanModal(false);
-                setSelectedPlan(null);
-                setError(null);
-                setDowngradeBlockInfo(null);
-              }}
-              variant="secondary"
-              className="flex-1"
-              disabled={isChangingPlan}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handlePlanSelection}
-              disabled={!selectedPlan || isChangingPlan || selectedPlan === planType || isLoadingPortal}
-              className="flex-1"
-            >
-              {isLoadingPortal ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin mr-2" />
-                  Carregando...
-                </>
-              ) : (
-                <>
-                  <ArrowUpDown className="w-5 h-5 mr-2" />
-                  Continuar
-                </>
-              )}
-            </Button>
-          </div>
         </div>
       </Modal>
 
@@ -1004,12 +1004,44 @@ export function PaymentManagement() {
         }}
         title={selectedPlan === '100' ? 'Confirmar Plano Gratuito' : 'Confirmar Troca de Plano'}
         size="md"
+        footer={
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              onClick={() => {
+                setShowConfirmModal(false);
+                setShowChangePlanModal(true);
+              }}
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+              disabled={isChangingPlan}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePlan}
+              disabled={!selectedPlan || isChangingPlan}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              {isChangingPlan ? (
+                <>
+                  <Loader className="w-5 h-5 animate-spin mr-2" />
+                  Alterando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5 mr-2" />
+                  {selectedPlan === '100' ? 'Ativar Plano Gratuito' : 'Confirmar Troca'}
+                </>
+              )}
+            </Button>
+          </div>
+        }
       >
-        <div className="p-6 space-y-4">
+        <div className="space-y-4 p-4 sm:p-6">
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <div className="flex items-start">
               <AlertCircle className="w-5 h-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-yellow-800">
+              <div className="text-sm text-yellow-800 min-w-0">
                 {selectedPlan === '100' ? (
                   <>
                     <p className="font-medium mb-1">Atenção: cancelamento da assinatura paga</p>
@@ -1033,11 +1065,11 @@ export function PaymentManagement() {
 
           <div className="space-y-4">
             {/* Plano Atual */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 min-w-0">
               <p className="text-xs text-gray-500 mb-2">Plano Atual</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">
+              <div className="flex items-start justify-between gap-3 min-w-0">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 break-words">
                     {planType ? planNamesState[planType] : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
@@ -1047,7 +1079,7 @@ export function PaymentManagement() {
                     )}
                   </p>
                 </div>
-                <XCircle className="w-5 h-5 text-gray-400" />
+                <XCircle className="w-5 h-5 text-gray-400 shrink-0" />
               </div>
             </div>
 
@@ -1057,11 +1089,11 @@ export function PaymentManagement() {
             </div>
 
             {/* Novo Plano */}
-            <div className="bg-primary/5 rounded-lg p-4 border-2 border-primary">
+            <div className="bg-primary/5 rounded-lg p-4 border-2 border-primary min-w-0">
               <p className="text-xs text-primary mb-2">Novo Plano</p>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">
+              <div className="flex items-start justify-between gap-3 min-w-0">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 break-words">
                     {selectedPlan ? planNamesState[selectedPlan] : 'N/A'}
                   </p>
                   <p className="text-sm text-gray-600 mt-1">
@@ -1071,7 +1103,7 @@ export function PaymentManagement() {
                     )}
                   </p>
                 </div>
-                <CheckCircle2 className="w-5 h-5 text-primary" />
+                <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
               </div>
             </div>
           </div>
@@ -1103,37 +1135,6 @@ export function PaymentManagement() {
               <p className="text-sm text-red-800">{error}</p>
             </div>
           )}
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={() => {
-                setShowConfirmModal(false);
-                setShowChangePlanModal(true);
-              }}
-              variant="secondary"
-              className="flex-1"
-              disabled={isChangingPlan}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleChangePlan}
-              disabled={!selectedPlan || isChangingPlan}
-              className="flex-1"
-            >
-              {isChangingPlan ? (
-                <>
-                  <Loader className="w-5 h-5 animate-spin mr-2" />
-                  Alterando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-5 h-5 mr-2" />
-                  {selectedPlan === '100' ? 'Ativar Plano Gratuito' : 'Confirmar Troca'}
-                </>
-              )}
-            </Button>
-          </div>
         </div>
       </Modal>
     </div>
