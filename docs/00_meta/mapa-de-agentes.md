@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-07-21
-versao: "1.3"
+ultima_atualizacao: 2026-08-17
+versao: "1.4"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -16,29 +16,56 @@ Cheat sheet operacional. Detalhe completo: [[00_meta/linear-cursor-workflow]].
 
 ```
 Backlog
-  → Product Analyst → Software Architect → Todo
+  → [comando: iniciar desenvolvimento / refinar]
+  → Product Analyst → Software Architect
+  → move para Todo → [para e avisa no chat]
+
+Todo
+  → aguarda comando “iniciar execução”
 
 In Progress
+  → [comando: iniciar execução] move Todo → In Progress
   → Backend Engineer e/ou Frontend Engineer
+  → commit por passo de código
+  → [para e avisa: verificação manual]
 
-Review (QA + Code Review)
+Review (QA + Code Review)   ← status Linear: Review
+  → [comando: iniciar review] move In Progress → Review
   → Tech Lead (Code Review) → QA Analyst
+  → [para e avisa no chat com apontamentos do Linear]
+  → [comando: voltar ajustes] → In Progress → Engineers → commit → aviso
+  → [comando: seguir para documentação] → Document
 
 Document (Technical + Documentation Writers)
-  → Technical Writer (docs/) + Documentation Writer (Mintlify)
+  → Technical Writer (docs/, commit se alterar) + Documentation Writer (Mintlify)
+  → [para e avisa no chat]
 
 Done
-  → Estado final do fluxo
+  → [comando: concluir / Done]
+  → perguntar merge do PR (sim/não); merge só com confirmação
 
 Deploy (manual)
-  → Railway; publicação indicada por marcação na Issue (sem status Released)
+  → só com pedido explícito; Railway; marcação na Issue (sem status Released)
 ```
+
+O usuário **comanda no chat**; o **agente** move o status Linear (exceto `Backlog` → `Todo`, que ocorre ao concluir PA + SA).
+
+---
+
+## Gate de Avanço (rápido)
+
+Ao concluir a etapa autorizada: atualizar Linear + aviso no chat + **parar**.  
+A próxima etapa só começa com comando explícito no chat.
+
+Exceção: `Backlog` → `Todo` após PA + SA (move, avisa, para — não inicia execução).
+
+Detalhe: workflow §15.2.
 
 ---
 
 ## Gate de Decisão (rápido)
 
-Se a etapa precisa de decisão do usuário para avançar:
+Se a etapa precisa de decisão do usuário para avançar **dentro** do passo:
 
 1. **Não concluir** / não mover status.
 2. Registrar bloqueio + perguntas no **Linear**.
@@ -50,20 +77,34 @@ Detalhe: workflow §15.1.
 
 ---
 
+## Gate de merge ao `Done` (rápido)
+
+Quando o usuário autorizar `Done`:
+
+1. Mover para `Done` (critérios §16).
+2. Se houver PR: perguntar no chat se deseja mergear (sim/não).
+3. Merge **só** com confirmação inequívoca.
+4. Sem PR: informar e não perguntar.
+5. Deploy continua pedido à parte.
+
+Detalhe: workflow §15.3.
+
+---
+
 ## Tabela etapa → agente
 
 | Etapa Linear | Agente | MDC | Output |
 | --- | --- | --- | --- |
-| Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + handoff |
-| Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + handoff |
-| Todo | — | — | Issue pronta |
-| In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + resumo na Issue |
-| In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + resumo na Issue |
-| Review (Code Review) | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue |
-| Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue |
-| Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Atualiza `docs/` se necessário |
-| Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Atualiza Mintlify se necessário |
-| Done | — | — | Concluída (reviews + docs avaliados) |
+| Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + handoff para SA |
+| Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + move para `Todo` + aviso no chat |
+| Todo | — | — | Aguarda comando de execução |
+| In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + commit + resumo na Issue |
+| In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + commit + resumo na Issue |
+| Review (Code Review) | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue + handoff para QA |
+| Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue + aviso no chat com apontamentos |
+| Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Atualiza `docs/` se necessário + commit |
+| Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Atualiza Mintlify se necessário + aviso no chat |
+| Done | — | — | Concluída; merge de PR só se o usuário confirmar |
 
 ---
 
@@ -97,7 +138,7 @@ Formato mínimo de toda atualização (workflow §7):
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado
-**Próximo agente recomendado:** ...
+**Próximo agente recomendado:** [par da mesma etapa | usuário no chat]
 **Motivo:** ...
 **Pontos de atenção:**
 - ...
@@ -121,9 +162,11 @@ Formato mínimo de toda atualização (workflow §7):
 
 - Criar arquivo por Issue em `docs/`
 - Duplicar histórico do Linear no repositório
-- Mover status sem autorização / sem critérios
+- Mover status sem comando de avanço (exceto `Backlog` → `Todo` após PA + SA)
+- Pular etapa ou acionar o próximo papel de outra etapa
 - **Regredir `Document` → `In Progress`** (status deve permanecer `Document` até `Done`)
 - Passar `state` genérico (`started`) no MCP — usar nome exato do status
+- Mergear PR automaticamente ao autorizar `Done`
 - Deploy automático sem pedido explícito do usuário
 - Tratar publicação como status (`Released` não existe)
 - Inventar decisão bloqueante no lugar do usuário

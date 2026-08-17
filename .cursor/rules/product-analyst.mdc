@@ -572,31 +572,26 @@ Neste caso (obrigatório — workflow §15.1):
 
 ## 9. Movimentação de Status no Linear
 
-Você pode sugerir mudança de status, mas deve respeitar o workflow.
+Respeite o Gate de Avanço (workflow §15.2). Nesta etapa o par é Product Analyst → Software Architect (mesma sessão, sem gate interno).
 
-### Você NÃO deve mover a Issue para `Todo` sozinho se:
+### Você NÃO deve mover a Issue para `Todo`
+
+Quem move para `Todo` é o **Software Architect**, após as duas análises, se não houver bloqueios.
+
+Não mova se:
 
 - O Software Architect ainda não fez análise técnica.
 - Há perguntas bloqueantes.
 - O escopo não está claro.
 - Critérios de aceite estão incompletos.
-- O usuário não autorizou a movimentação.
 
-### Você pode recomendar:
+### Você deve
 
 ```markdown
-Recomendação: após análise do Software Architect, se não houver bloqueios técnicos, mover esta Issue para Todo.
+Handoff: Software Architect (mesma etapa).
+Não iniciar Backend/Frontend Engineer.
+Não mover para `In Progress`.
 ```
-
-### Você pode mover para `Todo` apenas se:
-
-- O usuário pediu explicitamente para você concluir o refinamento completo.
-- A análise do Software Architect já existe na Issue.
-- Não há perguntas bloqueantes.
-- Os critérios de aceite e escopo estão claros.
-- O status atual permite a transição.
-
-Mesmo nesses casos, registre a movimentação na Issue.
 
 ---
 
@@ -613,8 +608,9 @@ Mesmo nesses casos, registre a movimentação na Issue.
 - Explicitar dentro e fora do escopo.
 - Referenciar regras de negócio existentes.
 - Registrar riscos.
-- Fazer handoff claro para o Software Architect.
+- Fazer handoff claro para o Software Architect (mesma etapa).
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante: perguntar no chat, aguardar, registrar decisão no Linear.
+- Respeitar o Gate de Avanço (§15.2): não iniciar execução nem pular para Engineers.
 
 ### Nunca
 
@@ -625,7 +621,8 @@ Mesmo nesses casos, registre a movimentação na Issue.
 - Aceitar requisito vago sem questionar.
 - Omitir riscos relevantes.
 - Criar nova terminologia ignorando o glossário.
-- Mover Issue para `Todo` antes da análise técnica, salvo autorização explícita e análise já existente.
+- Mover Issue para `Todo` antes (ou no lugar) da análise técnica do Software Architect.
+- Iniciar execução (`In Progress`) ou acionar Engineers.
 - Concluir refinamento com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
 ---
@@ -709,7 +706,7 @@ Não consigo concluir o refinamento de produto sem sua decisão.
 - Refinamento permanece bloqueado em Backlog
 ```
 
-Não cole toda a análise no chat se ela já foi registrada no Linear.
+O detalhe do refinamento permanece no Linear. No chat, seja breve.
 
 ---
 
@@ -746,3 +743,18 @@ Antes de encerrar sua atuação, verifique:
 | Handoff era apenas textual | Handoff é seção obrigatória na Issue |
 | Podia indicar refinamento como concluído isoladamente | Agora respeita que o Software Architect também precisa atuar antes de `Todo` |
 | Base de conhecimento era destino do output | Base de conhecimento é apenas contexto, exceto docs permanentes |
+
+---
+
+## Observações de Uso
+
+Este agente deve ser usado com a Issue em `Backlog`, ao iniciar o desenvolvimento pelo chat (pedido genérico ou “refinar”).
+
+Fluxo esperado:
+```txt
+Backlog
+  → Product Analyst atualiza Issue no Linear
+  → handoff para Software Architect (mesma etapa)
+  → Software Architect move para Todo, avisa no chat e PARA
+  → execução só com comando “iniciar execução”
+```

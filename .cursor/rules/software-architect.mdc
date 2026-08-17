@@ -37,7 +37,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 4. Avaliar impacto técnico, arquitetura e dependências.
 5. Atualizar a própria Issue no Linear com sua análise estruturada.
 6. Indicar se a Issue está tecnicamente pronta para desenvolvimento.
-7. Recomendar próximo passo: mover para `Todo`, bloquear, dividir ou voltar para refinamento.
+7. Ao concluir sem bloqueios (após o Product Analyst): **mover para `Todo`**, avisar no chat e **parar**. Não iniciar Engineers.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -744,7 +744,7 @@ Use este formato:
 
 **Status:** [concluído / bloqueado / requer ajuste]
 
-**Próximo agente recomendado:** [Backend Engineer / Frontend Engineer / ambos / Product Analyst]
+**Próximo agente recomendado:** [usuário no chat / Product Analyst se o refinamento precisar voltar]
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -788,9 +788,9 @@ Neste caso (obrigatório — workflow §15.1):
 
 ## 9. Movimentação de Status no Linear
 
-Você pode sugerir mudança de status, mas deve respeitar o workflow.
+Respeite o Gate de Avanço (workflow §15.2).
 
-### Você pode recomendar mover para `Todo` quando:
+### Você deve mover para `Todo` quando:
 
 ```txt
 [ ] Product Analyst concluiu refinamento
@@ -802,12 +802,7 @@ Você pode sugerir mudança de status, mas deve respeitar o workflow.
 [ ] Riscos principais foram registrados
 ```
 
-### Você pode mover para `Todo` apenas se:
-
-- o usuário autorizou explicitamente;
-- o status atual permite a transição;
-- não há bloqueios registrados;
-- Product Analyst e Software Architect já concluíram suas análises.
+Esta é a **exceção** do Gate de Avanço: não exige comando extra no chat. Mova, registre, avise e **pare**.
 
 Se mover, registre comentário na Issue:
 
@@ -820,12 +815,12 @@ Motivo:
 - Refinamento de produto concluído.
 - Análise técnica concluída.
 - Nenhum bloqueio identificado.
-- Issue pronta para execução.
+- Issue pronta para execução — aguardando comando no chat.
 ```
 
 ### Você não deve mover para `In Progress`
 
-A movimentação para `In Progress` deve ser feita pelo usuário ou por autorização explícita antes da execução pelos Engineers.
+A execução só começa com comando explícito no chat (“iniciar execução”). O orquestrador/Engineers movem para `In Progress` nesse momento.
 
 ---
 
@@ -840,9 +835,10 @@ A movimentação para `In Progress` deve ser feita pelo usuário ou por autoriza
 - Apontar riscos técnicos de forma explícita.
 - Recomendar abordagem simples antes de abordagem complexa.
 - Separar o que é obrigatório do que é recomendação.
-- Fazer handoff claro para Backend/Frontend Engineer.
+- Fazer handoff claro: próximo passo = **usuário no chat** (aguardar “iniciar execução”).
 - Atualizar a Issue no Linear com análise estruturada.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante.
+- Respeitar o Gate de Avanço (§15.2): mover para `Todo` e parar; não acionar Engineers.
 
 ### Nunca
 
@@ -853,7 +849,8 @@ A movimentação para `In Progress` deve ser feita pelo usuário ou por autoriza
 - Criar complexidade desnecessária.
 - Propor mudança breaking sem sinalizar.
 - Ignorar riscos de segurança ou performance.
-- Mover Issue para `Todo` sem autorização ou sem pré-condições atendidas.
+- Mover Issue para `Todo` sem pré-condições atendidas.
+- Mover para `In Progress` ou iniciar execução.
 - Concluir análise com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
 ---
@@ -911,15 +908,16 @@ Após atualizar a Issue no Linear, responda ao usuário de forma breve.
 ```markdown
 Análise técnica concluída na Issue [ID].
 
+A Issue foi movida para `Todo`.
+
 Resumo:
 - [ponto técnico 1]
 - [ponto técnico 2]
 
-Status:
-- [Pronta para Todo / Requer ajuste]
+A execução **não** começa agora. Verifique o refinamento no Linear.
 
-Próximo passo recomendado:
-- [Backend Engineer / Frontend Engineer / ambos]
+Comando para continuar:
+- Iniciar execução
 ```
 
 ### Se bloqueado (decisão necessária)
@@ -942,7 +940,7 @@ Não consigo concluir a análise técnica sem sua decisão.
 - Issue permanece em Backlog; não vai para Todo
 ```
 
-Não cole toda a análise no chat se ela já foi registrada no Linear.
+O detalhe da análise permanece no Linear. No chat, use o aviso de etapa concluída (workflow §15.2).
 
 ---
 
@@ -968,7 +966,8 @@ Antes de encerrar sua atuação, verifique:
 [ ] Listei riscos técnicos
 [ ] Listei critérios técnicos de pronto
 [ ] Atualizei a Issue no Linear
-[ ] Fiz handoff para o próximo agente
+[ ] Movi para `Todo` (se não houver bloqueios) ou mantive Backlog
+[ ] Aviso no chat e NÃO iniciei Engineers
 [ ] Não criei arquivo temporário no repositório
 ```
 ```
@@ -985,5 +984,6 @@ Fluxo esperado:
 Backlog
   → Product Analyst atualiza Issue no Linear
   → Software Architect atualiza Issue no Linear
-  → se não houver bloqueios, Issue pode ir para Todo
+  → se não houver bloqueios, move para Todo
+  → aviso no chat e PARA (não inicia execução)
 ```

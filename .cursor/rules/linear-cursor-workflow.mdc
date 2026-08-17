@@ -1,5 +1,5 @@
 ---
-description: "Workflow Linear + Cursor: Linear é fonte de verdade operacional; docs/ só para KB permanente; agentes atualizam Issues via MCP com handoff; decisões bloqueantes vão no chat antes de concluir. Aplica-se a toda sessão."
+description: "Workflow Linear + Cursor: Linear é fonte de verdade; docs/ só para KB permanente; orquestra etapas por status + comando no chat (Gate de Avanço); decisões bloqueantes no chat (Gate de Decisão); commit por passo; merge de PR só com confirmação ao Done. Aplica-se a toda sessão."
 alwaysApply: true
 ---
 
@@ -26,11 +26,35 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 1. Com Issue associada: **ler e atualizar no Linear via MCP** — não depender só do chat.
 2. **Nunca** criar arquivos temporários por Issue (`refinamento-*`, `qa-report-*`, `analise-tecnica-*`, pastas `docs/refinamentos/`, etc.).
 3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente (produto, regra, arquitetura, módulo, integração, padrão, ADR, usabilidade).
-4. Respeitar o papel solicitado; não pular etapas do workflow.
-5. Não fazer deploy automático sem pedido explícito do usuário.
-6. Não mover status Linear sem autorização / critérios do workflow §16.
+4. Respeitar o papel solicitado; **não pular etapas**. Pares da mesma etapa (PA→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão.
+5. Não fazer deploy automático sem pedido explícito do usuário. Autorizar `Done` ou mergear PR **não** é autorização de deploy.
+6. **Gate de Avanço (workflow §15.2):** o usuário comanda no chat; o agente move o status. Não mover sem o comando correspondente — **exceto** `Backlog` → `Todo` após Product Analyst + Software Architect. Ao fim da etapa: aviso no chat e **parar**.
 7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir a etapa, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **só então** conclua. Não invente a decisão; não feche a etapa com perguntas bloqueantes só no Linear.
 8. **Status em Document:** a Issue **permanece em `Document`** durante Technical/Documentation Writer. É proibido regredir para `In Progress`. Em `save_issue`, omitir `state` (exceto restaurar `Document` ou concluir para `Done`); nunca usar tipo genérico `started`. Se detectar regressão (ex.: automação Git/PR), restaurar `Document` imediatamente (workflow §11.1).
+9. **Commit por passo (workflow §15.4):** cada atuação que alterar código ou `docs/` permanentes gera **um commit** ao final daquele papel (BE, FE, correção pós-review, Technical Writer).
+10. **Gate de merge ao `Done` (workflow §15.3):** ao autorizar `Done`, perguntar no chat se deseja mergear o PR. Só mergear com “sim” inequívoco. Sem PR: informar e não perguntar.
+
+O nome do status de review no Linear é **`Review`** (não “In Review”).
+
+## Orquestração (sem papel explícito)
+
+Se o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o agente**, leia o status Linear e roteie:
+
+| Status | Comando no chat | Ação |
+| --- | --- | --- |
+| `Backlog` | Iniciar desenvolvimento / refinar | `product-analyst.mdc` → `software-architect.mdc` → `Todo` → aviso e parar |
+| `Todo` | Sem comando de execução | Não implementar. Avisar que está em `Todo` e aguardar “iniciar execução” |
+| `Todo` | Iniciar execução | Mover para `In Progress` → Engineers |
+| `In Progress` | Iniciar execução / voltar ajustes | Engineers (não iniciar Review) |
+| `In Progress` | Iniciar review | Mover para `Review` → Tech Lead → QA |
+| `Review` | Iniciar review / revalidar | Tech Lead → QA (não mover sozinho) |
+| `Review` | Voltar ajustes | Mover para `In Progress` → Engineers |
+| `Review` | Seguir para documentação | Mover para `Document` → Writers |
+| `Document` | Seguir para documentação | Writers (permanece `Document`) |
+| `Document` | Concluir / `Done` | Mover para `Done` + perguntar merge do PR |
+| Qualquer | Deploy | Só se o pedido for explícito |
+
+Após Review, o aviso no chat **deve** listar apontamentos do Linear (obrigatórios vs. opcionais).
 
 ## Formato mínimo na Issue
 
@@ -47,7 +71,7 @@ Toda atuação em Issue termina com seção estruturada + handoff:
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado
-**Próximo agente recomendado:** …
+**Próximo agente recomendado:** [par da mesma etapa | usuário no chat]
 **Motivo:** …
 **Pontos de atenção:**
 - …

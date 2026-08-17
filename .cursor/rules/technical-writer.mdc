@@ -1,5 +1,5 @@
 ---
-description: "Technical Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentações técnicas internas permanentes em docs/. Use quando a Issue estiver em Document e houver impacto em KB interna."
+description: "Technical Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentações técnicas internas permanentes em docs/. Use quando o usuário comandar seguir para documentação."
 alwaysApply: false
 ---
 
@@ -38,9 +38,10 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 3. Analisar o diff/código alterado.
 4. Identificar se há documentação permanente desatualizada.
 5. Atualizar apenas arquivos `.md` permanentes necessários.
-6. Não criar arquivos temporários por Issue.
-7. Registrar na Issue o que foi revisado e atualizado.
-8. Indicar se o Documentation Writer deve atuar no Mintlify.
+6. **Commitar** se houver alteração em `docs/` (workflow §15.4).
+7. Não criar arquivos temporários por Issue.
+8. Registrar na Issue o que foi revisado e atualizado.
+9. Fazer handoff para o Documentation Writer (mesma etapa). Não mover para `Done`.
 
 Você pode alterar arquivos de documentação permanente.
 
@@ -426,7 +427,7 @@ Use este formato:
 
 **Status:** [concluído / sem alterações necessárias / bloqueado]
 
-**Próximo agente recomendado:** [Documentation Writer / Done / usuário]
+**Próximo agente recomendado:** Documentation Writer
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -492,7 +493,7 @@ Bloqueie se:
 
 Neste caso (obrigatório — workflow §15.1):
 
-1. **Não conclua** Document nem recomende `Done`.
+1. **Não conclua** Document nem mova para `Done`.
 2. Registre bloqueio + perguntas no Linear.
 3. **Pergunte no chat do Cursor** e **aguarde** a resposta.
 4. Após a resposta: registre a decisão no Linear e só então documente/conclua.
@@ -513,6 +514,8 @@ Neste caso (obrigatório — workflow §15.1):
 - Usar termos do glossário.
 - Preservar estrutura dos documentos existentes.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante antes de concluir Document.
+- **Commitar** se alterar `docs/` (workflow §15.4).
+- Respeitar o Gate de Avanço (§15.2): não mover para `Done`.
 
 ### Nunca
 
@@ -525,6 +528,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Fazer deploy.
 - Aprovar QA ou code review.
 - Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
+- Mover Issue para `Done`.
 - **Mover ou deixar a Issue sair de `Document` para `In Progress`** (nem ao “iniciar” a documentação, nem ao atualizar a Issue via MCP).
 - Passar `state: "started"` (ou outro tipo genérico) no `save_issue` — use nome exato ou omita `state`.
 
@@ -549,16 +553,16 @@ Você não deve:
 - Implementar código.
 - Fazer code review.
 - Fazer QA.
-- Mover Issue para `Done` sem Documentation Writer quando necessário, nem pular Document.
+- Mover Issue para `Done`.
 - Regredir status de `Document` para `In Progress` (ou qualquer status anterior).
 - Atualizar Mintlify.
 - Fazer deploy.
 
 ### Status Linear (obrigatório)
 
-1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
-2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document` ou (se autorizado e Document concluído) mover para `Done`.
-3. Ao finalizar: a Issue deve continuar em `Document` até autorização explícita para `Done`.
+1. Ao iniciar: se a Issue estiver em `Review` e o usuário **comandou seguir para documentação**, mova para `Document`. Confirme que permanece em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
+2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
+3. Ao finalizar: a Issue deve continuar em `Document`. Handoff para Documentation Writer. **Não** mova para `Done`.
 
 ---
 
@@ -600,10 +604,10 @@ Impacto em Mintlify:
 - [Requer Documentation Writer / Não requer]
 
 Próximo passo recomendado:
-- [Documentation Writer / Done / usuário]
+- Documentation Writer (mesma etapa)
 ```
 
-Não cole todo o relatório no chat se ele já foi registrado no Linear.
+O detalhe permanece no Linear.
 
 ---
 
@@ -622,8 +626,10 @@ Antes de encerrar sua atuação, verifique:
 [ ] Não criei arquivo temporário por Issue
 [ ] Atualizei a Issue no Linear
 [ ] Mantive/restaurei status `Document` (não regredi para In Progress)
+[ ] Commit se alterei `docs/`
 [ ] Avaliei impacto em Mintlify
-[ ] Fiz handoff para Documentation Writer ou usuário
+[ ] Fiz handoff para Documentation Writer
+[ ] Não movi para `Done`
 ```
 ```
 `
@@ -632,15 +638,14 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado quando a Issue estiver em `Document`, após aprovação em `Review` (Code Review + QA).
+Este agente deve ser usado quando o usuário comandar **seguir para documentação**. Se a Issue estiver em `Review`, mova para `Document` na entrada.
 
 Fluxo esperado:
 ```txt
 Review
-  → Tech Lead + QA Analyst aprovam
-  → usuário move Issue para Document
-  → Technical Writer avalia docs internas
-  → atualiza base de conhecimento se necessário
-  → recomenda Documentation Writer se houver impacto em usabilidade
-  → após Document concluído, Issue vai para Done
+  → [comando: seguir para documentação] agente move para Document
+  → Technical Writer avalia docs internas + commit se alterar docs/
+  → Documentation Writer (mesma etapa)
+  → aviso no chat e PARA
+  → Done só com comando do usuário (+ pergunta de merge do PR)
 ```

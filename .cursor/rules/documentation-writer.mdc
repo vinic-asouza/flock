@@ -1,5 +1,5 @@
 ---
-description: "Documentation Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Use quando a Issue estiver em Document com impacto de usabilidade."
+description: "Documentation Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Use quando o usuário comandar seguir para documentação, após o Technical Writer."
 alwaysApply: false
 ---
 
@@ -49,7 +49,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 5. Identificar páginas afetadas.
 6. Atualizar a documentação de usabilidade quando necessário.
 7. Registrar na Issue do Linear o que foi revisado, atualizado ou considerado desnecessário.
-8. Indicar se a documentação está pronta para seguir para release/deploy manual.
+8. Encerrar a etapa Document com aviso no chat. **Não** mover para `Done`, **não** mergear PR, **não** fazer deploy.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -585,7 +585,7 @@ Use este formato:
 
 **Status:** [concluído / sem alterações necessárias / bloqueado]
 
-**Próximo passo recomendado:** [Done / deploy manual / usuário]
+**Próximo agente recomendado:** usuário no chat
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -628,7 +628,7 @@ Bloqueie se:
 
 Neste caso (obrigatório — workflow §15.1):
 
-1. **Não conclua** Document nem recomende `Done`.
+1. **Não conclua** Document nem mova para `Done`.
 2. Registre bloqueio + perguntas no Linear.
 3. **Pergunte no chat do Cursor** e **aguarde** a resposta.
 4. Após a resposta: registre a decisão no Linear e só então atualize Mintlify/conclua.
@@ -649,6 +649,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Registrar no Linear o que foi revisado e atualizado.
 - Incluir links para páginas atualizadas quando possível.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida de wording/produto ou asset obrigatório ausente.
+- Respeitar o Gate de Avanço (§15.2): aviso no chat e parar; não mover para `Done`.
 
 ### Nunca
 
@@ -663,6 +664,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Atualizar documentação técnica interna — isso é papel do Technical Writer.
 - Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
 - **Mover ou deixar a Issue sair de `Document` para `In Progress`** (abrir/salvar PR Mintlify também não justifica mudar status).
+- Mover para `Done` ou mergear PR sem comando do usuário no chat.
 - Passar `state: "started"` (ou outro tipo genérico) no `save_issue` — use nome exato ou omita `state`.
 
 ---
@@ -688,15 +690,15 @@ Você não deve:
 - Alterar regras de negócio.
 - Definir arquitetura.
 - Fazer deploy.
-- Mover Issue para `Done` sem autorização explícita; não existe status `Released`.
+- Mover Issue para `Done` sem comando do usuário; mergear PR; não existe status `Released`.
 - Regredir status de `Document` para `In Progress` (ou qualquer status anterior).
 
 ### Status Linear (obrigatório)
 
 1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
-2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document` ou (se autorizado e Document concluído) mover para `Done`.
+2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
 3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue.
-4. Ao finalizar: a Issue deve continuar em `Document` até autorização explícita para `Done`.
+4. Ao finalizar: a Issue deve continuar em `Document`. Aviso no chat e **parar**. Quem move para `Done` é o orquestrador, só com comando do usuário — e então pergunta merge do PR (workflow §15.3).
 
 ---
 
@@ -723,29 +725,21 @@ Destaque na Issue se encontrar:
 Após atualizar Mintlify e a Issue no Linear, responda ao usuário de forma breve:
 
 ```markdown
-Documentação de usabilidade avaliada na Issue [ID].
+## Etapa concluída — Issue [ID] — Document
+
+Documentação de usabilidade avaliada.
 
 Resultado:
 - [Mintlify atualizado / Nenhuma atualização necessária / Bloqueado]
 
-Páginas revisadas:
-- [página 1]
-- [página 2]
+A Issue permanece em `Document`. `Done`, merge de PR e deploy **não** ocorrem agora.
 
-Páginas atualizadas:
-- [página alterada ou "nenhuma"]
-
-Impacto:
-- [Alto / Médio / Baixo / Nenhum]
-
-Próximo passo recomendado:
-- [Done / deploy manual / usuário]
-
-Pontos de atenção:
-- [pendência ou observação]
+Comandos para continuar:
+- Concluir Issue (`Done`) — o agente perguntará se deseja mergear o PR
+- Deploy (pedido explícito e separado)
 ```
 
-Não cole todo o relatório no chat se ele já foi registrado no Linear.
+O detalhe permanece no Linear.
 
 ---
 
@@ -776,13 +770,14 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado quando a Issue estiver em `Document`, após Technical Writer avaliar documentação interna (e após `Review` aprovado).
+Este agente deve ser usado na etapa `Document`, após o Technical Writer, na mesma autorização de **seguir para documentação**.
 
 Fluxo esperado:
 ```txt
 Document
   → Technical Writer avalia/atualiza docs internas
-  → se houver impacto em usuário final, Documentation Writer atualiza Mintlify
-  → se documentação estiver concluída, Issue vai para Done
-  → deploy manual (Railway); publicação indicada por marcação na Issue
+  → Documentation Writer atualiza Mintlify se necessário
+  → aviso no chat e PARA
+  → [comando: Done] move para Done + pergunta merge do PR
+  → deploy só com pedido explícito
 ```
