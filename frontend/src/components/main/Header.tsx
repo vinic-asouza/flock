@@ -103,33 +103,33 @@ export function Header() {
             <Menu size={22} />
           </button>
 
-          <div className="pointer-events-none absolute inset-0 md:hidden flex flex-col items-center justify-center gap-0.5 overflow-hidden px-14">
+          <div className="pointer-events-none absolute inset-0 md:hidden flex flex-col items-center justify-center gap-0.5 overflow-hidden">
             <div className="flex items-center justify-center gap-1.5">
               <FlockLogo size={30} className="text-primary shrink-0" />
               <span className="text-base font-semibold text-primary">Flock</span>
             </div>
             <h1
-              className="w-full min-w-0 text-sm font-normal text-gray-600 truncate text-center leading-tight"
+              className="max-w-[calc(100%-7rem)] sm:max-w-[12rem] min-w-0 px-1 text-sm font-normal text-gray-600 truncate text-center leading-tight"
               title={churchName}
             >
               {churchName}
             </h1>
           </div>
 
-        <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
-          <FlockLogo size={30} className="text-primary shrink-0" />
-          <span className="text-lg font-semibold text-primary shrink-0">Flock App</span>
-          <span className="text-gray-300">|</span>
-          <h1
-            className="text-sm font-normal text-gray-600 truncate min-w-0"
-            title={churchName}
-          >
-            {churchName}
-          </h1>
-        </div>
+          <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
+            <FlockLogo size={30} className="text-primary shrink-0" />
+            <span className="text-lg font-semibold text-primary shrink-0">Flock App</span>
+            <span className="text-gray-300">|</span>
+            <h1
+              className="text-sm font-normal text-gray-600 truncate min-w-0"
+              title={churchName}
+            >
+              {churchName}
+            </h1>
+          </div>
 
-        <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-4 min-w-0 shrink-0">
-          <ChurchSwitcher />
+          <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-4 min-w-0 shrink-0">
+            <ChurchSwitcher />
           {user?.subscription_status === 'past_due' && (
             <Link
               href="/settings?tab=payment"
@@ -213,7 +213,7 @@ export function Header() {
             </Link>
           )}
 
-          <div className="hidden sm:flex items-center gap-1 text-sm text-gray-600">
+          <div className="hidden md:flex items-center gap-1 text-sm text-gray-600">
             <User size={16} className="text-gray-600" />
             <div className="flex items-center gap-2">
               <span className="truncate max-w-48" title={session?.user?.email}>
@@ -250,9 +250,9 @@ export function Header() {
             className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white min-h-11 min-w-11 sm:min-h-8 sm:min-w-0"
           >
             <LogOut size={16} className="text-white" />
-            <span className="hidden sm:inline text-white">Sair</span>
+            <span className="hidden md:inline text-white">Sair</span>
           </Button>
-        </div>
+          </div>
         </div>
       </header>
 
