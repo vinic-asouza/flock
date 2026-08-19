@@ -2,7 +2,7 @@
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
 ultima_atualizacao: 2026-08-19
-versao: "1.5"
+versao: "1.6"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -26,18 +26,18 @@ Todo
 In Progress
   → [comando: iniciar execução] move Todo → In Progress
   → Backend Engineer e/ou Frontend Engineer
-  → commit por passo de código
-  → [para e avisa: verificação manual]
+  → commit + push; abrir PR se ainda não houver (§15.6)
+  → [para e avisa: verificação manual + URL do PR]
 
 Review (QA + Code Review)   ← status Linear: Review
   → [comando: iniciar review] move In Progress → Review
   → Tech Lead (Code Review) → QA Analyst
   → [para e avisa no chat com apontamentos do Linear]
-  → [comando: voltar ajustes] → In Progress → Engineers → commit → aviso
+  → [comando: voltar ajustes] → In Progress → Engineers → commit + push no mesmo PR → aviso
   → [comando: seguir para documentação] → Document
 
 Document (Technical + Documentation Writers)
-  → Technical Writer avalia docs/ (commit só se alterar) + Documentation Writer avalia Mintlify
+  → Technical Writer avalia docs/ (commit + push no PR existente se alterar) + Documentation Writer avalia Mintlify
   → atualizar só com impacto técnico ou de usabilidade real (§15.5)
   → [para e avisa no chat]
 
@@ -83,9 +83,9 @@ Detalhe: workflow §15.1.
 Quando o usuário autorizar `Done`:
 
 1. Mover para `Done` (critérios §16).
-2. Se houver PR: perguntar no chat se deseja mergear (sim/não).
+2. O PR já deve estar aberto desde `In Progress`. Perguntar no chat se deseja mergear (sim/não).
 3. Merge **só** com confirmação inequívoca.
-4. Sem PR: informar e não perguntar.
+4. Sem PR: informar o desvio; **não** abrir PR em `Done` (salvo pedido explícito + restaurar `Done`).
 5. Deploy continua pedido à parte.
 
 Detalhe: workflow §15.3.
@@ -104,6 +104,20 @@ Detalhe: workflow §15.5.
 
 ---
 
+## PR da Issue (rápido)
+
+Abrir o PR em `In Progress` (um por Issue). Depois só **push** na mesma branch.
+
+Não abrir o primeiro PR em `Review`, `Document` ou `Done` — a automação GitHub do Linear regressa para `In Progress`.
+
+Depois de push/`gh pr create`: reler a Issue; restaurar o status da etapa se tiver mudado.
+
+Em `Done`: só merge com “sim” no chat.
+
+Detalhe: workflow §15.6.
+
+---
+
 ## Tabela etapa → agente
 
 | Etapa Linear | Agente | MDC | Output |
@@ -111,11 +125,11 @@ Detalhe: workflow §15.5.
 | Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + handoff para SA |
 | Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + move para `Todo` + aviso no chat |
 | Todo | — | — | Aguarda comando de execução |
-| In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + commit + resumo na Issue |
-| In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + commit + resumo na Issue |
+| In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + commit + push + PR (§15.6) + resumo na Issue |
+| In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + commit + push + PR (§15.6) + resumo na Issue |
 | Review (Code Review) | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue + handoff para QA |
 | Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue + aviso no chat com apontamentos |
-| Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Avalia `docs/`; atualiza + commit só se necessário (§15.5) |
+| Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Avalia `docs/`; atualiza + commit + push no PR existente só se necessário (§15.5 / §15.6) |
 | Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Avalia Mintlify; atualiza só se necessário (§15.5) + aviso no chat |
 | Done | — | — | Concluída; merge de PR só se o usuário confirmar |
 
@@ -177,7 +191,8 @@ Formato mínimo de toda atualização (workflow §7):
 - Duplicar histórico do Linear no repositório
 - Mover status sem comando de avanço (exceto `Backlog` → `Todo` após PA + SA)
 - Pular etapa ou acionar o próximo papel de outra etapa
-- **Regredir `Document` → `In Progress`** (status deve permanecer `Document` até `Done`)
+- **Regredir `Review` / `Document` / `Done` → `In Progress`** (automação Git/PR: restaurar na hora, §15.6)
+- Abrir o primeiro PR da Issue fora de `In Progress`
 - Passar `state` genérico (`started`) no MCP — usar nome exato do status
 - Mergear PR automaticamente ao autorizar `Done`
 - Deploy automático sem pedido explícito do usuário

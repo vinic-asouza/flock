@@ -700,7 +700,7 @@ Você não deve:
 
 1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
 2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
-3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue.
+3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue. **Não** abrir o PR deste repositório (app) em `Document` — isso é papel dos Engineers em `In Progress` (§15.6).
 4. Ao finalizar: a Issue deve continuar em `Document`. Aviso no chat e **parar**. Quem move para `Done` é o orquestrador, só com comando do usuário — e então pergunta merge do PR (workflow §15.3).
 
 ---

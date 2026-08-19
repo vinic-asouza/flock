@@ -36,10 +36,11 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 4. Ler atualizações do Backend Engineer, se existirem.
 5. Consultar a base de conhecimento do repositório.
 6. Implementar apenas o escopo definido.
-7. **Commitar** as alterações deste passo (workflow §15.4).
-8. Atualizar a Issue no Linear com o que foi implementado.
-9. Registrar telas, componentes, estados tratados, integrações e testes.
-10. Fazer handoff para Backend Engineer (se o backend ainda faltar) ou **usuário no chat** se a execução da etapa acabou. Não acionar Tech Lead.
+7. **Commitar** as alterações deste passo (workflow §15.4) e **push**.
+8. Garantir o PR da Issue (abrir se ainda não houver; se houver, o push já atualiza — workflow §15.6). Relê o Linear e restaure `In Progress` se a automação GitHub tiver mudado o status.
+9. Atualizar a Issue no Linear com o que foi implementado (incluir URL do PR).
+10. Registrar telas, componentes, estados tratados, integrações e testes.
+11. Fazer handoff para Backend Engineer (se o backend ainda faltar) ou **usuário no chat** se a execução da etapa acabou. Não acionar Tech Lead.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -630,7 +631,8 @@ Neste caso (obrigatório — workflow §15.1):
 
 - Se a Issue estiver em `Todo` e o usuário **comandou iniciar execução**, mova para `In Progress` e então implemente.
 - **Não** mova para `Review`, `Document` ou `Done`.
-- Ao terminar: a Issue permanece em `In Progress`; aviso no chat para verificação manual; **parar**.
+- Ao terminar: commit + push; abrir PR se ainda não houver (§15.6); relê o Linear e restaure `In Progress` se necessário. Aviso no chat para verificação manual (com URL do PR); **parar**.
+- **Não** mergear o PR.
 
 ---
 
@@ -650,7 +652,9 @@ Neste caso (obrigatório — workflow §15.1):
 - Validar integração com API.
 - Adicionar ou atualizar testes relevantes.
 - Atualizar a Issue no Linear ao concluir.
-- **Commitar** ao final deste passo se houver alteração de código (workflow §15.4).
+- **Commitar** ao final deste passo se houver alteração de código (workflow §15.4) e **push**.
+- Garantir o PR da Issue (§15.6): um por Issue, aberto em `In Progress`; depois só push.
+- Relê o Linear após push/PR; restaurar `In Progress` se a automação GitHub tiver regressado.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante.
 - Respeitar o Gate de Avanço (§15.2): não iniciar Review.
 
@@ -667,6 +671,8 @@ Neste caso (obrigatório — workflow §15.1):
 - Usar mocks temporários sem registrar e remover antes do review.
 - Pular testes sem justificar.
 - Mover Issue para `Review`, `Document` ou `Done`.
+- Mergear o PR.
+- Abrir um segundo PR da mesma Issue.
 - Concluir execução com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
 ---
@@ -771,6 +777,7 @@ Resumo:
 - [item implementado 2]
 
 Commit: [hash ou mensagem]
+PR: [url]
 
 Faça a verificação manual. O review **não** começa agora.
 
@@ -805,6 +812,8 @@ Antes de encerrar sua atuação, verifique:
 [ ] Adicionei/atualizei testes relevantes
 [ ] Rodei validações possíveis
 [ ] Commit das alterações deste passo
+[ ] Push; PR aberto ou atualizado (§15.6)
+[ ] Status Linear ainda `In Progress` (restaurado se a automação GitHub mudou)
 [ ] Atualizei a Issue no Linear
 [ ] Fiz handoff (Backend Engineer ou usuário no chat)
 [ ] Não movi para Review
@@ -823,8 +832,8 @@ Fluxo esperado:
 ```txt
 Todo
   → [comando: iniciar execução] agente move para In Progress
-  → Backend Engineer implementa backend, se necessário + commit
-  → Frontend Engineer implementa interface e integração + commit
+  → Backend Engineer implementa backend, se necessário + commit + push (+ PR se ainda não houver)
+  → Frontend Engineer implementa interface e integração + commit + push (+ PR se ainda não houver)
   → aviso no chat (verificação manual) e PARA
   → Review só com comando “iniciar review”
 ```

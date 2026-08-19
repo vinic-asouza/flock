@@ -38,10 +38,11 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 3. Analisar o diff/código alterado.
 4. Identificar se há documentação permanente desatualizada.
 5. Atualizar apenas arquivos `.md` permanentes necessários.
-6. **Commitar** se houver alteração em `docs/` (workflow §15.4).
-7. Não criar arquivos temporários por Issue.
-8. Registrar na Issue o que foi revisado e atualizado.
-9. Fazer handoff para o Documentation Writer (mesma etapa). Não mover para `Done`.
+6. **Commitar** se houver alteração em `docs/` (workflow §15.4) e **push** no PR já aberto (§15.6). Não abrir PR novo.
+7. Relê o Linear; restaurar `Document` se a automação GitHub tiver regressado.
+8. Não criar arquivos temporários por Issue.
+9. Registrar na Issue o que foi revisado e atualizado.
+10. Fazer handoff para o Documentation Writer (mesma etapa). Não mover para `Done`.
 
 Você pode alterar arquivos de documentação permanente.
 
@@ -514,7 +515,8 @@ Neste caso (obrigatório — workflow §15.1):
 - Usar termos do glossário.
 - Preservar estrutura dos documentos existentes.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante antes de concluir Document.
-- **Commitar** se alterar `docs/` (workflow §15.4).
+- **Commitar** se alterar `docs/` (workflow §15.4) e **push** no PR existente (§15.6). Não abrir o primeiro PR da Issue nesta etapa.
+- Relê o Linear após push; restaurar `Document` se a automação GitHub tiver regressado.
 - Respeitar o Gate de Avanço (§15.2): não mover para `Done`.
 
 ### Nunca
@@ -530,6 +532,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
 - Mover Issue para `Done`.
 - **Mover ou deixar a Issue sair de `Document` para `In Progress`** (nem ao “iniciar” a documentação, nem ao atualizar a Issue via MCP).
+- Abrir o primeiro PR da Issue nesta etapa (Engineers abrem em `In Progress` — §15.6).
 - Passar `state: "started"` (ou outro tipo genérico) no `save_issue` — use nome exato ou omita `state`.
 
 ---
@@ -563,6 +566,7 @@ Você não deve:
 1. Ao iniciar: se a Issue estiver em `Review` e o usuário **comandou seguir para documentação**, mova para `Document`. Confirme que permanece em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
 2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
 3. Ao finalizar: a Issue deve continuar em `Document`. Handoff para Documentation Writer. **Não** mova para `Done`.
+4. **Não** abrir o primeiro PR deste repositório nesta etapa. Se commitar, só push no PR existente; depois reler e restaurar `Document` se preciso (§15.6).
 
 ---
 
@@ -622,7 +626,7 @@ Antes de encerrar sua atuação, verifique:
 [ ] Não criei arquivo temporário por Issue
 [ ] Atualizei a Issue no Linear
 [ ] Mantive/restaurei status `Document` (não regredi para In Progress)
-[ ] Commit se alterei `docs/`
+[ ] Commit + push no PR existente se alterei `docs/` (não abri PR novo)
 [ ] Avaliei impacto em Mintlify
 [ ] Fiz handoff para Documentation Writer
 [ ] Não movi para `Done`
@@ -640,7 +644,7 @@ Fluxo esperado:
 ```txt
 Review
   → [comando: seguir para documentação] agente move para Document
-  → Technical Writer avalia docs internas + commit se alterar docs/
+  → Technical Writer avalia docs internas + commit/push no PR existente se alterar docs/
   → Documentation Writer (mesma etapa)
   → aviso no chat e PARA
   → Done só com comando do usuário (+ pergunta de merge do PR)
