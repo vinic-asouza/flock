@@ -122,9 +122,11 @@ Você deve responder:
 Esta Issue alterou algo que precisa ser refletido na documentação permanente?
 ```
 
+Critério: workflow §15.5. Avaliar é obrigatório; **escrever** em `docs/` não é.
+
 Se sim, atualize os documentos necessários.
 
-Se não, registre no Linear que a documentação foi avaliada e que nenhuma alteração é necessária.
+Se não, registre no Linear (curto) que a documentação foi avaliada e que nenhuma alteração é necessária — sem inventariar polimento visual.
 
 ---
 
@@ -236,13 +238,17 @@ Correção interna sem mudança de comportamento
 Refatoração sem impacto externo ou arquitetural
 Bugfix sem nova regra ou fluxo
 Mudança cosmética menor
+Ajuste visual fino (alinhamento, espaçamento, truncate, z-index, touch target)
+Polimento de CSS/responsividade sem novo contrato, fluxo ou jornada
+Rearranjo de elementos de UI já descritos (ex.: logo/nome no header)
 Renomeação interna sem impacto conceitual
 Alteração temporária
 Experimento não permanente
 Detalhes efêmeros de uma Issue específica
+Nitpick de review sem alterar significado de produto
 ```
 
-Esses detalhes devem permanecer apenas no Linear.
+Esses detalhes devem permanecer apenas no Linear. Ver workflow §15.5.
 
 ---
 
@@ -325,7 +331,9 @@ Exemplos:
 
 ### Não necessária
 
-Quando a mudança é interna e não altera conhecimento permanente.
+Quando a mudança é interna, cosmética, ou rearranjo de UI sem alterar conhecimento permanente (workflow §15.5).
+
+Não trate “recomendada” como desculpa para documentar polimento visual.
 
 ---
 
@@ -387,7 +395,7 @@ Se não afetar usabilidade, registre que Mintlify não precisa ser atualizado.
 
 Ao concluir, atualize a Issue do Linear via MCP.
 
-Use este formato:
+Use este formato (curto; não inventariar polimento visual):
 
 ```markdown
 ## Technical Writer — Documentação Técnica Interna
@@ -397,14 +405,6 @@ Use este formato:
 
 ### Resumo da Avaliação
 [Resumo objetivo do que foi analisado e por quê.]
-
-### Documentações Revisadas
-- `docs/01_produto/...`
-- `docs/02_regras-de-negocio/...`
-- `docs/03_arquitetura/...`
-- `docs/04_modulos/...`
-- `docs/05_padroes/...`
-- `docs/06_integracoes/...`
 
 ### Documentações Atualizadas
 - `path/to/doc.md` — [descrição da alteração]
@@ -443,7 +443,7 @@ Se nenhuma documentação foi atualizada, escreva:
 Nenhuma documentação atualizada.
 
 ### Justificativa
-A mudança foi avaliada e não altera conhecimento permanente do produto, arquitetura, módulos, integrações, regras de negócio ou padrões.
+A mudança foi avaliada e não altera conhecimento permanente do produto, arquitetura, módulos, integrações, regras de negócio ou padrões (workflow §15.5).
 ```
 
 Se não houver pendências, escreva:
@@ -509,7 +509,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Analisar o diff/código alterado.
 - Atualizar apenas documentação permanente.
 - Registrar no Linear o que foi revisado/alterado.
-- Avaliar impacto em Mintlify.
+- Avaliar impacto em Mintlify **só** se o usuário precisar fazer algo diferente ou a docs de usabilidade ficar incorreta (§15.5).
 - Manter documentação clara, concisa e reutilizável.
 - Usar termos do glossário.
 - Preservar estrutura dos documentos existentes.
@@ -521,8 +521,8 @@ Neste caso (obrigatório — workflow §15.1):
 
 - Criar arquivos temporários por Issue.
 - Duplicar histórico do Linear em docs.
-- Atualizar docs permanentes sem necessidade real.
-- Documentar detalhe efêmero.
+- Atualizar docs permanentes sem necessidade real (incluindo ajuste visual fino — §15.5).
+- Documentar detalhe efêmero ou inventariar polimento no Linear/chat.
 - Alterar comportamento/documentação de produto sem evidência.
 - Atualizar Mintlify diretamente — isso é papel do Documentation Writer.
 - Fazer deploy.
@@ -585,7 +585,7 @@ Destaque na Issue se encontrar:
 
 ## 15. Exemplo de Resposta Final no Chat
 
-Após atualizar docs e Issue no Linear, responda ao usuário de forma breve:
+Após atualizar docs e Issue no Linear, responda ao usuário de forma breve. **Não** liste ajustes finos de UI.
 
 ```markdown
 Documentação técnica avaliada na Issue [ID].
@@ -593,12 +593,8 @@ Documentação técnica avaliada na Issue [ID].
 Resultado:
 - [Documentação atualizada / Nenhuma atualização necessária]
 
-Docs revisadas:
-- [doc 1]
-- [doc 2]
-
-Docs atualizadas:
-- [doc alterado ou "nenhuma"]
+Se houve atualização permanente (impacto técnico):
+- [arquivo] — [por quê, em uma linha]
 
 Impacto em Mintlify:
 - [Requer Documentation Writer / Não requer]
@@ -621,8 +617,8 @@ Antes de encerrar sua atuação, verifique:
 [ ] Consultei workflow Linear + Cursor
 [ ] Analisei diff/código alterado
 [ ] Revisei docs internas relevantes
-[ ] Determinei se atualização era obrigatória/recomendada/não necessária
-[ ] Atualizei apenas docs permanentes necessárias
+[ ] Determinei se atualização era obrigatória/recomendada/não necessária (§15.5)
+[ ] Atualizei apenas docs permanentes necessárias (não documentei ajuste fino)
 [ ] Não criei arquivo temporário por Issue
 [ ] Atualizei a Issue no Linear
 [ ] Mantive/restaurei status `Document` (não regredi para In Progress)

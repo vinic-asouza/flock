@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-08-17
-versao: "1.4"
+ultima_atualizacao: 2026-08-19
+versao: "1.5"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -37,7 +37,8 @@ Review (QA + Code Review)   ← status Linear: Review
   → [comando: seguir para documentação] → Document
 
 Document (Technical + Documentation Writers)
-  → Technical Writer (docs/, commit se alterar) + Documentation Writer (Mintlify)
+  → Technical Writer avalia docs/ (commit só se alterar) + Documentation Writer avalia Mintlify
+  → atualizar só com impacto técnico ou de usabilidade real (§15.5)
   → [para e avisa no chat]
 
 Done
@@ -91,6 +92,18 @@ Detalhe: workflow §15.3.
 
 ---
 
+## Proporcionalidade documental (rápido)
+
+Etapa `Document` **avalia** sempre. **Escrever** em `docs/` ou Mintlify **não** é automático.
+
+Atualize só se a docs existente ficar incorreta, o usuário precisar fazer algo diferente, ou houver padrão/ADR permanente.
+
+**Não** documente ajuste visual fino, polimento de CSS nem rearranjo de elementos já descritos. Detalhe fica no Linear. No chat, não inventariar polimento.
+
+Detalhe: workflow §15.5.
+
+---
+
 ## Tabela etapa → agente
 
 | Etapa Linear | Agente | MDC | Output |
@@ -102,8 +115,8 @@ Detalhe: workflow §15.3.
 | In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + commit + resumo na Issue |
 | Review (Code Review) | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue + handoff para QA |
 | Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue + aviso no chat com apontamentos |
-| Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Atualiza `docs/` se necessário + commit |
-| Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Atualiza Mintlify se necessário + aviso no chat |
+| Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Avalia `docs/`; atualiza + commit só se necessário (§15.5) |
+| Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Avalia Mintlify; atualiza só se necessário (§15.5) + aviso no chat |
 | Done | — | — | Concluída; merge de PR só se o usuário confirmar |
 
 ---
@@ -171,3 +184,4 @@ Formato mínimo de toda atualização (workflow §7):
 - Tratar publicação como status (`Released` não existe)
 - Inventar decisão bloqueante no lugar do usuário
 - Concluir etapa com pergunta bloqueante só no Linear, sem perguntar no chat
+- Atualizar `docs/` ou Mintlify por ajuste visual fino / polimento sem impacto técnico ou de usabilidade

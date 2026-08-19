@@ -25,7 +25,7 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 
 1. Com Issue associada: **ler e atualizar no Linear via MCP** — não depender só do chat.
 2. **Nunca** criar arquivos temporários por Issue (`refinamento-*`, `qa-report-*`, `analise-tecnica-*`, pastas `docs/refinamentos/`, etc.).
-3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente (produto, regra, arquitetura, módulo, integração, padrão, ADR, usabilidade).
+3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente **com impacto técnico ou de usabilidade** (produto, regra, arquitetura, módulo, integração, padrão, ADR, fluxo/tela). Ajustes visuais finos e polimento de CSS **não** entram em docs — detalhe fica no Linear (workflow §15.5). A etapa `Document` avalia; **escrever** não é automático.
 4. Respeitar o papel solicitado; **não pular etapas**. Pares da mesma etapa (PA→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão.
 5. Não fazer deploy automático sem pedido explícito do usuário. Autorizar `Done` ou mergear PR **não** é autorização de deploy.
 6. **Gate de Avanço (workflow §15.2):** o usuário comanda no chat; o agente move o status. Não mover sem o comando correspondente — **exceto** `Backlog` → `Todo` após Product Analyst + Software Architect. Ao fim da etapa: aviso no chat e **parar**.

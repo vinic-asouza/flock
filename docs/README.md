@@ -1,8 +1,8 @@
 ---
 type: index
 titulo: Base de Conhecimento — Flock
-ultima_atualizacao: 2026-08-17
-versao: "1.3"
+ultima_atualizacao: 2026-08-19
+versao: "1.4"
 tags: [meta, índice, kb]
 ---
 
@@ -41,6 +41,8 @@ Os templates em [`00_meta/templates/`](00_meta/templates/) definem a **estrutura
 Decisões bloqueantes (escopo, aceite, risco de review/QA, etc.): perguntar no **chat do Cursor**, registrar no Linear, e só concluir a etapa depois da resposta — ver workflow §15.1.
 
 Avanço entre etapas (`Todo` → `In Progress` → `Review` → `Document` → `Done`) exige **comando no chat** (Gate de Avanço, workflow §15.2), exceto `Backlog` → `Todo` após Product Analyst e Software Architect. Ao autorizar `Done`, o agente pergunta se deseja mergear o PR (§15.3).
+
+A etapa `Document` **avalia** se `docs/` ou Mintlify precisam mudar. Ajustes visuais finos e polimento de CSS **não** entram na knowledge base — só impacto técnico ou de usabilidade reutilizável (workflow §15.5).
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-08-17
-versao: "1.5"
+ultima_atualizacao: 2026-08-19
+versao: "1.6"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -501,15 +501,15 @@ Ele deve:
    - Módulos
    - Integrações
    - Padrões
-4. Atualizar os arquivos `.md` relevantes no repositório quando necessário.
+4. Atualizar os arquivos `.md` relevantes no repositório **somente se** a mudança tiver impacto permanente (produto, regra, arquitetura, módulo, integração, padrão, ADR) — ver proporcionalidade (§15.5).
 5. **Commitar** se houver alteração em `docs/` (§15.4).
 6. Atualizar a Issue no Linear com:
-   - Documentações revisadas
-   - Documentações alteradas
-   - Justificativa caso nenhuma alteração seja necessária
+   - Resultado (atualizado / nenhuma alteração)
+   - Justificativa curta
+   - Lista de arquivos **alterados** (não inventariar cada ajuste fino de UI)
 7. Fazer handoff para o Documentation Writer (mesma etapa).
 
-O Technical Writer não deve criar documentação temporária por issue.
+O Technical Writer não deve criar documentação temporária por issue. A etapa `Document` é obrigatória; **escrever** em `docs/` não é.
 
 O Technical Writer **não altera** o status da Issue para `In Progress`. Preserva `Document` (§11.1). **Não** move para `Done`.
 
@@ -522,20 +522,13 @@ O Documentation Writer é responsável pela documentação de usabilidade hosped
 Ele deve:
 
 1. Ler a Issue no Linear.
-2. Avaliar se houve mudança que afeta o usuário final:
-   - Novo fluxo
-   - Nova tela
-   - Mudança de comportamento
-   - Nova configuração
-   - Alteração em limites ou planos
-   - Mudança de mensagens ou navegação
-3. Consultar a documentação atual no Mintlify via MCP, quando disponível.
-4. Atualizar a documentação de usabilidade no Mintlify, se necessário (fluxo Mintlify / PR próprio; não inventar commit neste repositório se a mudança não for aqui).
+2. Avaliar se o usuário final precisa **aprender, encontrar ou fazer algo diferente** (§15.5). Ajuste visual fino (layout, alinhamento, truncate, empilhamento de elementos já descritos) **não** justifica atualizar Mintlify.
+3. Consultar a documentação atual no Mintlify via MCP, quando disponível — só para verificar se alguma página **fica incorreta**.
+4. Atualizar a documentação de usabilidade no Mintlify **somente se necessário** (fluxo Mintlify / PR próprio; não inventar commit neste repositório se a mudança não for aqui).
 5. Atualizar a Issue no Linear com:
-   - Páginas revisadas
-   - Páginas alteradas
-   - Links da documentação atualizada
-   - Justificativa caso nenhuma atualização seja necessária
+   - Resultado (atualizado / nenhuma alteração)
+   - Justificativa curta
+   - Páginas **alteradas** e links (omitir inventário de polimento visual)
 
 O Documentation Writer **não altera** o status da Issue para `In Progress` (abrir PR Mintlify também não justifica). Preserva `Document` (§11.1). **Não** move para `Done`.
 
@@ -577,7 +570,7 @@ O deploy é um processo manual e **não possui status próprio** no Linear.
 - Passar `state` no MCP com tipo genérico (`started`) em vez do nome exato do status.
 - Ignorar refinamentos já feitos por agentes anteriores.
 - Implementar fora do escopo refinado sem sinalizar.
-- Atualizar documentação permanente sem necessidade real.
+- Atualizar documentação permanente sem necessidade real (incluindo ajustes visuais finos — §15.5).
 - Fazer deploy automaticamente.
 - Mergear PR automaticamente ao mover para `Done`.
 - Inventar decisão de produto, arquitetura, aceite, merge ou release no lugar do usuário.
@@ -748,6 +741,35 @@ Regras:
 
 ---
 
+## 15.5 Proporcionalidade documental (ajustes finos)
+
+A etapa `Document` é **obrigatória** (Gate de Avanço): Technical Writer e Documentation Writer **avaliam**. **Escrever** em `docs/` ou no Mintlify **não** é automático.
+
+### Quando atualizar
+
+Atualize documentação permanente somente se **pelo menos um** for verdadeiro:
+
+1. A documentação existente **fica incorreta** sem a mudança (contrato, regra, jornada, permissão, limite, API, env var, módulo, fluxo).
+2. O usuário final precisa **aprender, encontrar ou fazer algo diferente**.
+3. Há decisão técnica/arquitetural **reutilizável** (padrão, ADR, convenção permanente).
+
+### Quando não atualizar
+
+O detalhe permanece **só no Linear**. Não atualize `docs/` nem Mintlify para:
+
+- Ajuste visual fino: alinhamento, espaçamento, truncate, z-index, touch target, empilhamento de elementos já descritos.
+- Polimento de CSS/responsividade sem novo fluxo, tela, navegação ou comportamento contratual.
+- Rearranjo de UI de elementos **já documentados** (ex.: logo e nome da igreja no header) se jornada, ações e regras continuam iguais.
+- Bugfix que faz o comportamento já documentado funcionar.
+- Nitpick de review sem alterar significado de produto.
+
+### Relato
+
+- **Linear:** resultado + justificativa curta. Listar só arquivos/páginas **alterados**. Não inventariar polimento visual nem listar docs “por cobertura”.
+- **Chat:** dizer se houve atualização. **Não** relatar item a item ajustes finos de UI. Só detalhar o que realmente mudou em `docs/` ou Mintlify (impacto técnico ou de usabilidade).
+
+---
+
 ## 16. Critérios para Mudar Status no Linear
 
 Além das pré-condições abaixo, toda transição **exceto** `Backlog` → `Todo` exige o **comando de avanço no chat** (§15.2).
@@ -819,7 +841,7 @@ Permitido quando:
 - O usuário **comandou no chat** concluir / mover para `Done`.
 - Technical Writer avaliou documentação interna.
 - Documentation Writer avaliou documentação de usabilidade, se aplicável.
-- Alterações necessárias foram feitas.
+- Alterações necessárias foram feitas **ou** a avaliação registrou que nenhuma atualização permanente era necessária (§15.5).
 - Caso nada tenha sido alterado, a justificativa foi registrada no Linear.
 - A Issue ainda está (ou foi restaurada) em `Document` antes da transição para `Done`.
 - A pergunta de merge (§15.3) foi feita (resposta sim, não, ou “sem PR”) e registrada no Linear.
@@ -955,7 +977,7 @@ Atualize a Issue no Linear via MCP com sua análise estruturada.
 
 ### 20.3 Nenhum agente deve criar arquivos temporários por Issue
 
-Documentações permanentes só entram no repositório quando:
+Documentações permanentes só entram no repositório quando houver **impacto técnico ou de usabilidade reutilizável**:
 
 - Atualizam base de conhecimento
 - Atualizam módulos
@@ -963,6 +985,9 @@ Documentações permanentes só entram no repositório quando:
 - Atualizam arquitetura
 - Atualizam padrões
 - Atualizam integrações
+- Atualizam ADRs
+
+Ajustes visuais finos e polimento de CSS **não** entram (workflow §15.5). A avaliação na etapa `Document` continua obrigatória.
 
 ### 20.4 Cada agente deve ter um bloco de “Atualização no Linear”
 
@@ -1018,3 +1043,16 @@ Todo MDC deve instruir o agente a:
 ```
 
 Detalhe: workflow §§15.2–15.4.
+
+### 20.8 Proporcionalidade documental nos MDCs de Writers
+
+Os MDCs de Technical Writer e Documentation Writer devem instruir:
+
+```md
+- Avaliar na etapa Document é obrigatório; escrever em docs/ ou Mintlify não é.
+- Atualizar só se a docs existente ficar incorreta, o usuário precisar fazer algo diferente, ou houver padrão/ADR permanente.
+- Não documentar ajuste visual fino, polimento de CSS nem rearranjo de elementos já descritos.
+- No Linear e no chat: resultado + justificativa curta; não inventariar polimento.
+```
+
+Detalhe: workflow §15.5.
