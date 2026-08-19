@@ -47,3 +47,6 @@ temp/
 # Outros
 .vercel
 .next
+
+# Credenciais de teste locais (não versionar)
+.cursor/rules/test-credentials.mdc
