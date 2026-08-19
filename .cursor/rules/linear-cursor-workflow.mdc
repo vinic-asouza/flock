@@ -1,5 +1,5 @@
 ---
-description: "Workflow Linear + Cursor: Linear é fonte de verdade; docs/ só para KB permanente; orquestra etapas por status + comando no chat (Gate de Avanço); decisões bloqueantes no chat (Gate de Decisão); commit por passo; merge de PR só com confirmação ao Done. Aplica-se a toda sessão."
+description: "Workflow Linear + Cursor: Linear é fonte de verdade; docs/ só para KB permanente; orquestra etapas por status + comando no chat (Gate de Avanço); decisões bloqueantes no chat (Gate de Decisão); PR abre em In Progress; commit por passo; merge de PR só com confirmação ao Done. Aplica-se a toda sessão."
 alwaysApply: true
 ---
 
@@ -25,14 +25,14 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 
 1. Com Issue associada: **ler e atualizar no Linear via MCP** — não depender só do chat.
 2. **Nunca** criar arquivos temporários por Issue (`refinamento-*`, `qa-report-*`, `analise-tecnica-*`, pastas `docs/refinamentos/`, etc.).
-3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente (produto, regra, arquitetura, módulo, integração, padrão, ADR, usabilidade).
+3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente **com impacto técnico ou de usabilidade** (produto, regra, arquitetura, módulo, integração, padrão, ADR, fluxo/tela). Ajustes visuais finos e polimento de CSS **não** entram em docs — detalhe fica no Linear (workflow §15.5). A etapa `Document` avalia; **escrever** não é automático.
 4. Respeitar o papel solicitado; **não pular etapas**. Pares da mesma etapa (PA→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão.
 5. Não fazer deploy automático sem pedido explícito do usuário. Autorizar `Done` ou mergear PR **não** é autorização de deploy.
 6. **Gate de Avanço (workflow §15.2):** o usuário comanda no chat; o agente move o status. Não mover sem o comando correspondente — **exceto** `Backlog` → `Todo` após Product Analyst + Software Architect. Ao fim da etapa: aviso no chat e **parar**.
 7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir a etapa, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **só então** conclua. Não invente a decisão; não feche a etapa com perguntas bloqueantes só no Linear.
-8. **Status em Document:** a Issue **permanece em `Document`** durante Technical/Documentation Writer. É proibido regredir para `In Progress`. Em `save_issue`, omitir `state` (exceto restaurar `Document` ou concluir para `Done`); nunca usar tipo genérico `started`. Se detectar regressão (ex.: automação Git/PR), restaurar `Document` imediatamente (workflow §11.1).
-9. **Commit por passo (workflow §15.4):** cada atuação que alterar código ou `docs/` permanentes gera **um commit** ao final daquele papel (BE, FE, correção pós-review, Technical Writer).
-10. **Gate de merge ao `Done` (workflow §15.3):** ao autorizar `Done`, perguntar no chat se deseja mergear o PR. Só mergear com “sim” inequívoco. Sem PR: informar e não perguntar.
+8. **Status vs GitHub (workflow §15.6 / §11.1):** abrir o **primeiro** PR da Issue em `In Progress` (um por Issue; depois só push). Não abrir o primeiro PR em `Review`, `Document` ou `Done`. Em `save_issue`, omitir `state` (exceto restaurar o status da etapa ou concluir para `Done`); nunca usar tipo genérico `started`. Se a automação Git/PR regressar o status, restaurar o **nome exato** da etapa imediatamente (`In Progress` / `Review` / `Document` / `Done`).
+9. **Commit por passo (workflow §15.4):** cada atuação que alterar código ou `docs/` permanentes gera **um commit** ao final daquele papel (BE, FE, correção pós-review, Technical Writer), seguido de **push**.
+10. **Gate de merge ao `Done` (workflow §15.3):** o PR já deve estar aberto. Ao autorizar `Done`, perguntar se deseja **mergear**. Só mergear com “sim” inequívoco. Sem PR: informar o desvio; não abrir PR em `Done` salvo pedido explícito + restaurar `Done`.
 
 O nome do status de review no Linear é **`Review`** (não “In Review”).
 

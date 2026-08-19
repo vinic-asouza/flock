@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-08-17
-versao: "1.5"
+ultima_atualizacao: 2026-08-19
+versao: "1.7"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -119,6 +119,7 @@ Notas:
 - `Todo` significa: Issue pronta, **aguardando comando no chat** para iniciar execução.
 - Em `Review`, atuam **Tech Lead** (code review) e **QA Analyst** (validação funcional), nesta ordem, na mesma autorização de review.
 - `Document` vem **antes** de `Done`. Writers só entram com comando no chat.
+- O PR da Issue abre em `In Progress` (§15.6). A integração GitHub do Linear, ao vincular um PR, tende a mover a Issue para `In Progress`; por isso o primeiro PR **não** se abre em `Review`, `Document` ou `Done`.
 - Não existe status `Released`. Publicação em produção é processo manual; se a Issue já está publicada, observar a **marcação** na própria Issue.
 
 Quem move o status: o **agente**, quando a transição for permitida pelo Gate de Avanço (§15.2). O usuário **comanda no chat**; não se espera que ele mova o status no Linear primeiro.
@@ -132,8 +133,8 @@ Quem move o status: o **agente**, quando a transição for permitida pelo Gate d
 | Backlog | Product Analyst | Refinar valor de produto, escopo, critérios de aceite, regras de negócio e impactos |
 | Backlog | Software Architect | Refinar análise técnica, riscos, arquitetura, dependências e abordagem |
 | Todo | — | Issue pronta; aguarda comando no chat para execução |
-| In Progress | Backend Engineer | Implementar APIs, regras de negócio, integrações e lógica backend (commit ao final do passo) |
-| In Progress | Frontend Engineer | Implementar interface, UX/UI e integrações com APIs (commit ao final do passo) |
+| In Progress | Backend Engineer | Implementar APIs, regras de negócio, integrações e lógica backend (commit + push; abrir PR se ainda não houver — §15.6) |
+| In Progress | Frontend Engineer | Implementar interface, UX/UI e integrações com APIs (commit + push; abrir PR se ainda não houver — §15.6) |
 | Review (Code Review) | Tech Lead | Revisar código, arquitetura, padrões, segurança e performance |
 | Review (QA) | QA Analyst | Validar requisitos, fluxos, edge cases e regressões |
 | Document | Technical Writer | Atualizar documentação técnica interna quando necessário (commit se alterar `docs/`) |
@@ -319,11 +320,14 @@ O Backend Engineer deve:
    - Integrações
    - Padrões de API, banco e testes
 4. Implementar o backend necessário.
-5. **Commitar** as alterações deste passo (§15.4).
-6. Atualizar a Issue no Linear com:
+5. **Commitar** as alterações deste passo (§15.4) e **push** na feature branch.
+6. Garantir o PR da Issue (§15.6): abrir se ainda não existir; se existir, o push já atualiza.
+7. Relê o status no Linear; se a automação GitHub tiver alterado, restaurar `In Progress`.
+8. Atualizar a Issue no Linear com:
    - O que foi implementado
    - Arquivos principais alterados
    - Testes adicionados ou atualizados
+   - URL do PR
    - Pontos pendentes ou decisões tomadas
 
 Se ainda houver frontend na mesma autorização, fazer handoff para o Frontend Engineer (sem gate de chat).
@@ -341,12 +345,15 @@ O Frontend Engineer deve:
    - Padrões de código
    - Padrões de API
 4. Implementar a interface necessária.
-5. **Commitar** as alterações deste passo (§15.4).
-6. Atualizar a Issue no Linear com:
+5. **Commitar** as alterações deste passo (§15.4) e **push** na feature branch.
+6. Garantir o PR da Issue (§15.6): abrir se ainda não existir; se existir, o push já atualiza.
+7. Relê o status no Linear; se a automação GitHub tiver alterado, restaurar `In Progress`.
+8. Atualizar a Issue no Linear com:
    - O que foi implementado
    - Telas/componentes alterados
    - Integrações feitas
    - Estados tratados
+   - URL do PR
    - Pontos pendentes ou decisões tomadas
 
 ### 9.4 Saída da execução
@@ -354,8 +361,9 @@ O Frontend Engineer deve:
 Após os Engineers concluírem (ou o único papel aplicável):
 
 1. A Issue **permanece** em `In Progress`.
-2. Emitir aviso no chat para o usuário fazer **verificação manual** e eventuais apontamentos.
-3. **Parar.** Não acionar Tech Lead/QA nem mover para `Review`.
+2. A feature branch está no remoto e há **um PR aberto** da Issue (§15.6). Incluir a URL no aviso.
+3. Emitir aviso no chat para o usuário fazer **verificação manual** e eventuais apontamentos.
+4. **Parar.** Não acionar Tech Lead/QA nem mover para `Review`. Não mergear o PR.
 
 O usuário pode então pedir correções aos Engineers (ainda em `In Progress`) ou comandar o início do review.
 
@@ -427,7 +435,7 @@ Após Tech Lead e QA:
    - Seguir para documentação
 4. **Parar.** Não mover status.
 
-Se o usuário mandar voltar ajustes: mover para `In Progress`, acionar os Engineers, **commit** das correções, aviso no chat. A revalidação (Review de novo) só ocorre com novo comando.
+Se o usuário mandar voltar ajustes: mover para `In Progress`, acionar os Engineers, **commit + push** das correções no **mesmo** PR (§15.6), aviso no chat. A revalidação (Review de novo) só ocorre com novo comando.
 
 ---
 
@@ -456,7 +464,8 @@ Enquanto a Issue estiver na etapa `Document`:
 - Atualizar a Issue (descrição, comentário, anexos) **não** autoriza mudar o status.
 - No MCP `save_issue`: **omitir** o campo `state`, salvo correção explícita de regressão (voltar para `Document`) ou conclusão autorizada para `Done`.
 - **Nunca** passar `state` pelo tipo genérico (`started`, `unstarted`, etc.) — o Linear pode resolver para o status padrão da categoria (em geral `In Progress`). Sempre usar o **nome exato**: `Document`, `Done`, etc.
-- Se ao ler a Issue o status tiver regredido para `In Progress` (ex.: automação Git/PR) **durante** Document, o agente deve **restaurar para `Document`** imediatamente e registrar o fato no comentário/handoff.
+- Se ao ler a Issue o status tiver regredido para `In Progress` (ex.: automação Git/PR) **durante** Document, o agente deve **restaurar para `Document`** imediatamente e registrar o fato no comentário/handoff. Ver também §15.6.
+- **Não** abrir o primeiro PR da Issue nesta etapa. Se o Technical Writer commitar, fazer **push no PR já aberto**.
 
 Única transição válida a partir de `Document`: `Document` → `Done` (comando no chat + critérios do §16).
 
@@ -478,9 +487,12 @@ Após Technical Writer e Documentation Writer:
 Ao receber o comando (critérios do §16 cumpridos):
 
 1. Mover a Issue para `Done`.
-2. Aplicar o **Gate de merge** (§15.3): perguntar no chat se o usuário deseja o merge do PR.
-3. Só mergear se a resposta for um “sim” inequívoco.
-4. Deploy continua **separado** e só ocorre com pedido explícito (§14).
+2. Relê o status; se a automação GitHub tiver saído de `Done`, restaurar `Done` (§15.6).
+3. Aplicar o **Gate de merge** (§15.3): o PR **já deve estar aberto** desde `In Progress`. Perguntar no chat se o usuário deseja o **merge**.
+4. Só mergear se a resposta for um “sim” inequívoco.
+5. Deploy continua **separado** e só ocorre com pedido explícito (§14).
+
+Não abrir o primeiro PR da Issue em `Done` (a automação GitHub regressaria para `In Progress`), salvo pedido explícito no chat — e aí restaurar `Done` na hora.
 
 `Done` é o **estado final** do fluxo. Não existe status `Released`.
 
@@ -501,15 +513,15 @@ Ele deve:
    - Módulos
    - Integrações
    - Padrões
-4. Atualizar os arquivos `.md` relevantes no repositório quando necessário.
-5. **Commitar** se houver alteração em `docs/` (§15.4).
+4. Atualizar os arquivos `.md` relevantes no repositório **somente se** a mudança tiver impacto permanente (produto, regra, arquitetura, módulo, integração, padrão, ADR) — ver proporcionalidade (§15.5).
+5. **Commitar** se houver alteração em `docs/` (§15.4) e **push** no PR já aberto da Issue (§15.6). Não abrir PR novo.
 6. Atualizar a Issue no Linear com:
-   - Documentações revisadas
-   - Documentações alteradas
-   - Justificativa caso nenhuma alteração seja necessária
+   - Resultado (atualizado / nenhuma alteração)
+   - Justificativa curta
+   - Lista de arquivos **alterados** (não inventariar cada ajuste fino de UI)
 7. Fazer handoff para o Documentation Writer (mesma etapa).
 
-O Technical Writer não deve criar documentação temporária por issue.
+O Technical Writer não deve criar documentação temporária por issue. A etapa `Document` é obrigatória; **escrever** em `docs/` não é.
 
 O Technical Writer **não altera** o status da Issue para `In Progress`. Preserva `Document` (§11.1). **Não** move para `Done`.
 
@@ -522,20 +534,13 @@ O Documentation Writer é responsável pela documentação de usabilidade hosped
 Ele deve:
 
 1. Ler a Issue no Linear.
-2. Avaliar se houve mudança que afeta o usuário final:
-   - Novo fluxo
-   - Nova tela
-   - Mudança de comportamento
-   - Nova configuração
-   - Alteração em limites ou planos
-   - Mudança de mensagens ou navegação
-3. Consultar a documentação atual no Mintlify via MCP, quando disponível.
-4. Atualizar a documentação de usabilidade no Mintlify, se necessário (fluxo Mintlify / PR próprio; não inventar commit neste repositório se a mudança não for aqui).
+2. Avaliar se o usuário final precisa **aprender, encontrar ou fazer algo diferente** (§15.5). Ajuste visual fino (layout, alinhamento, truncate, empilhamento de elementos já descritos) **não** justifica atualizar Mintlify.
+3. Consultar a documentação atual no Mintlify via MCP, quando disponível — só para verificar se alguma página **fica incorreta**.
+4. Atualizar a documentação de usabilidade no Mintlify **somente se necessário** (fluxo Mintlify / PR próprio; não inventar commit neste repositório se a mudança não for aqui).
 5. Atualizar a Issue no Linear com:
-   - Páginas revisadas
-   - Páginas alteradas
-   - Links da documentação atualizada
-   - Justificativa caso nenhuma atualização seja necessária
+   - Resultado (atualizado / nenhuma alteração)
+   - Justificativa curta
+   - Páginas **alteradas** e links (omitir inventário de polimento visual)
 
 O Documentation Writer **não altera** o status da Issue para `In Progress` (abrir PR Mintlify também não justifica). Preserva `Document` (§11.1). **Não** move para `Done`.
 
@@ -573,11 +578,11 @@ O deploy é um processo manual e **não possui status próprio** no Linear.
 - Duplicar histórico do Linear em arquivos `.md`.
 - Mover uma Issue de etapa sem comando de avanço (exceto `Backlog` → `Todo` após PA + SA).
 - Pular etapa ou acionar o próximo papel de **outra** etapa na mesma sessão.
-- **Regredir** Issue de `Document` (ou `Done`) para `In Progress` — nem por “começar a trabalhar”, nem ao atualizar descrição/comentário, nem por efeito colateral de PR/docs.
+- **Regredir** Issue de `Review`, `Document` ou `Done` para `In Progress` — nem por “começar a trabalhar”, nem ao atualizar descrição/comentário, nem por efeito colateral de PR/docs (restaurar na hora — §15.6).
 - Passar `state` no MCP com tipo genérico (`started`) em vez do nome exato do status.
 - Ignorar refinamentos já feitos por agentes anteriores.
 - Implementar fora do escopo refinado sem sinalizar.
-- Atualizar documentação permanente sem necessidade real.
+- Atualizar documentação permanente sem necessidade real (incluindo ajustes visuais finos — §15.5).
 - Fazer deploy automaticamente.
 - Mergear PR automaticamente ao mover para `Done`.
 - Inventar decisão de produto, arquitetura, aceite, merge ou release no lugar do usuário.
@@ -704,8 +709,8 @@ Handoff no Linear, ao fim da etapa: **Próximo agente recomendado** = usuário n
 
 Quando o usuário autorizar concluir / mover para `Done`, o agente **não mergeia sozinho**.
 
-1. Mover a Issue para `Done` (se os critérios do §16 forem cumpridos).
-2. Se houver PR aberto da Issue, **perguntar no chat**:
+1. Mover a Issue para `Done` (se os critérios do §16 forem cumpridos). Restaurar `Done` se a automação GitHub tiver regressado o status.
+2. O PR **já deve estar aberto** desde `In Progress` (§15.6). **Perguntar no chat**:
 
 ```markdown
 ## Conclusão — Issue [ID]
@@ -723,7 +728,7 @@ Deploy continua separado e só ocorre se você pedir explicitamente.
 
 3. Só mergear com “sim” (ou equivalente inequívoco).
 4. “Não”, silêncio ou resposta ambígua: Issue em `Done`, PR permanece aberto.
-5. Se não houver PR: informar no aviso e **não** perguntar merge.
+5. Se não houver PR: informar o **desvio** (Engineers deveriam ter aberto em `In Progress`) e **não** perguntar merge. **Não** abrir o PR nesta etapa, salvo pedido explícito no chat — e então abrir, reler e restaurar `Done` (§15.6).
 6. Registrar no Linear a resposta (sim / não / sem PR).
 
 Autorizar `Done` e recusar o merge é válido. Autorizar `Done` e confirmar merge também é válido. Nenhum dos dois autoriza deploy.
@@ -744,7 +749,68 @@ Regras:
 - Seguir [`docs/05_padroes/padroes-de-git.md`](../05_padroes/padroes-de-git.md) e Conventional Commits.
 - Não agrupar passos de papéis diferentes no mesmo commit (BE e FE = commits separados).
 - Documentation Writer no Mintlify segue o fluxo Mintlify (PR/save); não inventar commit neste repositório se a mudança não for aqui.
-- Push da feature branch durante a execução pode ocorrer; **merge**, conclusão (`Done`) e **deploy** exigem comando no chat.
+- Push da feature branch após cada commit de código/`docs/`.
+- Abrir o **primeiro** PR da Issue ao final da atuação dos Engineers em `In Progress` (§15.6).
+- **Merge**, conclusão (`Done`) e **deploy** exigem comando no chat.
+
+---
+
+## 15.5 Proporcionalidade documental (ajustes finos)
+
+A etapa `Document` é **obrigatória** (Gate de Avanço): Technical Writer e Documentation Writer **avaliam**. **Escrever** em `docs/` ou no Mintlify **não** é automático.
+
+### Quando atualizar
+
+Atualize documentação permanente somente se **pelo menos um** for verdadeiro:
+
+1. A documentação existente **fica incorreta** sem a mudança (contrato, regra, jornada, permissão, limite, API, env var, módulo, fluxo).
+2. O usuário final precisa **aprender, encontrar ou fazer algo diferente**.
+3. Há decisão técnica/arquitetural **reutilizável** (padrão, ADR, convenção permanente).
+
+### Quando não atualizar
+
+O detalhe permanece **só no Linear**. Não atualize `docs/` nem Mintlify para:
+
+- Ajuste visual fino: alinhamento, espaçamento, truncate, z-index, touch target, empilhamento de elementos já descritos.
+- Polimento de CSS/responsividade sem novo fluxo, tela, navegação ou comportamento contratual.
+- Rearranjo de UI de elementos **já documentados** (ex.: logo e nome da igreja no header) se jornada, ações e regras continuam iguais.
+- Bugfix que faz o comportamento já documentado funcionar.
+- Nitpick de review sem alterar significado de produto.
+
+### Relato
+
+- **Linear:** resultado + justificativa curta. Listar só arquivos/páginas **alterados**. Não inventariar polimento visual nem listar docs “por cobertura”.
+- **Chat:** dizer se houve atualização. **Não** relatar item a item ajustes finos de UI. Só detalhar o que realmente mudou em `docs/` ou Mintlify (impacto técnico ou de usabilidade).
+
+---
+
+## 15.6 PR da Issue (abrir em `In Progress`)
+
+A integração GitHub do Linear, ao **abrir ou vincular** um PR à Issue, move o status para o *started* padrão do time — no Flock, `In Progress`. Push em um PR **já vinculado** em geral não dispara de novo. Abrir o **primeiro** PR em `Review`, `Document` ou `Done` **regressa** indevidamente para `In Progress`.
+
+Abrir PR **não** é merge e **não** é deploy. Não autoriza mudar a etapa Linear.
+
+### Quando abrir e quando só atualizar
+
+- **Abrir** o PR (`gh pr create`) ao final da atuação dos Engineers em `In Progress`, depois de commit + push. **Um PR por Issue.**
+- **Atualizar** = `git push` na mesma branch. Não criar segundo PR.
+- “Voltar ajustes” (Engineers de novo em `In Progress`): commit + push no PR existente; abrir só se ainda não houver PR (desvio).
+- Technical Writer, se commitar em `Document`: **push no PR já aberto**. Não abrir PR novo nesta etapa.
+- **Não** abrir o primeiro PR da Issue em `Review`, `Document` ou `Done`.
+
+### Depois de `git push` ou `gh pr create`
+
+1. Relê a Issue no Linear (`get_issue`).
+2. Se o status saiu do esperado da etapa, restaurar o **nome exato** e registrar no Linear:
+   - execução → `In Progress`
+   - review → `Review`
+   - documentação → `Document`
+   - já concluída → `Done`
+3. Nunca passar `state: "started"` (nem outro tipo genérico).
+
+### Em `Done`
+
+O PR já está aberto e atualizado. O Gate §15.3 pergunta só o **merge**.
 
 ---
 
@@ -819,7 +885,7 @@ Permitido quando:
 - O usuário **comandou no chat** concluir / mover para `Done`.
 - Technical Writer avaliou documentação interna.
 - Documentation Writer avaliou documentação de usabilidade, se aplicável.
-- Alterações necessárias foram feitas.
+- Alterações necessárias foram feitas **ou** a avaliação registrou que nenhuma atualização permanente era necessária (§15.5).
 - Caso nada tenha sido alterado, a justificativa foi registrada no Linear.
 - A Issue ainda está (ou foi restaurada) em `Document` antes da transição para `Done`.
 - A pergunta de merge (§15.3) foi feita (resposta sim, não, ou “sem PR”) e registrada no Linear.
@@ -887,20 +953,20 @@ Todo
 In Progress
 → [comando: iniciar execução] agente move Todo → In Progress
 → Backend Engineer / Frontend Engineer implementam
-→ commit por passo de código
+→ commit + push por passo; abrir PR se ainda não houver (§15.6)
 → agentes atualizam Issue no Linear
-→ aviso no chat (verificação manual) e PARA
+→ aviso no chat (verificação manual + URL do PR) e PARA
 
 Review
 → [comando: iniciar review] agente move In Progress → Review
 → Tech Lead faz code review
 → QA Analyst faz validação
 → aviso no chat com apontamentos do Linear e PARA
-→ [comando: voltar ajustes] → In Progress → Engineers → commit → aviso
+→ [comando: voltar ajustes] → In Progress → Engineers → commit + push no mesmo PR → aviso
 → [comando: seguir para documentação] → Document
 
 Document
-→ Technical Writer atualiza docs internas se necessário (commit se alterar docs/)
+→ Technical Writer atualiza docs internas se necessário (commit + push no PR existente)
 → Documentation Writer atualiza Mintlify se necessário
 → aviso no chat e PARA
 
@@ -955,7 +1021,7 @@ Atualize a Issue no Linear via MCP com sua análise estruturada.
 
 ### 20.3 Nenhum agente deve criar arquivos temporários por Issue
 
-Documentações permanentes só entram no repositório quando:
+Documentações permanentes só entram no repositório quando houver **impacto técnico ou de usabilidade reutilizável**:
 
 - Atualizam base de conhecimento
 - Atualizam módulos
@@ -963,6 +1029,9 @@ Documentações permanentes só entram no repositório quando:
 - Atualizam arquitetura
 - Atualizam padrões
 - Atualizam integrações
+- Atualizam ADRs
+
+Ajustes visuais finos e polimento de CSS **não** entram (workflow §15.5). A avaliação na etapa `Document` continua obrigatória.
 
 ### 20.4 Cada agente deve ter um bloco de “Atualização no Linear”
 
@@ -1014,7 +1083,22 @@ Todo MDC deve instruir o agente a:
 - Mover status só com comando de avanço (exceto Backlog → Todo após PA + SA).
 - Ao fim da etapa: aviso no chat e parar.
 - Commitar cada passo que alterar código ou docs/.
-- Ao autorizar Done: perguntar merge do PR; só mergear com sim.
+- Push após o commit. Engineers: abrir o PR em In Progress se ainda não houver (um por Issue). Writers: só push no PR existente.
+- Depois de push/PR: reler o Linear; restaurar o status da etapa se a automação GitHub tiver regressado.
+- Ao autorizar Done: perguntar merge do PR; só mergear com sim. Não abrir o primeiro PR em Done.
 ```
 
-Detalhe: workflow §§15.2–15.4.
+Detalhe: workflow §§15.2–15.4 e §15.6.
+
+### 20.8 Proporcionalidade documental nos MDCs de Writers
+
+Os MDCs de Technical Writer e Documentation Writer devem instruir:
+
+```md
+- Avaliar na etapa Document é obrigatório; escrever em docs/ ou Mintlify não é.
+- Atualizar só se a docs existente ficar incorreta, o usuário precisar fazer algo diferente, ou houver padrão/ADR permanente.
+- Não documentar ajuste visual fino, polimento de CSS nem rearranjo de elementos já descritos.
+- No Linear e no chat: resultado + justificativa curta; não inventariar polimento.
+```
+
+Detalhe: workflow §15.5.

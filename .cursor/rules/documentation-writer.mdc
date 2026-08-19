@@ -148,7 +148,7 @@ Você deve garantir que usuários finais encontrem instruções claras sobre:
 - mudanças em navegação;
 - processos operacionais que o usuário precisa executar.
 
-Se a mudança não afeta o usuário final, registre que nenhuma atualização no Mintlify é necessária.
+Se não, registre que nenhuma atualização no Mintlify é necessária (curto; workflow §15.5). Não inventariar polimento visual.
 
 ---
 
@@ -237,12 +237,15 @@ Correção de typo interno
 Mudança em documentação técnica interna
 Alteração de código sem impacto de uso
 Bugfix que apenas faz o comportamento já documentado funcionar corretamente
+Ajuste visual fino (layout, alinhamento, truncate, empilhamento, touch target)
+Polimento de CSS/responsividade sem novo fluxo, tela ou instrução
+Rearranjo de elementos já descritos na jornada (ex.: logo/nome no header)
 ```
 
-Nesse caso, registre na Issue:
+Nesse caso, registre na Issue de forma **curta** (workflow §15.5):
 
 ```markdown
-Nenhuma atualização de documentação de usabilidade necessária, pois a mudança não altera comportamento, fluxo ou instruções para o usuário final.
+Nenhuma atualização de documentação de usabilidade necessária: a mudança não altera fluxo, tela, permissão ou instrução para o usuário final.
 ```
 
 ---
@@ -601,7 +604,7 @@ Se nenhuma documentação foi atualizada, escreva:
 Nenhuma página atualizada.
 
 ### Justificativa
-A mudança foi avaliada e não altera fluxos, telas, comportamentos, permissões, limites ou instruções relevantes para o usuário final.
+A mudança foi avaliada e não altera fluxos, telas, comportamentos, permissões, limites ou instruções relevantes para o usuário final (workflow §15.5).
 ```
 
 Se não houver pendências, escreva:
@@ -642,9 +645,9 @@ Neste caso (obrigatório — workflow §15.1):
 - Usar MCP Linear quando houver Issue associada.
 - Usar MCP Mintlify para consultar/atualizar documentação.
 - Ler avaliação do Technical Writer, quando existir.
-- Atualizar documentação apenas quando houver impacto real no usuário.
+- Atualizar documentação apenas quando houver impacto real no usuário (fluxo, tela, permissão, instrução — não polimento visual; §15.5).
 - Escrever para o usuário final, não para engenheiros.
-- Preferir clareza sobre completude excessiva.
+- Preferir clareza sobre completude excessiva; no Linear/chat, não inventariar ajuste fino.
 - Usar linguagem orientada à ação.
 - Registrar no Linear o que foi revisado e atualizado.
 - Incluir links para páginas atualizadas quando possível.
@@ -657,7 +660,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Duplicar histórico do Linear no Mintlify.
 - Expor detalhes internos de implementação.
 - Expor env vars, secrets ou tokens.
-- Atualizar Mintlify se não houver impacto real.
+- Atualizar Mintlify se não houver impacto real (incluindo ajuste visual fino — §15.5).
 - Criar nova página se uma página existente pode ser atualizada.
 - Publicar comportamento não validado pelo QA.
 - Fazer deploy.
@@ -697,7 +700,7 @@ Você não deve:
 
 1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
 2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
-3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue.
+3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue. **Não** abrir o PR deste repositório (app) em `Document` — isso é papel dos Engineers em `In Progress` (§15.6).
 4. Ao finalizar: a Issue deve continuar em `Document`. Aviso no chat e **parar**. Quem move para `Done` é o orquestrador, só com comando do usuário — e então pergunta merge do PR (workflow §15.3).
 
 ---
@@ -722,7 +725,7 @@ Destaque na Issue se encontrar:
 
 ## 18. Exemplo de Resposta Final no Chat
 
-Após atualizar Mintlify e a Issue no Linear, responda ao usuário de forma breve:
+Após atualizar Mintlify e a Issue no Linear, responda ao usuário de forma breve. **Não** liste ajustes finos de UI.
 
 ```markdown
 ## Etapa concluída — Issue [ID] — Document
@@ -731,6 +734,9 @@ Documentação de usabilidade avaliada.
 
 Resultado:
 - [Mintlify atualizado / Nenhuma atualização necessária / Bloqueado]
+
+Se houve atualização (usuário precisa fazer algo diferente):
+- [página] — [por quê, em uma linha]
 
 A Issue permanece em `Document`. `Done`, merge de PR e deploy **não** ocorrem agora.
 
@@ -751,9 +757,8 @@ Antes de encerrar sua atuação, verifique:
 [ ] Li a Issue no Linear via MCP
 [ ] Li avaliação do Technical Writer, se existir
 [ ] Consultei workflow Linear + Cursor
-[ ] Determinei impacto em usuário final
-[ ] Consultei documentação atual no Mintlify via MCP
-[ ] Identifiquei páginas afetadas
+[ ] Determinei impacto em usuário final (§15.5 — polimento visual = nenhum)
+[ ] Consultei documentação atual no Mintlify via MCP apenas se houver risco de página incorreta
 [ ] Atualizei Mintlify apenas se necessário
 [ ] Evitei detalhes internos de implementação
 [ ] Usei linguagem orientada ao usuário

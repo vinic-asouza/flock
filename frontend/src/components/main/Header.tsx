@@ -88,39 +88,48 @@ export function Header() {
 
   const planType = user?.plan_type || memberLimit?.planType;
   const isFreePlan = planType === '100' || !planType;
+  const churchName = user?.name || 'Igreja';
 
   return (
     <>
-      <header className="min-h-14 shrink-0 bg-white border-b border-gray-200 px-3 sm:px-6 flex items-center justify-between gap-2 pt-[env(safe-area-inset-top)] min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
+      <header className="shrink-0 bg-white border-b border-gray-200 pt-[env(safe-area-inset-top)] min-w-0">
+        <div className="relative min-h-[4.5rem] md:min-h-14 px-3 sm:px-6 py-2 md:py-0 flex items-center justify-between gap-2 min-w-0">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="md:hidden inline-flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900 shrink-0"
+            className="relative z-10 md:hidden inline-flex items-center justify-center rounded-lg min-h-11 min-w-11 text-gray-600 hover:bg-gray-100 hover:text-gray-900 shrink-0"
             aria-label="Abrir menu de navegação"
           >
             <Menu size={22} />
           </button>
 
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            <FlockLogo size={30} className="text-primary shrink-0" />
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-base sm:text-lg font-semibold text-primary shrink-0">
-                Flock App
-              </span>
-              <span className="text-gray-300 hidden sm:inline">|</span>
-              <h1
-                className="text-sm font-normal text-gray-600 truncate max-w-[28vw] sm:max-w-[40vw] md:max-w-none"
-                title={user?.name}
-              >
-                {user?.name || 'Igreja'}
-              </h1>
+          <div className="pointer-events-none absolute inset-0 md:hidden flex flex-col items-center justify-center gap-0.5 overflow-hidden">
+            <div className="flex items-center justify-center gap-1.5">
+              <FlockLogo size={30} className="text-primary shrink-0" />
+              <span className="text-base font-semibold text-primary">Flock</span>
             </div>
+            <h1
+              className="max-w-[calc(100%-7rem)] sm:max-w-[12rem] min-w-0 px-1 text-sm font-normal text-gray-600 truncate text-center leading-tight"
+              title={churchName}
+            >
+              {churchName}
+            </h1>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0 min-w-0">
-          <ChurchSwitcher />
+          <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
+            <FlockLogo size={30} className="text-primary shrink-0" />
+            <span className="text-lg font-semibold text-primary shrink-0">Flock App</span>
+            <span className="text-gray-300">|</span>
+            <h1
+              className="text-sm font-normal text-gray-600 truncate min-w-0"
+              title={churchName}
+            >
+              {churchName}
+            </h1>
+          </div>
+
+          <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-4 min-w-0 shrink-0">
+            <ChurchSwitcher />
           {user?.subscription_status === 'past_due' && (
             <Link
               href="/settings?tab=payment"
@@ -204,7 +213,7 @@ export function Header() {
             </Link>
           )}
 
-          <div className="hidden sm:flex items-center gap-1 text-sm text-gray-600">
+          <div className="hidden md:flex items-center gap-1 text-sm text-gray-600">
             <User size={16} className="text-gray-600" />
             <div className="flex items-center gap-2">
               <span className="truncate max-w-48" title={session?.user?.email}>
@@ -238,11 +247,12 @@ export function Header() {
           <Button
             onClick={handleLogout}
             size="sm"
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white min-h-11 min-w-11 sm:min-h-8 sm:min-w-0"
           >
             <LogOut size={16} className="text-white" />
-            <span className="hidden sm:inline text-white">Sair</span>
+            <span className="hidden md:inline text-white">Sair</span>
           </Button>
+          </div>
         </div>
       </header>
 
