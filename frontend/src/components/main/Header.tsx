@@ -92,33 +92,43 @@ export function Header() {
 
   return (
     <>
-      <header className="min-h-14 shrink-0 bg-white border-b border-gray-200 px-3 sm:px-6 grid grid-cols-[minmax(2.75rem,1fr)_auto_minmax(2.75rem,1fr)] items-center gap-2 pt-[env(safe-area-inset-top)] min-w-0 py-2 md:flex md:justify-between md:py-0">
-        <button
-          type="button"
-          onClick={() => setMobileNavOpen(true)}
-          className="md:hidden justify-self-start inline-flex items-center justify-center rounded-lg min-h-11 min-w-11 text-gray-600 hover:bg-gray-100 hover:text-gray-900 shrink-0"
-          aria-label="Abrir menu de navegação"
-        >
-          <Menu size={22} />
-        </button>
+      <header className="shrink-0 bg-white border-b border-gray-200 pt-[env(safe-area-inset-top)] min-w-0">
+        <div className="relative min-h-[4.5rem] md:min-h-14 px-3 sm:px-6 py-2 md:py-0 flex items-center justify-between gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="relative z-10 md:hidden inline-flex items-center justify-center rounded-lg min-h-11 min-w-11 text-gray-600 hover:bg-gray-100 hover:text-gray-900 shrink-0"
+            aria-label="Abrir menu de navegação"
+          >
+            <Menu size={22} />
+          </button>
 
-        <div className="flex flex-col items-center justify-center min-w-0 max-w-[46%] px-1 md:max-w-none md:flex-1 md:flex-row md:items-center md:justify-start md:gap-3 md:px-0">
-          <FlockLogo size={30} className="text-primary shrink-0" />
-          <div className="flex flex-col items-center min-w-0 max-w-full md:flex-row md:items-center md:gap-2">
-            <span className="hidden md:inline text-base sm:text-lg font-semibold text-primary shrink-0">
-              Flock App
-            </span>
-            <span className="text-gray-300 hidden md:inline">|</span>
+          <div className="pointer-events-none absolute inset-0 md:hidden flex flex-col items-center justify-center gap-0.5 overflow-hidden px-14">
+            <div className="flex items-center justify-center gap-1.5">
+              <FlockLogo size={30} className="text-primary shrink-0" />
+              <span className="text-base font-semibold text-primary">Flock</span>
+            </div>
             <h1
-              className="text-xs sm:text-sm font-normal text-gray-600 truncate max-w-full text-center md:text-left md:text-sm"
+              className="w-full min-w-0 text-sm font-normal text-gray-600 truncate text-center leading-tight"
               title={churchName}
             >
               {churchName}
             </h1>
           </div>
+
+        <div className="hidden md:flex items-center gap-3 min-w-0 flex-1">
+          <FlockLogo size={30} className="text-primary shrink-0" />
+          <span className="text-lg font-semibold text-primary shrink-0">Flock App</span>
+          <span className="text-gray-300">|</span>
+          <h1
+            className="text-sm font-normal text-gray-600 truncate min-w-0"
+            title={churchName}
+          >
+            {churchName}
+          </h1>
         </div>
 
-        <div className="justify-self-end flex items-center justify-end gap-2 sm:gap-4 min-w-0 md:shrink-0">
+        <div className="relative z-10 flex items-center justify-end gap-2 sm:gap-4 min-w-0 shrink-0">
           <ChurchSwitcher />
           {user?.subscription_status === 'past_due' && (
             <Link
@@ -242,6 +252,7 @@ export function Header() {
             <LogOut size={16} className="text-white" />
             <span className="hidden sm:inline text-white">Sair</span>
           </Button>
+        </div>
         </div>
       </header>
 
