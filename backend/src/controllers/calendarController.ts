@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import PDFDocument from 'pdfkit';
+import { renderCalendarMonthPdf } from '../utils/pdf/renderCalendar';
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { AuthRequest, CalendarItem, Group } from '../types';
 import { 
@@ -1075,99 +1075,22 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       (a, b) => a.start_date.getTime() - b.start_date.getTime()
     );
 
-    const doc = new PDFDocument({
-      size: 'A4',
-      margins: { top: 40, bottom: 40, left: 40, right: 40 }
-    });
-
-    const filename = `calendario-${targetYear}-${String(targetMonth).padStart(2, '0')}.pdf`;
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-    doc.pipe(res);
-
-    doc
-      .fontSize(18)
-      .font('Helvetica-Bold')
-      .text(churchData?.name || 'Igreja', { align: 'center' })
-      .moveDown(0.3);
-
-    doc
-      .fontSize(14)
-      .font('Helvetica')
-      .text(`Calendário - ${String(targetMonth).padStart(2, '0')}/${targetYear}`, { align: 'center' })
-      .moveDown(0.3);
-
-    doc
-      .fontSize(9)
-      .fillColor('#6B7280')
-      .text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, { align: 'center' })
-      .text(`Total de ocorrências: ${monthItems.length}`, { align: 'center' })
-      .fillColor('#000000')
-      .moveDown(1);
-
-    if (monthItems.length === 0) {
-      doc
-        .fontSize(11)
-        .font('Helvetica')
-        .text('Nenhum item encontrado para o período e filtros selecionados.', { align: 'center' })
-        .moveDown(1);
-    } else {
-      monthItems.forEach((item) => {
-        if (doc.y > 730) {
-          doc.addPage();
-        }
-
-        const start = new Date(item.start_date);
-        const end = item.end_date ? new Date(item.end_date) : null;
-        const startDateLabel = start.toLocaleDateString('pt-BR');
-        const startTimeLabel = start.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        const endDateLabel = end ? end.toLocaleDateString('pt-BR') : null;
-        const endTimeLabel = end ? end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null;
-
-        doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .text(item.title || '(Sem título)');
-
-        doc
-          .fontSize(10)
-          .font('Helvetica')
-          .text(`Tipo: ${item.type}`)
-          .text(`Data/Hora início: ${startDateLabel} às ${startTimeLabel}`);
-
-        if (endDateLabel && endTimeLabel) {
-          doc.text(`Data/Hora fim: ${endDateLabel} às ${endTimeLabel}`);
-        }
-
-        doc
-          .text(`Congregação: ${item.congregation?.name || '—'}`)
-          .text(`Grupo: ${item.group?.name || '-'}`)
-          .text(`Responsável: ${item.responsible_member?.name || '-'}`);
-
-        if (item.location) {
-          doc.text(`Local: ${item.location}`);
-        }
-
-        if (item.description) {
-          doc.text(`Descrição: ${item.description}`);
-        }
-
-        if (item.is_recurring) {
-          doc.text('Recorrente: Sim');
-        }
-
-        doc
-          .moveDown(0.3)
-          .strokeColor('#E5E7EB')
-          .lineWidth(1)
-          .moveTo(40, doc.y)
-          .lineTo(doc.page.width - 40, doc.y)
-          .stroke()
-          .moveDown(0.7);
-      });
+    const filterParts: string[] = [];
+    if (congregation_id) {
+      filterParts.push(`Congregação filtrada`);
     }
+    if (group_id) {
+      filterParts.push(`Grupo filtrado`);
+    }
+    const filterSummary = filterParts.length > 0 ? filterParts.join(' • ') : undefined;
 
-    doc.end();
+    renderCalendarMonthPdf(res, {
+      churchName: churchData?.name || 'Igreja',
+      month: targetMonth,
+      year: targetYear,
+      items: monthItems,
+      filterSummary,
+    });
     return;
   } catch (error) {
     logError('Erro ao exportar calendário PDF:', error);
