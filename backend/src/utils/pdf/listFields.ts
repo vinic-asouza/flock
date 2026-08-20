@@ -22,7 +22,6 @@ export const MEMBER_FIELD_ORDER = [
   'mother_name',
   'occupation',
   'children',
-  'document',
   'phone',
   'whatsapp',
   'email',
@@ -57,7 +56,7 @@ export const INTEGRATION_FIELD_ORDER = [
 ] as const;
 
 /** Campos removidos do produto — ignorados se ainda vierem do cliente */
-const DEPRECATED_MEMBER_FIELDS = new Set(['baptism_date']);
+const DEPRECATED_MEMBER_FIELDS = new Set(['baptism_date', 'document']);
 
 export const memberListFieldLabels: Record<string, string> = {
   name: 'Nome',
@@ -87,7 +86,6 @@ export const memberListFieldLabels: Record<string, string> = {
   city: 'Cidade',
   state: 'UF',
   cep: 'CEP',
-  document: 'CPF',
 };
 
 export const integrationListFieldLabels: Record<string, string> = {

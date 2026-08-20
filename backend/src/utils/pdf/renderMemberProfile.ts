@@ -72,7 +72,6 @@ export function renderMemberProfilePdf(
     { label: weddingDateLabel, value: formatDateSafe(member.wedding_date) },
     { label: 'Profissão', value: dash(member.occupation) },
     { label: 'Nacionalidade', value: dash(member.nationality) },
-    { label: 'CPF', value: dash(member.document), fullWidth: true },
   ]);
 
   const hasChildren = Array.isArray(member.children) && member.children.length > 0;
