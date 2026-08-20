@@ -76,6 +76,10 @@ export function contentBox(ctx: PdfContext) {
 }
 
 export function ensureSpace(ctx: PdfContext, needed: number): void {
+  // Already at top of a fresh page — do not create another empty page.
+  if (ctx.doc.y <= ctx.top + 1) {
+    return;
+  }
   if (ctx.doc.y + needed > ctx.pageBottom) {
     ctx.doc.addPage();
     ctx.doc.y = ctx.top;

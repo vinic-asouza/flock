@@ -112,7 +112,7 @@ export function renderMemberProfilePdf(
         else if (child.dependent === false) text += ' — Não reside junto';
         return text;
       });
-      drawBulletList(ctx, childLines);
+      drawBulletList(ctx, childLines, 'Filhos');
     }
   }
 
@@ -141,7 +141,6 @@ export function renderMemberProfilePdf(
   drawSectionTitle(ctx, 'Informações Eclesiásticas');
   drawKeyValueGrid(ctx, [
     { label: 'Congregação', value: member.congregation?.name || '—' },
-    { label: 'Data de Batismo', value: formatDateSafe(member.baptism_date) },
     { label: 'Data de Recebimento', value: formatDateSafe(member.admission_date) },
     { label: 'Tipo de Recebimento', value: dash(member.admission) },
   ]);

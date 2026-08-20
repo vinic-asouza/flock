@@ -96,7 +96,10 @@ export function drawTable(ctx: PdfContext, options: DrawTableOptions): void {
         .fillColor(PdfColor.ink)
         .text(cellTexts[i], x + PdfSpace.cellPadX, y + PdfSpace.cellPadY, {
           width: w - PdfSpace.cellPadX * 2,
+          height: rowH - PdfSpace.cellPadY * 2,
           align: col.align ?? 'left',
+          lineBreak: false,
+          ellipsis: true,
         });
       x += w;
     });
@@ -105,6 +108,5 @@ export function drawTable(ctx: PdfContext, options: DrawTableOptions): void {
     doc.y = y;
   });
 
-  doc.moveDown(0.4);
   doc.fillColor(PdfColor.ink);
 }

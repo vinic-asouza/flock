@@ -7,6 +7,58 @@ import {
   integrationStatusLabels,
 } from './renderIntegrationProfile';
 
+/** Ordem canônica alinhada aos formulários / modais de export */
+export const MEMBER_FIELD_ORDER = [
+  'name',
+  'age',
+  'birth',
+  'gender',
+  'marital_status',
+  'hometown',
+  'wedding_date',
+  'nationality',
+  'spouse',
+  'father_name',
+  'mother_name',
+  'occupation',
+  'children',
+  'document',
+  'phone',
+  'whatsapp',
+  'email',
+  'active',
+  'congregation',
+  'admission',
+  'admission_date',
+  'address',
+  'address_number',
+  'complement',
+  'neighborhood',
+  'city',
+  'state',
+  'cep',
+] as const;
+
+export const INTEGRATION_FIELD_ORDER = [
+  'name',
+  'birth',
+  'gender',
+  'marital_status',
+  'status',
+  'phone',
+  'whatsapp',
+  'expected_admission_type',
+  'expected_congregation',
+  'mentor',
+  'mentor_contact',
+  'notes',
+  'created_at',
+  'updated_at',
+] as const;
+
+/** Campos removidos do produto — ignorados se ainda vierem do cliente */
+const DEPRECATED_MEMBER_FIELDS = new Set(['baptism_date']);
+
 export const memberListFieldLabels: Record<string, string> = {
   name: 'Nome',
   age: 'Idade',
@@ -26,7 +78,6 @@ export const memberListFieldLabels: Record<string, string> = {
   email: 'Email',
   active: 'Status',
   congregation: 'Congregação',
-  baptism_date: 'Batismo',
   admission: 'Recebimento',
   admission_date: 'Data Receb.',
   address: 'Endereço',
@@ -79,11 +130,28 @@ const narrowFields = new Set([
   'address_number',
 ]);
 
+function sortFieldsByFormOrder(fields: string[], order: readonly string[]): string[] {
+  return [...fields]
+    .filter((key) => !DEPRECATED_MEMBER_FIELDS.has(key))
+    .sort((a, b) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      const sa = ia === -1 ? 9999 : ia;
+      const sb = ib === -1 ? 9999 : ib;
+      if (sa !== sb) return sa - sb;
+      return a.localeCompare(b);
+    });
+}
+
 export function columnsFromFields(
   fields: string[],
   labels: Record<string, string>
 ): PdfTableColumn[] {
-  return fields.map((key) => ({
+  const isIntegration = labels === integrationListFieldLabels;
+  const order = isIntegration ? INTEGRATION_FIELD_ORDER : MEMBER_FIELD_ORDER;
+  const sorted = sortFieldsByFormOrder(fields, order);
+
+  return sorted.map((key) => ({
     key,
     label: labels[key] || key,
     width: wideFields.has(key) ? 2 : narrowFields.has(key) ? 0.7 : 1.2,
@@ -100,7 +168,6 @@ export function memberFieldValue(member: any, field: string): string {
     }
     case 'birth':
     case 'wedding_date':
-    case 'baptism_date':
     case 'admission_date':
       return formatDateSafe(member[field]);
     case 'phone':

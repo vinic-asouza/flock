@@ -79,11 +79,16 @@ export function renderCalendarMonthPdf(
 
   const days = [...grouped.values()].sort((a, b) => a.date.getTime() - b.date.getTime());
 
-  days.forEach((day) => {
+  days.forEach((day, dayIndex) => {
+    if (dayIndex > 0) {
+      ctx.doc.moveDown(0.85);
+    }
+
     drawSectionTitle(ctx, dayLabel(day.date));
+    ctx.doc.moveDown(0.15);
 
     day.items.forEach((item, index) => {
-      ensureSpace(ctx, 42);
+      ensureSpace(ctx, 48);
       const start = new Date(item.start_date);
       const end = item.end_date ? new Date(item.end_date) : null;
       const startTime = start.toLocaleTimeString('pt-BR', {
@@ -95,16 +100,24 @@ export function renderCalendarMonthPdf(
         : null;
 
       const timeLabel = endTime ? `${startTime} – ${endTime}` : startTime;
+      const startY = ctx.doc.y;
 
       ctx.doc
         .font(PdfFont.bold)
         .fontSize(PdfType.value)
         .fillColor(PdfColor.accent)
-        .text(timeLabel, ctx.left, ctx.doc.y, { continued: true, lineBreak: false });
+        .text(timeLabel, ctx.left, startY, {
+          width: 72,
+          lineBreak: false,
+        });
 
       ctx.doc
+        .font(PdfFont.bold)
+        .fontSize(PdfType.value)
         .fillColor(PdfColor.ink)
-        .text(`   ${item.title || '(Sem título)'}`, { width: ctx.contentWidth - 80 });
+        .text(item.title || '(Sem título)', ctx.left + 78, startY, {
+          width: ctx.contentWidth - 78,
+        });
 
       const meta = [
         item.type ? `Tipo: ${item.type}` : null,
@@ -124,7 +137,7 @@ export function renderCalendarMonthPdf(
           .font(PdfFont.regular)
           .fontSize(PdfType.meta)
           .fillColor(PdfColor.muted)
-          .text(meta, ctx.left, ctx.doc.y, { width: ctx.contentWidth });
+          .text(meta, ctx.left + 78, ctx.doc.y, { width: ctx.contentWidth - 78 });
       }
 
       if (item.description) {
@@ -132,12 +145,15 @@ export function renderCalendarMonthPdf(
           .font(PdfFont.regular)
           .fontSize(PdfType.meta)
           .fillColor(PdfColor.ink)
-          .text(item.description, ctx.left, ctx.doc.y, { width: ctx.contentWidth });
+          .text(item.description, ctx.left + 78, ctx.doc.y, {
+            width: ctx.contentWidth - 78,
+          });
       }
 
-      ctx.doc.moveDown(0.25);
+      ctx.doc.moveDown(0.45);
       if (index < day.items.length - 1) {
         drawDivider(ctx);
+        ctx.doc.moveDown(0.2);
       }
     });
   });

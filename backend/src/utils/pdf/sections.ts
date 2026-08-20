@@ -61,37 +61,46 @@ export function drawDocumentHeader(ctx: PdfContext): void {
 }
 
 export function drawDocumentFooters(ctx: PdfContext): void {
-  const { doc, left, contentWidth, bottom } = ctx;
+  const { doc, left, contentWidth } = ctx;
   const range = doc.bufferedPageRange();
   const total = range.count;
   const generated = formatGeneratedAt(ctx.generatedAt);
 
   for (let i = 0; i < total; i += 1) {
     doc.switchToPage(range.start + i);
-    const y = doc.page.height - bottom + 4;
+
+    // Zero margins while drawing footer so PDFKit does not auto-add blank pages
+    // when text is painted in the reserved footer band.
+    const savedMargins = { ...doc.page.margins };
+    doc.page.margins = { top: 0, bottom: 0, left: 0, right: 0 };
+
+    const footerY = doc.page.height - 20;
+    const lineY = footerY - 8;
 
     doc
       .strokeColor(PdfColor.border)
       .lineWidth(0.6)
-      .moveTo(left, y - 8)
-      .lineTo(left + contentWidth, y - 8)
+      .moveTo(left, lineY)
+      .lineTo(left + contentWidth, lineY)
       .stroke();
 
     doc
       .font(PdfFont.regular)
       .fontSize(PdfType.footer)
       .fillColor(PdfColor.muted)
-      .text(`${generated}  ·  Flock`, left, y, {
-        width: contentWidth * 0.7,
+      .text(`${generated}  ·  Flock`, left, footerY, {
+        width: contentWidth * 0.65,
         align: 'left',
         lineBreak: false,
       });
 
-    doc.text(`Página ${i + 1} de ${total}`, left, y, {
-      width: contentWidth,
+    doc.text(`Página ${i + 1} de ${total}`, left + contentWidth * 0.65, footerY, {
+      width: contentWidth * 0.35,
       align: 'right',
       lineBreak: false,
     });
+
+    doc.page.margins = savedMargins;
   }
 
   doc.fillColor(PdfColor.ink);
@@ -257,23 +266,47 @@ export function drawKeyValueGrid(
         .font(PdfFont.bold)
         .fontSize(PdfType.label)
         .fillColor(PdfColor.muted)
-        .text(item.label, x, startY, { width });
+        .text(item.label, x, startY, {
+          width,
+          height: PdfType.label + 2,
+          lineBreak: false,
+          ellipsis: true,
+        });
 
       const valueY = startY + PdfType.label + 3;
       doc
         .font(PdfFont.regular)
         .fontSize(PdfType.value)
         .fillColor(PdfColor.ink)
-        .text(item.value || '—', x, valueY, { width });
+        .text(item.value || '—', x, valueY, {
+          width,
+          height: Math.max(12, rowH - (PdfType.label + 6)),
+          ellipsis: true,
+        });
     });
 
     doc.y = startY + rowH;
   }
 }
 
-export function drawBulletList(ctx: PdfContext, lines: string[]): void {
+export function drawBulletList(
+  ctx: PdfContext,
+  lines: string[],
+  label?: string
+): void {
   if (!lines.length) return;
   const { doc, left, contentWidth } = ctx;
+
+  if (label) {
+    ensureSpace(ctx, 18);
+    doc
+      .font(PdfFont.bold)
+      .fontSize(PdfType.label)
+      .fillColor(PdfColor.muted)
+      .text(label, left, doc.y, { width: contentWidth });
+    doc.moveDown(0.2);
+  }
+
   lines.forEach((line) => {
     ensureSpace(ctx, 16);
     doc
