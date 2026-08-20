@@ -190,10 +190,11 @@ export default function CalendarPage() {
   const handleExportPDF = async () => {
     try {
       setExportingPdf(true);
+      const isYearPeriod = activeTab === 'list';
       const month = currentMonth.getMonth() + 1;
-      const year = currentMonth.getFullYear();
+      const year = isYearPeriod ? currentYear : currentMonth.getFullYear();
       const blob = await apiService.exportCalendarPDF({
-        month,
+        ...(isYearPeriod ? { period: 'year' as const } : { month }),
         year,
         congregation_id: filters.congregation_id || undefined,
         group_id: filters.group_id || undefined,
@@ -202,7 +203,9 @@ export default function CalendarPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `calendario-${year}-${String(month).padStart(2, '0')}.pdf`;
+      link.download = isYearPeriod
+        ? `calendario-${year}.pdf`
+        : `calendario-${year}-${String(month).padStart(2, '0')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
