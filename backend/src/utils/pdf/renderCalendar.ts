@@ -38,17 +38,27 @@ export function renderCalendarMonthPdf(
   res: Response,
   options: {
     churchName: string;
-    month: number;
+    month?: number;
     year: number;
     items: CalendarPdfItem[];
     filterSummary?: string;
+    /** When true, export covers the full year (Listas tab). */
+    period?: 'month' | 'year';
   }
 ): void {
-  const filename = `calendario-${options.year}-${String(options.month).padStart(2, '0')}.pdf`;
+  const period = options.period ?? 'month';
+  const isYear = period === 'year';
+  const filename = isYear
+    ? `calendario-${options.year}.pdf`
+    : `calendario-${options.year}-${String(options.month).padStart(2, '0')}.pdf`;
+  const title = isYear
+    ? `Calendário — ${options.year}`
+    : `Calendário — ${String(options.month).padStart(2, '0')}/${options.year}`;
+
   const ctx = beginPdfResponse(res, filename, {
     orientation: 'landscape',
     churchName: options.churchName,
-    title: `Calendário — ${String(options.month).padStart(2, '0')}/${options.year}`,
+    title,
     subtitle: options.filterSummary,
     metaLines: [`Total de ocorrências: ${options.items.length}`],
   });

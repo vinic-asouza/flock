@@ -1,11 +1,11 @@
 import { calculateAgeSafe, formatDateSafe, formatPhoneBR } from './format';
-import { PdfTableColumn } from './table';
 import {
   integrationAdmissionLabels,
   integrationGenderLabels,
   integrationMaritalLabels,
   integrationStatusLabels,
-} from './renderIntegrationProfile';
+} from './integrationLabels';
+import { PdfTableColumn } from './table';
 
 /** Ordem canônica alinhada aos formulários / modais de export */
 export const MEMBER_FIELD_ORDER = [
@@ -154,6 +154,38 @@ export function columnsFromFields(
     label: labels[key] || key,
     width: wideFields.has(key) ? 2 : narrowFields.has(key) ? 0.7 : 1.2,
   }));
+}
+
+/**
+ * Resolve colunas exportáveis após filtrar campos deprecated.
+ * Retorna erro quando nenhum campo válido permanece (BR-REL-007).
+ */
+export function resolveExportColumns(
+  fields: string[],
+  labels: Record<string, string>
+): { ok: true; columns: PdfTableColumn[] } | { ok: false; message: string } {
+  const columns = columnsFromFields(fields, labels);
+  if (columns.length === 0) {
+    return {
+      ok: false,
+      message:
+        'Nenhum campo válido para exportar. Remova campos obsoletos (ex.: batismo, documento) e selecione ao menos um campo suportado.',
+    };
+  }
+  return { ok: true, columns };
+}
+
+export function rowsFromColumnKeys<T>(
+  items: T[],
+  columns: PdfTableColumn[],
+  valueFn: (item: T, field: string) => string
+): Array<Record<string, string>> {
+  return items.map((item) =>
+    columns.reduce((acc: Record<string, string>, col) => {
+      acc[col.key] = valueFn(item, col.key);
+      return acc;
+    }, {})
+  );
 }
 
 export function memberFieldValue(member: any, field: string): string {

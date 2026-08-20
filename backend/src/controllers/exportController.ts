@@ -15,11 +15,12 @@ import { renderBlankRegistrationPdf } from '../utils/pdf/renderBlankRegistration
 import { renderLandscapeListPdf } from '../utils/pdf/renderList';
 import { renderDashboardPdf } from '../utils/pdf/renderDashboard';
 import {
-  columnsFromFields,
   integrationFieldValue,
   integrationListFieldLabels,
   memberFieldValue,
   memberListFieldLabels,
+  resolveExportColumns,
+  rowsFromColumnKeys,
 } from '../utils/pdf/listFields';
 import { formatPhoneBR } from '../utils/pdf/format';
 
@@ -103,10 +104,12 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('Erro ao gerar PDF do membro:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
   }
 };
 
@@ -168,10 +171,12 @@ export const exportIntegrationMemberPDF = async (req: AuthRequest, res: Response
     return;
   } catch (error) {
     console.error('Erro ao gerar PDF de integração:', error);
-    res.status(500).json({
-      error: 'Erro interno do servidor',
-      details: error instanceof Error ? error.message : 'Erro desconhecido'
-    });
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
   }
 };
 
@@ -255,13 +260,15 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
       });
     }
 
-    const columns = columnsFromFields(fields, integrationListFieldLabels);
-    const rows = integrationMembers.map((member: any) =>
-      fields.reduce((acc: Record<string, string>, field: string) => {
-        acc[field] = integrationFieldValue(member, field);
-        return acc;
-      }, {})
-    );
+    const resolved = resolveExportColumns(fields, integrationListFieldLabels);
+    if (!resolved.ok) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: resolved.message,
+      });
+    }
+    const { columns } = resolved;
+    const rows = rowsFromColumnKeys(integrationMembers, columns, integrationFieldValue);
 
     const filename = `lista-integrantes-${new Date().toISOString().split('T')[0]}.pdf`;
     renderLandscapeListPdf(res, {
@@ -286,8 +293,6 @@ export const exportIntegrationMembersList = async (req: AuthRequest, res: Respon
 
 export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
   try {
-    console.log('📊 Iniciando exportação de dashboard PDF...');
-
     if (!req.user) {
       return res.status(401).json({
         error: 'Não autorizado',
@@ -302,8 +307,6 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       .eq('id', churchId)
       .single();
 
-    console.log('✅ Igreja encontrada:', churchData?.name);
-
     // Obter filtros da query string
     const { congregation_id } = req.query;
     const filters: any = {};
@@ -311,8 +314,6 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     if (congregation_id) {
       filters.congregation_id = congregation_id as string;
     }
-
-    console.log('🔍 Filtros aplicados:', filters);
 
     // Buscar dados dos relatórios usando o controller existente
     const mockReq = {
@@ -336,21 +337,15 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     } as unknown as Response;
 
     // Chamar o controller de relatórios
-    console.log('📡 Buscando dados dos relatórios...');
     await getMemberReports(mockReq, mockRes);
 
-    console.log('📊 Status da resposta:', statusCode);
-    console.log('📊 Dados recebidos:', reportsData ? 'Sim' : 'Não');
-
     if (!reportsData || statusCode !== 200) {
-      console.error('❌ Erro ao buscar dados dos relatórios');
+      console.error('Erro ao buscar dados dos relatórios');
       return res.status(500).json({
         error: 'Erro ao buscar dados',
         details: 'Não foi possível obter dados dos relatórios'
       });
     }
-
-    console.log('✅ Dados dos relatórios obtidos com sucesso');
 
     // Determinar título do relatório baseado nos filtros
     let reportTitle = 'Relatório Geral';
@@ -377,8 +372,6 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
         }
       }
     }
-
-    console.log('📄 Iniciando geração do PDF...');
 
     // Buscar grupos da igreja (seção Grupos/Ministérios do PDF)
     let groupsQuery = supabase
@@ -409,19 +402,23 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     let groupsByType: Record<string, Array<{ name: string; count: number }>> | undefined;
 
     if (!groupsError && groups && groups.length > 0) {
-      const groupsWithCounts = await Promise.all(
-        groups.map(async (group: any) => {
-          const { count: memberCount } = await supabase
-            .from('member_groups')
-            .select('*', { count: 'exact', head: true })
-            .eq('group_id', group.id);
+      const groupIds = groups.map((g: any) => g.id as string);
+      const memberCounts: Record<string, number> = {};
 
-          return {
-            ...group,
-            memberCount: memberCount || 0
-          };
-        })
-      );
+      const { data: membershipRows } = await supabase
+        .from('member_groups')
+        .select('group_id')
+        .in('group_id', groupIds);
+
+      for (const row of membershipRows || []) {
+        const gid = (row as { group_id: string }).group_id;
+        memberCounts[gid] = (memberCounts[gid] || 0) + 1;
+      }
+
+      const groupsWithCounts = groups.map((group: any) => ({
+        ...group,
+        memberCount: memberCounts[group.id] || 0,
+      }));
 
       const grouped: Record<string, Array<{ name: string; count: number }>> = {};
       groupsWithCounts.forEach((group: any) => {
@@ -454,7 +451,6 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
     }
 
     const filename = `relatorio-${reportTitle.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
-    console.log('📝 Nome do arquivo:', filename);
 
     renderDashboardPdf(res, {
       filename,
@@ -466,11 +462,10 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       hideCongregations: Boolean(congregation_id),
     });
 
-    console.log('✅ PDF gerado com sucesso');
     return;
 
   } catch (error) {
-    console.error('❌ Erro ao gerar PDF do dashboard:', error);
+    console.error('Erro ao gerar PDF do dashboard:', error);
 
     // Se já iniciou o stream do PDF, não pode enviar JSON
     if (!res.headersSent) {
@@ -484,8 +479,6 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
 export const exportMembersList = async (req: AuthRequest, res: Response) => {
   try {
-    console.log('📊 Iniciando exportação de lista de membros...');
-
     if (!req.user) {
       return res.status(401).json({
         error: 'Não autorizado',
@@ -508,10 +501,6 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       .select('id, name')
       .eq('id', churchId)
       .single();
-
-    console.log('✅ Igreja encontrada:', churchData?.name);
-    console.log('🔍 Filtros recebidos:', filters);
-    console.log('📋 Campos selecionados:', fields);
 
     // Construir query para buscar membros
     let query = supabase
@@ -603,7 +592,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
     const { data: members, error: membersError } = await query;
 
     if (membersError) {
-      console.error('❌ Erro ao buscar membros:', membersError);
+      console.error('Erro ao buscar membros:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
@@ -617,8 +606,6 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    console.log(`✅ ${members.length} membros encontrados`);
-
     await logAudit(req, {
       entity: 'church',
       entityId: churchId,
@@ -630,13 +617,15 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    const columns = columnsFromFields(fields, memberListFieldLabels);
-    const rows = members.map((member: any) =>
-      fields.reduce((acc: Record<string, string>, field: string) => {
-        acc[field] = memberFieldValue(member, field);
-        return acc;
-      }, {})
-    );
+    const resolved = resolveExportColumns(fields, memberListFieldLabels);
+    if (!resolved.ok) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: resolved.message,
+      });
+    }
+    const { columns } = resolved;
+    const rows = rowsFromColumnKeys(members, columns, memberFieldValue);
 
     const filename = `lista-membros-${new Date().toISOString().split('T')[0]}.pdf`;
     renderLandscapeListPdf(res, {
@@ -650,7 +639,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
     return;
 
   } catch (error) {
-    console.error('❌ Erro ao gerar PDF da lista de membros:', error);
+    console.error('Erro ao gerar PDF da lista de membros:', error);
 
     // Se já iniciou o stream do PDF, não pode enviar JSON
     if (!res.headersSent) {
@@ -760,13 +749,21 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
     const memberCounts: Record<string, number> = {};
 
     if (groupIds.length > 0) {
-      for (const groupId of groupIds) {
-        const { count } = await supabase
-          .from('member_groups')
-          .select('*', { count: 'exact', head: true })
-          .eq('group_id', groupId);
+      const { data: membershipRows, error: membershipError } = await supabase
+        .from('member_groups')
+        .select('group_id')
+        .in('group_id', groupIds);
 
-        memberCounts[groupId] = count || 0;
+      if (membershipError) {
+        return res.status(500).json({
+          error: 'Erro ao contar membros dos grupos',
+          details: membershipError.message,
+        });
+      }
+
+      for (const row of membershipRows || []) {
+        const gid = (row as { group_id: string }).group_id;
+        memberCounts[gid] = (memberCounts[gid] || 0) + 1;
       }
     }
 
@@ -980,25 +977,37 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 
     const memberIds = (memberGroups || []).map((mg: { member_id: string }) => mg.member_id);
 
+    if (memberIds.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum membro encontrado',
+        details: 'Este grupo não possui membros para exportar',
+      });
+    }
+
     let members: any[] = [];
-    if (memberIds.length > 0) {
-      const { data: membersData, error: membersError } = await supabase
-        .from('members')
-        .select(`
+    const { data: membersData, error: membersError } = await supabase
+      .from('members')
+      .select(`
           *,
           congregation:congregations(name)
         `)
-        .eq('church_id', churchId)
-        .in('id', memberIds)
-        .order('name', { ascending: true });
+      .eq('church_id', churchId)
+      .in('id', memberIds)
+      .order('name', { ascending: true });
 
-      if (membersError) {
-        return res.status(500).json({
-          error: 'Erro ao buscar membros do grupo',
-          details: membersError.message
-        });
-      }
-      members = membersData || [];
+    if (membersError) {
+      return res.status(500).json({
+        error: 'Erro ao buscar membros do grupo',
+        details: membersError.message
+      });
+    }
+    members = membersData || [];
+
+    if (members.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum membro encontrado',
+        details: 'Este grupo não possui membros para exportar',
+      });
     }
 
     const groupData = group as any;
@@ -1013,13 +1022,15 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
       subtitleParts.push(`Responsável: ${responsible.name}`);
     }
 
-    const columns = columnsFromFields(fields, memberListFieldLabels);
-    const rows = members.map((member: any) =>
-      fields.reduce((acc: Record<string, string>, field: string) => {
-        acc[field] = memberFieldValue(member, field);
-        return acc;
-      }, {})
-    );
+    const resolved = resolveExportColumns(fields, memberListFieldLabels);
+    if (!resolved.ok) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: resolved.message,
+      });
+    }
+    const { columns } = resolved;
+    const rows = rowsFromColumnKeys(members, columns, memberFieldValue);
 
     const filename = `grupo-${(group.name || 'grupo').replace(/\s+/g, '-')}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
     renderLandscapeListPdf(res, {
@@ -1045,8 +1056,6 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 
 export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
   try {
-    console.log('📊 Iniciando exportação de lista de membros em CSV...');
-
     if (!req.user) {
       return res.status(401).json({
         error: 'Não autorizado',
@@ -1069,12 +1078,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       .select('id, name')
       .eq('id', churchId)
       .single();
-
-    console.log('✅ Igreja encontrada:', churchData?.name);
-    console.log('🔍 Filtros recebidos:', filters);
-    console.log('📋 Campos selecionados:', fields);
-    console.log('🔧 Delimitador:', delimiter);
-    console.log('📑 Incluir cabeçalho:', includeHeaders);
 
     // Construir query para buscar membros (mesma lógica do PDF)
     let query = supabase
@@ -1170,7 +1173,7 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
     const { data: members, error: membersError } = await query;
 
     if (membersError) {
-      console.error('❌ Erro ao buscar membros:', membersError);
+      console.error('Erro ao buscar membros:', membersError);
       return res.status(500).json({
         error: 'Erro ao buscar membros',
         details: membersError.message
@@ -1183,8 +1186,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
         details: 'Não há membros que correspondam aos filtros aplicados'
       });
     }
-
-    console.log(`✅ ${members.length} membros encontrados`);
 
     await logAudit(req, {
       entity: 'church',
@@ -1401,10 +1402,8 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
     const BOM = '\uFEFF';
     res.send(BOM + csvContent);
 
-    console.log('✅ CSV gerado com sucesso');
-
   } catch (error) {
-    console.error('❌ Erro ao gerar CSV da lista de membros:', error);
+    console.error('Erro ao gerar CSV da lista de membros:', error);
 
     if (!res.headersSent) {
       res.status(500).json({
