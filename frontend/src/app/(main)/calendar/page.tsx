@@ -12,7 +12,7 @@ import { CalendarFiltersHorizontal } from '@/components/calendar/CalendarFilters
 import { Tabs } from '@/components/ui/Tabs';
 import { CalendarItem, CreateCalendarItemData, CalendarFilters as CalendarFiltersType, typeColors } from '@/types/calendar';
 import { apiService, formatApiError } from '@/services/api';
-import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
+import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -37,6 +37,7 @@ export default function CalendarPage() {
   const [birthdayCountError, setBirthdayCountError] = useState<string | null>(null);
   const [participantsPage, setParticipantsPage] = useState(1);
   const [loadingItemDetails, setLoadingItemDetails] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const loadItemsRequestIdRef = useRef(0);
   const viewItemRequestIdRef = useRef(0);
 
@@ -186,6 +187,37 @@ export default function CalendarPage() {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      setExportingPdf(true);
+      const isYearPeriod = activeTab === 'list';
+      const month = currentMonth.getMonth() + 1;
+      const year = isYearPeriod ? currentYear : currentMonth.getFullYear();
+      const blob = await apiService.exportCalendarPDF({
+        ...(isYearPeriod ? { period: 'year' as const } : { month }),
+        year,
+        congregation_id: filters.congregation_id || undefined,
+        group_id: filters.group_id || undefined,
+      });
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = isYearPeriod
+        ? `calendario-${year}.pdf`
+        : `calendario-${year}-${String(month).padStart(2, '0')}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('PDF exportado com sucesso!');
+    } catch (err) {
+      toast.error(formatApiError(err) || 'Erro ao exportar PDF. Tente novamente.');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   const handleViewItem = async (item: CalendarItem) => {
     const requestId = ++viewItemRequestIdRef.current;
     setSelectedItem(item);
@@ -254,17 +286,33 @@ export default function CalendarPage() {
         title="Calendário"
         subtitle="Gerencie programações, eventos, encontros e reuniões"
         actions={
-          <Button
-            variant="primary"
-            onClick={() => handleCreateQuick()}
-            className="flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
-            disabled={canEdit === false}
-            title={canEdit === false ? READER_TOOLTIP : undefined}
-          >
-            <Plus size={20} />
-            <span className="sm:hidden">Novo</span>
-            <span className="hidden sm:inline">Novo Item</span>
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <Button
+              variant="secondary"
+              onClick={handleExportPDF}
+              className="flex min-h-11 w-full items-center justify-center gap-2 sm:w-auto"
+              disabled={exportingPdf}
+            >
+              {exportingPdf ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Download size={18} />
+              )}
+              <span className="sm:hidden">PDF</span>
+              <span className="hidden sm:inline">Exportar PDF</span>
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => handleCreateQuick()}
+              className="flex min-h-11 w-full items-center justify-center gap-2 sm:w-auto"
+              disabled={canEdit === false}
+              title={canEdit === false ? READER_TOOLTIP : undefined}
+            >
+              <Plus size={20} />
+              <span className="sm:hidden">Novo</span>
+              <span className="hidden sm:inline">Novo Item</span>
+            </Button>
+          </div>
         }
       />
 

@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-31
-versao: "1.4"
+ultima_atualizacao: 2026-08-20
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -69,13 +69,18 @@ backend/src/
 │   ├── export.ts                 → 10 rotas /api/export/*
 │   └── members.ts                → /reports + /birthdays/* (também CRUD membros)
 ├── controllers/
-│   ├── exportController.ts       → PDFs/CSV (PDFKit) — arquivo grande
+│   ├── exportController.ts       → fetch/validate + orquestra renderers
 │   └── memberController.ts       → getMemberReports, getBirthdaysCount/List
 ├── validators/
 │   └── reportValidator.ts        → reportFiltersSchema (Joi)
 └── utils/
     ├── ageCalculator.ts          → idade nos aggregados
-    └── memberRegistrationFormPdf.ts → template PDF ficha em branco (form v2)
+    └── pdf/                      → kit **Flock Print** (PDFKit)
+        ├── tokens.ts / document.ts / sections.ts / table.ts / formFields.ts
+        ├── listFields.ts         → colunas, labels, resolveExportColumns
+        ├── integrationLabels.ts
+        ├── render*.ts            → ficha, lista, dashboard, blank, calendário (usado pelo módulo calendário)
+        └── __tests__/listFields.test.ts
 
 frontend/src/
 ├── app/page.tsx                  → Home = painel Vision UI
@@ -87,7 +92,7 @@ App mounts:
   app.use('/api/export', exportRoutes)
   app.use('/api/members', memberRoutes)  // reports/birthdays aqui
 
-Testes: inexistentes.
+Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest).
 Migrations: N/A — sem schema próprio.
 ```
 
@@ -244,7 +249,7 @@ max: 10 // por IP
 }
 
 // Response: application/pdf | text/csv; charset=utf-8 (BOM UTF-8 no CSV)
-// 400 — fields vazio
+// 400 — fields vazio OU só campos deprecated (baptism_date / document) após filtro
 // 404 — Nenhum membro encontrado (lista vazia após filtro)
 ```
 
@@ -286,10 +291,11 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**10** regras).
 | BR-REL-004 | Birthdays: ativos, birth não nulo; mês 1–12; filtro cong UUID |
 | BR-REL-005 | Filtros de report passam `reportFiltersSchema` |
 | BR-REL-006 | Exports scoped ao `church_id` do contexto |
-| BR-REL-007 | PDF/CSV de lista exige `fields[]` não vazio |
-| BR-REL-008 | Lista vazia no filtro → **404** |
+| BR-REL-007 | PDF/CSV de lista exige `fields[]` com ≥1 campo **válido** (deprecated ignorados) |
+| BR-REL-008 | Lista vazia no filtro → **404** (inclui grupo sem membros) |
 | BR-REL-009 | Home: `all` \| `congregation`; 1 cong. → texto; sem Estrutura no filtro |
 | BR-REL-010 | Export grupos exige `filters.types[]` (min 1, GroupType) |
+| BR-REL-011 | PDFs do tenant usam kit Flock Print (header/footer/orientação) |
 
 ---
 
@@ -329,7 +335,8 @@ sequenceDiagram
   alt vazio
     API-->>U: 404
   end
-  API->>PDF: landscape A4 + colunas fields
+  API->>API: resolveExportColumns(fields)
+  API->>PDF: landscape A4 + colunas válidas (Flock Print)
   PDF-->>API: stream
   API-->>U: application/pdf
 ```
@@ -342,13 +349,13 @@ sequenceDiagram
   actor U as Reader+
   participant UI as members/page
   participant API as exportMemberRegistrationFormPDF
-  participant PDF as memberRegistrationFormPdf
+  participant PDF as renderBlankRegistrationPdf
   participant DB as PostgreSQL
 
   U->>UI: Clicar "Ficha de Cadastro"
   UI->>API: GET /api/export/members/registration-form/pdf
   API->>DB: select churches.name (church_id)
-  API->>PDF: renderMemberRegistrationFormPdf(churchName)
+  API->>PDF: renderBlankRegistrationPdf(churchName)
   PDF-->>API: stream A4
   API-->>UI: application/pdf + Content-Disposition
   UI-->>U: download ficha-cadastro-membro-*.pdf
@@ -387,20 +394,23 @@ Sem Stripe/Resend/S3. Persistência + PDF local.
 - Falha: 500 / 404 conforme handler  
 - Config: `SUPABASE_*` (service_role)
 
-### PDFKit (in-process)
+### PDFKit (in-process) — kit Flock Print
 
-- Propósito: todos os PDFs de `/api/export/*`  
+- Propósito: todos os PDFs de `/api/export/*` via `backend/src/utils/pdf/`  
+- Tokens + header/footer com `bufferPages` + page numbers; listas densas em **landscape**  
 - Stream direto no `res` (`Content-Type: application/pdf`)  
-- Sem env próprio  
+- Sem env próprio; sem dependência tipo `pdfkit-table`  
 - CSV: string montada no controller (+ BOM UTF-8)
 
 ```mermaid
 sequenceDiagram
   participant CTL as exportController
   participant DB as PostgREST
+  participant KIT as utils/pdf renderers
   participant PDF as PDFKit
   CTL->>DB: select scoped
-  CTL->>PDF: new PDFDocument / pipe(res)
+  CTL->>KIT: render*(res, data)
+  KIT->>PDF: createPdfDoc / pipe(res)
 ```
 
 ---
@@ -420,8 +430,9 @@ N/A — este módulo não possui operações assíncronas. Tudo é **request-res
 | Filtros report | 400 | `Filtros inválidos` | Joi |
 | Rate limit reports | 429 | `Muitas requisições de relatórios` | >10/min |
 | Mês birthday | 400 | `Parâmetro inválido` | month fora 1–12 |
-| fields vazio | 400 | `Campos inválidos` / `Dados inválidos` | list exports |
+| fields vazio / só deprecated | 400 | `Campos inválidos` / `Dados inválidos` | list exports |
 | Lista vazia | 404 | Nenhum membro / recurso | export lists |
+| Grupo sem membros | 404 | `Este grupo não possui membros` | group members PDF |
 | Membro/grupo não achado | 404 | PDF ficha / group export | scoped miss |
 | Aggregação/export fail | 500 | operacional | catch / DB |
 
@@ -447,9 +458,9 @@ Não há watermark de acesso nem restrição por papel “admin only” nos expo
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| — | — | 0% | Nenhum teste dedicado |
+| Unit | `utils/pdf/__tests__/listFields.test.ts` | parcial | `columnsFromFields`, deprecated, `resolveExportColumns`, rows |
 
-**Gaps:** rate limit 429; demografia só ativos; gap filtros Joi vs query; 404 lista vazia; CSV BOM/delimiter; dashboard mockRes; idade/timezone; isolamento tenant; perf >5000 membros.
+**Gaps:** rate limit 429; demografia só ativos; gap filtros Joi vs query; 404 lista vazia; CSV BOM/delimiter; dashboard mockRes; idade/timezone; isolamento tenant; perf >5000 membros; snapshots PDF.
 
 ---
 
@@ -495,9 +506,10 @@ graph LR
 6. **Audit log de reports:** removido (DEV-16). Geração de relatório **não** grava em `audit_logs`. Import/export de lista de membros usam log genérico separado.  
 7. **`exportDashboardPDF` acopla** a `getMemberReports` via mock Response — frágil a mudanças de assinatura.  
 8. Handler de reports/birthdays vive em `memberController` / rota `members` — ao alterar membros, não quebrar contrato do painel.  
-9. `console.log` verbosos no exportController em produção.  
+9. **Não logar PII** (`filters`/`fields`/search) em exports — preferir metadados agregados ou silêncio.  
 10. **Modais de drill-down** são custom (não usam `Modal` base compartilhado); no mobile usam sheet/`dvh` próprio.  
-11. **`ReportsFilters`** não montado na Home — não reativar sem Issue de produto.
+11. **`ReportsFilters`** não montado na Home — não reativar sem Issue de produto.  
+12. Contagem de membros em export de grupos/dashboard: preferir **uma** query `.in('group_id')` (evitar N+1).
 
 ---
 
@@ -505,6 +517,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-20 | 1.5 | Kit Flock Print (`utils/pdf`), BR-REL-011, fields deprecated → 400, testes listFields | DEV-25 |
 | 2026-07-31 | 1.4 | UX mobile/tablet: hub CTAs/ViewSelector touch, sideLayout chips, drill-down sheet/dvh | DEV-33 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo relatórios | — |
 | 2026-07-15 | 1.1 | Endpoint ficha de cadastro em branco (`GET /export/members/registration-form/pdf`) | DEV-10 |
@@ -519,8 +532,8 @@ graph LR
 | --- | --- |
 | Módulo documentado | **relatorios** ✅ |
 | Endpoints | **13** (3 agregados/aniversários + 10 export) |
-| Regras BR-REL | **10** |
+| Regras BR-REL | **11** |
 | Entidades próprias | **0** (read-only) |
-| Integrações | Supabase + PDFKit |
+| Integrações | Supabase + PDFKit (Flock Print) |
 | Jobs | Nenhum |
-| Testes | Nenhum dedicado |
+| Testes | Unitários leves (`listFields`) |

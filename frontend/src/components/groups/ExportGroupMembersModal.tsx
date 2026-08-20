@@ -36,7 +36,6 @@ const FIELD_OPTIONS: FieldOption[] = [
   { id: 'email', label: 'Email', category: 'contact' },
   { id: 'active', label: 'Status', category: 'ecclesiastical' },
   { id: 'congregation', label: 'Congregação', category: 'ecclesiastical' },
-  { id: 'baptism_date', label: 'Data de Batismo', category: 'ecclesiastical' },
   { id: 'admission', label: 'Tipo de Recebimento', category: 'ecclesiastical' },
   { id: 'admission_date', label: 'Data de Recebimento', category: 'ecclesiastical' },
   { id: 'address', label: 'Endereço', category: 'address' },

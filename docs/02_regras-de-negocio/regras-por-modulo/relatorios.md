@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-07-21
-versao: "1.3"
-total_regras: 10
+ultima_atualizacao: 2026-08-20
+versao: "1.4"
+total_regras: 11
 tags: [regras, modulo:relatorios]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -30,6 +30,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 | BR-REL-008 | Export lista vazia | Restrição | Ativo |
 | BR-REL-009 | Vision UI painel | Fato | Ativo |
 | BR-REL-010 | Export grupos exige types | Restrição | Ativo |
+| BR-REL-011 | Flock Print (padrão PDF) | Fato | Ativo |
 
 ---
 
@@ -102,17 +103,17 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** [[BR-GEN-010]]
 
 ### BR-REL-007: Export fields obrigatórios
-- **Declaração:** PDF/CSV de lista exige fields[] não vazio.
+- **Declaração:** PDF/CSV de lista exige `fields[]` não vazio. Em PDFs de lista de membros/integração/grupo, campos deprecated (`baptism_date`, `document`) são **ignorados**; se nenhum campo válido restar → **400**.
 - **Tipo:** Restrição
 - **Gatilho:** Export list
-- **Comportamento esperado:** Arquivo
+- **Comportamento esperado:** Arquivo com colunas válidas
 - **Comportamento em violação:** 400
-- **Implementado em:** `exportController.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Implementado em:** `exportController.ts` + `utils/pdf/listFields.ts` (`resolveExportColumns`)
+- **Testado em:** `utils/pdf/__tests__/listFields.test.ts`
 - **Depende de:** —
 
 ### BR-REL-008: Export lista vazia
-- **Declaração:** Sem membros no filtro → 404 Nenhum membro encontrado. Análogo em export de grupos: sem grupos após filtros → 404 Nenhum grupo encontrado.
+- **Declaração:** Sem membros no filtro → 404 Nenhum membro encontrado. Análogo em export de grupos: sem grupos após filtros → 404. Export de membros de um grupo sem integrantes → 404 com mensagem de grupo sem membros.
 - **Tipo:** Restrição
 - **Gatilho:** Export
 - **Comportamento esperado:** —
@@ -140,6 +141,16 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Implementado em:** `groupValidator.ts` (`exportGroupsListFiltersSchema`) + `exportController.ts` + `ExportGroupsTypesModal.tsx`
 - **Testado em:** N/A — validação schema manual (DEV-14); sem suite dedicada
 - **Depende de:** [[BR-GRP-001]], [[BR-REL-006]], [[BR-REL-008]]
+
+### BR-REL-011: Flock Print (padrão PDF)
+- **Declaração:** Todos os PDFs do tenant gerados via kit `backend/src/utils/pdf/` compartilham cabeçalho (igreja + título + meta), rodapé com data/hora e numeração de páginas, tipografia/tokens comuns. Listas tabulares densas usam A4 **landscape**; fichas e dashboard usam **portrait**.
+- **Tipo:** Fato
+- **Gatilho:** Qualquer export PDF de `/api/export/*` (e PDF de calendário no módulo calendário)
+- **Comportamento esperado:** Documentos visualmente consistentes entre tipos
+- **Comportamento em violação:** Renderer fora do kit / layout ad hoc
+- **Implementado em:** `backend/src/utils/pdf/*`
+- **Testado em:** smoke DEV-25; unitários de colunas
+- **Depende de:** [[BR-REL-006]]
 
 ---
 

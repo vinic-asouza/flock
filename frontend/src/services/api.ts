@@ -689,12 +689,14 @@ class ApiService {
   async exportCalendarPDF(params?: {
     month?: number;
     year?: number;
+    period?: 'month' | 'year';
     congregation_id?: string;
     group_id?: string;
   }): Promise<Blob> {
     const queryParams = new URLSearchParams();
     if (params?.month) queryParams.append('month', params.month.toString());
     if (params?.year) queryParams.append('year', params.year.toString());
+    if (params?.period) queryParams.append('period', params.period);
     if (params?.congregation_id) queryParams.append('congregation_id', params.congregation_id);
     if (params?.group_id) queryParams.append('group_id', params.group_id);
 
