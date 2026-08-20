@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: calendario
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-20
+versao: "1.1"
 total_regras: 16
 tags: [regras, modulo:calendario]
 ver_tambem:
@@ -33,7 +33,7 @@ Agenda da igreja: eventos, recorrência e participantes.
 | BR-CAL-013 | Sem duplicar participante membro | Restrição | Ativo |
 | BR-CAL-014 | Isolamento tenant | Restrição | Ativo |
 | BR-CAL-015 | List expande recorrência | Derivação | Ativo |
-| BR-CAL-016 | PDF mensal ativos | Derivação | Ativo |
+| BR-CAL-016 | PDF mês/ano ativos | Derivação | Ativo |
 
 ---
 
@@ -197,14 +197,14 @@ Agenda da igreja: eventos, recorrência e participantes.
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
-### BR-CAL-016: PDF mensal ativos
-- **Declaração:** Export PDF mensal considera itens ativos e filtros cong/grupo.
+### BR-CAL-016: PDF mês/ano ativos
+- **Declaração:** Export PDF considera itens `active`, aplica filtros de congregação/grupo e expande recorrência na janela. `period=month` (default) usa mês/ano; `period=year` usa o ano inteiro. UI: aba Calendário → mês; aba Listas → ano.
 - **Tipo:** Derivação
-- **Gatilho:** Export PDF
-- **Comportamento esperado:** PDF
-- **Comportamento em violação:** 400 mês inválido
-- **Implementado em:** `calendarController.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Gatilho:** Export PDF (`GET /api/calendar/export/pdf`)
+- **Comportamento esperado:** PDF landscape com ocorrências do período
+- **Comportamento em violação:** 400 mês inválido (quando period=month)
+- **Implementado em:** `calendarController.ts` + `utils/pdf/renderCalendar.ts` + `calendar/page.tsx`
+- **Testado em:** N/A — smoke DEV-25
 - **Depende de:** —
 
 ---

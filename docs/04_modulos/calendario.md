@@ -3,8 +3,8 @@ type: modulo
 nome: calendario
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-31
-versao: "1.1"
+ultima_atualizacao: 2026-08-20
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, calendario]
 depende_de: [auth, igreja-config, congregacoes, grupos, membros]
@@ -39,7 +39,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Listagem com expansão de ocorrências recorrentes no intervalo + paginação pós-expansão
 - Filtros: type, congregation (UUID; `sede` rejeitado), group, janela de datas
 - Participantes: XOR membro/guest; add; list; remove; bulk; opcional no create do item
-- Export PDF mensal (PDFKit, síncrono) dos itens ativos com expansão
+- Export PDF (PDFKit / Flock Print, síncrono) dos itens ativos com expansão — mês ou ano inteiro
 - Helper `GET /api/calendar/groups` — grupos que têm itens no calendário
 - Auditoria create/update/delete (item e participantes)
 
@@ -70,18 +70,19 @@ backend/src/
 ├── utils/
 │   ├── calendarValidations.ts           → cong./grupo/responsável/participantes
 │   ├── recurrenceExpander.ts            → expand weekly/monthly (date-fns)
-│   └── auditLogger.ts
+│   ├── auditLogger.ts
+│   └── pdf/                             → kit Flock Print (`renderCalendar.ts`)
 └── types/index.ts                       → CalendarItem*, CalendarParticipant*
 
 frontend/src/
-├── app/(main)/calendar/page.tsx
+├── app/(main)/calendar/page.tsx         → hub + CTA **Exportar PDF**
 └── components/calendar/                 → mês, lista, form, participantes, filtros
 
 app.ts mounts:
   app.use('/api/calendar', calendarRoutes)
   app.use('/api', calendarParticipantsRoutes)
 
-Testes: inexistentes.
+Testes: inexistentes neste módulo (kit PDF tem unitários de listFields em relatórios).
 Migrations: schema Supabase (sem pasta local dedicada).
 ```
 
@@ -188,7 +189,7 @@ Auth: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
 | --- | --- | --- | --- | --- |
 | GET | `/api/calendar/` | ✅ | ≥ reader | Lista expandida + paginação |
 | GET | `/api/calendar/groups` | ✅ | ≥ reader | Grupos com itens no calendário |
-| GET | `/api/calendar/export/pdf` | ✅ | ≥ reader | PDF mensal |
+| GET | `/api/calendar/export/pdf` | ✅ | ≥ reader | PDF mês ou ano |
 | GET | `/api/calendar/:id` | ✅ | ≥ reader | Detalhe (+ participantes) |
 | POST | `/api/calendar/` | ✅ | ≥ editor | Criar (+ participants opcional) |
 | PUT | `/api/calendar/:id` | ✅ | ≥ editor | Atualizar (status ignorado) |
@@ -266,9 +267,17 @@ Só retorna `status = 'active'`.
 ### PDF — `GET /api/calendar/export/pdf`
 
 ```typescript
-// Query: month (1–12), year, congregation_id?, group_id?
-// Response: application/pdf attachment calendario-YYYY-MM.pdf
+// Query:
+//   period?: 'month' | 'year'   // default 'month'
+//   month?: 1–12               // obrigatório efetivo quando period=month (default mês atual)
+//   year?: number              // default ano atual
+//   congregation_id?, group_id?
+// Response: application/pdf
+//   period=month → attachment calendario-YYYY-MM.pdf
+//   period=year  → attachment calendario-YYYY.pdf
 ```
+
+UI: botão **Exportar PDF** no hub `/calendar` — aba Calendário usa o mês exibido; aba Listas usa o ano exibido (`period=year`).
 
 ### Bulk participantes
 
@@ -300,7 +309,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/calendario]] (**16** regras).
 | BR-CAL-013 | Sem duplicar mesmo `member_id` no item |
 | BR-CAL-014 | Isolamento por `church_id` |
 | BR-CAL-015 | List expande recorrência; só active; limit ≤2000 |
-| BR-CAL-016 | PDF mensal: ativos + filtros + expansão |
+| BR-CAL-016 | PDF: ativos + filtros + expansão; mês ou ano conforme `period` |
 
 ---
 
@@ -409,7 +418,7 @@ Hub autenticado em `frontend/src/app/(main)/calendar/page.tsx` + `components/cal
 - **Visão lista (`CalendarListView`):** cards responsivos; FAB de navegação compacto com safe-area no mobile.
 - **Create/Edit (`CalendarItemForm`):** grids `1 → md:2`; CTAs no `footer` do Modal; `onSubmitDisabledChange` espelha loading de filtros/grupos no submit sticky.
 - **View/Delete:** ações no `footer` sticky; textos com `break-words` no delete.
-- **Export PDF:** API existe; **sem UI** no módulo atualmente (fora do escopo mobile).
+- **Export PDF:** botão no header do hub; respeita filtros de congregação/grupo e o período da aba ativa (mês vs ano).
 
 Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
 
@@ -425,10 +434,10 @@ Não há Stripe/Resend/Google Calendar. Persistência + PDF local.
 - Falha: 400/404/500 com `{ error, details }`  
 - Config: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
-### PDFKit (biblioteca in-process)
+### PDFKit (biblioteca in-process / Flock Print)
 
-- Propósito: gerar PDF mensal streamado na response (`exportCalendarPDF`)  
-- Operações: `new PDFDocument` → `doc.pipe(res)`  
+- Propósito: gerar PDF de agenda streamado (`exportCalendarPDF` → `renderCalendarMonthPdf`)  
+- Layout landscape; agrupamento por dia  
 - Falha: 400 params / 400 query / 500 catch  
 - Sem variável de ambiente própria
 
@@ -544,7 +553,7 @@ graph LR
 7. Ordem de rotas: `/groups` e `/export/pdf` **antes** de `/:id` — não reordenar.  
 8. Biblioteca **date-fns** no expander e **pdfkit** no export — dependências do backend.  
 9. **Modal “Itens do dia”:** só no fluxo mobile (`matchMedia` `<md`); no desktop o usuário abre itens pelos chips. Nested modal (dia → view) é esperado.  
-10. **UI de export PDF** ainda não existe no frontend — não documentar como ação de tela até haver CTA.
+10. **Export PDF anual** (`period=year`) pode ser pesado em igrejas com muitos eventos — mesma restrição síncrona do PDF mensal.
 
 ---
 
@@ -552,6 +561,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-20 | 1.2 | CTA Exportar PDF na UI; `period=year\|month`; renderer Flock Print | DEV-25 |
 | 2026-07-31 | 1.1 | UX mobile/tablet: mês densificado, modal do dia, Modal footer sticky CRUD/view, filtros/lista touch | DEV-32 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo calendário | — |
 

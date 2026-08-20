@@ -311,7 +311,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | --- | --- | --- | --- | --- | --- |
 | GET | `/api/calendar/` | ✅ | ≥ reader | Listar itens | ✅ |
 | GET | `/api/calendar/groups` | ✅ | ≥ reader | Grupos com itens | ✅ |
-| GET | `/api/calendar/export/pdf` | ✅ | ≥ reader | PDF mensal | ✅ |
+| GET | `/api/calendar/export/pdf` | ✅ | ≥ reader | PDF mês/ano (`period`) | ✅ |
 | GET | `/api/calendar/:id` | ✅ | ≥ reader | Detalhe | ✅ |
 | POST | `/api/calendar/` | ✅ | ≥ editor | Criar | ✅ |
 | PUT | `/api/calendar/:id` | ✅ | ≥ editor | Atualizar | ✅ |

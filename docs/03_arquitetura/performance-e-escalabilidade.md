@@ -146,7 +146,7 @@ Path especial: filtro por **idade** em members carrega o conjunto na API e pagin
 
 | Query / padrão | Problema | Arquivo | Sugestão |
 | --- | --- | --- | --- |
-| Count de membros por grupo em loop | N+1 | `exportController.ts` (~1636, ~2342) | Agregar com `.in('group_id')` como em `groupController` |
+| Count de membros por grupo em loop | N+1 | Mitigado em export grupos/dashboard (DEV-25: `.in('group_id')`) | Manter agregação única |
 | `getUserById` por usuário | N+1 Auth Admin | `churchUserController.ts` | Batch/list users API se disponível |
 | `checkDuplicate` por linha CSV | Re-SELECT membros | `memberImportService.ts` | Carregar set de docs/emails uma vez |
 | Filtro idade members | Full load + slice | `memberController.ts` | Filtrar por `birth` no SQL |
@@ -191,7 +191,7 @@ Path especial: filtro por **idade** em members carrega o conjunto na API e pagin
 | --- | --- | --- | --- | --- |
 | 🔴 Alto | PDFs/CSV/import síncronos no request | `exportController`, `calendarController`, `memberImport*`, `upload.ts` | CPU/mem alta; timeouts; bloqueio event loop | Fila + worker; streaming/chunk |
 | 🔴 Alto | Sem fila/Redis; tudo no runtime API | `app.ts`, `package.json` | Não isola picos webhook/export/cron | Extrair worker + broker |
-| 🔴 Alto | N+1 em exports de grupos | `exportController.ts` | Latência O(n) DB | Query agregada |
+| 🔴 Alto | N+1 em exports de grupos | Mitigado DEV-25 | — | Manter query agregada |
 | 🔴 Alto | Import CSV: duplicate check por linha | `memberImportService.ts` | Import lento / timeouts | Cache de unicidade em Set |
 | 🟡 Médio | Blacklist + rate limit só memória | auth + `express-rate-limit` | Multi-réplica inconsistente | Redis store |
 | 🟡 Médio | Filter idade in-memory | `memberController.ts` | RAM + latência | Filtro SQL por birth |
