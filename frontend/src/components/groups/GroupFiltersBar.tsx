@@ -208,18 +208,23 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
       </div>
 
       {/* Ordenar */}
-      <div className="flex min-w-[8rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[10rem]">
+      <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[10rem]">
         <label className="block text-xs font-medium text-gray-600">Ordenar por</label>
         <div className="relative overflow-visible">
           <button
             ref={sortTriggerRef}
             type="button"
             onClick={() => handleToggle('sorting')}
-            className="inline-flex h-11 min-h-11 min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-gray-600 transition-colors hover:border-gray-300 hover:bg-gray-50"
+            className="inline-flex h-11 min-h-11 w-full min-w-0 items-center justify-between rounded-lg border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
           >
-            <ArrowUpDown size={16} />
-            {SORT_LABELS[sorting.sort_by]}
-            <ChevronDown size={16} className={`transition-transform duration-200 ${openSelect === 'sorting' ? 'rotate-180' : ''}`} />
+            <span className="inline-flex items-center gap-2 min-w-0 truncate">
+              <ArrowUpDown size={16} className="shrink-0" />
+              <span className="truncate">{SORT_LABELS[sorting.sort_by]}</span>
+            </span>
+            <ChevronDown
+              size={16}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'sorting' ? 'rotate-180' : ''}`}
+            />
           </button>
         </div>
       </div>

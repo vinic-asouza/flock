@@ -132,15 +132,15 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
             </div>
 
             {/* Instruções e Planilha de Exemplo */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">
+              <div className="flex items-start gap-3 min-w-0">
                 <FileText className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
-                <div className="flex-1 space-y-3">
+                <div className="flex-1 min-w-0 space-y-3">
                   <div>
                     <h4 className="text-sm font-semibold text-blue-900 mb-2">
                       📋 Planilha de Exemplo
                     </h4>
-                    <p className="text-sm text-blue-800 mb-3">
+                    <p className="text-sm text-blue-800 mb-3 break-words">
                       Baixe o modelo CSV com as colunas necessárias (incluindo Natural de, Data do Casamento, Número e flags de membro da família) e uma linha de exemplo. Nacionalidade e CPF/Documento permanecem apenas para migração legada.
                     </p>
                     <a
@@ -157,16 +157,16 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                     <h4 className="text-sm font-semibold text-blue-900 mb-2">
                       📝 Instruções
                     </h4>
-                    <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+                    <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside break-words">
                       <li>Clique no botão acima para baixar o modelo CSV</li>
                       <li>Abra o arquivo no Excel, Google Sheets ou editor de planilhas e preencha os dados dos membros (pode apagar a linha de exemplo)</li>
-                      <li>Colunas opcionais novas: <strong>Natural de</strong>, <strong>Data do Casamento</strong>, <strong>Número</strong> (do endereço), <strong>Cônjuge é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs">não</code>), <strong>Pai é membro</strong> e <strong>Mãe é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs">nao</code>/<code className="bg-blue-100 px-1 rounded text-xs">falecido</code>)</li>
-                      <li>Para <strong>Filhos</strong>, use o formato: <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Sim</code> ou <code className="bg-blue-100 px-1 rounded text-xs">Nome|Data|Não</code> (o último valor indica se reside com você). Para múltiplos filhos, separe por ponto e vírgula: <code className="bg-blue-100 px-1 rounded text-xs">Filho1|01/01/2010|Sim;Filho2|15/03/2012|Não</code></li>
-                      <li><strong>Nacionalidade (legado)</strong> e <strong>CPF/Documento (legado)</strong> são opcionais e só para migração de sistemas antigos — não fazem mais parte do formulário de cadastro</li>
+                      <li className="break-words">Colunas opcionais novas: <strong>Natural de</strong>, <strong>Data do Casamento</strong>, <strong>Número</strong> (do endereço), <strong>Cônjuge é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs break-all">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs break-all">não</code>), <strong>Pai é membro</strong> e <strong>Mãe é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs break-all">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs break-all">nao</code>/<code className="bg-blue-100 px-1 rounded text-xs break-all">falecido</code>)</li>
+                      <li className="break-words">Para <strong>Filhos</strong>, use o formato: <code className="bg-blue-100 px-1 rounded text-xs break-all">Nome|Data|Sim</code> ou <code className="bg-blue-100 px-1 rounded text-xs break-all">Nome|Data|Não</code> (o último valor indica se reside com você). Para múltiplos filhos, separe por ponto e vírgula: <code className="bg-blue-100 px-1 rounded text-xs break-all">Filho1|01/01/2010|Sim;Filho2|15/03/2012|Não</code></li>
+                      <li>Nacionalidade (legado) e CPF/Documento (legado) são opcionais e só para migração de sistemas antigos — não fazem mais parte do formulário de cadastro</li>
                       <li>Salve/exporte como CSV (valores separados por vírgula) e faça upload neste modal</li>
                     </ol>
                     <div className="mt-3 p-3 bg-blue-100 rounded-md">
-                      <p className="text-xs text-blue-900">
+                      <p className="text-xs text-blue-900 break-words">
                         <strong>💡 Dica:</strong> Campos obrigatórios são: <strong>Nome</strong>, <strong>Data de Nascimento</strong>, <strong>Gênero</strong>, <strong>Estado Civil</strong>, <strong>Endereço</strong>, <strong>Cidade</strong>, <strong>Estado</strong>, <strong>Tipo de Recebimento</strong> e <strong>Data de Recebimento</strong>. Os demais campos são opcionais e podem ser deixados em branco.
                       </p>
                     </div>

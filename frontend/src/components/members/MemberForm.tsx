@@ -1106,6 +1106,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             label="Tipo de Recebimento *"
             value={watch('admission') || ''}
             onChange={(value) => setValue('admission', value)}
+            className="w-full md:col-span-2"
             options={isInfantMember ? [
               { value: '', label: 'Selecione o tipo de recebimento' },
               { value: 'Batismo Infantil', label: 'Batismo Infantil' },
@@ -1132,7 +1133,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             isLoading={isLoading}
           />
 
-          <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="col-span-1 md:col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
             <p className="text-sm text-blue-800">
               Informe a <strong>congregação</strong> a qual o membro pertence.
             </p>
@@ -1145,6 +1146,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               setValue('congregation_id', value);
               if (mode === 'create') setSelectedGroups([]);
             }}
+            className="w-full md:col-span-2"
             options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}
             placeholder={filtersLoading ? 'Carregando...' : 'Selecione a congregação'}
             disabled={filtersLoading || isLoading}

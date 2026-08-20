@@ -345,22 +345,22 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
 
                 {group.responsible && (
                   <div className="min-w-0">
-                    <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-500">
+                    <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
                       <User size={18} className="shrink-0 text-gray-400" />
                       Responsável
                     </label>
-                    <div className="space-y-2">
+                    <div className="space-y-0.5">
                       <p className="break-words font-medium text-gray-900">
                         {group.responsible.name || '-'}
                       </p>
                       {(group.responsible.email ||
                         group.responsible.phone ||
                         group.responsible.whatsapp) && (
-                        <div className="flex flex-col gap-2 text-sm text-gray-600">
+                        <div className="flex flex-col gap-0.5 text-sm text-gray-600">
                           {group.responsible.email && (
                             <a
                               href={`mailto:${group.responsible.email}`}
-                              className="flex min-h-11 items-center gap-1.5 break-all transition-colors hover:text-primary"
+                              className="flex min-h-9 items-center gap-1.5 break-all transition-colors hover:text-primary"
                             >
                               <Mail size={14} className="shrink-0 text-gray-400" />
                               {group.responsible.email}
@@ -369,7 +369,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                           {group.responsible.phone && (
                             <a
                               href={`tel:${group.responsible.phone.replace(/\D/g, '')}`}
-                              className="flex min-h-11 items-center gap-1.5 transition-colors hover:text-primary"
+                              className="flex min-h-9 items-center gap-1.5 transition-colors hover:text-primary"
                             >
                               <Phone size={14} className="shrink-0 text-gray-400" />
                               {group.responsible.phone}
@@ -380,7 +380,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                               href={`https://wa.me/${group.responsible.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex min-h-11 items-center gap-1.5 transition-colors hover:text-green-600"
+                              className="flex min-h-9 items-center gap-1.5 transition-colors hover:text-green-600"
                             >
                               <MessageCircle size={14} className="shrink-0 text-gray-400" />
                               {group.responsible.whatsapp}

@@ -227,10 +227,10 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
           <>
             {/* Conteúdo principal */}
             <div className="flex-1 p-6 space-y-6">
-              {/* Header com nome e status */}
-              <div className="flex items-center justify-between">
+              {/* Header com nome, status e PDF abaixo do nome */}
+              <div className="flex flex-col gap-3">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 uppercase">{formatMemberName(member.name)}</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 uppercase break-words">{formatMemberName(member.name)}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                       }`}>
@@ -238,24 +238,28 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     </span>
                   </div>
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleExportPDF}
-                  disabled={exporting || loading}
-                >
-                  {exporting ? (
-                    <>
-                      <Loader className="animate-spin mr-2" size={16} />
-                      Exportando...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={16} className="mr-2" />
-                      Exportar PDF
-                    </>
-                  )}
-                </Button>
+                <div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleExportPDF}
+                    disabled={exporting || loading}
+                    className="inline-flex items-center justify-center gap-2 min-h-11 w-full sm:w-auto"
+                  >
+                    {exporting ? (
+                      <>
+                        <Loader className="animate-spin" size={16} />
+                        Exportando...
+                      </>
+                    ) : (
+                      <>
+                        <Download size={16} />
+                        <span className="hidden sm:inline">Exportar PDF</span>
+                        <span className="sm:hidden">PDF</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Informações Pessoais */}
@@ -619,36 +623,37 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
             </div>
 
             {/* Footer fixo */}
-            <div className="flex-shrink-0 border-t border-gray-200 p-6">
-              <div className="flex justify-between items-center">
+            <div className="flex-shrink-0 border-t border-gray-200 p-4 sm:p-6">
+              <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center">
                 <Button
                   variant="danger"
                   onClick={onDeletePermanently}
                   disabled={loading || readOnly}
                   title={readOnly ? READER_TOOLTIP : undefined}
+                  className="w-full sm:w-auto justify-center"
                 >
                   <Trash2 size={16} className="mr-2" />
                   Excluir Permanentemente
                 </Button>
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:space-x-0 w-full sm:w-auto">
                   {member.active ? (
-                    // Botão para membros ativos
                     <Button
                       variant="secondary"
                       onClick={onDeactivate}
                       disabled={loading || readOnly}
                       title={readOnly ? READER_TOOLTIP : undefined}
+                      className="w-full sm:w-auto justify-center"
                     >
                       <UserMinus size={16} className="mr-2" />
                       Inativar Membro
                     </Button>
                   ) : (
-                    // Botão para membros inativos
                     <Button
                       variant="secondary"
                       onClick={onReactivate}
                       disabled={loading || readOnly}
                       title={readOnly ? READER_TOOLTIP : undefined}
+                      className="w-full sm:w-auto justify-center"
                     >
                       <UserPlus size={16} className="mr-2" />
                       Reativar
@@ -658,6 +663,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     onClick={onEdit}
                     disabled={loading || readOnly}
                     title={readOnly ? READER_TOOLTIP : undefined}
+                    className="w-full sm:w-auto justify-center"
                   >
                     Editar
                   </Button>

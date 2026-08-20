@@ -26,6 +26,7 @@ interface MemberCardProps {
     gender: string;
     marital_status: string;
     whatsapp?: string | null;
+    phone?: string | null;
     email?: string | null;
   };
   canEdit?: boolean;
@@ -39,7 +40,7 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
   const readOnly = canEdit === false;
   const idade = calculateAge(member.birth);
   return (
-    <div className={`flex flex-col gap-1 border border-gray-200 rounded-lg px-4 py-3 sm:px-6 sm:py-4 md:flex-row md:items-center md:justify-between min-w-0 ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
+    <div className={`flex flex-col gap-0.5 sm:gap-1 border border-gray-200 rounded-lg px-3 py-2.5 sm:px-6 sm:py-4 md:flex-row md:items-center md:justify-between min-w-0 ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e selos */}
         <CardHeader
@@ -79,17 +80,24 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
               : []),
           ]}
         />
-        {/* Linha 2: Dados menores */}
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-          <span>{idade !== null ? `${idade} Anos` : '-'}</span>
+        {/* Mobile: só contato (WhatsApp > telefone). Desktop: idade + contatos completos */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600 mt-0.5 sm:mt-0">
+          <span className="hidden md:inline">{idade !== null ? `${idade} Anos` : '-'}</span>
           <ContactLinks
             whatsapp={member.whatsapp}
+            phone={member.phone}
+            className="md:hidden gap-2"
+          />
+          <ContactLinks
+            whatsapp={member.whatsapp}
+            phone={member.phone}
             email={member.email}
+            className="hidden md:flex gap-4"
           />
         </div>
       </div>
       {/* Ações */}
-      <div className="flex flex-wrap gap-1 mt-3 md:mt-0 md:ml-4 shrink-0">
+      <div className="flex flex-wrap gap-1 mt-2 sm:mt-3 md:mt-0 md:ml-4 shrink-0">
         {member.active ? (
           <>
             <button
@@ -143,4 +151,4 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
       </div>
     </div>
   );
-} 
+}
