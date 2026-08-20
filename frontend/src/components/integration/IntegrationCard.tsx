@@ -45,7 +45,7 @@ export function IntegrationCard({ member, canEdit = true, onEdit, onConvert, onD
 
   return (
     <div
-      className={`flex flex-col gap-2 border border-gray-200 rounded-lg px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between transition-shadow hover:shadow-sm ${statusBackground[member.status] ?? 'bg-white'
+      className={`flex flex-col gap-1 sm:gap-2 border border-gray-200 rounded-lg px-3 py-3 sm:px-6 sm:py-4 md:flex-row md:items-center md:justify-between transition-shadow hover:shadow-sm ${statusBackground[member.status] ?? 'bg-white'
         }`}
     >
       <div className="flex-1 min-w-0">
@@ -70,7 +70,8 @@ export function IntegrationCard({ member, canEdit = true, onEdit, onConvert, onD
           ]}
         />
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
+        {/* Detalhes extras só no desktop; mobile: nome + selos + ações */}
+        <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
           <div className="flex items-center gap-1">
             <span>{age !== null ? `${age} anos` : 'Idade não informada'}</span>
           </div>
@@ -86,7 +87,7 @@ export function IntegrationCard({ member, canEdit = true, onEdit, onConvert, onD
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 mt-3 md:mt-0 md:ml-4 md:shrink-0">
+      <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-3 md:mt-0 md:ml-4 md:shrink-0">
         <button
           type="button"
           title="Visualizar"

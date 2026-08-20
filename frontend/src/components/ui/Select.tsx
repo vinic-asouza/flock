@@ -263,7 +263,7 @@ export function Select({
           error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
         }`}
       >
-        <span className={selectedOption ? 'text-[#222]' : 'text-[#888]'}>
+        <span className={selectedOption ? 'text-[#222] truncate' : 'text-[#888] truncate'}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown

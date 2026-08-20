@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import { Building, Users } from 'lucide-react';
 import { Select } from '@/components/ui/Select';
@@ -13,9 +13,16 @@ interface ViewSelectorProps {
   selectedView: ViewMode;
   selectedCongregationId?: string;
   onViewChange: (view: ViewMode, congregationId?: string, congregationName?: string) => void;
+  /** Ações alinhadas à direita do título (ex.: Atualizar / PDF) */
+  actions?: ReactNode;
 }
 
-export function ViewSelector({ selectedView, selectedCongregationId, onViewChange }: ViewSelectorProps) {
+export function ViewSelector({
+  selectedView,
+  selectedCongregationId,
+  onViewChange,
+  actions,
+}: ViewSelectorProps) {
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [loading, setLoading] = useState(false);
   const singleCongregationApplied = useRef(false);
@@ -89,9 +96,12 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
   if (isSingleCongregation) {
     const name = congregations[0].label;
     return (
-      <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
-        <p className="text-sm text-gray-600">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
+          {actions}
+        </div>
+        <p className="text-sm text-gray-600 text-center sm:text-left">
           Visualizando dados de <span className="font-medium text-gray-900">{name}</span>
         </p>
       </div>
@@ -100,10 +110,13 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-medium text-gray-700">Visualização</h3>
+        {actions}
+      </div>
 
-      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
-        <div className="flex flex-row flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+      <div className="flex flex-col items-center gap-2 sm:items-start sm:gap-3">
+        <div className="flex flex-row flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 w-full sm:w-auto">
           {viewOptions.map((option) => {
             const Icon = option.icon;
             const isSelected = selectedView === option.value;
@@ -112,7 +125,7 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
               <button
                 key={option.value}
                 onClick={() => handleViewChange(option.value)}
-                className={`inline-flex items-center justify-center gap-2 min-h-11 flex-1 sm:flex-initial px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors ${
+                className={`inline-flex items-center justify-center gap-2 min-h-11 flex-1 sm:flex-initial max-w-[11rem] sm:max-w-none px-3 py-2 rounded-md text-sm font-medium touch-manipulation transition-colors ${
                   isSelected
                     ? 'bg-primary text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -127,7 +140,7 @@ export function ViewSelector({ selectedView, selectedCongregationId, onViewChang
         </div>
 
         {selectedView === 'congregation' && (
-          <div className="w-full sm:w-64 flex-shrink-0 min-w-0">
+          <div className="w-full max-w-sm sm:max-w-none sm:w-64 flex-shrink-0 min-w-0 mx-auto sm:mx-0">
             <Select
               value={selectedCongregationId || ''}
               onChange={handleCongregationChange}

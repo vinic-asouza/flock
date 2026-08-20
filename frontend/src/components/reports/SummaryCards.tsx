@@ -87,7 +87,7 @@ export function SummaryCards({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
@@ -135,7 +135,7 @@ export function SummaryCards({
       )}
       
       {/* Cards de resumo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         {cards.map((card, index) => {
         const Icon = card.icon;
         return (

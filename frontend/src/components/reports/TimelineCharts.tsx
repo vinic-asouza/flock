@@ -372,7 +372,7 @@ export function TimelineCharts({
             </div>
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex flex-row flex-wrap items-end justify-center sm:justify-start gap-3">
                 <div className="w-32 space-y-1">
                   <span className="text-xs font-medium text-gray-500">Ano</span>
                   <Select
@@ -466,44 +466,44 @@ export function TimelineCharts({
             )}
 
             <div className="border-t border-gray-100 pt-3 space-y-3 mt-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-blue-50">
-                    <Droplets size={18} className="text-blue-600" />
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-2 min-w-0">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-blue-50 shrink-0">
+                    <Droplets size={16} className="text-blue-600 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500">
+                  <div className="min-w-0 text-center sm:text-left">
+                    <div className="text-[10px] sm:text-xs text-gray-500 truncate">
                       Batismos
                     </div>
-                    <div className="text-lg font-semibold text-[#090725]">
+                    <div className="text-base sm:text-lg font-semibold text-[#090725]">
                       {selectedTotals.baptisms}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-green-50">
-                    <UserPlus size={18} className="text-green-600" />
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-2 min-w-0">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-green-50 shrink-0">
+                    <UserPlus size={16} className="text-green-600 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500">
+                  <div className="min-w-0 text-center sm:text-left">
+                    <div className="text-[10px] sm:text-xs text-gray-500 truncate">
                       Recebimento
                     </div>
-                    <div className="text-lg font-semibold text-[#090725]">
+                    <div className="text-base sm:text-lg font-semibold text-[#090725]">
                       {selectedTotals.admissions}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-gray-100">
-                    <Users size={18} className="text-[#090725]" />
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-2 min-w-0">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-gray-100 shrink-0">
+                    <Users size={16} className="text-[#090725] sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500">
+                  <div className="min-w-0 text-center sm:text-left">
+                    <div className="text-[10px] sm:text-xs text-gray-500 truncate">
                       Total
                     </div>
-                    <div className="text-lg font-semibold text-[#090725]">
+                    <div className="text-base sm:text-lg font-semibold text-[#090725]">
                       {selectedTotals.baptisms + selectedTotals.admissions}
                     </div>
                   </div>
@@ -544,7 +544,7 @@ export function TimelineCharts({
               </div>
 
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex flex-row flex-wrap items-end justify-center sm:justify-start gap-3">
                   <div className="w-32 space-y-1">
                     <span className="text-xs font-medium text-gray-500">Ano</span>
                     <Select

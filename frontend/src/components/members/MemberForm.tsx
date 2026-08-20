@@ -1088,7 +1088,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="col-span-2 flex items-center space-x-2">
+          <div className="col-span-full flex items-center space-x-2">
             <input
               type="checkbox"
               id="isInfantMember"
@@ -1106,6 +1106,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             label="Tipo de Recebimento *"
             value={watch('admission') || ''}
             onChange={(value) => setValue('admission', value)}
+            className="col-span-full w-full min-w-0"
             options={isInfantMember ? [
               { value: '', label: 'Selecione o tipo de recebimento' },
               { value: 'Batismo Infantil', label: 'Batismo Infantil' },
@@ -1122,18 +1123,20 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             error={errors.admission?.message}
           />
 
-          <Input
-            label="Data de Recebimento *"
-            placeholder="DD/MM/AAAA"
-            value={admissionDateDisplay}
-            onChange={(e) => handleDateChange(e, 'admission_date')}
-            maxLength={10}
-            error={errors.admission_date?.message}
-            isLoading={isLoading}
-          />
+          <div className="col-span-full md:col-span-1 min-w-0">
+            <Input
+              label="Data de Recebimento *"
+              placeholder="DD/MM/AAAA"
+              value={admissionDateDisplay}
+              onChange={(e) => handleDateChange(e, 'admission_date')}
+              maxLength={10}
+              error={errors.admission_date?.message}
+              isLoading={isLoading}
+            />
+          </div>
 
-          <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-800">
+          <div className="col-span-full p-4 bg-blue-50 border border-blue-200 rounded-md min-w-0">
+            <p className="text-sm text-blue-800 break-words">
               Informe a <strong>congregação</strong> a qual o membro pertence.
             </p>
           </div>
@@ -1145,6 +1148,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               setValue('congregation_id', value);
               if (mode === 'create') setSelectedGroups([]);
             }}
+            className="col-span-full w-full min-w-0"
             options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}
             placeholder={filtersLoading ? 'Carregando...' : 'Selecione a congregação'}
             disabled={filtersLoading || isLoading}
