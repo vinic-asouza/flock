@@ -1,6 +1,6 @@
 ---
 type: api-design
-ultima_atualizacao: 2026-07-13
+ultima_atualizacao: 2026-08-25
 versao: "1.0"
 tipo_api: REST
 base_url: /api
@@ -311,7 +311,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | --- | --- | --- | --- | --- | --- |
 | GET | `/api/calendar/` | ✅ | ≥ reader | Listar itens | ✅ |
 | GET | `/api/calendar/groups` | ✅ | ≥ reader | Grupos com itens | ✅ |
-| GET | `/api/calendar/export/pdf` | ✅ | ≥ reader | PDF mês/ano (`period`) | ✅ |
+| GET | `/api/calendar/export/pdf` | ✅ | ≥ reader | PDF mês/ano (`period`, `type`, cong./grupo) | ✅ |
 | GET | `/api/calendar/:id` | ✅ | ≥ reader | Detalhe | ✅ |
 | POST | `/api/calendar/` | ✅ | ≥ editor | Criar | ✅ |
 | PUT | `/api/calendar/:id` | ✅ | ≥ editor | Atualizar | ✅ |
