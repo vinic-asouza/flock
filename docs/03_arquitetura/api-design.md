@@ -26,7 +26,7 @@ tags: [arquitetura, API, endpoints, contratos]
 | Tenant | Contexto de igreja via auth + cookie/sessão; header opcional `X-Church-Id` |
 | OpenAPI/Swagger | **Não existe** |
 | Testes de API | **Não encontrados** no backend (`*.test.ts` / `*.spec.ts` ausentes) |
-| CORS | `FRONTEND_URL` + `LANDING_URL`; `credentials: true`; headers `Authorization`, `Cookie`, `X-Church-Id` |
+| CORS | `FRONTEND_URL` + `LANDING_URL`; `credentials: true`; headers `Authorization`, `Cookie`, `X-Church-Id`; `exposedHeaders: Content-Disposition` (SPA lê filename de blobs PDF/CSV) |
 
 **Rotas fora de `/api`:** `GET /health`, `GET /metrics` (token interno).
 
@@ -334,6 +334,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | POST | `/api/export/integration/list` | ✅ | ≥ reader | Lista integração | ✅ |
 | POST | `/api/export/groups/list` | ✅ | ≥ reader | PDF grupos (`filters.types[]` min 1) | ✅ |
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | PDF congregações | ✅ |
+| POST | `/api/export/congregation/members/list` | ✅ | ≥ reader | PDF membros ativos da congregação | ✅ |
 
 ### Links públicos gerenciados
 

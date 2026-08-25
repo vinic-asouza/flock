@@ -3,7 +3,7 @@ type: index-regras-modulo
 ultima_atualizacao: 2026-08-25
 versao: "1.1"
 total_modulos: 12
-total_regras: 145
+total_regras: 146
 tags: [regras, índice, módulos]
 ---
 
@@ -23,13 +23,13 @@ tags: [regras, índice, módulos]
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
-| Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 11 | Painel e exportações |
+| Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 12 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 15 | Igreja, conta, equipe, audit |
 | Billing | [[02_regras-de-negocio/regras-por-modulo/billing]] | BILL | 16 | Planos, Stripe, limites |
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 12 módulos · **145 regras**
+**Total:** 12 módulos · **146 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
@@ -48,4 +48,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-08-25 — BR-MEM-018 (contrato CSV operacional, DEV-49). Contagem MEM alinhada ao arquivo de regras; total = soma da tabela.
+2026-08-25 — BR-REL-012 (export de membros da congregação, DEV-47). Contagem REL alinhada ao arquivo de regras; total = soma da tabela.

@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-08-25
-versao: "1.12"
+versao: "1.13"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -152,13 +152,14 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 
 ### J8 — Estrutura e agenda
 
-- Congregações: CRUD + vínculos de membros  
+- Congregações: CRUD + vínculos de membros + export PDF da lista de unidades (hub) e da lista de membros ativos (modal de visualização)  
+
 - Grupos: CRUD + membros do grupo  
 - Calendário: itens + participantes + export PDF (mês ao lado das setas / por seção; ano no header das duas abas; recorte no modal, sem alterar a listagem)
 
 Readers só consultam; writers mutam.
 
-**Mobile (Congregações):** hub `/congregations` e modais (Create/Edit/View/Delete) usam layout responsivo (cards/summary wrap, sheet do `Modal` base, CTAs touch). No view, info + lista de membros empilham em `<md` (2 colunas em `md+`); Editar/Excluir ficam no footer sticky do modal no mobile. Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
+**Mobile (Congregações):** hub `/congregations` e modais (Create/Edit/View/Delete) usam layout responsivo (cards/summary wrap, sheet do `Modal` base, CTAs touch). No view, info + lista de membros empilham em `<md` (2 colunas em `md+`); **Exportar lista** / Editar / Excluir ficam no footer sticky do modal no mobile (footer também para reader). Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
 
 **Mobile (Grupos):** hub `/groups` e modais (CRUD, view com membros, delete, exports) usam layout responsivo (wrap de busca/filtros/summary, sheet do `Modal` base, CTAs touch). No view, info + gestão de membros empilham em `<md` (2 colunas em `md+`); Export/Editar/Excluir ficam no footer sticky do modal no mobile. Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
 
@@ -261,7 +262,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 10. Funil de cadastro/planos (J1/J2) usa layout `(auth)` — responsividade própria (`lg` para marketing sidebar); não depender do drawer do shell.
 11. Módulo **Membros** (J6/J11 register): hub `/members`, modais CRUD/import/export/links e `/public/register/[token]` são operáveis em ~375px via `Modal` sheet + form responsivo — sem migrar CRUD para rotas full-page.
 12. Módulo **Integração** (J7/J11 integration): hub `/integration`, modais CRUD/Convert/export/links e `/public/integration/[token]` seguem o mesmo padrão mobile (~375px) — sem migrar Convert/CRUD para rotas full-page.
-13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete e export PDF da lista são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
+13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete, export PDF da lista de unidades e **Exportar lista** de membros no modal de visualização são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 14. Módulo **Grupos** (J8): hub `/groups`, modais CRUD/view (add/remove membros), delete e exports PDF são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 15. Módulo **Calendário** (J8): hub `/calendar`, visão mês densificada (dots + modal do dia), lista anual, modais CRUD/view/delete, aniversariantes e recorte do PDF (mês/ano) são operáveis em ~375px — footer sticky nos CTAs; sem migrar CRUD para rotas full-page.
 16. Módulo **Relatórios** (J9): hub `/`, seções do painel e modais de drill-down são operáveis em ~375px — CTAs touch, sheet/`dvh`, sideLayout com chips no mobile; sem migrar drill-downs para rotas full-page; `ReportsFilters` não está montado na Home.

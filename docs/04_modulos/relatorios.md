@@ -4,7 +4,7 @@ nome: relatorios
 status: Ativo
 complexidade: Alta
 ultima_atualizacao: 2026-08-25
-versao: "1.6"
+versao: "1.7"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -45,7 +45,7 @@ Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota públic
 - Agregar indicadores de membros + integração (`getMemberReports`)
 - Endpoints de aniversariantes (count/list) no escopo de reports de UX
 - Rate limit específico em `GET /members/reports` (10/IP/min)
-- Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (template impressão), ficha integração, dashboard, listas (membros / integração / grupo / grupos / congregações)
+- Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (template impressão), ficha integração, dashboard, listas (membros / integração / grupo / grupos / congregações / **membros da congregação**)
 - Export CSV de lista de membros (único CSV do produto; campos selecionáveis alinhados ao cadastro operacional)
 - Escopo sempre `church_id` do contexto autenticado
 - Validação Joi de filtros de relatório (`reportFiltersSchema`)
@@ -66,13 +66,14 @@ Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota públic
 ```
 backend/src/
 ├── routes/
-│   ├── export.ts                 → 10 rotas /api/export/*
+│   ├── export.ts                 → 11 rotas /api/export/*
 │   └── members.ts                → /reports + /birthdays/* (também CRUD membros)
 ├── controllers/
 │   ├── exportController.ts       → fetch/validate + orquestra renderers
 │   └── memberController.ts       → getMemberReports, getBirthdaysCount/List
 ├── validators/
-│   └── reportValidator.ts        → reportFiltersSchema (Joi)
+│   ├── reportValidator.ts        → reportFiltersSchema (Joi)
+│   └── congregationValidator.ts  → schema do POST /export/congregation/members/list (módulo congregações)
 └── utils/
     ├── ageCalculator.ts          → idade nos aggregados
     └── pdf/                      → kit **Flock Print** (PDFKit)
@@ -87,12 +88,13 @@ frontend/src/
 ├── components/reports/           → cards, charts, filters, skeleton
 ├── types/reports.ts              → MemberReports*
 └── components/*/Export*Modal.tsx → dispara /api/export
+    members/ExportMemberFieldsModal.tsx → picker compartilhado (grupo + congregação)
 
 App mounts:
   app.use('/api/export', exportRoutes)
   app.use('/api/members', memberRoutes)  // reports/birthdays aqui
 
-Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest; inclui labels CSV e flags de família).
+Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest; inclui labels CSV e flags de família) e `validators/__tests__/congregationValidator.test.ts` (body do export de membros da congregação).
 Migrations: N/A — sem schema próprio.
 ```
 
@@ -110,7 +112,7 @@ Consome (leitura):
 | `churches` | Cabeçalho PDF (nome) + ficha em branco |
 | `integration_members` | Bloco `integration` no report + PDF list/ficha |
 | `groups` / `member_groups` | Export lista de grupos / membros do grupo |
-| `congregations` | Export lista + filtro por UUID |
+| `congregations` | Export lista de unidades + export membros da congregação + filtro por UUID |
 
 ### Contratos de saída (DTO em memória)
 
@@ -176,8 +178,9 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 | POST | `/api/export/group/members/list` | ✅ | ≥ reader | Membros de um grupo PDF |
 | POST | `/api/export/groups/list` | ✅ | ≥ reader | Lista grupos PDF (`filters.types[]` obrigatório) |
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | Lista congregações PDF |
+| POST | `/api/export/congregation/members/list` | ✅ | ≥ reader | Membros ativos de uma congregação PDF |
 
-**Total:** **13** endpoints (3 reports + 10 export).
+**Total:** **14** endpoints (3 reports + 11 export).
 
 ### Contrato — `GET /api/export/members/registration-form/pdf`
 
@@ -280,16 +283,22 @@ CSV de lista de membros (`POST /api/export/members/list/csv`):
 //     search?: string;
 //   }
 // }  // campos PDF fixos: name, congregation, responsible_name, member_count
-// POST /congregations/list { } // lista do tenant
+// POST /congregations/list { } // lista do tenant (hub /congregations)
+// POST /congregation/members/list { congregationId: uuid, fields: string[] }
+//   — só active=true; busca do modal não entra (BR-REL-012)
+//   — 404 congregação inexistente ≠ 404 sem membros ativos
+//   — filename: congregacao-{slug}-membros-{YYYY-MM-DD}.pdf
+//   — título: "Lista de membros da congregação"; nome completo (BR-CON-014)
 ```
 
-UI: modal `ExportGroupsTypesModal` na tela `/groups` — multi-seleção de tipos antes do PDF (pré-seleciona o tipo do filtro da listagem, se houver).
+UI: modal `ExportGroupsTypesModal` na tela `/groups` — multi-seleção de tipos antes do PDF (pré-seleciona o tipo do filtro da listagem, se houver).  
+UI congregação: `CongregationModal` → **Exportar lista** → `ExportCongregationMembersModal` (picker `ExportMemberFieldsModal`, compartilhado com o grupo). Hub permanece **Exportar PDF** da lista de unidades.
 
 ---
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**11** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**12** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -300,10 +309,11 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**11** regras).
 | BR-REL-005 | Filtros de report passam `reportFiltersSchema` |
 | BR-REL-006 | Exports scoped ao `church_id` do contexto |
 | BR-REL-007 | PDF/CSV de lista exige `fields[]` com ≥1 campo **válido** (deprecated ignorados) |
-| BR-REL-008 | Lista vazia no filtro → **404** (inclui grupo sem membros) |
+| BR-REL-008 | Lista vazia no filtro → **404** (inclui grupo/congregação sem membros) |
 | BR-REL-009 | Home: `all` \| `congregation`; 1 cong. → texto; sem Estrutura no filtro |
 | BR-REL-010 | Export grupos exige `filters.types[]` (min 1, GroupType) |
 | BR-REL-011 | PDFs do tenant usam kit Flock Print (header/footer/orientação) |
+| BR-REL-012 | Export de membros da congregação: endpoint dedicado, só ativos, nome completo |
 
 ---
 
@@ -467,6 +477,7 @@ Não há watermark de acesso nem restrição por papel “admin only” nos expo
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
 | Unit | `utils/pdf/__tests__/listFields.test.ts` | parcial | `columnsFromFields`, deprecated, `resolveExportColumns`, labels CSV, flags de família |
+| Unit | `validators/__tests__/congregationValidator.test.ts` | parcial | Body `{ congregationId, fields }` do export de membros da congregação |
 
 **Gaps:** rate limit 429; demografia só ativos; gap filtros Joi vs query; 404 lista vazia; CSV BOM/delimiter; dashboard mockRes; idade/timezone; isolamento tenant; perf >5000 membros; snapshots PDF.
 
@@ -480,7 +491,8 @@ Não há watermark de acesso nem restrição por papel “admin only” nos expo
 - [[04_modulos/igreja-config]] — nome igreja nos PDFs  
 - [[04_modulos/membros]] — fonte principal + handlers reports/birthdays no mesmo controller  
 - [[04_modulos/integracao]] — bloco integration + PDF  
-- [[04_modulos/congregacoes]] — estrutura/export lista  
+- [[04_modulos/congregacoes]] — estrutura, export lista de unidades e export de membros da congregação  
+
 - [[04_modulos/grupos]] — export grupos/membros do grupo  
 
 **Dependem deste:**
@@ -525,6 +537,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-25 | 1.7 | POST `/export/congregation/members/list` + BR-REL-012 (rol ativo no modal) | DEV-47 |
 | 2026-08-25 | 1.6 | CSV de membros: catálogo operacional, flags de família, BR-REL-007 no CSV; grupos só PDF | DEV-49 |
 | 2026-08-20 | 1.5 | Kit Flock Print (`utils/pdf`), BR-REL-011, fields deprecated → 400, testes listFields | DEV-25 |
 | 2026-07-31 | 1.4 | UX mobile/tablet: hub CTAs/ViewSelector touch, sideLayout chips, drill-down sheet/dvh | DEV-33 |
@@ -540,9 +553,9 @@ graph LR
 | Item | Valor |
 | --- | --- |
 | Módulo documentado | **relatorios** ✅ |
-| Endpoints | **13** (3 agregados/aniversários + 10 export) |
-| Regras BR-REL | **11** |
+| Endpoints | **14** (3 agregados/aniversários + 11 export) |
+| Regras BR-REL | **12** |
 | Entidades próprias | **0** (read-only) |
 | Integrações | Supabase + PDFKit (Flock Print) |
 | Jobs | Nenhum |
-| Testes | Unitários leves (`listFields`, labels CSV) |
+| Testes | Unitários leves (`listFields`, labels CSV, validator do export de congregação) |
