@@ -10,6 +10,11 @@ import { CalendarMonth } from '@/components/calendar/CalendarMonth';
 import { CalendarListView } from '@/components/calendar/CalendarListView';
 import { CalendarFiltersHorizontal } from '@/components/calendar/CalendarFiltersHorizontal';
 import { CalendarPdfButton } from '@/components/calendar/CalendarPdfButton';
+import {
+  CalendarExportPdfModal,
+  type CalendarExportPdfRecorte,
+  type CalendarExportPeriod,
+} from '@/components/calendar/CalendarExportPdfModal';
 import { Tabs } from '@/components/ui/Tabs';
 import { CalendarItem, CreateCalendarItemData, CalendarFilters as CalendarFiltersType, typeColors } from '@/types/calendar';
 import { apiService, formatApiError } from '@/services/api';
@@ -24,7 +29,12 @@ const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igre
 const CREATE_FORM_ID = 'calendar-item-create-form';
 const EDIT_FORM_ID = 'calendar-item-edit-form';
 
-type CalendarExportPeriod = 'month' | 'year';
+type CalendarExportTarget = {
+  period: CalendarExportPeriod;
+  year: number;
+  month?: number;
+  recorte: CalendarExportPdfRecorte;
+};
 
 function calendarPdfExportKey(period: CalendarExportPeriod, year: number, month?: number): string {
   if (period === 'year') {
@@ -48,6 +58,7 @@ export default function CalendarPage() {
   const [participantsPage, setParticipantsPage] = useState(1);
   const [loadingItemDetails, setLoadingItemDetails] = useState(false);
   const [exportingKey, setExportingKey] = useState<string | null>(null);
+  const [exportTarget, setExportTarget] = useState<CalendarExportTarget | null>(null);
   const loadItemsRequestIdRef = useRef(0);
   const viewItemRequestIdRef = useRef(0);
 
@@ -197,11 +208,20 @@ export default function CalendarPage() {
     }
   };
 
-  const handleExportPDF = async (options: {
-    period: CalendarExportPeriod;
-    year: number;
-    month?: number;
-  }) => {
+  const listingRecorte = (): CalendarExportPdfRecorte => ({
+    type: filters.type,
+    congregation_id: filters.congregation_id,
+    group_id: filters.group_id,
+  });
+
+  const openExportModal = (target: Omit<CalendarExportTarget, 'recorte'>) => {
+    setExportTarget({ ...target, recorte: listingRecorte() });
+  };
+
+  const handleExportPDF = async (
+    options: CalendarExportTarget,
+    recorte: CalendarExportPdfRecorte
+  ) => {
     const key = calendarPdfExportKey(options.period, options.year, options.month);
     try {
       setExportingKey(key);
@@ -209,8 +229,9 @@ export default function CalendarPage() {
         period: options.period,
         year: options.year,
         ...(options.period === 'month' && options.month != null ? { month: options.month } : {}),
-        congregation_id: filters.congregation_id || undefined,
-        group_id: filters.group_id || undefined,
+        type: recorte.type,
+        congregation_id: recorte.congregation_id,
+        group_id: recorte.group_id,
       });
 
       const url = window.URL.createObjectURL(blob);
@@ -227,6 +248,7 @@ export default function CalendarPage() {
       toast.success('PDF exportado com sucesso!');
     } catch (err) {
       toast.error(formatApiError(err) || 'Erro ao exportar PDF. Tente novamente.');
+      throw err;
     } finally {
       setExportingKey(null);
     }
@@ -293,6 +315,8 @@ export default function CalendarPage() {
     setCreateModalOpen(true);
   };
 
+  const headerExportYear = activeTab === 'list' ? currentYear : currentMonth.getFullYear();
+
   return (
     <div className="container mx-auto px-4 py-6 sm:py-8 min-w-0">
       {/* Header */}
@@ -301,15 +325,13 @@ export default function CalendarPage() {
         subtitle="Gerencie programações, eventos, encontros e reuniões"
         actions={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            {activeTab === 'list' && (
-              <CalendarPdfButton
-                onClick={() => handleExportPDF({ period: 'year', year: currentYear })}
-                isLoading={exportingKey === calendarPdfExportKey('year', currentYear)}
-                ariaLabel={`Exportar PDF do ano ${currentYear}`}
-                title={`Exportar PDF de todos os eventos de ${currentYear}`}
-                className="w-full sm:w-auto"
-              />
-            )}
+            <CalendarPdfButton
+              onClick={() => openExportModal({ period: 'year', year: headerExportYear })}
+              isLoading={exportingKey === calendarPdfExportKey('year', headerExportYear)}
+              ariaLabel={`Exportar PDF do ano ${headerExportYear}`}
+              title={`Exportar PDF de todos os eventos de ${headerExportYear}`}
+              className="w-full sm:w-auto"
+            />
             <Button
               variant="primary"
               onClick={() => handleCreateQuick()}
@@ -370,7 +392,7 @@ export default function CalendarPage() {
             congregationId={filters.congregation_id}
             canEdit={canEdit}
             onExportPdf={() =>
-              handleExportPDF({
+              openExportModal({
                 period: 'month',
                 month: currentMonth.getMonth() + 1,
                 year: currentMonth.getFullYear(),
@@ -388,7 +410,7 @@ export default function CalendarPage() {
               currentYear={currentYear}
               onItemClick={handleViewItem}
               onExportMonth={(month, year) =>
-                handleExportPDF({ period: 'month', month, year })
+                openExportModal({ period: 'month', month, year })
               }
               isMonthExporting={(month, year) =>
                 exportingKey === calendarPdfExportKey('month', year, month)
@@ -933,6 +955,18 @@ export default function CalendarPage() {
             </p>
           </div>
         </Modal>
+      )}
+
+      {exportTarget && (
+        <CalendarExportPdfModal
+          isOpen
+          onClose={() => setExportTarget(null)}
+          period={exportTarget.period}
+          year={exportTarget.year}
+          month={exportTarget.month}
+          defaultRecorte={exportTarget.recorte}
+          onExport={(recorte) => handleExportPDF(exportTarget, recorte)}
+        />
       )}
     </div>
   );

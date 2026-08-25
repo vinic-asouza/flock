@@ -690,6 +690,7 @@ class ApiService {
     month?: number;
     year?: number;
     period?: 'month' | 'year';
+    type?: string[];
     congregation_id?: string;
     group_id?: string;
   }): Promise<Blob> {
@@ -697,6 +698,9 @@ class ApiService {
     if (params?.month) queryParams.append('month', params.month.toString());
     if (params?.year) queryParams.append('year', params.year.toString());
     if (params?.period) queryParams.append('period', params.period);
+    if (params?.type && params.type.length > 0) {
+      params.type.forEach((type) => queryParams.append('type', type));
+    }
     if (params?.congregation_id) queryParams.append('congregation_id', params.congregation_id);
     if (params?.group_id) queryParams.append('group_id', params.group_id);
 
