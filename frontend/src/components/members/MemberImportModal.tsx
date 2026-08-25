@@ -141,7 +141,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                       📋 Planilha de Exemplo
                     </h4>
                     <p className="text-sm text-blue-800 mb-3 break-words">
-                      Baixe o modelo CSV com as colunas necessárias (incluindo Natural de, Data do Casamento, Número e flags de membro da família) e uma linha de exemplo. Nacionalidade e CPF/Documento permanecem apenas para migração legada.
+                      Baixe o modelo CSV com as colunas do cadastro atual (incluindo Natural de, Data do Casamento, Número e se cônjuge/pai/mãe é membro) e uma linha de exemplo. Nacionalidade, CPF/Documento e Data de Batismo ficam no final só para migração de planilhas antigas.
                     </p>
                     <a
                       href="/templates/importacao-membros.csv"
@@ -162,7 +162,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                       <li>Abra o arquivo no Excel, Google Sheets ou editor de planilhas e preencha os dados dos membros (pode apagar a linha de exemplo)</li>
                       <li className="break-words">Colunas opcionais novas: <strong>Natural de</strong>, <strong>Data do Casamento</strong>, <strong>Número</strong> (do endereço), <strong>Cônjuge é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs break-all">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs break-all">não</code>), <strong>Pai é membro</strong> e <strong>Mãe é membro</strong> (<code className="bg-blue-100 px-1 rounded text-xs break-all">sim</code>/<code className="bg-blue-100 px-1 rounded text-xs break-all">nao</code>/<code className="bg-blue-100 px-1 rounded text-xs break-all">falecido</code>)</li>
                       <li className="break-words">Para <strong>Filhos</strong>, use o formato: <code className="bg-blue-100 px-1 rounded text-xs break-all">Nome|Data|Sim</code> ou <code className="bg-blue-100 px-1 rounded text-xs break-all">Nome|Data|Não</code> (o último valor indica se reside com você). Para múltiplos filhos, separe por ponto e vírgula: <code className="bg-blue-100 px-1 rounded text-xs break-all">Filho1|01/01/2010|Sim;Filho2|15/03/2012|Não</code></li>
-                      <li>Nacionalidade (legado) e CPF/Documento (legado) são opcionais e só para migração de sistemas antigos — não fazem mais parte do formulário de cadastro</li>
+                      <li>Nacionalidade (legado), CPF/Documento (legado) e Data de Batismo são opcionais e só para migração de sistemas antigos — não fazem mais parte do formulário de cadastro. Idade, Status e Congregação de um CSV exportado são ignorados (a congregação é a selecionada acima).</li>
                       <li>Salve/exporte como CSV (valores separados por vírgula) e faça upload neste modal</li>
                     </ol>
                     <div className="mt-3 p-3 bg-blue-100 rounded-md">
