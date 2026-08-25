@@ -5,8 +5,15 @@ import { AuthRequest, CalendarItem, Group } from '../types';
 import { 
   createCalendarItemSchema, 
   updateCalendarItemSchema,
-  listCalendarItemsSchema 
+  listCalendarItemsSchema,
+  exportCalendarPdfSchema
 } from '../validators/calendarValidator';
+import {
+  buildCalendarPdfFilterSummary,
+  congregationPdfLabel,
+  groupPdfLabel,
+  normalizeCalendarTypeFilter
+} from '../utils/calendarPdfFilters';
 import { logAudit } from '../utils/auditLogger';
 import {
   applyScopedCongregationFilter,
@@ -935,13 +942,13 @@ export const deleteCalendarItem = async (req: AuthRequest, res: Response) => {
 /**
  * Exporta calendário mensal em PDF
  * 
- * @param req - Request contendo query params: month, year, period (`month`|`year`), congregation_id, group_id
+ * @param req - Request contendo query params: month, year, period (`month`|`year`), type, congregation_id, group_id
  * @param res - Response com arquivo PDF
  * 
  * @remarks
  * - Exporta itens ativos do mês/ano especificado (ou do ano inteiro se `period=year`)
  * - Expande ocorrências recorrentes dentro da janela
- * - Mantém filtros por congregação e grupo
+ * - Filtra por tipo, congregação e grupo (mesmo recorte da listagem)
  */
 export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
   try {
@@ -952,7 +959,19 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { month, year, period, congregation_id, group_id } = req.query;
+    const { error: validationError, value: exportQuery } = exportCalendarPdfSchema.validate(req.query);
+    if (validationError) {
+      return res.status(400).json({
+        error: 'Parâmetros inválidos',
+        details: validationError.details[0].message
+      });
+    }
+
+    const { month, year, period, type, congregation_id, group_id } = exportQuery;
+    const typeArray = normalizeCalendarTypeFilter(type);
+    const congregationId =
+      typeof congregation_id === 'string' && congregation_id ? congregation_id : undefined;
+    const groupId = typeof group_id === 'string' && group_id ? group_id : undefined;
 
     const churchId = req.church!.churchId;
     const { data: churchData } = await supabase
@@ -962,25 +981,8 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       .single();
 
     const exportPeriod = period === 'year' ? 'year' : 'month';
-    const targetYear = year ? Number(year) : new Date().getFullYear();
-    const targetMonth = month ? Number(month) : new Date().getMonth() + 1;
-
-    if (Number.isNaN(targetYear)) {
-      return res.status(400).json({
-        error: 'Parâmetros inválidos',
-        details: 'Informe um ano numérico válido'
-      });
-    }
-
-    if (
-      exportPeriod === 'month' &&
-      (Number.isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12)
-    ) {
-      return res.status(400).json({
-        error: 'Parâmetros inválidos',
-        details: 'Informe um mês válido entre 1 e 12 e um ano numérico'
-      });
-    }
+    const targetYear = year ?? new Date().getFullYear();
+    const targetMonth = month ?? new Date().getMonth() + 1;
 
     const startDate =
       exportPeriod === 'year'
@@ -1015,7 +1017,13 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       .eq('status', 'active')
       .order('start_date', { ascending: true });
 
-    const scoped = resolveScopedCongregationFilter(req.church!, congregation_id as string | undefined, {
+    if (typeArray.length === 1) {
+      query = query.eq('type', typeArray[0]);
+    } else if (typeArray.length > 1) {
+      query = query.in('type', typeArray);
+    }
+
+    const scoped = resolveScopedCongregationFilter(req.church!, congregationId, {
       includeNullAsChurchWide: true,
     });
     if (!scoped.ok) {
@@ -1026,8 +1034,8 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
     }
     query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
-    if (group_id) {
-      query = query.eq('group_id', group_id);
+    if (groupId) {
+      query = query.eq('group_id', groupId);
     }
 
     const { data: items, error: itemsError } = await query;
@@ -1086,14 +1094,33 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       (a, b) => a.start_date.getTime() - b.start_date.getTime()
     );
 
-    const filterParts: string[] = [];
-    if (congregation_id) {
-      filterParts.push(`Congregação filtrada`);
+    let congregationLabel: string | undefined;
+    if (congregationId) {
+      const { data: congregation } = await supabase
+        .from('congregations')
+        .select('name, abbreviation')
+        .eq('id', congregationId)
+        .eq('church_id', churchId)
+        .maybeSingle();
+      congregationLabel = congregationPdfLabel(congregation) || 'Congregação filtrada';
     }
-    if (group_id) {
-      filterParts.push(`Grupo filtrado`);
+
+    let groupLabel: string | undefined;
+    if (groupId) {
+      const { data: group } = await supabase
+        .from('groups')
+        .select('name, type')
+        .eq('id', groupId)
+        .eq('church_id', churchId)
+        .maybeSingle();
+      groupLabel = groupPdfLabel(group) || 'Grupo filtrado';
     }
-    const filterSummary = filterParts.length > 0 ? filterParts.join(' • ') : undefined;
+
+    const filterSummary = buildCalendarPdfFilterSummary({
+      types: typeArray,
+      congregationLabel,
+      groupLabel,
+    });
 
     renderCalendarMonthPdf(res, {
       churchName: churchData?.name || 'Igreja',

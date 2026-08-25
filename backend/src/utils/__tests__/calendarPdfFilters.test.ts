@@ -1,0 +1,47 @@
+import {
+  buildCalendarPdfFilterSummary,
+  congregationPdfLabel,
+  groupPdfLabel,
+  normalizeCalendarTypeFilter,
+} from '../calendarPdfFilters';
+
+describe('normalizeCalendarTypeFilter', () => {
+  it('should return empty array when type is omitted', () => {
+    expect(normalizeCalendarTypeFilter(undefined)).toEqual([]);
+    expect(normalizeCalendarTypeFilter('')).toEqual([]);
+  });
+
+  it('should wrap a single type string', () => {
+    expect(normalizeCalendarTypeFilter('Evento')).toEqual(['Evento']);
+  });
+
+  it('should keep an array of types', () => {
+    expect(normalizeCalendarTypeFilter(['Evento', 'Reunião'])).toEqual(['Evento', 'Reunião']);
+  });
+});
+
+describe('buildCalendarPdfFilterSummary', () => {
+  it('should return undefined when no recorte is applied', () => {
+    expect(buildCalendarPdfFilterSummary({ types: [] })).toBeUndefined();
+  });
+
+  it('should join types, congregation and group', () => {
+    expect(
+      buildCalendarPdfFilterSummary({
+        types: ['Evento', 'Reunião'],
+        congregationLabel: 'Sede',
+        groupLabel: 'Ministério: Louvor',
+      })
+    ).toBe('Evento, Reunião • Sede • Ministério: Louvor');
+  });
+});
+
+describe('congregationPdfLabel / groupPdfLabel', () => {
+  it('should prefer congregation abbreviation', () => {
+    expect(congregationPdfLabel({ name: 'Congregação Central', abbreviation: 'Sede' })).toBe('Sede');
+  });
+
+  it('should format group as type: name', () => {
+    expect(groupPdfLabel({ name: 'Louvor', type: 'Ministério' })).toBe('Ministério: Louvor');
+  });
+});
