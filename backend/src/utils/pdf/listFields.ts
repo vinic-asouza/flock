@@ -18,8 +18,11 @@ export const MEMBER_FIELD_ORDER = [
   'wedding_date',
   'nationality',
   'spouse',
+  'spouse_is_member',
   'father_name',
+  'father_is_member',
   'mother_name',
+  'mother_is_member',
   'occupation',
   'children',
   'phone',
@@ -37,6 +40,9 @@ export const MEMBER_FIELD_ORDER = [
   'state',
   'cep',
 ] as const;
+
+/** Campos derivados/contexto: exportáveis, mas não reimportáveis como cadastro */
+export const CSV_IMPORT_SKIP_FIELD_IDS = ['age', 'active', 'congregation'] as const;
 
 export const INTEGRATION_FIELD_ORDER = [
   'name',
@@ -56,7 +62,7 @@ export const INTEGRATION_FIELD_ORDER = [
 ] as const;
 
 /** Campos removidos do produto — ignorados se ainda vierem do cliente */
-const DEPRECATED_MEMBER_FIELDS = new Set(['baptism_date', 'document']);
+export const DEPRECATED_MEMBER_FIELDS = new Set(['baptism_date', 'document']);
 
 export const memberListFieldLabels: Record<string, string> = {
   name: 'Nome',
@@ -68,8 +74,11 @@ export const memberListFieldLabels: Record<string, string> = {
   nationality: 'Nacionalidade',
   wedding_date: 'Casamento',
   spouse: 'Cônjuge',
+  spouse_is_member: 'Cônj. membro',
   father_name: 'Pai',
+  father_is_member: 'Pai membro',
   mother_name: 'Mãe',
+  mother_is_member: 'Mãe membro',
   occupation: 'Profissão',
   children: 'Filhos',
   phone: 'Telefone',
@@ -85,6 +94,40 @@ export const memberListFieldLabels: Record<string, string> = {
   neighborhood: 'Bairro',
   city: 'Cidade',
   state: 'UF',
+  cep: 'CEP',
+};
+
+/** Labels oficiais do CSV — cabeçalhos reimportáveis (DEV-49) */
+export const memberCsvFieldLabels: Record<string, string> = {
+  name: 'Nome',
+  age: 'Idade',
+  birth: 'Data de Nascimento',
+  gender: 'Gênero',
+  marital_status: 'Estado Civil',
+  hometown: 'Natural de',
+  nationality: 'Nacionalidade (legado)',
+  wedding_date: 'Data do Casamento',
+  spouse: 'Cônjuge',
+  spouse_is_member: 'Cônjuge é membro',
+  father_name: 'Nome do Pai',
+  father_is_member: 'Pai é membro',
+  mother_name: 'Nome da Mãe',
+  mother_is_member: 'Mãe é membro',
+  occupation: 'Profissão',
+  children: 'Filhos',
+  phone: 'Telefone',
+  whatsapp: 'WhatsApp',
+  email: 'Email',
+  active: 'Status',
+  congregation: 'Congregação',
+  admission: 'Tipo de Recebimento',
+  admission_date: 'Data de Recebimento',
+  address: 'Endereço',
+  address_number: 'Número',
+  complement: 'Complemento',
+  neighborhood: 'Bairro',
+  city: 'Cidade',
+  state: 'Estado',
   cep: 'CEP',
 };
 
@@ -188,6 +231,20 @@ export function rowsFromColumnKeys<T>(
   );
 }
 
+function formatRelationFlag(value: unknown): string {
+  if (value === 'sim') return 'Sim';
+  if (value === 'nao') return 'Não';
+  if (value === 'falecido') return 'Falecido';
+  return '';
+}
+
+function formatDateCsv(date: string | Date | null | undefined): string {
+  if (!date) return '';
+  const raw = typeof date === 'string' ? date : date.toISOString();
+  const formatted = formatDateSafe(raw);
+  return formatted === '—' ? '' : formatted;
+}
+
 export function memberFieldValue(member: any, field: string): string {
   switch (field) {
     case 'name':
@@ -207,6 +264,15 @@ export function memberFieldValue(member: any, field: string): string {
       return member.active ? 'Ativo' : 'Inativo';
     case 'congregation':
       return member.congregation?.name || '—';
+    case 'spouse_is_member':
+      if (member.spouse_is_member === true || member.spouse_is_member === 'true') return 'Sim';
+      if (member.spouse_is_member === false || member.spouse_is_member === 'false') return 'Não';
+      return '—';
+    case 'father_is_member':
+    case 'mother_is_member': {
+      const label = formatRelationFlag(member[field]);
+      return label || '—';
+    }
     case 'children':
       if (Array.isArray(member.children) && member.children.length > 0) {
         return member.children
@@ -231,6 +297,62 @@ export function memberFieldValue(member: any, field: string): string {
     }
     default:
       return member[field] ? String(member[field]) : '—';
+  }
+}
+
+/** Serializa membro para CSV (vazio se ausente; valores reimportáveis). */
+export function memberCsvFieldValue(member: any, field: string): string {
+  switch (field) {
+    case 'name':
+      return member.name ? String(member.name) : '';
+    case 'age': {
+      const age = calculateAgeSafe(member.birth);
+      return age !== null ? String(age) : '';
+    }
+    case 'birth':
+    case 'wedding_date':
+    case 'admission_date':
+      return formatDateCsv(member[field]);
+    case 'phone':
+    case 'whatsapp': {
+      const formatted = formatPhoneBR(member[field]);
+      return formatted === '—' ? '' : formatted;
+    }
+    case 'active':
+      return member.active ? 'Ativo' : 'Inativo';
+    case 'congregation':
+      return member.congregation?.name ? String(member.congregation.name) : '';
+    case 'spouse_is_member':
+      if (member.spouse_is_member === true || member.spouse_is_member === 'true') return 'sim';
+      if (member.spouse_is_member === false || member.spouse_is_member === 'false') return 'nao';
+      return '';
+    case 'father_is_member':
+    case 'mother_is_member':
+      return member[field] === 'sim' || member[field] === 'nao' || member[field] === 'falecido'
+        ? member[field]
+        : '';
+    case 'children':
+      if (Array.isArray(member.children) && member.children.length > 0) {
+        return member.children
+          .map((child: any) => {
+            const parts = [child.name || ''];
+            if (child.birth) {
+              parts.push(formatDateCsv(child.birth));
+            }
+            if (child.dependent === true) parts.push('Sim');
+            else if (child.dependent === false) parts.push('Não');
+            return parts.join('|');
+          })
+          .join(';');
+      }
+      return '';
+    case 'address':
+      return member.address ? String(member.address) : '';
+    default: {
+      const value = member[field];
+      if (value === null || value === undefined || value === '') return '';
+      return String(value);
+    }
   }
 }
 

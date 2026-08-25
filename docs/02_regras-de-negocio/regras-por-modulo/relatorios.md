@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-08-20
-versao: "1.4"
+ultima_atualizacao: 2026-08-25
+versao: "1.5"
 total_regras: 11
 tags: [regras, modulo:relatorios]
 ver_tambem:
@@ -103,7 +103,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** [[BR-GEN-010]]
 
 ### BR-REL-007: Export fields obrigatórios
-- **Declaração:** PDF/CSV de lista exige `fields[]` não vazio. Em PDFs de lista de membros/integração/grupo, campos deprecated (`baptism_date`, `document`) são **ignorados**; se nenhum campo válido restar → **400**.
+- **Declaração:** PDF/CSV de lista exige `fields[]` não vazio. Em PDF de lista de membros/integração/grupo **e no CSV de lista de membros**, campos deprecated (`baptism_date`, `document`) são **ignorados**; se nenhum campo válido restar → **400**.
 - **Tipo:** Restrição
 - **Gatilho:** Export list
 - **Comportamento esperado:** Arquivo com colunas válidas
@@ -160,4 +160,4 @@ Oferecer indicadores demográficos/operacionais e exportações.
 
 ---
 
-*Atualizado em 2026-07-21 (DEV-21).*
+*Atualizado em 2026-08-25 (DEV-49).*

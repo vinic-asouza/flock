@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-20
-versao: "1.5"
+ultima_atualizacao: 2026-08-25
+versao: "1.6"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -46,7 +46,7 @@ Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota públic
 - Endpoints de aniversariantes (count/list) no escopo de reports de UX
 - Rate limit específico em `GET /members/reports` (10/IP/min)
 - Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (template impressão), ficha integração, dashboard, listas (membros / integração / grupo / grupos / congregações)
-- Export CSV de lista de membros (campos selecionáveis)
+- Export CSV de lista de membros (único CSV do produto; campos selecionáveis alinhados ao cadastro operacional)
 - Escopo sempre `church_id` do contexto autenticado
 - Validação Joi de filtros de relatório (`reportFiltersSchema`)
 
@@ -77,7 +77,7 @@ backend/src/
     ├── ageCalculator.ts          → idade nos aggregados
     └── pdf/                      → kit **Flock Print** (PDFKit)
         ├── tokens.ts / document.ts / sections.ts / table.ts / formFields.ts
-        ├── listFields.ts         → colunas, labels, resolveExportColumns
+        ├── listFields.ts         → colunas, labels PDF/CSV (`memberCsvFieldLabels`), resolveExportColumns
         ├── integrationLabels.ts
         ├── render*.ts            → ficha, lista, dashboard, blank, calendário (usado pelo módulo calendário)
         └── __tests__/listFields.test.ts
@@ -92,7 +92,7 @@ App mounts:
   app.use('/api/export', exportRoutes)
   app.use('/api/members', memberRoutes)  // reports/birthdays aqui
 
-Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest).
+Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest; inclui labels CSV e flags de família).
 Migrations: N/A — sem schema próprio.
 ```
 
@@ -253,6 +253,14 @@ max: 10 // por IP
 // 404 — Nenhum membro encontrado (lista vazia após filtro)
 ```
 
+CSV de lista de membros (`POST /api/export/members/list/csv`):
+
+- Catálogo e labels reimportáveis: `memberCsvFieldLabels` / `memberCsvFieldValue` (`listFields.ts`); UI em `MEMBER_EXPORT_FIELD_OPTIONS`.
+- Inclui flags de família (`spouse_is_member`, `father_is_member`, `mother_is_member`). Sem questionário eclesiástico.
+- UI **não** oferece `nationality`, `document` nem `baptism_date`. `resolveExportColumns` ignora `baptism_date`/`document` (BR-REL-007).
+- Idade / Status / Congregação podem sair no arquivo; o import os ignora (BR-MEM-018).
+- Grupos, integração, congregações e calendário exportam **só PDF**.
+
 ### Dashboard PDF
 
 ```typescript
@@ -281,7 +289,7 @@ UI: modal `ExportGroupsTypesModal` na tela `/groups` — multi-seleção de tipo
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**10** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**11** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -400,7 +408,7 @@ Sem Stripe/Resend/S3. Persistência + PDF local.
 - Tokens + header/footer com `bufferPages` + page numbers; listas densas em **landscape**  
 - Stream direto no `res` (`Content-Type: application/pdf`)  
 - Sem env próprio; sem dependência tipo `pdfkit-table`  
-- CSV: string montada no controller (+ BOM UTF-8)
+- CSV: string montada no controller via `memberCsvFieldValue` (+ BOM UTF-8)
 
 ```mermaid
 sequenceDiagram
@@ -448,7 +456,7 @@ Sem enum de código interno — `{ error, details }`.
 | Role mínimo | **reader+** (inclui exports de PII) |
 | Rate limit | só `GET /reports` (export **sem** limit dedicado) |
 | Tenant | sempre `eq('church_id', churchId)` |
-| Dados | PDFs/CSV podem incluir documento, endereço, contatos, filhos — **PII sensível** |
+| Dados | PDFs/CSV incluem endereço, contatos, filhos e flags de família — **PII**. CSV de lista **não** serializa `document` nem `baptism_date` |
 
 Não há watermark de acesso nem restrição por papel “admin only” nos exports.
 
@@ -458,7 +466,7 @@ Não há watermark de acesso nem restrição por papel “admin only” nos expo
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| Unit | `utils/pdf/__tests__/listFields.test.ts` | parcial | `columnsFromFields`, deprecated, `resolveExportColumns`, rows |
+| Unit | `utils/pdf/__tests__/listFields.test.ts` | parcial | `columnsFromFields`, deprecated, `resolveExportColumns`, labels CSV, flags de família |
 
 **Gaps:** rate limit 429; demografia só ativos; gap filtros Joi vs query; 404 lista vazia; CSV BOM/delimiter; dashboard mockRes; idade/timezone; isolamento tenant; perf >5000 membros; snapshots PDF.
 
@@ -517,6 +525,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-25 | 1.6 | CSV de membros: catálogo operacional, flags de família, BR-REL-007 no CSV; grupos só PDF | DEV-49 |
 | 2026-08-20 | 1.5 | Kit Flock Print (`utils/pdf`), BR-REL-011, fields deprecated → 400, testes listFields | DEV-25 |
 | 2026-07-31 | 1.4 | UX mobile/tablet: hub CTAs/ViewSelector touch, sideLayout chips, drill-down sheet/dvh | DEV-33 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo relatórios | — |
@@ -536,4 +545,4 @@ graph LR
 | Entidades próprias | **0** (read-only) |
 | Integrações | Supabase + PDFKit (Flock Print) |
 | Jobs | Nenhum |
-| Testes | Unitários leves (`listFields`) |
+| Testes | Unitários leves (`listFields`, labels CSV) |

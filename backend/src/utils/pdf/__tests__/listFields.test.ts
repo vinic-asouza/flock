@@ -1,5 +1,8 @@
 import {
+  CSV_IMPORT_SKIP_FIELD_IDS,
   columnsFromFields,
+  memberCsvFieldLabels,
+  memberCsvFieldValue,
   memberListFieldLabels,
   resolveExportColumns,
   rowsFromColumnKeys,
@@ -49,5 +52,49 @@ describe('columnsFromFields / resolveExportColumns', () => {
 
     expect(rows).toEqual([{ name: 'Ana', email: 'ana@example.com' }]);
     expect(rows[0]).not.toHaveProperty('baptism_date');
+  });
+
+  it('should include family flags in CSV catalog and ignore deprecated fields', () => {
+    const resolved = resolveExportColumns(
+      ['name', 'spouse_is_member', 'father_is_member', 'mother_is_member', 'baptism_date', 'document'],
+      memberCsvFieldLabels
+    );
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+    expect(resolved.columns.map((c) => c.key)).toEqual([
+      'name',
+      'spouse_is_member',
+      'father_is_member',
+      'mother_is_member',
+    ]);
+    expect(resolved.columns.map((c) => c.label)).toEqual([
+      'Nome',
+      'Cônjuge é membro',
+      'Pai é membro',
+      'Mãe é membro',
+    ]);
+  });
+
+  it('should serialize CSV values without PDF uppercase or dash placeholders', () => {
+    const member = {
+      name: 'Maria Silva',
+      birth: '1990-03-15',
+      spouse_is_member: true,
+      father_is_member: 'nao',
+      mother_is_member: 'falecido',
+      children: [{ name: 'Pedro', birth: '2018-01-10', dependent: true }],
+      congregation: { name: 'Sede' },
+      phone: '11999998888',
+    };
+
+    expect(memberCsvFieldValue(member, 'name')).toBe('Maria Silva');
+    expect(memberCsvFieldValue(member, 'birth')).toBe('15/03/1990');
+    expect(memberCsvFieldValue(member, 'spouse_is_member')).toBe('sim');
+    expect(memberCsvFieldValue(member, 'father_is_member')).toBe('nao');
+    expect(memberCsvFieldValue(member, 'mother_is_member')).toBe('falecido');
+    expect(memberCsvFieldValue(member, 'children')).toBe('Pedro|10/01/2018|Sim');
+    expect(memberCsvFieldValue(member, 'congregation')).toBe('Sede');
+    expect(memberCsvFieldValue(member, 'email')).toBe('');
+    expect(CSV_IMPORT_SKIP_FIELD_IDS).toEqual(['age', 'active', 'congregation']);
   });
 });

@@ -89,6 +89,8 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'data_casamento': 'wedding_date',
   'data casamento': 'wedding_date',
   'data do casamento': 'wedding_date',
+  'data de casamento': 'wedding_date',
+  'casamento': 'wedding_date',
   'wedding_date': 'wedding_date',
   'wedding date': 'wedding_date',
   
@@ -223,6 +225,30 @@ export const DEFAULT_COLUMN_MAPPING: ColumnMapping = {
   'mother_is_member': 'mother_is_member',
   'mother is member': 'mother_is_member',
 };
+
+/** Cabeçalhos de export que não devem virar campo de cadastro no import */
+export const IMPORT_SKIP_HEADERS = new Set([
+  'idade',
+  'age',
+  'status',
+  'congregacao',
+  'congregação',
+  'congregation',
+]);
+
+function normalizeHeaderKey(header: string): string {
+  return header
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+export function isImportSkippedHeader(header: string): boolean {
+  const raw = header.toLowerCase().trim();
+  const stripped = normalizeHeaderKey(header);
+  return IMPORT_SKIP_HEADERS.has(raw) || IMPORT_SKIP_HEADERS.has(stripped);
+}
 
 /**
  * Detecta o encoding do arquivo (UTF-8 ou ISO-8859-1)
@@ -373,6 +399,10 @@ export function mapColumns(
   
   // Cria mapeamento normalizado
   csvHeaders.forEach(csvHeader => {
+    if (isImportSkippedHeader(csvHeader)) {
+      return;
+    }
+
     const normalizedHeader = csvHeader.toLowerCase().trim();
     
     // Procura no mapeamento padrão

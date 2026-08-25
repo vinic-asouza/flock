@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import {
+  MEMBER_EXPORT_CATEGORIES,
+  MEMBER_EXPORT_FIELD_OPTIONS,
+  type MemberExportFieldCategory,
+} from '@/components/members/memberExportFields';
 import { formatApiError } from '@/services/api';
 import toast from 'react-hot-toast';
 
@@ -13,45 +18,8 @@ interface ExportGroupMembersModalProps {
   onExport: (selectedFields: string[]) => Promise<void>;
 }
 
-interface FieldOption {
-  id: string;
-  label: string;
-  category: 'personal' | 'contact' | 'ecclesiastical' | 'address';
-}
-
-const FIELD_OPTIONS: FieldOption[] = [
-  { id: 'name', label: 'Nome', category: 'personal' },
-  { id: 'age', label: 'Idade', category: 'personal' },
-  { id: 'birth', label: 'Data de Nascimento', category: 'personal' },
-  { id: 'gender', label: 'Gênero', category: 'personal' },
-  { id: 'marital_status', label: 'Estado Civil', category: 'personal' },
-  { id: 'nationality', label: 'Nacionalidade', category: 'personal' },
-  { id: 'spouse', label: 'Cônjuge', category: 'personal' },
-  { id: 'father_name', label: 'Nome do Pai', category: 'personal' },
-  { id: 'mother_name', label: 'Nome da Mãe', category: 'personal' },
-  { id: 'occupation', label: 'Profissão', category: 'personal' },
-  { id: 'children', label: 'Filhos', category: 'personal' },
-  { id: 'phone', label: 'Telefone', category: 'contact' },
-  { id: 'whatsapp', label: 'WhatsApp', category: 'contact' },
-  { id: 'email', label: 'Email', category: 'contact' },
-  { id: 'active', label: 'Status', category: 'ecclesiastical' },
-  { id: 'congregation', label: 'Congregação', category: 'ecclesiastical' },
-  { id: 'admission', label: 'Tipo de Recebimento', category: 'ecclesiastical' },
-  { id: 'admission_date', label: 'Data de Recebimento', category: 'ecclesiastical' },
-  { id: 'address', label: 'Endereço', category: 'address' },
-  { id: 'complement', label: 'Complemento', category: 'address' },
-  { id: 'neighborhood', label: 'Bairro', category: 'address' },
-  { id: 'city', label: 'Cidade', category: 'address' },
-  { id: 'state', label: 'Estado', category: 'address' },
-  { id: 'cep', label: 'CEP', category: 'address' },
-];
-
-const CATEGORIES = {
-  personal: 'Informações Pessoais',
-  contact: 'Contato',
-  ecclesiastical: 'Informações Eclesiásticas',
-  address: 'Endereço',
-};
+const FIELD_OPTIONS = MEMBER_EXPORT_FIELD_OPTIONS;
+const CATEGORIES = MEMBER_EXPORT_CATEGORIES;
 
 export function ExportGroupMembersModal({
   isOpen,
@@ -104,7 +72,7 @@ export function ExportGroupMembersModal({
     }
   };
 
-  const getFieldsByCategory = (category: FieldOption['category']) =>
+  const getFieldsByCategory = (category: MemberExportFieldCategory) =>
     FIELD_OPTIONS.filter((f) => f.category === category);
 
   return (
@@ -180,7 +148,7 @@ export function ExportGroupMembersModal({
         </div>
 
         <div className="space-y-6">
-          {(Object.keys(CATEGORIES) as Array<keyof typeof CATEGORIES>).map((category) => (
+          {(Object.keys(CATEGORIES) as MemberExportFieldCategory[]).map((category) => (
             <div key={category}>
               <h3 className="mb-3 text-sm font-semibold text-gray-900">{CATEGORIES[category]}</h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
