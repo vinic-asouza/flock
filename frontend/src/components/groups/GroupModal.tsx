@@ -586,11 +586,11 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
           isOpen={exportModalOpen}
           onClose={() => setExportModalOpen(false)}
           onExport={async (selectedFields) => {
-            const blob = await apiService.exportGroupMembersList(groupId, selectedFields);
+            const { blob, filename } = await apiService.exportGroupMembersList(groupId, selectedFields);
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `grupo-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+            link.download = filename;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

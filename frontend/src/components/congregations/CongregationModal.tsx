@@ -419,17 +419,14 @@ export function CongregationModal({
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onExport={async (selectedFields) => {
-          const blob = await apiService.exportCongregationMembersList(
+          const { blob, filename } = await apiService.exportCongregationMembersList(
             congregationId,
             selectedFields
           );
-          const congregationSlug = String(congregation?.name || 'congregacao')
-            .replace(/\s+/g, '-')
-            .toLowerCase();
           const url = window.URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `congregacao-${congregationSlug}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+          link.download = filename;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
