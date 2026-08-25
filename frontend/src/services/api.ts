@@ -690,6 +690,7 @@ class ApiService {
     month?: number;
     year?: number;
     period?: 'month' | 'year';
+    type?: string[];
     congregation_id?: string;
     group_id?: string;
   }): Promise<Blob> {
@@ -697,12 +698,16 @@ class ApiService {
     if (params?.month) queryParams.append('month', params.month.toString());
     if (params?.year) queryParams.append('year', params.year.toString());
     if (params?.period) queryParams.append('period', params.period);
+    if (params?.type && params.type.length > 0) {
+      params.type.forEach((type) => queryParams.append('type', type));
+    }
     if (params?.congregation_id) queryParams.append('congregation_id', params.congregation_id);
     if (params?.group_id) queryParams.append('group_id', params.group_id);
 
     const url = `/calendar/export/pdf${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.api.get(url, {
-      responseType: 'blob'
+      responseType: 'blob',
+      timeout: 60000, // PDF anual expande recorrência e pode passar dos 10s globais
     });
     return response.data;
   }

@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: calendario
-ultima_atualizacao: 2026-08-20
-versao: "1.1"
+ultima_atualizacao: 2026-08-25
+versao: "1.2"
 total_regras: 16
 tags: [regras, modulo:calendario]
 ver_tambem:
@@ -198,14 +198,14 @@ Agenda da igreja: eventos, recorrência e participantes.
 - **Depende de:** —
 
 ### BR-CAL-016: PDF mês/ano ativos
-- **Declaração:** Export PDF considera itens `active`, aplica filtros de congregação/grupo e expande recorrência na janela. `period=month` (default) usa mês/ano; `period=year` usa o ano inteiro. UI: aba Calendário → mês; aba Listas → ano.
+- **Declaração:** Export PDF considera itens `active`, aplica recorte de tipo (0..N; vazio = todos), congregação (0..1) e grupo (0..1), e expande recorrência na janela. `period=month` (default) usa mês/ano; `period=year` usa o ano inteiro. UI: CTA de **mês** ao lado das setas (aba Calendário) e em cada seção (aba Listas); CTA de **ano** no header das duas abas. Todos os CTAs abrem o mesmo modal de recorte; o recorte vale só para aquele PDF e **não** altera a listagem. Defaults do modal = snapshot dos filtros da tela no clique. Download só após confirmar. Sem itens: o PDF informa ausência no período/filtros. Conteúdo gerado no servidor (`GET /api/calendar/export/pdf`), nunca a partir da listagem paginada do cliente.
 - **Tipo:** Derivação
 - **Gatilho:** Export PDF (`GET /api/calendar/export/pdf`)
-- **Comportamento esperado:** PDF landscape com ocorrências do período
-- **Comportamento em violação:** 400 mês inválido (quando period=month)
-- **Implementado em:** `calendarController.ts` + `utils/pdf/renderCalendar.ts` + `calendar/page.tsx`
-- **Testado em:** N/A — smoke DEV-25
-- **Depende de:** —
+- **Comportamento esperado:** PDF landscape com ocorrências do período e recorte confirmados
+- **Comportamento em violação:** 400 params inválidos (mês, type, UUIDs)
+- **Implementado em:** `calendarController.ts` + `utils/calendarPdfFilters.ts` + `utils/pdf/renderCalendar.ts` + `calendar/page.tsx` + `CalendarExportPdfModal.tsx`
+- **Testado em:** `calendarValidator.test.ts`, `calendarPdfFilters.test.ts`
+- **Depende de:** BR-CAL-010, BR-CAL-014
 
 ---
 

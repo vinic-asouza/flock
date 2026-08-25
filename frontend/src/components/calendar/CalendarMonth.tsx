@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Plus, Calendar, CalendarCheck, Users, Handsh
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { BirthdaysModal, Birthday } from './BirthdaysModal';
+import { CalendarPdfButton } from './CalendarPdfButton';
 import { apiService } from '@/services/api';
 import toast from 'react-hot-toast';
 import { getCalendarItemDisplayDate } from '@/utils/calendarDate';
@@ -24,6 +25,8 @@ interface CalendarMonthProps {
   onRetryBirthdays?: () => void;
   congregationId?: string;
   canEdit?: boolean;
+  onExportPdf?: () => void;
+  exportingPdf?: boolean;
 }
 
 interface DaySheetState {
@@ -42,7 +45,9 @@ export function CalendarMonth({
   birthdayCountError = null,
   onRetryBirthdays,
   congregationId,
-  canEdit = true
+  canEdit = true,
+  onExportPdf,
+  exportingPdf = false,
 }: CalendarMonthProps) {
   const readOnly = canEdit === false;
   const [viewDate, setViewDate] = useState(currentDate);
@@ -236,7 +241,7 @@ export function CalendarMonth({
             Hoje
           </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="secondary"
             onClick={handlePreviousMonth}
@@ -253,6 +258,14 @@ export function CalendarMonth({
           >
             <ChevronRight size={20} />
           </Button>
+          {onExportPdf && (
+            <CalendarPdfButton
+              onClick={onExportPdf}
+              isLoading={exportingPdf}
+              ariaLabel={`Exportar PDF de ${capitalizedMonthName}`}
+              title={`Exportar PDF dos eventos de ${capitalizedMonthName}`}
+            />
+          )}
         </div>
       </div>
 

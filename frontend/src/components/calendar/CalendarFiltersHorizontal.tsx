@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CalendarItemType, CalendarFilters as CalendarFiltersType } from '@/types/calendar';
+import { CALENDAR_ITEM_TYPES, CalendarFilters as CalendarFiltersType, CalendarItemType } from '@/types/calendar';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { apiService, formatApiError } from '@/services/api';
 import { Group } from '@/types';
@@ -13,8 +13,6 @@ interface CalendarFiltersHorizontalProps {
   filters: CalendarFiltersType;
   onFiltersChange: (filters: CalendarFiltersType) => void;
 }
-
-const CALENDAR_ITEM_TYPES: CalendarItemType[] = ['Programação', 'Evento', 'Encontro', 'Reunião'];
 
 export function CalendarFiltersHorizontal({ filters, onFiltersChange }: CalendarFiltersHorizontalProps) {
   const { congregations, loading: filtersLoading } = useFiltersData();

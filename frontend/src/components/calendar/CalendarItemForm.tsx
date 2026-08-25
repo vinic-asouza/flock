@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Alert } from '@/components/ui/Alert';
-import { CalendarItem, CreateCalendarItemData, CalendarItemType, CreateParticipantData } from '@/types/calendar';
+import { CalendarItem, CreateCalendarItemData, CALENDAR_ITEM_TYPES, CalendarItemType, CreateParticipantData } from '@/types/calendar';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { apiService } from '@/services/api';
@@ -154,7 +154,6 @@ interface CalendarItemFormProps {
   onSubmitDisabledChange?: (disabled: boolean) => void;
 }
 
-const CALENDAR_ITEM_TYPES: CalendarItemType[] = ['Programação', 'Evento', 'Encontro', 'Reunião'];
 const RECURRENCE_PATTERNS: { value: 'weekly' | 'monthly'; label: string }[] = [
   { value: 'weekly', label: 'Semanal' },
   { value: 'monthly', label: 'Mensal' }

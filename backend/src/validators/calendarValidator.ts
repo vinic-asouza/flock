@@ -242,3 +242,17 @@ export const listCalendarItemsSchema = Joi.object({
   page: Joi.number().integer().min(1).optional().default(1),
   limit: Joi.number().integer().min(1).max(2000).optional().default(50)
 });
+
+const calendarTypeQuery = Joi.alternatives().try(
+  Joi.string().valid(...calendarItemTypes),
+  Joi.array().items(Joi.string().valid(...calendarItemTypes))
+).optional();
+
+export const exportCalendarPdfSchema = Joi.object({
+  type: calendarTypeQuery,
+  congregation_id: Joi.string().uuid().allow('').optional(),
+  group_id: Joi.string().uuid().allow('').optional(),
+  period: Joi.string().valid('month', 'year').optional(),
+  month: Joi.number().integer().min(1).max(12).optional(),
+  year: Joi.number().integer().min(1900).max(2100).optional()
+});
