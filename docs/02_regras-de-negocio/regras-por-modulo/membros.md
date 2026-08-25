@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: membros
-ultima_atualizacao: 2026-07-14
-versao: "1.1"
-total_regras: 17
+ultima_atualizacao: 2026-08-25
+versao: "1.2"
+total_regras: 18
 tags: [regras, modulo:membros]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -36,6 +36,7 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | BR-MEM-015 | Race de max_uses | Gatilho | Ativo |
 | BR-MEM-016 | Validade de link de registro | Restrição | Ativo |
 | BR-MEM-017 | Congregação obrigatória | Restrição | Ativo |
+| BR-MEM-018 | Contrato CSV operacional | Restrição | Ativo |
 
 ---
 
@@ -122,6 +123,16 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Implementado em:** `memberImportService.ts`
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
+
+### BR-MEM-018: Contrato CSV operacional
+- **Declaração:** Import e export CSV de membros cobrem o cadastro operacional (pessoais, família — inclusive flags cônjuge/pai/mãe é membro —, contato, endereço, recebimento). **Não** incluem o questionário eclesiástico. `nationality`, `document` e `baptism_date` são só legado no import (aliases). Cabeçalhos Idade/Status/Congregação de um CSV exportado **não** viram cadastro; a congregação do import é a do modal (BR-MEM-017). Labels oficiais do export dos campos suportados devem ser reimportáveis.
+- **Tipo:** Restrição
+- **Gatilho:** POST import/validate e POST `/api/export/members/list/csv`
+- **Comportamento esperado:** Mapping alinhado ao formulário; roundtrip dos campos de cadastro
+- **Comportamento em violação:** Coluna skip ignorada; legado inválido falha Joi; CSV só com campos deprecated → 400 (BR-REL-007)
+- **Implementado em:** `csvParser.ts`, `memberImportService.ts`, `listFields.ts` (`memberCsvFieldLabels` / `memberCsvFieldValue`), `exportController.ts`
+- **Testado em:** `utils/__tests__/csvParser.test.ts`, `utils/pdf/__tests__/listFields.test.ts`
+- **Depende de:** [[BR-MEM-004]], [[BR-MEM-017]], [[BR-REL-007]]
 
 ### 📝 Regras de Atualização / Edição
 
@@ -239,4 +250,4 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 
 ---
 
-*Atualizado em 2026-07-14 (DEV-18).*
+*Atualizado em 2026-08-25 (DEV-49).*

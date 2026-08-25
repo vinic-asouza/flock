@@ -3,8 +3,8 @@ type: modulo
 nome: grupos
 status: Ativo
 complexidade: Média
-ultima_atualizacao: 2026-07-31
-versao: "1.2"
+ultima_atualizacao: 2026-08-25
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, grupos]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -49,7 +49,7 @@ Produto: [[01_produto/visao-do-produto]].
 
 - CRUD de membros ou congregações (só consome FKs)
 - Cargo/função do membro no grupo (vínculo sem role)
-- Export PDF/CSV de membros do grupo (UI chama [[04_modulos/relatorios]])
+- Export **PDF** de membros do grupo (não há CSV de grupo; UI chama [[04_modulos/relatorios]])
 - Agenda/recorrência (→ [[04_modulos/calendario]], `group_id` opcional)
 - Quota de plano / billing
 - Bloquear DELETE por quantidade de membros (cascata permite)
@@ -494,6 +494,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-25 | 1.3 | Inventário: export de membros do grupo é só PDF (sem CSV) | DEV-49 |
 | 2026-07-31 | 1.2 | UX mobile/tablet: hub wrap, view stack, Modal footer sticky Create/Edit/View, exports via Modal | DEV-31 |
 | 2026-07-16 | 1.1 | Ordenação na listagem (`sort_by` / `sort_order` + whitelist; default `name` asc) | DEV-13 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo grupos | — |

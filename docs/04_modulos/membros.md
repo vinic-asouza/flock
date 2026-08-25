@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-29
-versao: "1.4"
+ultima_atualizacao: 2026-08-25
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -80,6 +80,7 @@ backend/src/
 │   ├── planLimits.ts              → checkMemberLimit + warning e-mail
 │   ├── memberValidations.ts       → email único, grupos válidos
 │   ├── dateNormalizer.ts
+│   ├── csvParser.ts               → mapping CSV, skip Idade/Status/Congregação, aliases legado
 │   └── auditLogger.ts
 └── types/index.ts                 → interface Member
 
@@ -87,7 +88,7 @@ frontend/src/app/
 ├── (main)/members/                → UI rol (+ botão **Ficha de Cadastro** → export PDF em branco)
 └── public/register/[token]/      → form autocadastro
 
-Testes dedicados: inexistentes.
+Testes: `utils/__tests__/csvParser.test.ts` (mapping/skip/legado). CRUD/HTTP sem suite dedicada.
 Migrations: colunas eclesiásticas (`add_member_form_fields_v2` etc.) no Supabase — sem pasta local.
 ```
 
@@ -179,8 +180,8 @@ Capability de autocadastro.
 | GET | `/api/members/reports` | ✅ | ≥ reader | Relatórios (RL 10/min) |
 | GET | `/api/members/birthdays/count` | ✅ | ≥ reader | Contagem aniversariantes |
 | GET | `/api/members/birthdays/list` | ✅ | ≥ reader | Lista aniversariantes |
-| POST | `/api/members/import/validate` | ✅ | ≥ editor | Valida CSV |
-| POST | `/api/members/import` | ✅ | ≥ editor | Importa CSV |
+| POST | `/api/members/import/validate` | ✅ | ≥ editor | Valida CSV (BR-MEM-018) |
+| POST | `/api/members/import` | ✅ | ≥ editor | Importa CSV; `congregation_id` vem do modal |
 | GET | `/api/members/:id` | ✅ | ≥ reader | Detalhe |
 | POST | `/api/members/` | ✅ | ≥ editor | Criar |
 | POST | `/api/members/batch` | ✅ | ≥ editor | Lote |
@@ -216,6 +217,17 @@ Capability de autocadastro.
 | **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 alinhado ao form v2 para impressão e preenchimento manual. |
 
 Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
+
+### Contrato CSV (import + roundtrip)
+
+Fonte de labels: `memberCsvFieldLabels` em `utils/pdf/listFields.ts`. Modelo: `frontend/public/templates/importacao-membros.csv`.
+
+- **Operacional:** pessoais, família (incl. *Cônjuge/Pai/Mãe é membro*), contato, endereço, recebimento.
+- **Fora:** questionário eclesiástico.
+- **Legado só no import** (aliases; colunas no final do modelo): `nationality`, `document`, `baptism_date`.
+- **Skip no import:** cabeçalhos Idade / Status / Congregação não viram cadastro. Congregação = modal (BR-MEM-017).
+- **Export:** `POST /api/export/members/list/csv` ([[04_modulos/relatorios]]); UI sem nationality/document/baptism; labels oficiais reimportáveis.
+- **Permissões:** import editor+; export reader+.
 
 **Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, import, export PDF/CSV e links de autocadastro usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; props opcionais `description` / `footer`). Export de lista PDF/CSV também passa por esse `Modal` (não overlay ad hoc). Desktop (≥`md`/`sm` conforme componente) permanece equivalente.
 
@@ -278,7 +290,7 @@ Seções principais do modal de visualização (paridade com o PDF de perfil):
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**17** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**18** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -299,6 +311,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**17** regras).
 | BR-MEM-015 | Race max_uses → rollback membro + 409 |
 | BR-MEM-016 | Link: expires futuro ≤1 ano; max_uses 1–10000 |
 | BR-MEM-017 | `congregation_id` UUID obrigatório (sem Sede/null) |
+| BR-MEM-018 | CSV operacional (sem questionário; legado só no import; skip Idade/Status/Congregação) |
 
 **Inferido:** reativar via PATCH pode **não** revalidar limite do plano.
 
@@ -493,7 +506,7 @@ Falha de import = resposta HTTP com relatório parcial (linhas skip/erro); sem f
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| Unit/Integration/E2E | — | 0% | N/A |
+| Unit | `utils/__tests__/csvParser.test.ts` | parcial | Mapping de cabeçalhos, skip Idade/Status/Congregação, aliases legado |
 
 **Gaps:**
 
@@ -563,6 +576,7 @@ graph LR
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
 | 2026-07-21 | 1.2 | UX edição: feedback de validação/sucesso; hydrate null-safe (enums) | DEV-23 |
 | 2026-07-22 | 1.3 | UI detalhe: Família top-level com cônjuge; Pessoais em 2 colunas | DEV-24 |
+| 2026-08-25 | 1.5 | Contrato CSV operacional (BR-MEM-018): catálogo, skip e legado no import | DEV-49 |
 | 2026-07-29 | 1.4 | UX mobile/tablet: hub, Modal sheet, public register, export via Modal | DEV-28 |
 
 ---
@@ -573,7 +587,7 @@ graph LR
 | --- | --- |
 | Módulo documentado | **membros** ✅ |
 | Endpoints | **~21** (12 members + 6 links + 3 public registration) |
-| Regras BR-MEM | **16** |
+| Regras BR-MEM | **18** |
 | Integrações | Supabase DB, Resend (avisos de limite) |
 | Jobs/cron | Nenhum dedicado |
-| Testes | Nenhum dedicado |
+| Testes | Unitários leves (`csvParser`) |

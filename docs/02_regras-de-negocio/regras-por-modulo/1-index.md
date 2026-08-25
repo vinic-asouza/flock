@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 total_modulos: 12
-total_regras: 141
+total_regras: 145
 tags: [regras, índice, módulos]
 ---
 
@@ -18,7 +18,7 @@ tags: [regras, índice, módulos]
 | --- | --- | --- | ---: | --- |
 | Autenticação e Sessão | [[02_regras-de-negocio/regras-por-modulo/auth]] | AUTH | 14 | Login, sessão, senha, confirmação |
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
-| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 16 | Rol oficial, import, autocadastro |
+| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 18 | Rol oficial, import, autocadastro |
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
@@ -29,7 +29,7 @@ tags: [regras, índice, módulos]
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 12 módulos · **141 regras**
+**Total:** 12 módulos · **145 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
@@ -48,4 +48,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-07-13 — geração inicial a partir do monorepo (`backend/`, `frontend/`, `landing/`).
+2026-08-25 — BR-MEM-018 (contrato CSV operacional, DEV-49). Contagem MEM alinhada ao arquivo de regras; total = soma da tabela.
