@@ -706,7 +706,8 @@ class ApiService {
 
     const url = `/calendar/export/pdf${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await this.api.get(url, {
-      responseType: 'blob'
+      responseType: 'blob',
+      timeout: 60000, // PDF anual expande recorrência e pode passar dos 10s globais
     });
     return response.data;
   }

@@ -1,6 +1,7 @@
 // Tipos para o módulo de Calendário
 
 export type CalendarItemType = 'Programação' | 'Evento' | 'Encontro' | 'Reunião';
+export const CALENDAR_ITEM_TYPES: CalendarItemType[] = ['Programação', 'Evento', 'Encontro', 'Reunião'];
 export type CalendarStatus = 'active' | 'cancelled' | 'postponed';
 export type RecurrencePattern = 'weekly' | 'monthly';
 export type CalendarViewMode = 'month' | 'week' | 'list';

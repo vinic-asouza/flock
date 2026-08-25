@@ -9,11 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { apiService, formatApiError } from '@/services/api';
-import { CalendarItemType } from '@/types/calendar';
+import { CALENDAR_ITEM_TYPES, CalendarItemType } from '@/types/calendar';
 import { Group } from '@/types';
 import { getCongregationDisplayName } from '@/utils/congregation';
-
-const CALENDAR_ITEM_TYPES: CalendarItemType[] = ['Programação', 'Evento', 'Encontro', 'Reunião'];
 
 export type CalendarExportPeriod = 'month' | 'year';
 
@@ -50,7 +48,12 @@ export function CalendarExportPdfModal({
   defaultRecorte,
   onExport,
 }: CalendarExportPdfModalProps) {
-  const { congregations, loading: congregationsLoading, error: congregationsError } = useFiltersData();
+  const {
+    congregations,
+    loading: congregationsLoading,
+    error: congregationsError,
+    reload: reloadCongregations,
+  } = useFiltersData();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [groupsError, setGroupsError] = useState<string | null>(null);
@@ -207,19 +210,23 @@ export function CalendarExportPdfModal({
 
         {(congregationsError || groupsError) && (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-            <p className="text-xs text-amber-800 mb-1">
-              {congregationsError || groupsError}
-            </p>
-            {groupsError && (
-              <button
-                type="button"
-                onClick={loadGroups}
-                disabled={loadingOptions || exporting}
-                className="text-xs font-medium text-amber-800 underline hover:text-amber-900 min-h-9"
-              >
-                Tentar novamente
-              </button>
+            {congregationsError && (
+              <p className="text-xs text-amber-800 mb-1">{congregationsError}</p>
             )}
+            {groupsError && (
+              <p className="text-xs text-amber-800 mb-1">{groupsError}</p>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                if (congregationsError) void reloadCongregations();
+                if (groupsError) void loadGroups();
+              }}
+              disabled={loadingOptions || exporting}
+              className="text-xs font-medium text-amber-800 underline hover:text-amber-900 min-h-9"
+            >
+              Tentar novamente
+            </button>
           </div>
         )}
       </div>
