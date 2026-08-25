@@ -1,6 +1,8 @@
 import {
   buildCalendarPdfFilterSummary,
   congregationPdfLabel,
+  findJoinedCongregation,
+  findJoinedGroup,
   groupPdfLabel,
   normalizeCalendarTypeFilter,
 } from '../calendarPdfFilters';
@@ -43,5 +45,29 @@ describe('congregationPdfLabel / groupPdfLabel', () => {
 
   it('should format group as type: name', () => {
     expect(groupPdfLabel({ name: 'Louvor', type: 'Ministério' })).toBe('Ministério: Louvor');
+  });
+});
+
+describe('findJoinedCongregation / findJoinedGroup', () => {
+  const items = [
+    {
+      congregation: { id: 'cong-1', name: 'Igreja da Paz', abbreviation: 'IDP' },
+      group: { id: 'grp-1', name: 'Jovens', type: 'Ministério' },
+    },
+    {
+      congregation: { id: 'cong-2', name: 'Sede', abbreviation: null },
+      group: null,
+    },
+  ];
+
+  it('should reuse congregation and group already joined on items', () => {
+    expect(findJoinedCongregation(items, 'cong-1')?.abbreviation).toBe('IDP');
+    expect(findJoinedGroup(items, 'grp-1')?.name).toBe('Jovens');
+  });
+
+  it('should return null when the list is empty or the id is missing', () => {
+    expect(findJoinedCongregation([], 'cong-1')).toBeNull();
+    expect(findJoinedCongregation(items, 'cong-missing')).toBeNull();
+    expect(findJoinedGroup(items, 'grp-missing')).toBeNull();
   });
 });

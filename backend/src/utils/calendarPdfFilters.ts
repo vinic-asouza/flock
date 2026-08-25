@@ -51,3 +51,30 @@ export function groupPdfLabel(group: {
   const type = group.type?.trim();
   return type ? `${type}: ${name}` : name;
 }
+
+type JoinedCongregation = {
+  id?: string | null;
+  name?: string | null;
+  abbreviation?: string | null;
+} | null | undefined;
+
+type JoinedGroup = {
+  id?: string | null;
+  name?: string | null;
+  type?: string | null;
+} | null | undefined;
+
+/** Reusa o join já carregado nos itens; `null` = lista vazia ou id ausente (caller faz fetch). */
+export function findJoinedCongregation(
+  items: Array<{ congregation?: JoinedCongregation }>,
+  congregationId: string
+): NonNullable<JoinedCongregation> | null {
+  return items.find((item) => item.congregation?.id === congregationId)?.congregation ?? null;
+}
+
+export function findJoinedGroup(
+  items: Array<{ group?: JoinedGroup }>,
+  groupId: string
+): NonNullable<JoinedGroup> | null {
+  return items.find((item) => item.group?.id === groupId)?.group ?? null;
+}

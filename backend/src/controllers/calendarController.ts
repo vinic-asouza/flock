@@ -11,6 +11,8 @@ import {
 import {
   buildCalendarPdfFilterSummary,
   congregationPdfLabel,
+  findJoinedCongregation,
+  findJoinedGroup,
   groupPdfLabel,
   normalizeCalendarTypeFilter
 } from '../utils/calendarPdfFilters';
@@ -1096,24 +1098,34 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
 
     let congregationLabel: string | undefined;
     if (congregationId) {
-      const { data: congregation } = await supabase
-        .from('congregations')
-        .select('name, abbreviation')
-        .eq('id', congregationId)
-        .eq('church_id', churchId)
-        .maybeSingle();
-      congregationLabel = congregationPdfLabel(congregation) || 'Congregação filtrada';
+      const joinedCongregation = findJoinedCongregation(normalizedItems, congregationId);
+      if (joinedCongregation) {
+        congregationLabel = congregationPdfLabel(joinedCongregation) || 'Congregação filtrada';
+      } else {
+        const { data: congregation } = await supabase
+          .from('congregations')
+          .select('name, abbreviation')
+          .eq('id', congregationId)
+          .eq('church_id', churchId)
+          .maybeSingle();
+        congregationLabel = congregationPdfLabel(congregation) || 'Congregação filtrada';
+      }
     }
 
     let groupLabel: string | undefined;
     if (groupId) {
-      const { data: group } = await supabase
-        .from('groups')
-        .select('name, type')
-        .eq('id', groupId)
-        .eq('church_id', churchId)
-        .maybeSingle();
-      groupLabel = groupPdfLabel(group) || 'Grupo filtrado';
+      const joinedGroup = findJoinedGroup(normalizedItems, groupId);
+      if (joinedGroup) {
+        groupLabel = groupPdfLabel(joinedGroup) || 'Grupo filtrado';
+      } else {
+        const { data: group } = await supabase
+          .from('groups')
+          .select('name, type')
+          .eq('id', groupId)
+          .eq('church_id', churchId)
+          .maybeSingle();
+        groupLabel = groupPdfLabel(group) || 'Grupo filtrado';
+      }
     }
 
     const filterSummary = buildCalendarPdfFilterSummary({
