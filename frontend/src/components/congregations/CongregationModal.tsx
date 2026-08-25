@@ -166,7 +166,7 @@ export function CongregationModal({
           }
         >
           <Download size={16} className="mr-2 shrink-0" />
-          Exportar lista de membros
+          Exportar lista
         </Button>
         {onEdit && (
           <Button
