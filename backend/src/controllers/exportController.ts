@@ -1084,11 +1084,6 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
     const { columns } = resolved;
 
     const churchId = req.church!.churchId;
-    const { data: churchData } = await supabase
-      .from('churches')
-      .select('id, name')
-      .eq('id', churchId)
-      .single();
 
     // Construir query para buscar membros (mesma lógica do PDF)
     let query = supabase
