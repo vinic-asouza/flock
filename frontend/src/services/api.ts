@@ -1023,6 +1023,19 @@ class ApiService {
     return response.data;
   }
 
+  async exportCongregationMembersList(
+    congregationId: string,
+    selectedFields: string[]
+  ): Promise<Blob> {
+    const response = await this.api.post('/export/congregation/members/list', {
+      congregationId,
+      fields: selectedFields,
+    }, {
+      responseType: 'blob',
+    });
+    return response.data;
+  }
+
   async exportMembersListCSV(
     filters: Record<string, string | number | boolean | null | undefined>,
     selectedFields: string[],

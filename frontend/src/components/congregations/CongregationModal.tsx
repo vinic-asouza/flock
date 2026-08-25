@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Edit, Trash2, MapPin, Phone, User, Users, Loader2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Edit, Trash2, MapPin, Phone, User, Users, Loader2, ChevronLeft, ChevronRight, Search, Download } from 'lucide-react';
 import { Congregation } from '@/types/congregation';
 import { apiService, formatApiError } from '@/services/api';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import type { Member } from '@/types/reports';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { ExportCongregationMembersModal } from '@/components/congregations/ExportCongregationMembersModal';
+import toast from 'react-hot-toast';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -46,6 +48,7 @@ export function CongregationModal({
   const [errorMembers, setErrorMembers] = useState<string | null>(null);
   const [membersSearch, setMembersSearch] = useState('');
   const [membersSearchDebounced, setMembersSearchDebounced] = useState('');
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const membersRequestIdRef = useRef(0);
 
   // Debounce do termo de busca
@@ -132,6 +135,7 @@ export function CongregationModal({
       setErrorMembers(null);
       setMembersSearch('');
       setMembersSearchDebounced('');
+      setExportModalOpen(false);
       onClose();
     }
   };
@@ -148,9 +152,22 @@ export function CongregationModal({
     : '';
 
   const renderActionButtons = (layoutClassName: string) => {
-    if (!congregation || (!onEdit && !onDelete)) return null;
+    if (!congregation) return null;
+    const canExportMembers = (congregation.activeMembersCount ?? 0) > 0;
     return (
       <div className={layoutClassName}>
+        <Button
+          variant="primary"
+          onClick={() => setExportModalOpen(true)}
+          className="min-h-11 w-full"
+          disabled={!canExportMembers}
+          title={
+            canExportMembers ? undefined : 'Não há membros ativos para exportar'
+          }
+        >
+          <Download size={16} className="mr-2 shrink-0" />
+          Exportar lista de membros
+        </Button>
         {onEdit && (
           <Button
             variant="secondary"
@@ -198,9 +215,10 @@ export function CongregationModal({
 
   if (!isOpen) return null;
 
-  const showMobileStickyActions = Boolean(congregation && !loading && !error && (onEdit || onDelete));
+  const showMobileStickyActions = Boolean(congregation && !loading && !error);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
@@ -395,5 +413,31 @@ export function CongregationModal({
         </div>
       ) : null}
     </Modal>
+
+    {congregationId && (
+      <ExportCongregationMembersModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onExport={async (selectedFields) => {
+          const blob = await apiService.exportCongregationMembersList(
+            congregationId,
+            selectedFields
+          );
+          const congregationSlug = String(congregation?.name || 'congregacao')
+            .replace(/\s+/g, '-')
+            .toLowerCase();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `congregacao-${congregationSlug}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          toast.success('PDF exportado com sucesso!');
+        }}
+      />
+    )}
+    </>
   );
 }
