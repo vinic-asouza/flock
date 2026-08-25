@@ -100,13 +100,13 @@ graph TD
 | **congregacoes** | Unidades locais (CRUD + batch) | Baixa | Ativo | auth, igreja-config | ~6 |
 | **grupos** | Ministérios/células e vínculos membro↔grupo | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
 | **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo | auth, igreja-config, congregacoes, grupos, membros | ~11 |
-| **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~12 |
+| **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~13 |
 | **igreja-config** | Igreja, conta do usuário, equipe (`church_users`), audit logs | Alta | Ativo | auth | ~16 |
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |
 | **aquisicao** | Landing, waitlist, entrada de leads/checkout público | Baixa | Ativo | billing | ~5 |
 | **tutoriais** | Guias in-app (conteúdo front) | Baixa | Ativo | auth | ~1 |
 
-**Total:** **12** módulos · ~**123** operações HTTP de domínio (aprox.; inclui públicos/billing; exclui health/metrics internos).
+**Total:** **12** módulos · ~**124** operações HTTP de domínio (aprox.; inclui públicos/billing; exclui health/metrics internos).
 
 ---
 

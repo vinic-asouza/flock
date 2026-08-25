@@ -1,6 +1,6 @@
 ---
 type: seguranca
-ultima_atualizacao: 2026-07-13
+ultima_atualizacao: 2026-08-25
 versao: "1.0"
 auth_provider: Supabase Auth (custom cookie bridge)
 tags: [arquitetura, segurança, auth, OWASP, criptografia]
@@ -128,7 +128,7 @@ Configuração em `app.ts`: `helmet()` **sem overrides** + CORS custom.
 
 | Header | Configurado | Valor | Propósito |
 | --- | --- | --- | --- |
-| CORS | ✅ | Allowlist `FRONTEND_URL` + `LANDING_URL`; prod exige `Origin`; `credentials: true`; methods GET/POST/PUT/PATCH/DELETE/OPTIONS; headers `Content-Type`, `Authorization`, `Cookie`, `X-Church-Id` | Controle de origem |
+| CORS | ✅ | Allowlist `FRONTEND_URL` + `LANDING_URL`; prod exige `Origin`; `credentials: true`; methods GET/POST/PUT/PATCH/DELETE/OPTIONS; headers `Content-Type`, `Authorization`, `Cookie`, `X-Church-Id`; `exposedHeaders: ['Content-Disposition']` | Controle de origem + filename de download no JS |
 | Helmet (suite) | ✅ | Defaults Helmet 7.x | Baseline |
 | Content-Security-Policy | 🟡 | Default Helmet / possivelmente desligado em versões recentes se não setado — **sem CSP custom no código** | XSS |
 | Strict-Transport-Security | 🟡 | Depende do default Helmet + TLS no proxy Railway | Forçar HTTPS |

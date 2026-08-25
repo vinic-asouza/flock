@@ -364,7 +364,7 @@ Hub autenticado em `frontend/src/app/(main)/groups/page.tsx` + `components/group
 
 - **View (`GroupModal`):** empilha info + gestão de membros em `<md`; restaura layout 2 colunas (info ~30% + membros) em `md+`. No mobile, Export/Editar/Excluir ficam no `footer` do Modal; no desktop permanecem no painel lateral. Add membro empilha Select + CTA em `<sm`.
 - **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário), mitigando teclado virtual.
-- **Exports:** `ExportGroupsTypesModal` (lista) e `ExportGroupMembersModal` (membros do grupo) via `Modal` sheet; conteúdo/payload PDF inalterado (BR-REL).
+- **Exports:** `ExportGroupsTypesModal` (lista) e `ExportGroupMembersModal` (wrapper de `ExportMemberFieldsModal`) via `Modal` sheet; conteúdo/payload PDF inalterado (BR-REL).
 
 Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
 

@@ -8,6 +8,7 @@ import {
   resolveScopedCongregationFilter,
 } from '../utils/congregationScope';
 import { exportGroupsListFiltersSchema } from '../validators/groupValidator';
+import { exportCongregationMembersListSchema } from '../validators/congregationValidator';
 import { logAudit } from '../utils/auditLogger';
 import { renderMemberProfilePdf } from '../utils/pdf/renderMemberProfile';
 import { renderIntegrationProfilePdf } from '../utils/pdf/renderIntegrationProfile';
@@ -1051,6 +1052,136 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
       res.status(500).json({
         error: 'Erro ao exportar lista do grupo',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
+      });
+    }
+  }
+};
+
+/**
+ * Exporta lista de membros ativos de uma congregação para PDF.
+ * BR-REL-001/006/007/008/011 · BR-CON-008/009/014
+ */
+export const exportCongregationMembersList = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado',
+      });
+    }
+
+    const { error: bodyError, value } = exportCongregationMembersListSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (bodyError) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: bodyError.details.map((d) => d.message),
+      });
+    }
+
+    const { congregationId, fields } = value as { congregationId: string; fields: string[] };
+    const churchId = req.church!.churchId;
+
+    const { data: churchData } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('id', churchId)
+      .single();
+
+    const { data: congregation, error: congregationError } = await supabase
+      .from('congregations')
+      .select('id, name, leader, church_id')
+      .eq('id', congregationId)
+      .eq('church_id', churchId)
+      .single();
+
+    if (congregationError || !congregation) {
+      return res.status(404).json({
+        error: 'Congregação não encontrada',
+        details: 'Não foi possível encontrar a congregação solicitada',
+      });
+    }
+
+    const access = assertCongregationAccess(req.church!, congregation.id);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
+    }
+
+    const { data: members, error: membersError } = await supabase
+      .from('members')
+      .select(`
+        *,
+        congregation:congregations(name)
+      `)
+      .eq('church_id', churchId)
+      .eq('congregation_id', congregation.id)
+      .eq('active', true)
+      .order('name', { ascending: true });
+
+    if (membersError) {
+      return res.status(500).json({
+        error: 'Erro ao buscar membros da congregação',
+        details: membersError.message,
+      });
+    }
+
+    if (!members || members.length === 0) {
+      return res.status(404).json({
+        error: 'Nenhum membro encontrado',
+        details: 'Esta congregação não possui membros ativos para exportar',
+      });
+    }
+
+    const resolved = resolveExportColumns(fields, memberListFieldLabels);
+    if (!resolved.ok) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: resolved.message,
+      });
+    }
+
+    await logAudit(req, {
+      entity: 'church',
+      entityId: churchId,
+      action: 'export',
+      changesAfter: {
+        list_type: 'congregation_members',
+        format: 'pdf',
+        exportedRows: members.length,
+        congregationId: congregation.id,
+      },
+    });
+
+    const { columns } = resolved;
+    const rows = rowsFromColumnKeys(members, columns, memberFieldValue);
+    const congregationSlug = String(congregation.name || 'congregacao')
+      .replace(/\s+/g, '-')
+      .toLowerCase();
+    const filename = `congregacao-${congregationSlug}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+
+    const subtitleParts = [`Congregação: ${congregation.name}`];
+    if (congregation.leader?.trim()) {
+      subtitleParts.push(`Líder: ${congregation.leader.trim()}`);
+    }
+
+    renderLandscapeListPdf(res, {
+      filename,
+      churchName: churchData?.name || 'Igreja',
+      title: 'Lista de membros da congregação',
+      subtitle: subtitleParts.join(' • '),
+      metaLines: [`Total: ${members.length} membro(s)`],
+      columns,
+      rows,
+    });
+    return;
+  } catch (error) {
+    console.error('Erro ao exportar PDF da congregação:', error);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro ao exportar lista da congregação',
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
       });
     }
   }

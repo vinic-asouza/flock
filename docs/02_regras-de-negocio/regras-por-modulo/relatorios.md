@@ -2,8 +2,8 @@
 type: regras-modulo
 modulo: relatorios
 ultima_atualizacao: 2026-08-25
-versao: "1.5"
-total_regras: 11
+versao: "1.6"
+total_regras: 12
 tags: [regras, modulo:relatorios]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -31,6 +31,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 | BR-REL-009 | Vision UI painel | Fato | Ativo |
 | BR-REL-010 | Export grupos exige types | Restrição | Ativo |
 | BR-REL-011 | Flock Print (padrão PDF) | Fato | Ativo |
+| BR-REL-012 | Export membros da congregação | Restrição | Ativo |
 
 ---
 
@@ -103,7 +104,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** [[BR-GEN-010]]
 
 ### BR-REL-007: Export fields obrigatórios
-- **Declaração:** PDF/CSV de lista exige `fields[]` não vazio. Em PDF de lista de membros/integração/grupo **e no CSV de lista de membros**, campos deprecated (`baptism_date`, `document`) são **ignorados**; se nenhum campo válido restar → **400**.
+- **Declaração:** PDF/CSV de lista exige `fields[]` não vazio. Em PDF de lista de membros/integração/grupo/congregação **e no CSV de lista de membros**, campos deprecated (`baptism_date`, `document`) são **ignorados**; se nenhum campo válido restar → **400**.
 - **Tipo:** Restrição
 - **Gatilho:** Export list
 - **Comportamento esperado:** Arquivo com colunas válidas
@@ -113,7 +114,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** —
 
 ### BR-REL-008: Export lista vazia
-- **Declaração:** Sem membros no filtro → 404 Nenhum membro encontrado. Análogo em export de grupos: sem grupos após filtros → 404. Export de membros de um grupo sem integrantes → 404 com mensagem de grupo sem membros.
+- **Declaração:** Sem membros no filtro → 404 Nenhum membro encontrado. Análogo em export de grupos: sem grupos após filtros → 404. Export de membros de um grupo sem integrantes → 404 com mensagem de grupo sem membros. Export de membros de uma congregação sem ativos → 404 com mensagem distinta da de congregação inexistente.
 - **Tipo:** Restrição
 - **Gatilho:** Export
 - **Comportamento esperado:** —
@@ -152,6 +153,16 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Testado em:** smoke DEV-25; unitários de colunas
 - **Depende de:** [[BR-REL-006]]
 
+### BR-REL-012: Export membros da congregação
+- **Declaração:** `POST /api/export/congregation/members/list` gera o PDF do rol **ativo** de uma congregação (reader+, tenant + escopo DEV-15). Body `{ congregationId, fields[] }`. Só `active=true`; a busca/paginação do modal **não** entram no arquivo. O PDF usa o **nome completo** da unidade (BR-CON-014), kit Flock Print landscape. UI: botão no modal de visualização (não no card nem no hub). Hub `/congregations` continua exportando a **lista de congregações**. Sem ativos: botão desabilitado; API com lista vazia → 404 (BR-REL-008). Não reutilizar `POST /export/members/list` (título/filename/404 de recurso distintos).
+- **Tipo:** Restrição
+- **Gatilho:** Export no modal da congregação / POST dedicado
+- **Comportamento esperado:** PDF contextual da unidade; 400 fields/UUID; 403 escopo; 404 congregação vs 404 sem ativos
+- **Comportamento em violação:** 400 / 403 / 404; UI não dispara se `activeMembersCount === 0`
+- **Implementado em:** `exportController.exportCongregationMembersList` + `congregationValidator.exportCongregationMembersListSchema` + `CongregationModal` / `ExportCongregationMembersModal`
+- **Testado em:** `validators/__tests__/congregationValidator.test.ts`; smoke DEV-47
+- **Depende de:** [[BR-REL-001]], [[BR-REL-006]], [[BR-REL-007]], [[BR-REL-008]], [[BR-REL-011]], [[BR-CON-008]], [[BR-CON-009]], [[BR-CON-014]]
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -160,4 +171,4 @@ Oferecer indicadores demográficos/operacionais e exportações.
 
 ---
 
-*Atualizado em 2026-08-25 (DEV-49).*
+*Atualizado em 2026-08-25 (DEV-47).*

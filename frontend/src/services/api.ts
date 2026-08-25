@@ -1013,14 +1013,36 @@ class ApiService {
     return response.data;
   }
 
-  async exportGroupMembersList(groupId: string, selectedFields: string[]): Promise<Blob> {
+  async exportGroupMembersList(
+    groupId: string,
+    selectedFields: string[]
+  ): Promise<{ blob: Blob; filename: string }> {
     const response = await this.api.post('/export/group/members/list', {
       groupId,
       fields: selectedFields
     }, {
       responseType: 'blob',
     });
-    return response.data;
+    const filename = getFilenameFromContentDisposition(
+      response.headers['content-disposition'] as string | undefined
+    ) ?? `grupo-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+    return { blob: response.data, filename };
+  }
+
+  async exportCongregationMembersList(
+    congregationId: string,
+    selectedFields: string[]
+  ): Promise<{ blob: Blob; filename: string }> {
+    const response = await this.api.post('/export/congregation/members/list', {
+      congregationId,
+      fields: selectedFields,
+    }, {
+      responseType: 'blob',
+    });
+    const filename = getFilenameFromContentDisposition(
+      response.headers['content-disposition'] as string | undefined
+    ) ?? `congregacao-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+    return { blob: response.data, filename };
   }
 
   async exportMembersListCSV(

@@ -82,6 +82,7 @@ app.use(cors({
   credentials: true, // Permitir cookies
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Church-Id'],
+  exposedHeaders: ['Content-Disposition'],
   optionsSuccessStatus: 200 // Para suporte a navegadores legados
 }));
 

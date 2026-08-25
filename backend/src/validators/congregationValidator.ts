@@ -150,4 +150,22 @@ export const updateCongregationSchema = Joi.object({
       'string.max': 'O telefone não pode ter mais de 20 caracteres',
       'phone.digits': 'Telefone inválido. Deve conter 10 ou 11 dígitos'
     })
-}); 
+});
+
+/** Body do POST /api/export/congregation/members/list */
+export const exportCongregationMembersListSchema = Joi.object({
+  congregationId: Joi.string().uuid().required().messages({
+    'string.guid': 'O ID da congregação deve ser um UUID válido',
+    'any.required': 'O ID da congregação é obrigatório',
+    'string.empty': 'O ID da congregação é obrigatório',
+  }),
+  fields: Joi.array()
+    .items(Joi.string().min(1))
+    .min(1)
+    .required()
+    .messages({
+      'any.required': 'É necessário selecionar pelo menos um campo para exportar',
+      'array.min': 'É necessário selecionar pelo menos um campo para exportar',
+      'array.base': 'fields deve ser um array',
+    }),
+}).unknown(false); 
