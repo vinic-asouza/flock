@@ -9,10 +9,11 @@ import { CalendarItemForm } from '@/components/calendar/CalendarItemForm';
 import { CalendarMonth } from '@/components/calendar/CalendarMonth';
 import { CalendarListView } from '@/components/calendar/CalendarListView';
 import { CalendarFiltersHorizontal } from '@/components/calendar/CalendarFiltersHorizontal';
+import { CalendarPdfButton } from '@/components/calendar/CalendarPdfButton';
 import { Tabs } from '@/components/ui/Tabs';
 import { CalendarItem, CreateCalendarItemData, CalendarFilters as CalendarFiltersType, typeColors } from '@/types/calendar';
 import { apiService, formatApiError } from '@/services/api';
-import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download } from 'lucide-react';
+import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, MapPin, Users, User, Repeat, FileText, Church, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -22,6 +23,15 @@ import { getCongregationDisplayName } from '@/utils/congregation';
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 const CREATE_FORM_ID = 'calendar-item-create-form';
 const EDIT_FORM_ID = 'calendar-item-edit-form';
+
+type CalendarExportPeriod = 'month' | 'year';
+
+function calendarPdfExportKey(period: CalendarExportPeriod, year: number, month?: number): string {
+  if (period === 'year') {
+    return `year:${year}`;
+  }
+  return `month:${year}-${String(month ?? 0).padStart(2, '0')}`;
+}
 
 export default function CalendarPage() {
   const { canEdit } = useAuth();
@@ -37,7 +47,7 @@ export default function CalendarPage() {
   const [birthdayCountError, setBirthdayCountError] = useState<string | null>(null);
   const [participantsPage, setParticipantsPage] = useState(1);
   const [loadingItemDetails, setLoadingItemDetails] = useState(false);
-  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingKey, setExportingKey] = useState<string | null>(null);
   const loadItemsRequestIdRef = useRef(0);
   const viewItemRequestIdRef = useRef(0);
 
@@ -187,15 +197,18 @@ export default function CalendarPage() {
     }
   };
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (options: {
+    period: CalendarExportPeriod;
+    year: number;
+    month?: number;
+  }) => {
+    const key = calendarPdfExportKey(options.period, options.year, options.month);
     try {
-      setExportingPdf(true);
-      const isYearPeriod = activeTab === 'list';
-      const month = currentMonth.getMonth() + 1;
-      const year = isYearPeriod ? currentYear : currentMonth.getFullYear();
+      setExportingKey(key);
       const blob = await apiService.exportCalendarPDF({
-        ...(isYearPeriod ? { period: 'year' as const } : { month }),
-        year,
+        period: options.period,
+        year: options.year,
+        ...(options.period === 'month' && options.month != null ? { month: options.month } : {}),
         congregation_id: filters.congregation_id || undefined,
         group_id: filters.group_id || undefined,
       });
@@ -203,9 +216,10 @@ export default function CalendarPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = isYearPeriod
-        ? `calendario-${year}.pdf`
-        : `calendario-${year}-${String(month).padStart(2, '0')}.pdf`;
+      link.download =
+        options.period === 'year'
+          ? `calendario-${options.year}.pdf`
+          : `calendario-${options.year}-${String(options.month).padStart(2, '0')}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -214,7 +228,7 @@ export default function CalendarPage() {
     } catch (err) {
       toast.error(formatApiError(err) || 'Erro ao exportar PDF. Tente novamente.');
     } finally {
-      setExportingPdf(false);
+      setExportingKey(null);
     }
   };
 
@@ -287,20 +301,15 @@ export default function CalendarPage() {
         subtitle="Gerencie programações, eventos, encontros e reuniões"
         actions={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-            <Button
-              variant="secondary"
-              onClick={handleExportPDF}
-              className="flex min-h-11 w-full items-center justify-center gap-2 sm:w-auto"
-              disabled={exportingPdf}
-            >
-              {exportingPdf ? (
-                <Loader2 size={18} className="animate-spin" />
-              ) : (
-                <Download size={18} />
-              )}
-              <span className="sm:hidden">PDF</span>
-              <span className="hidden sm:inline">Exportar PDF</span>
-            </Button>
+            {activeTab === 'list' && (
+              <CalendarPdfButton
+                onClick={() => handleExportPDF({ period: 'year', year: currentYear })}
+                isLoading={exportingKey === calendarPdfExportKey('year', currentYear)}
+                ariaLabel={`Exportar PDF do ano ${currentYear}`}
+                title={`Exportar PDF de todos os eventos de ${currentYear}`}
+                className="w-full sm:w-auto"
+              />
+            )}
             <Button
               variant="primary"
               onClick={() => handleCreateQuick()}
@@ -360,6 +369,17 @@ export default function CalendarPage() {
             onRetryBirthdays={loadBirthdaysCount}
             congregationId={filters.congregation_id}
             canEdit={canEdit}
+            onExportPdf={() =>
+              handleExportPDF({
+                period: 'month',
+                month: currentMonth.getMonth() + 1,
+                year: currentMonth.getFullYear(),
+              })
+            }
+            exportingPdf={
+              exportingKey ===
+              calendarPdfExportKey('month', currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+            }
           />
         ) : (
           <div className="space-y-4">
@@ -367,6 +387,12 @@ export default function CalendarPage() {
               items={items}
               currentYear={currentYear}
               onItemClick={handleViewItem}
+              onExportMonth={(month, year) =>
+                handleExportPDF({ period: 'month', month, year })
+              }
+              isMonthExporting={(month, year) =>
+                exportingKey === calendarPdfExportKey('month', year, month)
+              }
             />
 
             {/* Controles de navegação de ano */}

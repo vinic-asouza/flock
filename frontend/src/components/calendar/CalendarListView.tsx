@@ -5,18 +5,23 @@ import { CalendarItem } from '@/types/calendar';
 import { format, startOfMonth, parseISO, getYear, getMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarItemCard } from './CalendarItemCard';
+import { CalendarPdfButton } from './CalendarPdfButton';
 import { ChevronLeft, ChevronRight, CalendarDays, ArrowUp } from 'lucide-react';
 
 interface CalendarListViewProps {
   items: CalendarItem[];
   currentYear: number;
   onItemClick: (item: CalendarItem) => void;
+  onExportMonth?: (month: number, year: number) => void;
+  isMonthExporting?: (month: number, year: number) => boolean;
 }
 
 export function CalendarListView({
   items,
   currentYear,
-  onItemClick
+  onItemClick,
+  onExportMonth,
+  isMonthExporting,
 }: CalendarListViewProps) {
   const itemsPerPage = 6;
   
@@ -210,17 +215,27 @@ export function CalendarListView({
             className={`space-y-4 pb-8 ${!isLastMonth ? 'border-b border-gray-200' : ''}`}
           >
             {/* Cabeçalho do mês */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-xl font-bold text-gray-900 capitalize">
-                {monthName} {currentYear}
-              </h2>
-              <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
-                {monthItems.length} {monthItems.length === 1 ? 'item' : 'itens'}
-              </span>
-              {isCurrentMonth && (
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-white">
-                  Mês Atual
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap min-w-0">
+                <h2 className="text-xl font-bold text-gray-900 capitalize">
+                  {monthName} {currentYear}
+                </h2>
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700">
+                  {monthItems.length} {monthItems.length === 1 ? 'item' : 'itens'}
                 </span>
+                {isCurrentMonth && (
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-white">
+                    Mês Atual
+                  </span>
+                )}
+              </div>
+              {onExportMonth && (
+                <CalendarPdfButton
+                  onClick={() => onExportMonth(monthMonthNum + 1, currentYear)}
+                  isLoading={isMonthExporting?.(monthMonthNum + 1, currentYear) ?? false}
+                  ariaLabel={`Exportar PDF de ${monthName} de ${currentYear}`}
+                  title={`Exportar PDF dos eventos de ${monthName} de ${currentYear}`}
+                />
               )}
             </div>
 
@@ -247,15 +262,17 @@ export function CalendarListView({
 
               {/* Paginação */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm text-gray-600">
                     Mostrando {startIndex + 1} a {Math.min(endIndex, monthItems.length)} de {monthItems.length} {monthItems.length === 1 ? 'item' : 'itens'}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={() => setMonthPage(monthKey, Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
                       className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
+                      aria-label={`Página anterior de ${monthName}`}
                     >
                       <ChevronLeft size={18} className="text-gray-700" />
                     </button>
@@ -263,9 +280,11 @@ export function CalendarListView({
                       Página {currentPage} de {totalPages}
                     </span>
                     <button
+                      type="button"
                       onClick={() => setMonthPage(monthKey, Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
                       className="p-2 min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-700"
+                      aria-label={`Próxima página de ${monthName}`}
                     >
                       <ChevronRight size={18} className="text-gray-700" />
                     </button>
