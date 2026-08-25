@@ -17,6 +17,8 @@ import { renderDashboardPdf } from '../utils/pdf/renderDashboard';
 import {
   integrationFieldValue,
   integrationListFieldLabels,
+  memberCsvFieldLabels,
+  memberCsvFieldValue,
   memberFieldValue,
   memberListFieldLabels,
   resolveExportColumns,
@@ -1072,6 +1074,15 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const resolved = resolveExportColumns(fields, memberCsvFieldLabels);
+    if (!resolved.ok) {
+      return res.status(400).json({
+        error: 'Campos inválidos',
+        details: resolved.message,
+      });
+    }
+    const { columns } = resolved;
+
     const churchId = req.church!.churchId;
     const { data: churchData } = await supabase
       .from('churches')
@@ -1198,207 +1209,29 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    // Helper para calcular idade
-    const calculateAge = (birth: string) => {
-      if (!birth) return null;
-      const birthDate = new Date(birth);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      return age;
-    };
-
-    // Helper para formatar data
-    const formatDate = (date: string | null) => {
-      if (!date) return '';
-      return new Date(date).toLocaleDateString('pt-BR');
-    };
-
-    // Helper para escapar valores CSV (tratar vírgulas, aspas, quebras de linha)
     const escapeCSVValue = (value: string): string => {
       if (!value) return '';
       const stringValue = String(value);
-      // Se contém delimitador, aspas ou quebra de linha, precisa ser envolvido em aspas
       if (stringValue.includes(delimiter) || stringValue.includes('"') || stringValue.includes('\n') || stringValue.includes('\r')) {
-        // Escapar aspas duplicando-as
         return `"${stringValue.replace(/"/g, '""')}"`;
       }
       return stringValue;
     };
 
-    // Mapear campos para labels
-    const fieldLabels: Record<string, string> = {
-      name: 'Nome',
-      age: 'Idade',
-      birth: 'Data de Nascimento',
-      gender: 'Gênero',
-      marital_status: 'Estado Civil',
-      hometown: 'Natural de',
-      wedding_date: 'Data do Casamento',
-      nationality: 'Nacionalidade (legado)',
-      document: 'Documento',
-      spouse: 'Cônjuge',
-      occupation: 'Profissão',
-      father_name: 'Nome do Pai',
-      mother_name: 'Nome da Mãe',
-      phone: 'Telefone',
-      whatsapp: 'WhatsApp',
-      email: 'Email',
-      active: 'Status',
-      congregation: 'Congregação',
-      baptism_date: 'Data de Batismo',
-      admission: 'Tipo de Recebimento',
-      admission_date: 'Data de Recebimento',
-      address: 'Endereço',
-      address_number: 'Número',
-      complement: 'Complemento',
-      neighborhood: 'Bairro',
-      city: 'Cidade',
-      state: 'Estado',
-      cep: 'CEP',
-      children: 'Filhos'
-    };
-
-    // Construir CSV
     let csvContent = '';
-
-    // Cabeçalho (se solicitado)
     if (includeHeaders) {
-      const headers = fields.map(field => escapeCSVValue(fieldLabels[field] || field));
-      csvContent += headers.join(delimiter) + '\n';
+      csvContent += columns.map((col) => escapeCSVValue(col.label)).join(delimiter) + '\n';
     }
 
-    // Linhas de dados
     members.forEach((member) => {
-      const row: string[] = [];
-
-      fields.forEach((field) => {
-        let value = '';
-
-        switch (field) {
-          case 'name':
-            value = member.name || '';
-            break;
-          case 'age':
-            const age = calculateAge(member.birth);
-            value = age !== null ? String(age) : '';
-            break;
-          case 'birth':
-            value = formatDate(member.birth);
-            break;
-          case 'gender':
-            value = member.gender || '';
-            break;
-          case 'marital_status':
-            value = member.marital_status || '';
-            break;
-          case 'hometown':
-            value = member.hometown || '';
-            break;
-          case 'wedding_date':
-            value = formatDate(member.wedding_date);
-            break;
-          case 'nationality':
-            value = member.nationality || '';
-            break;
-          case 'document':
-            value = member.document || '';
-            break;
-          case 'spouse':
-            value = member.spouse || '';
-            break;
-          case 'occupation':
-            value = member.occupation || '';
-            break;
-          case 'father_name':
-            value = member.father_name || '';
-            break;
-          case 'mother_name':
-            value = member.mother_name || '';
-            break;
-          case 'phone':
-            value = member.phone || '';
-            break;
-          case 'whatsapp':
-            value = member.whatsapp || '';
-            break;
-          case 'email':
-            value = member.email || '';
-            break;
-          case 'active':
-            value = member.active ? 'Ativo' : 'Inativo';
-            break;
-          case 'congregation':
-            value = member.congregation?.name || '—';
-            break;
-          case 'baptism_date':
-            value = formatDate(member.baptism_date);
-            break;
-          case 'admission':
-            value = member.admission || '';
-            break;
-          case 'admission_date':
-            value = formatDate(member.admission_date);
-            break;
-          case 'address':
-            value = member.address || '';
-            break;
-          case 'address_number':
-            value = member.address_number || '';
-            break;
-          case 'complement':
-            value = member.complement || '';
-            break;
-          case 'neighborhood':
-            value = member.neighborhood || '';
-            break;
-          case 'city':
-            value = member.city || '';
-            break;
-          case 'state':
-            value = member.state || '';
-            break;
-          case 'cep':
-            value = member.cep || '';
-            break;
-          case 'children':
-            // Formato: "Nome1|Data1|Dependente1;Nome2|Data2|Dependente2"
-            if (member.children && Array.isArray(member.children) && member.children.length > 0) {
-              const childrenParts = member.children.map((child: any) => {
-                const parts = [child.name || ''];
-                if (child.birth) {
-                  const birthDate = formatDate(child.birth);
-                  parts.push(birthDate);
-                }
-                if (child.dependent !== undefined) {
-                  parts.push(child.dependent ? 'Sim' : 'Não');
-                }
-                return parts.join('|');
-              });
-              value = childrenParts.join(';');
-            } else {
-              value = '';
-            }
-            break;
-          default:
-            value = '';
-        }
-
-        row.push(escapeCSVValue(value));
-      });
-
+      const row = columns.map((col) => escapeCSVValue(memberCsvFieldValue(member, col.key)));
       csvContent += row.join(delimiter) + '\n';
     });
 
-    // Configurar headers para download
     const filename = `membros-${new Date().toISOString().split('T')[0]}.csv`;
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
 
-    // Adicionar BOM para UTF-8 (ajuda Excel a reconhecer corretamente)
     const BOM = '\uFEFF';
     res.send(BOM + csvContent);
 
