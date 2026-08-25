@@ -3,8 +3,8 @@ type: integracao
 servico: Railway
 categoria: Hosting
 status: Ativo
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 dashboard_url: https://railway.app/project/301d94a5-48af-4640-b023-86ce13608e2c
 documentacao_oficial: https://docs.railway.com
 tags: [integrações, railway]
@@ -52,6 +52,7 @@ tags: [integrações, railway]
 | Toda a API (auth, billing, módulos) | Serviço **backend** — webhooks Stripe, crons no mesmo processo |
 | App Next (painel) | Serviço **frontend** |
 | Landing / waitlist / pricing | Serviço **landing page** |
+| Admin OPS | Pacote `admin-ops/` no git; **sem** serviço Railway ainda (local `:3002`) |
 | Banco | **Não** hospedado no Railway → [[06_integracoes/supabase]] |
 
 **Plano Railway:** <!-- PREENCHER MANUALMENTE: Hobby / Pro e workspace -->
@@ -62,7 +63,7 @@ tags: [integrações, railway]
 
 | Ambiente | Modo | Onde configurar | Observação |
 | --- | --- | --- | --- |
-| Development | Local | `backend/.env`, `frontend/.env.local`, `landing/.env.local` | `docker-compose` opcional; **não** depende do Railway |
+| Development | Local | `backend/.env`, `frontend/.env.local`, `landing/.env.local`, `admin-ops/.env.local` (quando integrar API) | `docker-compose` opcional; **não** depende do Railway |
 | Staging | — | — | **Ausente** no projeto Railway (só env `production`) |
 | Production | Live | Railway → projeto `flock` → env `production` → Variables por serviço | Domínios `*.flockapp.com.br` + `*.up.railway.app` |
 
@@ -71,7 +72,7 @@ tags: [integrações, railway]
 | Sinal | Local | Railway prod |
 | --- | --- | --- |
 | `NODE_ENV` | `development` | `production` (setado nos serviços) |
-| `PORT` | 4000 / 3001 / 3000 | Backend `4000`; Next tipicamente **8080** no edge Railway |
+| `PORT` | 4000 / 3001 / 3000 / 3002 | Backend `4000`; Next tipicamente **8080** no edge Railway |
 | URLs | localhost | `FRONTEND_URL=https://painel.flockapp.com.br`, `LANDING_URL=https://flockapp.com.br` |
 | Injetadas pela plataforma | — | `RAILWAY_*` (`RAILWAY_PUBLIC_DOMAIN`, `RAILWAY_PRIVATE_DOMAIN`, …) |
 
@@ -174,6 +175,9 @@ cd frontend && npm run dev  # :3001
 
 # Landing
 cd landing && npm run dev   # :3000
+
+# Admin OPS (interno; sem serviço Railway nesta entrega)
+cd admin-ops && npm run dev   # :3002
 ```
 
 Opcional: `docker-compose.yml` (API com Dockerfile; frontend compose pode estar desatualizado).

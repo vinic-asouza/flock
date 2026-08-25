@@ -1,7 +1,7 @@
 ---
 type: padroes-git
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 workflow: GitHub Flow adaptado (feature branches → main)
 tags: [padrões, git, commits, branches]
 ---
@@ -84,7 +84,7 @@ Formato (em adoção a partir de 2026-07; histórico mistura `feat:` sem scope e
 ### GIT-005: Scopes válidos (módulos)
 > Preferir slugs de [[04_modulos/index]]:
 
-`auth` · `onboarding` · `membros`/`members` · `integracao` · `congregacoes` · `grupos` · `calendario`/`calendar` · `relatorios` · `config` · `billing` · `aquisicao`/`landing` · `tutoriais` · `api` · `db`
+`auth` · `onboarding` · `membros`/`members` · `integracao` · `congregacoes` · `grupos` · `calendario`/`calendar` · `relatorios` · `config` · `billing` · `aquisicao`/`landing` · `tutoriais` · `admin-ops` · `api` · `db`
 
 Histórico recente usou pouco scope (`members`, `landing`, `calendar`, `dashboard`) — **passar a usar**.
 

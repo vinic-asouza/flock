@@ -58,6 +58,7 @@ tags: [produto, UX, fluxos, jornadas]
 | App autenticado | `/`, `(main)/*` | `(main)/layout` + `ChurchSelectionGate` (Home `/` também sob `(main)`) |
 | Público / captação | `/public/*` | Token no path; sem JWT |
 | Marketing | landing `/`, `/waitlist` | Público |
+| Admin OPS | `admin-ops/` `:3002` — `/`, `/login` (placeholders) | Sem auth nesta entrega |
 
 ---
 
@@ -269,6 +270,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
 19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), CTAs touch, waitlist ≥16px, links `/#…` a partir de `/waitlist`; funil register/login inalterado após redirect.
+20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`); placeholders `/` e `/login`. Não usar o shell do Painel. Login de operador e console são Issues seguintes.
 
 ---
 
@@ -285,5 +287,6 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 - `frontend/src/lib/tutorials/**`
 - `landing/src/app/page.tsx`, `waitlist/page.tsx`
 - `landing/src/utils/planFunnel.ts`, `components/Pricing.tsx`, `Hero.tsx`
+- `admin-ops/src/app/page.tsx`, `login/page.tsx`
 - `docs/levantamento-fluxos.md` (fluxos M1–M13)
 - `docs/01_produto/personas-e-usuarios.md`, `visao-do-produto.md`

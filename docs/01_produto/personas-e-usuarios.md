@@ -1,7 +1,7 @@
 ---
 type: personas-usuarios
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 tags: [produto, usuários, permissões, personas]
 ---
 
@@ -13,7 +13,7 @@ tags: [produto, usuários, permissões, personas]
 
 ## 👥 Visão Geral dos Usuários
 
-O Flock possui **4 papéis autenticados** na igreja (`owner` > `admin` > `editor` > `reader`) mais **atores externos sem login** (links públicos, waitlist/landing).
+O Flock possui **4 papéis autenticados** na igreja (`owner` > `admin` > `editor` > `reader`), o **Operador da plataforma** (Admin OPS, fora do RBAC da igreja) e **atores externos sem login** (links públicos, waitlist/landing).
 
 ```text
 auth.users (Supabase Auth — conta de login)
@@ -27,6 +27,9 @@ auth.users (Supabase Auth — conta de login)
 Atores sem conta:
  ├── Visitante da landing / waitlist
  └── Público com token (registro ou integração)
+
+Operação da plataforma (fora do tenant):
+ └── Operador da plataforma → Admin OPS (`admin-ops/`) — sem church_users
 ```
 
 **Hierarquia de papéis** (ordem em `hasRoleOrHigher`):
@@ -86,6 +89,14 @@ owner  >  admin  >  editor  >  reader
 - **Identificador:** `POST /api/waitlist`, páginas da landing
 - **Descrição:** Interessado em conhecer/assinar o Flock.
 - **Acesso:** Marketing + formulário; não acessa o app autenticado até registrar.
+
+### Operador da plataforma _(persona interna — Admin OPS)_
+
+- **Identificador:** superfície `admin-ops/` (local `:3002`). Não é `ChurchUserRole`.
+- **Descrição:** Staff do Flock que opera o SaaS (visão cross-tenant futura). **Não** é o `admin` da igreja.
+- **Casos de uso (milestone):** console read-only, waitlist, saúde — **ainda não** nesta entrega. Hoje só o app sobe (placeholders).
+- **Acesso:** não usa o Painel da Igreja; conta prevista **sem** `church_users`. Login/allowlist nas Issues de API e shell.
+- **Mintlify:** não — ferramenta interna, não é documentação da igreja.
 
 > **Nota:** Registros na tabela `members` / `integration_members` **não** são personas de login. São dados pastorais gerenciados pelos papéis acima.
 

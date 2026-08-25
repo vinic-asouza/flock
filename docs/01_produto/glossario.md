@@ -1,9 +1,9 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-07-20
-versao: "1.2"
+ultima_atualizacao: 2026-08-25
+versao: "1.3"
 tags: [produto, domínio, vocabulário, referência]
-total_termos: 72
+total_termos: 74
 ---
 
 # Glossário do Domínio — Flock
@@ -19,6 +19,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - Preserve identificadores de código em inglês (`Member`, `church_id`) e use o **termo de UI em português** quando falar com usuários ou escrever copy.
 - Consulte [[01_produto/personas-e-usuarios]] para detalhe de papéis e [[01_produto/jornadas-de-usuario]] para fluxos.
 - Não confunda entidade pastoral (**Membro**) com conta de login (**Usuário**).
+- Não confunda **Admin OPS** (operação da plataforma) com o **Painel** (app da Igreja) nem com o papel `admin` da igreja.
 
 ---
 
@@ -114,7 +115,13 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 **Histórico de atividades** *(código: `audit_logs`)*  
 > Trilha de atividades do tenant (create/update/delete/convert/import/export/deactivate…) sobre entidades da igreja, apresentada em linguagem natural para administradores.  
 - **UI:** Configurações → Histórico (admin/owner)  
-- **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos operacionais do time Flock ficam para um futuro projeto admin (fora do app da igreja).
+- **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos / visão cross-tenant do time Flock ficam no **Admin OPS** (fora do Painel da igreja).
+
+**Admin OPS** *(código: pacote `admin-ops/`)*  
+> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Scaffold no monorepo; login de staff e console read-only entram em Issues seguintes. Sem documentação Mintlify (ferramenta interna).
+
+**Operador da plataforma**  
+> Staff do Flock (não é `owner`/`admin` da igreja). Persona do Admin OPS. Conta de plataforma, sem `church_users` — autenticação ainda não ligada no scaffold.
 
 **Assinatura pendente** *(código: `pending_subscriptions`)*  
 > Intenção de plano criada no onboarding ainda não plenamente vinculada à igreja ativa.
@@ -251,7 +258,8 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | Service role (Supabase) | Acesso backend que bypassa RLS — segurança de tenant é na aplicação |
 | Plan type `100`…`800` | Identificador do plano (= teto de membros no nome) |
 | Guest (calendário) | Participante externo sem cadastro de Membro |
-| Painel | Home `/` — dashboard de relatórios (não “dashboard admin” genérico) |
+| Painel | Home `/` do app da igreja — dashboard de relatórios (não é o Admin OPS) |
+| Admin OPS | App interno `admin-ops/` — operação da plataforma, não da igreja |
 | Integração (módulo) | Funil de pré-membros — **não** é integração de API/sistema |
 | CNPJ | Identificador da igreja no Brasil (cadastro/tenant) |
 
@@ -267,6 +275,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | “Cargo” como módulo atual | **Grupo** (tipo Ministério/… ) | Cargos CRUD legado; modelo vigente é Grupos |
 | “Customer” sem contexto | **Igreja** (cliente SaaS) ou customer Stripe | Evitar misturar billing Stripe com linguagem pastoral |
 | “Role” sem qualificar | **Papel (`ChurchUserRole`)** ou tipo de **Grupo** | “Role” no código = permissão; não cargo eclesial |
+| “Admin” sem contexto | **Admin da igreja** (`ChurchUserRole`) ou **Admin OPS** | Papel do tenant ≠ operação da plataforma |
 | “Member” na UI em inglês | **Membro** | UI é em português |
 | “Workspace/Team” | **Igreja** / **Usuários da igreja** | Vocabulário do produto não usa workspace |
 
@@ -274,7 +283,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## 🔤 Índice Alfabético
 
-- **A:** Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
+- **A:** Admin OPS, Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
 - **B:** Batismo (tipo de admissão), Billing (ver Assinatura)  
 - **C:** Calendário (item), Checkout, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
@@ -283,6 +292,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração  
 - **M:** Membro, Mentor, Membership, Ministério (tipo de grupo)  
+- **O:** Operador da plataforma, Owner (`dono`)  
 - **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Programação  
 - **R:** Recebimento (tipo/data), Reader, Recorrência, Reunião  
 - **S:** Soft delete, Subscription status, Sincronizar assinatura  

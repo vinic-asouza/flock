@@ -1,7 +1,7 @@
 ---
 type: arquitetura-visao-geral
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 status: Rascunho
 tags: [arquitetura, visão-geral, stack, C4]
 ---
@@ -15,7 +15,7 @@ tags: [arquitetura, visão-geral, stack, C4]
 
 ## 🧭 Resumo Executivo
 
-O Flock é um **monorepo de três aplicações** (API Express, app Next.js, landing Next.js) no padrão **SPA/BFF-like + API REST monolítica**, com persistência em **PostgreSQL via Supabase** (sem ORM). O multi-tenant por `church_id` vive na aplicação. Esta escolha é adequada a um SaaS de gestão eclesiástica ainda coeso: um time pequeno itera rápido, deploy é simples e o domínio cabe em um processo Node. **Trade-offs:** menos isolamento de falhas que microserviços; jobs cron e webhooks Stripe no mesmo runtime da API; sem fila/Redis — processamento assíncrono limitado a cron e fire-and-forget (e-mail).
+O Flock é um **monorepo de quatro aplicações** (API Express, Painel Next.js, landing Next.js, Admin OPS Next.js) no padrão **SPA/BFF-like + API REST monolítica**, com persistência em **PostgreSQL via Supabase** (sem ORM). O multi-tenant por `church_id` vive na aplicação. O **Admin OPS** (`admin-ops/`, local `:3002`) é o centro operacional interno da plataforma — **não** é o Painel da Igreja; não usa npm workspaces; stack alinhada ao Painel **sem** Sentry. Auth de staff e `/api/ops` ainda não estão nesta superfície (Issues seguintes). Esta escolha é adequada a um SaaS de gestão eclesiástica ainda coeso: um time pequeno itera rápido, deploy é simples e o domínio cabe em um processo Node. **Trade-offs:** menos isolamento de falhas que microserviços; jobs cron e webhooks Stripe no mesmo runtime da API; sem fila/Redis — processamento assíncrono limitado a cron e fire-and-forget (e-mail).
 
 ---
 
@@ -26,7 +26,7 @@ O Flock é um **monorepo de três aplicações** (API Express, app Next.js, land
 | Runtime | Node.js | 18+ (Docker 20) | Backend / Next apps |
 | Linguagem | TypeScript | ^5.x | Tipagem |
 | API | Express | ^4.18 | REST `/api/*` |
-| App / Landing | Next.js + React | ^15.5 / ^19 | App (:3001) e marketing |
+| App / Landing / Admin OPS | Next.js + React | ^15.5 / ^19 | Painel (:3001), marketing (:3000), ops interno (:3002) |
 | UI / CSS | Tailwind + Headless UI | ^4 | Interface |
 | Banco / Auth | PostgreSQL + Supabase | gerenciado | Dados + JWT Auth |
 | Cliente DB | `@supabase/supabase-js` | ^2.38 | anon auth + `service_role` (`db`) |
@@ -58,8 +58,9 @@ O Flock é um **monorepo de três aplicações** (API Express, app Next.js, land
 
 | Camada | Responsabilidade | Localização | Tecnologia |
 | --- | --- | --- | --- |
-| Apresentação (Web) | Páginas, shell, forms | `frontend/src/app`, `components` | Next.js 15 / React 19 |
+| Apresentação (Web) | Páginas, shell, forms do **Painel da Igreja** | `frontend/src/app`, `components` | Next.js 15 / React 19 |
 | Apresentação (Marketing) | Aquisição | `landing/src` | Next.js 15 |
+| Apresentação (Admin OPS) | Centro operacional interno (staff) | `admin-ops/src` | Next.js 15 / React 19 |
 | API / Rotas | Contratos HTTP | `backend/src/routes` | Express Router |
 | Controllers | Orquestração request/response | `backend/src/controllers` | TypeScript |
 | Validação | Schemas de entrada | `backend/src/validators` | Joi |
@@ -80,10 +81,12 @@ flowchart TB
   user["👤 Usuário da igreja\n(Browser)"]
   admin["👨‍💼 Owner / Admin\n(Browser)"]
   visitor["🌐 Visitante\n(Landing / link público)"]
+  staff["🛠️ Operador da plataforma\n(Browser)"]
 
   subgraph sistema ["Flock"]
-    landing["🖥️ Landing\n(Next.js)"]
-    app["🖥️ App Web\n(Next.js :3001)"]
+    landing["🖥️ Landing\n(Next.js :3000)"]
+    app["🖥️ Painel da Igreja\n(Next.js :3001)"]
+    ops["🖥️ Admin OPS\n(Next.js :3002)"]
     api["⚙️ API REST\n(Express :4000)"]
   end
 
@@ -100,8 +103,10 @@ flowchart TB
   admin -->|"HTTPS"| app
   visitor -->|"HTTPS"| landing
   visitor -->|"Formulários públicos"| app
+  staff -->|"HTTPS (local)"| ops
   landing -->|"REST /api"| api
   app -->|"REST /api + cookies"| api
+  ops -.->|"REST /api (previsto)"| api
   api -->|"Auth JWT"| supabaseAuth
   api -->|"SQL via PostgREST / RPC\n(service_role)"| supabaseDb
   api -->|"Checkout / webhooks"| stripe
@@ -123,6 +128,7 @@ flowchart TB
 | Igreja-config | Igreja, conta, equipe, audit | Alta |
 | Billing | Planos, Stripe, cron de assinatura | Alta |
 | Aquisição / Tutoriais | Waitlist e guias in-app | Baixa |
+| Admin OPS | Superfície interna de operação do SaaS (scaffold; console/auth nas Issues seguintes) | Média |
 
 Regras: [[02_regras-de-negocio/regras-por-modulo/index]].
 
@@ -138,7 +144,7 @@ Browser → Next (Axios + cookies/`X-Church-Id`) → Express (CORS/rate-limit �
 | --- | --- | --- | --- |
 | API Express (`app.ts`) | HTTP | Start `:4000` | REST, webhook Stripe, health/metrics |
 | Cron (mesmo processo) | Scheduled | `node-cron` se `ENABLE_CRON_JOBS≠false` | cleanup pending, downgrade, expiration, integrity, webhook purge |
-| Frontend / Landing Next | HTTP | `:3001` / `:3000` | App autenticado e marketing |
+| Frontend / Landing / Admin OPS Next | HTTP | `:3001` / `:3000` / `:3002` | Painel da igreja, marketing e ops interno |
 
 Sem workers/filas. Crons no processo da API podem duplicar em multi-réplica (a confirmar mitigação).
 
@@ -156,12 +162,12 @@ Sem workers/filas. Crons no processo da API podem duplicar em multi-réplica (a 
 
 ## 📚 Documentos Relacionados
 
-- Diagrama detalhado: [[03_arquitetura/diagrama-de-sistema]] _(a criar)_
-- Banco de dados: [[03_arquitetura/banco-de-dados]] _(a criar)_
-- API: [[03_arquitetura/api-design]] _(a criar)_
-- Infraestrutura: [[03_arquitetura/infraestrutura]] _(a criar)_
-- Segurança: [[03_arquitetura/seguranca]] _(a criar)_
-- Performance: [[03_arquitetura/performance-e-escalabilidade]] _(a criar)_
+- Diagrama detalhado: [[03_arquitetura/diagrama-de-sistema]]
+- Banco de dados: [[03_arquitetura/banco-de-dados]]
+- API: [[03_arquitetura/api-design]]
+- Infraestrutura: [[03_arquitetura/infraestrutura]]
+- Segurança: [[03_arquitetura/seguranca]]
+- Performance: [[03_arquitetura/performance-e-escalabilidade]]
 - Regras gerais: [[02_regras-de-negocio/regras-gerais]]
 - Políticas SaaS: [[02_regras-de-negocio/politicas-e-restricoes]]
 
@@ -169,4 +175,4 @@ Sem workers/filas. Crons no processo da API podem duplicar em multi-réplica (a 
 
 ## Arquivos analisados
 
-`README.md`, `docker-compose.yml`, `backend/Dockerfile`, `backend/package.json`, `frontend/package.json`, `landing/package.json`, `backend/src/app.ts`, `backend/src/services/supabase.ts`, docs de env/Stripe e estrutura `docs/02_regras-de-negocio/regras-por-modulo/`. Sem `ARCHITECTURE.md` / `CONTRIBUTING.md` / `.env.example` na raiz (env documentado em `docs/ENVIRONMENT-VARIABLES.md`).
+`README.md`, `docker-compose.yml`, `backend/Dockerfile`, `backend/package.json`, `frontend/package.json`, `landing/package.json`, `admin-ops/package.json`, `backend/src/app.ts`, `backend/src/services/supabase.ts`, `docs/03_arquitetura/infraestrutura.md`, `docs/06_integracoes/`, `docs/02_regras-de-negocio/regras-por-modulo/`. Sem `ARCHITECTURE.md` / `CONTRIBUTING.md` / `.env.example` na raiz (env documentado em infra + integrações).

@@ -1,7 +1,7 @@
 ---
 type: modulos-index
-ultima_atualizacao: 2026-07-14
-total_modulos: 12
+ultima_atualizacao: 2026-08-25
+total_modulos: 13
 tags: [módulos, índice]
 ---
 
@@ -19,9 +19,10 @@ O Flock **não** usa NestJS modules nem pasta `domain/`. A modularização é **
 - **Backend:** `routes/` + `controllers/` (+ validators/services por assunto)
 - **Frontend app:** rotas em `frontend/src/app/(main|auth|public|subscription)/`
 - **Landing:** aquisição (`landing/`)
-- **KB de regras:** já particionada em **12** módulos em `02_regras-de-negocio/regras-por-modulo/`
+- **Admin OPS:** operação da plataforma (`admin-ops/`, local `:3002`)
+- **KB de regras:** particionada em **12** módulos de igreja em `02_regras-de-negocio/regras-por-modulo/` + superfície Admin OPS (regras BR-OPS quando o login existir)
 
-Este catálogo alinha o mesmo recorte de 12 módulos para documentação técnica futura em `04_modulos/[nome].md`. Utilitários (`middlewares/`, `utils/`, `jobs/` transversais) **não** são módulos de negócio.
+Este catálogo alinha o recorte de módulos para documentação técnica em `04_modulos/[nome].md`. Utilitários (`middlewares/`, `utils/`, `jobs/` transversais) **não** são módulos de negócio.
 
 ---
 
@@ -41,6 +42,7 @@ graph TD
   BILL[Billing]
   ACQ[Aquisição]
   TUT[Tutoriais]
+  OPS[Admin OPS]
 
   ONB --> AUTH
   ONB --> BILL
@@ -105,8 +107,9 @@ graph TD
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |
 | **aquisicao** | Landing, waitlist, entrada de leads/checkout público | Baixa | Ativo | billing | ~5 |
 | **tutoriais** | Guias in-app (conteúdo front) | Baixa | Ativo | auth | ~1 |
+| **admin-ops** | Centro operacional interno (scaffold `admin-ops/` :3002) | Média | Em Desenvolvimento | — | 0 |
 
-**Total:** **12** módulos · ~**124** operações HTTP de domínio (aprox.; inclui públicos/billing; exclui health/metrics internos).
+**Total:** **13** módulos · ~**124** operações HTTP de domínio da igreja (Admin OPS ainda sem API).
 
 ---
 
@@ -115,7 +118,7 @@ graph TD
 - Cada módulo terá arquivo `docs/04_modulos/[nome].md` (nomes = slugs da tabela).
 - Fluxos, contratos e operações do módulo ficam **no próprio** `04_modulos/[nome].md`.
 - Regras de negócio numeradas permanecem em [[02_regras-de-negocio/regras-por-modulo/index]].
-- Nomes de pasta/arquivo alinhados aos slugs de regras: `auth`, `onboarding`, `membros`, `integracao`, `congregacoes`, `grupos`, `calendario`, `relatorios`, `igreja-config`, `billing`, `aquisicao`, `tutoriais`.
+- Nomes de pasta/arquivo alinhados aos slugs de regras: `auth`, `onboarding`, `membros`, `integracao`, `congregacoes`, `grupos`, `calendario`, `relatorios`, `igreja-config`, `billing`, `aquisicao`, `tutoriais`, `admin-ops`.
 
 ---
 
@@ -133,5 +136,7 @@ graph TD
 - [[04_modulos/billing]] — Planos, Stripe e limites
 - [[04_modulos/aquisicao]] — Landing e waitlist
 - [[04_modulos/tutoriais]] — Tutoriais in-app
+- [[04_modulos/admin-ops]] — Admin OPS (operação da plataforma)
 
-> Arquivos individuais ainda a criar (Prompt 2 por módulo).
+> Catálogo técnico dos módulos em `docs/04_modulos/`.  
+> Workflow: [[00_meta/linear-cursor-workflow]].
