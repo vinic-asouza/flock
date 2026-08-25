@@ -19,21 +19,23 @@ O Flock é uma plataforma SaaS que permite às igrejas gerenciar seus membros de
 
 ## 🏗️ Arquitetura
 
-O projeto é dividido em três partes principais:
+O projeto é dividido em quatro partes principais:
 
 - **Backend**: API RESTful em Node.js + Express + TypeScript
-- **Frontend**: Aplicação web em Next.js 15 + React 19 + TypeScript
+- **Frontend**: Painel da Igreja (Next.js 15 + React 19 + TypeScript)
 - **Landing**: Site institucional (Next.js)
+- **Admin OPS**: Centro operacional interno da plataforma (Next.js) — não é o Painel da Igreja
 
 ## 📁 Estrutura do Repositório
 
 ```
 flock-app/
 ├── backend/          # API Backend (Express + TypeScript)
-├── frontend/         # Aplicação Web (Next.js)
-├── landing/         # Site Institucional
-├── docs/            # Documentação do projeto
-└── scripts/         # Scripts de deploy
+├── frontend/         # Painel da Igreja (Next.js)
+├── landing/          # Site Institucional
+├── admin-ops/        # Admin OPS (operação da plataforma)
+├── docs/             # Documentação do projeto
+└── scripts/          # Scripts de deploy
 ```
 
 ## 🚀 Pré-requisitos
@@ -90,6 +92,20 @@ Crie um arquivo `.env.local` na pasta `frontend/`:
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
 ```
 
+### 4. Configuração do Admin OPS
+
+```bash
+cd admin-ops
+npm install
+```
+
+Crie um arquivo `.env.local` na pasta `admin-ops/` quando for integrar a API
+(não é necessário só para subir o scaffold):
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:4000/api
+```
+
 ## 🛠️ Desenvolvimento Local
 
 ### Iniciar o Backend
@@ -119,6 +135,15 @@ npm run dev
 
 A landing estará disponível em `http://localhost:3000`
 
+### Iniciar o Admin OPS
+
+```bash
+cd admin-ops
+npm run dev
+```
+
+O Admin OPS estará disponível em `http://localhost:3002`
+
 ## 📝 Scripts Disponíveis
 
 ### Backend
@@ -131,6 +156,13 @@ A landing estará disponível em `http://localhost:3000`
 ### Frontend
 
 - `npm run dev` - Inicia servidor de desenvolvimento (Turbopack)
+- `npm run build` - Cria build de produção
+- `npm start` - Inicia servidor em produção
+- `npm run lint` - Executa linter
+
+### Admin OPS
+
+- `npm run dev` - Inicia servidor de desenvolvimento na porta 3002
 - `npm run build` - Cria build de produção
 - `npm start` - Inicia servidor em produção
 - `npm run lint` - Executa linter
