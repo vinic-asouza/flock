@@ -1,6 +1,6 @@
 ---
 type: integracoes-index
-ultima_atualizacao: 2026-07-14
+ultima_atualizacao: 2026-08-25
 total_servicos: 7
 tags: [integrações, serviços-externos, índice]
 ---
@@ -18,7 +18,7 @@ tags: [integrações, serviços-externos, índice]
 
 ```mermaid
 graph LR
-  APP[Flock Apps<br/>API + Frontend + Landing]
+  APP[Flock Apps<br/>API + Painel + Landing + Admin OPS]
 
   subgraph pagamentos [Pagamentos]
     STRIPE[Stripe]

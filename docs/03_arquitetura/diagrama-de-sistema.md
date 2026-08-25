@@ -1,14 +1,14 @@
 ---
 type: diagrama-sistema
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 tags: [arquitetura, diagramas, C4, mermaid]
 ---
 
 # Diagrama de Sistema — Flock
 
 > Documento **visual**. Complementa [[03_arquitetura/visao-geral]] e [[03_arquitetura/banco-de-dados]].  
-> Stack real: monorepo Express + Next.js ×2 · Supabase · Stripe · Resend · Railway · **sem** Redis/Bull/NestJS.
+> Stack real: monorepo Express + Next.js ×3 (Painel, landing, Admin OPS) · Supabase · Stripe · Resend · Railway · **sem** Redis/Bull/NestJS. Serviço Railway do Admin OPS **ainda não** existe — só pacote local `:3002`.
 
 ---
 
@@ -16,13 +16,18 @@ tags: [arquitetura, diagramas, C4, mermaid]
 
 ```mermaid
 flowchart TD
-  user["Usuário final"]
+  user["Usuário da igreja"]
   visitor["Visitante / Lead"]
+  staff["Operador da plataforma"]
 
   subgraph railway ["Produção — Railway"]
     landing["Landing\nNext.js\nPORT dinâmico"]
-    web["App Web\nNext.js\nPORT dinâmico"]
+    web["Painel da Igreja\nNext.js\nPORT dinâmico"]
     api["API Server\nExpress + TypeScript\nPORT dinâmico\n(+ webhooks + crons)"]
+  end
+
+  subgraph local ["Local — ainda sem serviço Railway"]
+    ops["Admin OPS\nNext.js :3002"]
   end
 
   subgraph supabase ["Supabase sa-east-1"]
@@ -38,8 +43,10 @@ flowchart TD
 
   visitor -->|"HTTPS"| landing
   user -->|"HTTPS"| web
+  staff -->|"HTTPS (local)"| ops
   landing -->|"POST waitlist / checkout"| api
   web -->|"REST /api/*\ncookies + Bearer"| api
+  ops -.->|"REST /api (previsto)"| api
   stripe -->|"Webhook HTTPS"| api
 
   api -->|"auth.getUser / refresh"| auth
@@ -61,7 +68,7 @@ Controllers falam com Supabase direto (sem camada Repository formal).
 
 ```mermaid
 flowchart TB
-  client["App / Landing / Stripe"]
+  client["Painel / Landing / Admin OPS / Stripe"]
 
   subgraph api ["API Server — Express"]
     mw["Middleware\nhelmet · CORS · rateLimit\nrequestId · cookies\nauth · requireRole\nupload CSV · Stripe raw"]

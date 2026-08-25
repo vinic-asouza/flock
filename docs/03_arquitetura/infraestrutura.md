@@ -1,7 +1,7 @@
 ---
 type: infraestrutura
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 cloud_provider: Railway + Supabase
 tags: [arquitetura, infra, deploy, CI/CD, ambientes]
 ---
@@ -23,7 +23,7 @@ tags: [arquitetura, infra, deploy, CI/CD, ambientes]
 | Modelo de deploy | **PaaS Node** (build npm no Railway) e/ou **Docker** local; frontend `output: 'standalone'` comentado (deploy preferido **sem Dockerfile** no Railway) |
 | CDN / Edge / Cloudflare | **Não configurado** no repo (a configurar) |
 | CI/CD GitHub/GitLab | **Ausente** — sem `.github/workflows/`, sem `.gitlab-ci.yml`, sem `railway.toml`/`railway.json` versionados |
-| Serviços em produção (esperado) | **3 apps Railway**: API Express, App Next.js, Landing Next.js + **1 datastore externo** Supabase (+ Stripe, Resend, Sentry) |
+| Serviços em produção (esperado) | **3 apps Railway hoje**: API Express, Painel Next.js, Landing Next.js + **1 datastore** Supabase. **Admin OPS** existe no monorepo (`admin-ops/`, local `:3002`); serviço Railway **não** provisionado |
 | Worker separado | **Não** — crons (`node-cron`) rodam **no mesmo processo** da API |
 | Redis / filas | **Não** |
 | Staging formal | Mencionado em docs (`NODE_ENV=staging`) — **infra dedicada não documentada/encontrada** |
@@ -82,7 +82,7 @@ flowchart TB
 
 | Ambiente | Propósito | URL (docs / padrão) | Branch | Auto-deploy |
 | --- | --- | --- | --- | --- |
-| **development** | Dev local | landing `:3000`, app `:3001`, API `:4000` | — | — |
+| **development** | Dev local | landing `:3000`, Painel `:3001`, Admin OPS `:3002`, API `:4000` | — | — |
 | **staging** | Homologação | (a configurar) — citado só via `NODE_ENV=staging` | (a configurar) | ❌ pipeline não encontrado |
 | **production** | Produção | Docs: `https://flock.com.br`, `https://app.flock.com.br`, `https://api.flock.com.br/api`; Railway: `*.up.railway.app` | tipicamente `main` (não codificado) | Railway GitHub connect (doc) — **sem workflow no repo** |
 
@@ -113,6 +113,10 @@ flowchart TB
 ### Landing
 
 Sem Dockerfile próprio; deploy Railway via `npm run build` + `npm run start:railway`.
+
+### Admin OPS
+
+Pacote `admin-ops/` (Next.js, porta local **3002**). Sem Dockerfile. Script `start:railway` existe para um serviço futuro; **não** há serviço Railway nesta entrega.
 
 ### `docker-compose.yml` (v3.8) — local/produção local
 
@@ -183,7 +187,7 @@ Não há `.env.example` commitado visível (script tenta copiar `backend/.env.ex
 | `FRONTEND_URL` | Backend | ⚙️ | CORS, redirects, e-mails | `http://localhost:3001` |
 | `LANDING_URL` | Backend | ⚙️ | CORS + checkout success URLs | `http://localhost:3000` |
 | `ENABLE_CRON_JOBS` | Backend | ⚙️ | Default on; `false` desliga | `true` |
-| `NEXT_PUBLIC_API_URL` | Front + Landing | ✅ | Base API com `/api` | `http://localhost:4000/api` |
+| `NEXT_PUBLIC_API_URL` | Front + Landing + Admin OPS | ✅ | Base API com `/api` | `http://localhost:4000/api` |
 | `NEXT_PUBLIC_FRONTEND_URL` | Landing | ⚙️ | Links para o app | `http://localhost:3001` |
 | `NEXT_PUBLIC_LANDING_URL` | Frontend | ⚙️ | Link pricing no login | `http://localhost:3000` |
 | `NEXT_PUBLIC_SITE_URL` | Landing | ⚙️ | SEO/sitemap | `https://flockapp.com.br` |
@@ -276,7 +280,7 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 
 ### Local / Docker (scripts)
 
-1. Criar `backend/.env` e `frontend/.env.local`
+1. Criar `backend/.env`, `frontend/.env.local` (Admin OPS: `admin-ops/.env.local` só quando integrar a API)
 2. `docker-compose build` / `up -d --build`
 3. Validar `curl localhost:4000/health`
 4. Frontend depende do backend healthy
@@ -284,7 +288,7 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 ### Railway (documentado, não automatizado no repo)
 
 1. Conectar repo GitHub ao projeto Railway (**fora do git**)
-2. **Três serviços** no mesmo projeto Railway:
+2. **Três serviços** no mesmo projeto Railway (Admin OPS **não** é o 4º serviço ainda):
    - **Backend** — root `backend/` · build `npm`/`tsc` · start `npm start` / `node dist/app.js` · `trust proxy = 1`
    - **Frontend** — root `frontend/` · `npm run build` · `npm run start:railway` (`0.0.0.0`, `PORT`)
    - **Landing** — root `landing/` · build + `start:railway`
@@ -326,4 +330,5 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 | `docs/06_integracoes/stripe.md` | Stripe + variáveis de billing |
 | `landing/README.md` / `SETUP.md` | Receita deploy landing no Railway |
 | `frontend/package.json` → `start:railway` | Bind `0.0.0.0` + `PORT` |
+| `admin-ops/package.json` → `start:railway` | Bind `0.0.0.0` + `PORT` (serviço Railway **ainda não** criado) |
 | `landing/package.json` → `start:railway` | Idem porta 3000 default |

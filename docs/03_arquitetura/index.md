@@ -1,7 +1,7 @@
 ---
 type: index
 secao: 03_arquitetura
-ultima_atualizacao: 2026-07-14
+ultima_atualizacao: 2026-08-25
 versao: "1.0"
 tags: [arquitetura, índice]
 ---

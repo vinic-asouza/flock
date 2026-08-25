@@ -1,8 +1,8 @@
 ---
 type: visao-produto
 status: Rascunho
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-25
+versao: "1.1"
 tags: [produto, estratégia, contexto]
 ---
 
@@ -72,9 +72,9 @@ _(Comparação competitiva formal: não identificada no código — preencher ma
 
 ## 🏗️ Estado Atual do Produto
 
-**Implementado e operando (v1.0+ no monorepo):** autenticção/registro de igreja, membros (CRUD, filtros, PDF, import), integração, congregações, grupos, calendário, relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
+**Implementado e operando (v1.0+ no monorepo):** autenticação/registro de igreja, membros (CRUD, filtros, PDF, import), integração, congregações, grupos, calendário, relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
 
-**Em evolução / parcialmente maduro:** billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher; reformulação do formulário de membro (documento de planejamento de jun/2026).
+**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Scaffold no ar; login de staff e console read-only nas Issues seguintes. Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher.
 
 **Planejado / incompleto / dívida:** blacklist de JWT em memória (TODO de produção); plano `custom` no schema sem pricing espelhado na landing; cobertura automatizada de testes rarefeita (Jest declarado, QA predominantemente manual). Tutoriais avançaram além do “placeholder” antigo, mas maturidade do onboarding ainda pode evoluir.
 
@@ -130,7 +130,7 @@ Este é um SaaS de **gestão eclesiástica (church management)** que ajuda igrej
 
 - `README.md`
 - `docs/01_produto/` · `docs/02_regras-de-negocio/` · `docs/04_modulos/` · `docs/06_integracoes/`
-- `backend/package.json`, `frontend/package.json`, `landing/package.json`
+- `backend/package.json`, `frontend/package.json`, `landing/package.json`, `admin-ops/package.json`
 - `backend/src/config/plans.ts`, `backend/src/utils/planLimits.ts`
 - `backend/bd-structure.sql`
 - `backend/src/controllers/authController.ts` _(TODO de tokens)_
