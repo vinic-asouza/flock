@@ -9,6 +9,7 @@ import {
   exportGroupMembersList,
   exportGroupsList,
   exportCongregationsList,
+  exportCongregationMembersList,
   exportMemberRegistrationFormPDF,
 } from '../controllers/exportController';
 import authMiddleware from '../middlewares/auth';
@@ -29,6 +30,7 @@ router.post('/group/members/list', exportGroupMembersList);
 router.post('/integration/list', exportIntegrationMembersList);
 router.post('/groups/list', exportGroupsList);
 router.post('/congregations/list', exportCongregationsList);
+router.post('/congregation/members/list', exportCongregationMembersList);
 
 export default router;
 
