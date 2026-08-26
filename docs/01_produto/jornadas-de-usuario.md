@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-08-26
-versao: "1.15"
+versao: "1.16"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -52,11 +52,13 @@ tags: [produto, UX, fluxos, jornadas]
 ### Admin OPS (interno — `admin-ops/`, :3002)
 
 ```text
-/login  → e-mail/senha → POST /api/ops/login
-/       → shell autenticado (e-mail, logout, placeholder do console)
+/login            → e-mail/senha → POST /api/ops/login
+/                 → Overview (totais comerciais + breakdowns)
+/churches         → lista / busca (querystring de filtros)
+/churches/[id]    → ficha read-only (query da lista preservada no Voltar)
 ```
 
-Não usa o layout `(main)` do Painel. API read-only de Igrejas já existe (`GET /api/ops/overview|churches/:id`); a UI do console, waitlist e Sentry ainda não.
+Não usa o layout `(main)` do Painel. Waitlist, saúde e Sentry ainda não.
 
 ### Grupos funcionais
 
@@ -67,7 +69,7 @@ Não usa o layout `(main)` do Painel. API read-only de Igrejas já existe (`GET 
 | App autenticado | `/`, `(main)/*` | `(main)/layout` + `ChurchSelectionGate` (Home `/` também sob `(main)`) |
 | Público / captação | `/public/*` | Token no path; sem JWT |
 | Marketing | landing `/`, `/waitlist` | Público |
-| Admin OPS | `admin-ops/` `:3002` — `/login`, `/` | `AuthGate` (client) + API `/api/ops` (`requirePlatformAdmin`) |
+| Admin OPS | `admin-ops/` `:3002` — `/login`, `/`, `/churches`, `/churches/[id]` | `AuthGate` (client) + API `/api/ops` (`requirePlatformAdmin`) |
 
 ---
 
@@ -210,6 +212,18 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 2. Abrir guia → steps textuais → CTA para rota alvo  
 3. Reader vê aviso se o guia exige `editor`
 
+### J-OPS — Console Admin OPS (interno)
+
+Não faz parte de J1–J12 nem do Mintlify. Ator: **Operador da plataforma**. App `admin-ops/` `:3002`.
+
+1. `/login` → `POST /api/ops/login` (allowlist; conta **sem** igreja).
+2. `/` overview: totais de Igrejas (geral, comercialmente ativas/inativas) + breakdowns por plano e status Stripe.
+3. Recorte do overview ou nav **Igrejas** → `/churches` (busca nome/CNPJ, filtros, paginação). Clique na linha → ficha.
+4. `/churches/[id]` ficha read-only (cadastro/contato, plano/Stripe persistido, contagens, eventos, histórico). Sem mutação, impersonation ou rol de Membros.
+5. Voltar à lista reconstrói a query; logout no header.
+
+**Desvios:** deslogado em qualquer rota autenticada → `/login`; UUID inexistente → “Igreja não encontrada”; buckets **Sem plano** / **Sem assinatura** não são links; usuário da igreja é recusado no login (403).
+
 ---
 
 ## 🧱 Fluxos Multi-etapa Identificados
@@ -252,6 +266,8 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 | Links públicos inexistentes | CTA para criar primeiro link |
 | Usuários da equipe | “Nenhum usuário extra…” |
 | Tutoriais busca | “Nenhum tutorial encontrado” |
+| Admin OPS lista | “Nenhuma Igreja encontrada para estes filtros.” / “Nenhuma Igreja cadastrada ainda.” |
+| Admin OPS ficha | “Igreja não encontrada”; logs vazios na ficha |
 | Erros de formulário | Zod/Joi + toast (`react-hot-toast`) |
 | Sem permissão (reader) | botões disabled + tooltip de somente leitura |
 | Limite de membros | toast/API message + alerta no Header |
@@ -279,7 +295,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
 19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), CTAs touch, waitlist ≥16px, links `/#…` a partir de `/waitlist`; funil register/login inalterado após redirect.
-20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login` (e-mail/senha) e `/` (shell autenticado). Auth: `POST /api/ops/login`. API read-only: `GET /api/ops/overview`, `/churches`, `/churches/:id`. Não usar o shell do Painel. UI do console é Issue seguinte.
+20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (overview), `/churches`, `/churches/[id]`. Auth: `POST /api/ops/login`. Console read-only: `GET /api/ops/overview`, `/churches`, `/churches/:id`. Não usar o shell do Painel. Waitlist/saúde/Sentry continuam fora.
 
 ---
 
@@ -296,6 +312,6 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 - `frontend/src/lib/tutorials/**`
 - `landing/src/app/page.tsx`, `waitlist/page.tsx`
 - `landing/src/utils/planFunnel.ts`, `components/Pricing.tsx`, `Hero.tsx`
-- `admin-ops/src/app/page.tsx`, `login/page.tsx`
+- `admin-ops/src/app/page.tsx`, `login/page.tsx`, `churches/page.tsx`, `churches/[id]/page.tsx`
 - `docs/levantamento-fluxos.md` (fluxos M1–M13)
 - `docs/01_produto/personas-e-usuarios.md`, `visao-do-produto.md`
