@@ -27,6 +27,7 @@ import groupsRoutes from './routes/groups';
 import calendarRoutes from './routes/calendar';
 import calendarParticipantsRoutes from './routes/calendarParticipants';
 import churchUsersRoutes from './routes/churchUsers';
+import opsRoutes from './routes/ops';
 import { requestIdMiddleware } from './middlewares/requestId';
 import { requireInternalToken } from './middlewares/internalToken';
 import { runTrackedJob } from './utils/jobRuns';
@@ -52,10 +53,11 @@ app.use(helmet());
 // Correlation ID para logs (X-Request-Id)
 app.use(requestIdMiddleware);
 
-// Configuração do CORS - permitir múltiplas origens (frontend e landing)
+// Configuração do CORS - Painel, landing e Admin OPS
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:3001',
   process.env.LANDING_URL || 'http://localhost:3000',
+  process.env.ADMIN_OPS_URL || 'http://localhost:3002',
 ].filter(Boolean);
 
 app.use(cors({
@@ -136,6 +138,7 @@ app.use('/api/groups', groupsRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api', calendarParticipantsRoutes);
 app.use('/api/church-users', churchUsersRoutes);
+app.use('/api/ops', opsRoutes);
 
 // Rota de healthcheck básico
 app.get('/health', (_req, res) => {
