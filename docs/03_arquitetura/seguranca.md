@@ -41,7 +41,7 @@ tags: [arquitetura, segurança, auth, OWASP, criptografia]
 2. Backend seta cookies `flock_*`  
 3. Requests subsequentes: cookie (preferido) ou `Authorization: Bearer`  
 4. `authMiddleware` valida via `supabase.auth.getUser(token)` e anexa `req.user` + `req.church`  
-   Rotas `/api/ops/*` autenticadas usam `authUserOnly` + `requirePlatformAdmin` (allowlist, **sem** `attachChurchContext`).
+   Rotas `/api/ops/*` autenticadas usam `authUserOnly` + `requirePlatformAdmin` (allowlist, **sem** `attachChurchContext`). GETs de Igrejas são read-only e **não** devolvem PII de Membros (BR-OPS-005/006).
 
 ---
 
@@ -115,7 +115,7 @@ Flags de cookie (`cookieUtils.ts`): `httpOnly: true` · `secure` em production �
 | Tokens públicos | `public_*_links.token` | Segredo de capability; UUID/random; ativação/`expires_at`/`max_uses` |
 | Segredos API | Stripe, service_role, Resend | Só env vars no backend |
 | Campos Stripe na API | customer/subscription IDs etc. | Removidos da resposta para roles &lt; admin |
-| Audit | `changes_before`/`after` | Podem conter PII — acesso API ≥ admin |
+| Audit | `changes_before`/`after` | Podem conter PII — acesso API ≥ admin no Painel; **Admin OPS não devolve diffs** (BR-OPS-006) |
 
 🚨 **DELETE membro = hard delete** (comentário da rota diz soft)  
 - **Risco:** perda irreversível; possível conflito com retenção/LGPD/auditoria.  

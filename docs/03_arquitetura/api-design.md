@@ -1,7 +1,7 @@
 ---
 type: api-design
 ultima_atualizacao: 2026-08-26
-versao: "1.0"
+versao: "1.1"
 tipo_api: REST
 base_url: /api
 tags: [arquitetura, API, endpoints, contratos]
@@ -222,6 +222,9 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | POST | `/api/ops/login` | ❌ + allowlist | — | Login operador (RL 10/15min em falhas); sem cookie de igreja | ✅ |
 | POST | `/api/ops/logout` | 👤 | — | Logout sem exigir igreja | ✅ |
 | GET | `/api/ops/me` | 👤 + `requirePlatformAdmin` | — | `{ id, email }` | ✅ |
+| GET | `/api/ops/overview` | 👤 + `requirePlatformAdmin` | — | Totais comerciais (RL 60/15min) | ✅ |
+| GET | `/api/ops/churches` | 👤 + `requirePlatformAdmin` | — | Lista paginada + busca (RL 60/15min) | ✅ |
+| GET | `/api/ops/churches/:id` | 👤 + `requirePlatformAdmin` | — | Ficha read-only; 404 se inexistente | ✅ |
 
 ### Password (`/api/password`)
 
@@ -476,12 +479,12 @@ Não há webhooks **outbound** do Flock para clientes terceiros.
 2. **Sem `/v1` por enquanto** — mudanças breaking exigem coordenação com o app Next; se versionar, documentar aqui.
 3. **Validar com Joi** no padrão dos validators existentes (backend); frontend pode usar Zod.
 4. **Auth:** rotas de domínio = `authMiddleware` + `requireRole`; rotas pré-igreja = `authUserOnly`; Admin OPS = `requirePlatformAdmin`; públicos = middleware de token de link. Prefixos específicos (`/api/ops`, `/api/auth`, …) **antes** de `app.use('/api', router)` com `router.use(authMiddleware)` (catch-all).
-5. **Sempre filtrar por `req.church.churchId`** em queries — service_role não isola tenant.
+5. **Sempre filtrar por `req.church.churchId`** em queries de domínio da igreja — service_role não isola tenant. **Exceção localizada:** GETs `/api/ops/overview|churches|churches/:id` (operador, `requirePlatformAdmin`, sem church context) — [[07_decisoes-tecnicas/ADR-001-leitura-cross-tenant-admin-ops]].
 6. **Erros:** `{ error, details? }` em PT; usar `code` só quando o frontend precisa branchar (ex.: `CHURCH_SELECTION_REQUIRED`).
 7. **Listas grandes:** preferir `page`/`limit` (max 100) + envelope `pagination`; não devolver dumps massivos sem paginação.
 8. **PUT vs PATCH:** PUT = update completo; PATCH = status/deactivate/papel.
 9. **Não confiar no comentário “soft delete”** da rota de members — delete atual é físico; inativação = `PATCH .../status` com `active: false`.
-10. **Rate limit:** respeitar limiters existentes; endpoints sensíveis (auth, password, public POST, reports, webhook) devem ter RL dedicado além do geral (1000/15min).
+10. **Rate limit:** respeitar limiters existentes; endpoints sensíveis (auth, password, public POST, reports, webhook, GETs `/api/ops` de leitura) devem ter RL dedicado além do geral (1000/15min).
 11. **Webhook Stripe** registra **antes** de `express.json()` e usa body raw.
 12. **Uploads:** apenas CSV via multer memory ≤10MB no fluxo de import; não inventar storage externo sem design.
 13. **Header `X-Church-Id`:** preservar suporte multi-membership.

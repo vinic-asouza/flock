@@ -2,7 +2,7 @@
 type: visao-produto
 status: Rascunho
 ultima_atualizacao: 2026-08-26
-versao: "1.1"
+versao: "1.2"
 tags: [produto, estratégia, contexto]
 ---
 
@@ -74,7 +74,7 @@ _(Comparação competitiva formal: não identificada no código — preencher ma
 
 **Implementado e operando (v1.0+ no monorepo):** autenticação/registro de igreja, membros (CRUD, filtros, PDF, import), integração, congregações, grupos, calendário, relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
 
-**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Auth de staff na API (`/api/ops`) + login/shell no app; console read-only nas Issues seguintes. Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher.
+**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Auth de staff na API (`/api/ops`) + login/shell no app + API read-only de Igrejas; UI do console, waitlist e saúde nas Issues seguintes. Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher.
 
 **Planejado / incompleto / dívida:** blacklist de JWT em memória (TODO de produção); plano `custom` no schema sem pricing espelhado na landing; cobertura automatizada de testes rarefeita (Jest declarado, QA predominantemente manual). Tutoriais avançaram além do “placeholder” antigo, mas maturidade do onboarding ainda pode evoluir.
 

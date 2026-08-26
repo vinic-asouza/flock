@@ -1,8 +1,8 @@
 ---
 type: index
 secao: 07_decisoes-tecnicas
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-26
+versao: "1.1"
 tags: [adr, decisões, índice]
 ---
 
@@ -16,10 +16,8 @@ Arquivo permanente de **Architecture Decision Records**.
 
 ## Índice
 
-_Nenhuma ADR publicada ainda._
-
 | ID | Título | Status | Data |
 | --- | --- | --- | --- |
-| — | — | — | — |
+| [[07_decisoes-tecnicas/ADR-001-leitura-cross-tenant-admin-ops]] | Leitura cross-tenant do Admin OPS (GET-only, sem PII de Membros) | Aceito | 2026-08-26 |
 
 Quando criar uma ADR: atualize esta tabela e registre o link na Issue do Linear (contexto permanente ≠ histórico da Issue).

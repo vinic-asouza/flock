@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-08-26
-versao: "1.14"
+versao: "1.15"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -56,7 +56,7 @@ tags: [produto, UX, fluxos, jornadas]
 /       → shell autenticado (e-mail, logout, placeholder do console)
 ```
 
-Não usa o layout `(main)` do Painel. Sem overview, lista de Igrejas, waitlist ou Sentry nesta fundação.
+Não usa o layout `(main)` do Painel. API read-only de Igrejas já existe (`GET /api/ops/overview|churches/:id`); a UI do console, waitlist e Sentry ainda não.
 
 ### Grupos funcionais
 
@@ -279,7 +279,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
 19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), CTAs touch, waitlist ≥16px, links `/#…` a partir de `/waitlist`; funil register/login inalterado após redirect.
-20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login` (e-mail/senha) e `/` (shell autenticado). Auth: `POST /api/ops/login`. Não usar o shell do Painel. Console read-only é Issue seguinte.
+20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login` (e-mail/senha) e `/` (shell autenticado). Auth: `POST /api/ops/login`. API read-only: `GET /api/ops/overview`, `/churches`, `/churches/:id`. Não usar o shell do Painel. UI do console é Issue seguinte.
 
 ---
 

@@ -1,7 +1,7 @@
 ---
 type: diagrama-sistema
-ultima_atualizacao: 2026-08-25
-versao: "1.1"
+ultima_atualizacao: 2026-08-26
+versao: "1.2"
 tags: [arquitetura, diagramas, C4, mermaid]
 ---
 
@@ -46,7 +46,7 @@ flowchart TD
   staff -->|"HTTPS (local)"| ops
   landing -->|"POST waitlist / checkout"| api
   web -->|"REST /api/*\ncookies + Bearer"| api
-  ops -.->|"REST /api (previsto)"| api
+  ops -->|"REST /api/ops"| api
   stripe -->|"Webhook HTTPS"| api
 
   api -->|"auth.getUser / refresh"| auth
