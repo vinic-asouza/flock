@@ -2,7 +2,7 @@
 type: modulo
 nome: Admin OPS
 status: Em Desenvolvimento
-versao: "0.4"
+versao: "0.5"
 owner: plataforma
 ultima_atualizacao: 2026-08-26
 tags: [admin-ops, plataforma, interno]
@@ -20,7 +20,7 @@ dependencias: [auth]
 
 **Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary `/api/ops` (auth de operador + leitura de Igrejas).
 
-Estado atual: **auth de operador** + **login/shell** no app (`:3002`) + **API read-only de Igrejas** (overview, lista, ficha). UI do console, waitlist e saúde ficam para Issues seguintes (DEV-77 / DEV-72 / DEV-76).
+Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) no app (`:3002`), consumindo a API `/api/ops`. Waitlist e saúde ficam para Issues seguintes (DEV-72 / DEV-76).
 
 **Fora:** Mintlify (usuário da igreja não usa isto). Sentry (DEV-70). Deploy Railway (pedido explícito). Tabela `platform_admins`. npm workspaces. Stripe live. Mutação de tenant.
 
@@ -30,7 +30,8 @@ Estado atual: **auth de operador** + **login/shell** no app (`:3002`) + **API re
 
 ```text
 admin-ops/                                    → Next.js 15, porta 3002, sem @sentry/nextjs
-admin-ops/src/app/                            → `/` (shell), `/login`, `robots.ts`
+admin-ops/src/app/                            → `/`, `/login`, `/churches`, `/churches/[id]`, `robots.ts`
+admin-ops/src/components/                     → OverviewView, ChurchesListView, ChurchDetailView, AuthGate
 admin-ops/src/services/api.ts                 → Axios `withCredentials` → `/api/ops/*`
 admin-ops/src/context/OpsAuthContext.tsx      → bootstrap `GET /ops/me`
 backend/src/services/platformAdmin.ts         → parser allowlist + regra de acesso
@@ -62,8 +63,14 @@ Rate limit dos GETs de leitura: 60 / 15 min por IP.
 
 | Rota | Auth | Nota |
 | --- | --- | --- |
-| `/` | operador (`GET /ops/me`) | Shell: e-mail, logout, placeholder do console |
 | `/login` | público | RHF+Zod; 401/403 em toast + alerta; consome `POST /ops/login` |
+| `/` | operador (`GET /ops/me`) | Overview comercial (totais + breakdowns). Nav **Overview · Igrejas** |
+| `/churches` | operador | Lista/busca; filtros e paginação na querystring |
+| `/churches/[id]` | operador | Ficha read-only; 404 se UUID inexistente; Voltar reconstrói a query da lista |
+
+Header autenticado: marca, nav, e-mail, logout. Desktop-first. Sem waitlist, saúde ou Sentry nesta superfície.
+
+Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?…`. Buckets `none` (**Sem plano** / **Sem assinatura**) **não** viram query (`plan_type=none` é 400 na API). Labels: “Comercialmente ativa/inativa” — nunca badge genérico “Ativo”. Clique na linha da lista abre a ficha; a query da lista viaja na URL da ficha para o Voltar. Nav **Igrejas** vai para `/churches` sem query (reset).
 
 ### API (`/api/ops`)
 

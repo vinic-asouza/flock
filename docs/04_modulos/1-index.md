@@ -107,7 +107,7 @@ graph TD
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |
 | **aquisicao** | Landing, waitlist, entrada de leads/checkout público | Baixa | Ativo | billing | ~5 |
 | **tutoriais** | Guias in-app (conteúdo front) | Baixa | Ativo | auth | ~1 |
-| **admin-ops** | Centro operacional interno (`admin-ops/` :3002 + `/api/ops` auth e GETs de Igrejas) | Média | Em Desenvolvimento | auth | 6 |
+| **admin-ops** | Centro operacional interno (`admin-ops/` :3002 + `/api/ops` auth + UI/GETs de Igrejas) | Média | Em Desenvolvimento | auth | 6 |
 
 **Total:** **13** módulos · ~**124** operações HTTP de domínio da igreja + **6** `/api/ops`.
 

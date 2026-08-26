@@ -1,10 +1,10 @@
 import { AuthGate } from "@/components/AuthGate";
-import { OperatorShell } from "@/components/OperatorShell";
+import { OverviewView } from "@/components/OverviewView";
 
 export default function HomePage() {
   return (
     <AuthGate requireAuth>
-      <OperatorShell />
+      <OverviewView />
     </AuthGate>
   );
 }

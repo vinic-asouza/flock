@@ -1,7 +1,7 @@
 ---
 type: glossario
 ultima_atualizacao: 2026-08-26
-versao: "1.5"
+versao: "1.6"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 75
 ---
@@ -118,7 +118,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos / visão cross-tenant do time Flock ficam no **Admin OPS** (fora do Painel da igreja).
 
 **Admin OPS** *(código: pacote `admin-ops/`)*  
-> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth: `/api/ops` + allowlist + login/shell no app. API read-only de Igrejas (overview, lista, ficha); UI do console nas Issues seguintes. Sem documentação Mintlify (ferramenta interna).
+> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth: `/api/ops` + allowlist + login/shell. Console read-only: overview, lista e ficha de Igrejas. Sem documentação Mintlify (ferramenta interna).
 
 **Operador da plataforma**  
 > Staff do Flock (não é `owner`/`admin` da igreja). Persona do Admin OPS. Conta de plataforma, **sem** membership de igreja; e-mail na env `PLATFORM_ADMIN_EMAILS`.
