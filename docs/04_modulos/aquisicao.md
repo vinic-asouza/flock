@@ -3,8 +3,8 @@ type: modulo
 nome: aquisicao
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-08-17
-versao: "1.1"
+ultima_atualizacao: 2026-08-26
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
 depende_de: [billing, onboarding]
@@ -14,7 +14,7 @@ integracoes: [Supabase PostgreSQL, Resend, IBGE API]
 # Módulo — Aquisição
 
 > Captação comercial pré-produto: site **landing** (`landing/` na porta :3000), formulário de **waitlist** e funil de plano (CTA → app `/register` ou `/login?redirect=/checkout`).  
-> Backend próprio: **somente** `POST /api/waitlist`. Catálogo de planos e Checkout Stripe vivem em [[04_modulos/billing]]; registro da igreja em [[04_modulos/onboarding]].  
+> Backend próprio: **somente** `POST /api/waitlist`. Lista autenticada dos leads: `GET /api/ops/waitlist` no [[04_modulos/admin-ops]] — **não** criar GET na rota pública. Catálogo de planos e Checkout Stripe vivem em [[04_modulos/billing]]; registro da igreja em [[04_modulos/onboarding]].  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/aquisicao]] · Índice: [[04_modulos/index]].
 
 ---
@@ -45,7 +45,7 @@ Produto: [[01_produto/visao-do-produto]].
 
 - Criar sessão Stripe Checkout (API em [[04_modulos/billing]]; landing **não** chama mais `/create-checkout-session` no botão atual)
 - Criar igreja/user Auth (→ [[04_modulos/onboarding]])
-- CRUD/admin da tabela waitlist (não há GET/list/delete autenticado)
+- CRUD/admin da tabela waitlist (lista autenticada fica no [[04_modulos/admin-ops]]; sem edit/delete/CSV neste módulo nem no ops v1)
 - Login/sessão do produto
 - Cleanup de leads antigos (sem job)
 
@@ -132,7 +132,7 @@ Nenhuma outra entidade é escrita por este módulo. `pending_subscriptions` / Ch
 | --- | --- | --- | --- | --- |
 | POST | `/api/waitlist/` | ❌ | público | Cadastrar lead |
 
-**Total owned:** **1** endpoint.
+**Total owned:** **1** endpoint. Leitura operacional: `GET /api/ops/waitlist` ([[04_modulos/admin-ops]], BR-OPS-008). **Não** existe `GET /api/waitlist`.
 
 Operações de superfície (não são rotas backend deste módulo, mas fazem parte do produto aquisição):
 
@@ -364,7 +364,7 @@ Sem CSRF token dedicado; confia em CORS + same-site browser flows.
 
 **Dependem deste:**
 
-- Ops/comercial (leads na tabela `waitlist`) — sem módulo interno consumidor de API  
+- [[04_modulos/admin-ops]] — `GET /api/ops/waitlist` (operador; PII de lead)
 - Marketing (única entrada waitlist)
 
 ```mermaid
@@ -373,6 +373,7 @@ graph LR
   ACQ --> BILL[[billing]]
   ACQ --> ONB[[onboarding]]
   Landing[[landing Next]] --> ACQ
+  OPS[[admin-ops]] -.->|GET /api/ops/waitlist| ACQ
 ```
 
 ---
@@ -383,7 +384,7 @@ graph LR
 2. Unicidade checada com `.single()` + insert — race possível sob concorrência (UNIQUE DB é a rede de segurança).  
 3. `CheckoutButton` **não** inicia Stripe; nome/ícone sugerem pagamento, mas só redireciona para register — evitar documentar como “cria checkout”.  
 4. Plano waitlist `personalizado` ≠ plan_type billing `custom` — nomenclaturas diferentes.  
-5. Sem painel admin para listar/exportar waitlist no código app.  
+5. Lista read-only no Admin OPS (`GET /api/ops/waitlist`); sem CSV, ficha ou mutação no v1. **Não** criar GET na rota pública `/api/waitlist`.  
 6. IBGE só no client — offline/quebra API deixa estados vazios.  
 7. Templates e-mail em `emailTemplates.ts` (HTML helpers) — manter sync com copy.  
 8. **Mobile / landing:** menu hamburger próprio (não importar drawer do app). Inputs waitlist precisam de `text-base` (≥16px) — regressão comum em iOS Safari.
@@ -394,6 +395,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-26 | 1.2 | Lista autenticada de leads no Admin OPS (`GET /api/ops/waitlist`); POST público intacto | DEV-72 |
 | 2026-08-17 | 1.1 | UX mobile/tablet da landing (`/`, `/waitlist`): header touch, overflow, waitlist 16px, `landingLinks`, toast/safe-area | DEV-36 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo aquisição | — |
 

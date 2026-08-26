@@ -1,7 +1,7 @@
 ---
 type: glossario
 ultima_atualizacao: 2026-08-26
-versao: "1.7"
+versao: "1.8"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 75
 ---
@@ -110,7 +110,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Membro responsável por acompanhar um Integrante no processo de integração.
 
 **Lista de espera** *(código: `waitlist`)*  
-> Lead captado na landing antes/fora do funil completo de registro.
+> Lead captado na landing antes/fora do funil completo de registro. Captação pública: `POST /api/waitlist`. Consulta operacional (somente leitura): Admin OPS `/waitlist` + `GET /api/ops/waitlist`. **Não** há GET na rota pública.
 
 **Histórico de atividades** *(código: `audit_logs`)*  
 > Trilha de atividades do tenant (create/update/delete/convert/import/export/deactivate…) sobre entidades da igreja, apresentada em linguagem natural para administradores.  
@@ -118,7 +118,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos / visão cross-tenant do time Flock ficam no **Admin OPS** (fora do Painel da igreja).
 
 **Admin OPS** *(código: pacote `admin-ops/`)*  
-> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth: `/api/ops` + allowlist + login/shell. Console read-only: overview, lista e ficha de Igrejas. Tela **Saúde** (`/health`): status de API, Stripe e jobs de billing. Sem documentação Mintlify (ferramenta interna).
+> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth: `/api/ops` + allowlist + login/shell. Console read-only: overview, lista e ficha de Igrejas. **Lista de espera** (`/waitlist`): leads da landing. Tela **Saúde** (`/health`): status de API, Stripe e jobs de billing. Sem documentação Mintlify (ferramenta interna).
 
 **Operador da plataforma**  
 > Staff do Flock (não é `owner`/`admin` da igreja). Persona do Admin OPS. Conta de plataforma, **sem** membership de igreja; e-mail na env `PLATFORM_ADMIN_EMAILS`.

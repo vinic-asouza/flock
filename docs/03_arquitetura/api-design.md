@@ -1,7 +1,7 @@
 ---
 type: api-design
 ultima_atualizacao: 2026-08-26
-versao: "1.2"
+versao: "1.3"
 tipo_api: REST
 base_url: /api
 tags: [arquitetura, API, endpoints, contratos]
@@ -226,6 +226,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | GET | `/api/ops/churches` | 👤 + `requirePlatformAdmin` | — | Lista paginada + busca (RL 60/15min) | ✅ |
 | GET | `/api/ops/churches/:id` | 👤 + `requirePlatformAdmin` | — | Ficha read-only; 404 se inexistente | ✅ |
 | GET | `/api/ops/health` | 👤 + `requirePlatformAdmin` | — | Saúde agregada API/Stripe/jobs (RL 60/15min); **200** com status no JSON | ✅ |
+| GET | `/api/ops/waitlist` | 👤 + `requirePlatformAdmin` | — | Lista paginada de leads (RL 60/15min); GET-only; **não** existe `GET /api/waitlist` | ✅ |
 
 ### Password (`/api/password`)
 
@@ -383,7 +384,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | GET | `/api/plans/` | ❌ | — | Todos os planos | ✅ |
 | GET | `/api/plans/paid` | ❌ | — | Planos pagos | ✅ |
 | GET | `/api/plans/:planType` | ❌ | — | Detalhe do plano | ✅ |
-| POST | `/api/waitlist/` | ❌ | — | Lead landing | ✅ |
+| POST | `/api/waitlist/` | ❌ | — | Lead landing (público). Lista autenticada: `GET /api/ops/waitlist` | ✅ |
 
 ### Stripe (`/api/stripe`)
 
@@ -411,7 +412,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 
 ### Validação (schemas)
 
-Validadores **Joi** em `backend/src/validators/` (não Zod no backend): `memberValidator`, `congregationValidator`, `groupValidator`, `calendarValidator`, `calendarParticipantValidator`, `integrationMemberValidator`, `registrationLinkValidator`, `churchValidator`, `accountValidator`, `passwordValidator`, `waitlistValidator`, `reportValidator`, `cnpjValidator` / `cnpjSchema`. Controllers chamam `validate*` manualmente (não há pipeline central único tipo `validate(schema)` em todas as rotas).
+Validadores **Joi** em `backend/src/validators/` (não Zod no backend): `memberValidator`, `congregationValidator`, `groupValidator`, `calendarValidator`, `calendarParticipantValidator`, `integrationMemberValidator`, `registrationLinkValidator`, `churchValidator`, `accountValidator`, `passwordValidator`, `waitlistValidator`, `opsWaitlistValidator`, `reportValidator`, `cnpjValidator` / `cnpjSchema`. Controllers chamam `validate*` manualmente (não há pipeline central único tipo `validate(schema)` em todas as rotas).
 
 ---
 
@@ -480,7 +481,7 @@ Não há webhooks **outbound** do Flock para clientes terceiros.
 2. **Sem `/v1` por enquanto** — mudanças breaking exigem coordenação com o app Next; se versionar, documentar aqui.
 3. **Validar com Joi** no padrão dos validators existentes (backend); frontend pode usar Zod.
 4. **Auth:** rotas de domínio = `authMiddleware` + `requireRole`; rotas pré-igreja = `authUserOnly`; Admin OPS = `requirePlatformAdmin`; públicos = middleware de token de link. Prefixos específicos (`/api/ops`, `/api/auth`, …) **antes** de `app.use('/api', router)` com `router.use(authMiddleware)` (catch-all).
-5. **Sempre filtrar por `req.church.churchId`** em queries de domínio da igreja — service_role não isola tenant. **Exceção localizada:** GETs `/api/ops/overview|churches|churches/:id` (operador, `requirePlatformAdmin`, sem church context) — [[07_decisoes-tecnicas/ADR-001-leitura-cross-tenant-admin-ops]].
+5. **Sempre filtrar por `req.church.churchId`** em queries de domínio da igreja — service_role não isola tenant. **Exceção localizada (tenant):** GETs `/api/ops/overview|churches|churches/:id` (operador, `requirePlatformAdmin`, sem church context) — [[07_decisoes-tecnicas/ADR-001-leitura-cross-tenant-admin-ops]]. **`GET /api/ops/waitlist` não é essa exceção:** a tabela `waitlist` não tem `church_id` (BR-OPS-008).
 6. **Erros:** `{ error, details? }` em PT; usar `code` só quando o frontend precisa branchar (ex.: `CHURCH_SELECTION_REQUIRED`).
 7. **Listas grandes:** preferir `page`/`limit` (max 100) + envelope `pagination`; não devolver dumps massivos sem paginação.
 8. **PUT vs PATCH:** PUT = update completo; PATCH = status/deactivate/papel.

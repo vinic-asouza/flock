@@ -2,7 +2,7 @@
 type: modulo
 nome: Admin OPS
 status: Em Desenvolvimento
-versao: "0.6"
+versao: "0.7"
 owner: plataforma
 ultima_atualizacao: 2026-08-26
 tags: [admin-ops, plataforma, interno]
@@ -18,9 +18,9 @@ dependencias: [auth]
 
 ## 📌 Overview
 
-**Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary `/api/ops` (auth de operador + leitura de Igrejas + saúde agregada).
+**Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary `/api/ops` (auth de operador + leitura de Igrejas + Lista de espera + saúde agregada).
 
-Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) + **saúde agregada** (`/health`, `GET /api/ops/health`) no app (`:3002`). Waitlist fica para DEV-72.
+Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`, `GET /api/ops/waitlist`) + **saúde agregada** (`/health`, `GET /api/ops/health`) no app (`:3002`).
 
 **Fora:** Mintlify (usuário da igreja não usa isto). Sentry (DEV-70). Deploy Railway (pedido explícito). Tabela `platform_admins`. npm workspaces. Stripe live. Mutação de tenant.
 
@@ -30,17 +30,20 @@ Estado atual: **auth de operador** + **login/shell** + **console read-only de Ig
 
 ```text
 admin-ops/                                    → Next.js 15, porta 3002, sem @sentry/nextjs
-admin-ops/src/app/                            → `/`, `/login`, `/churches`, `/churches/[id]`, `/health`, `robots.ts`
-admin-ops/src/components/                     → OverviewView, ChurchesListView, ChurchDetailView, HealthView, AuthGate
+admin-ops/src/app/                            → `/`, `/login`, `/churches`, `/churches/[id]`, `/waitlist`, `/health`, `robots.ts`
+admin-ops/src/components/                     → OverviewView, ChurchesListView, ChurchDetailView, WaitlistListView, HealthView, AuthGate
 admin-ops/src/services/api.ts                 → Axios `withCredentials` → `/api/ops/*`
 admin-ops/src/context/OpsAuthContext.tsx      → bootstrap `GET /ops/me`
 backend/src/services/platformAdmin.ts         → parser allowlist + regra de acesso
 backend/src/middlewares/requirePlatformAdmin.ts
 backend/src/controllers/opsAuthController.ts
 backend/src/controllers/opsChurchesController.ts
+backend/src/controllers/opsWaitlistController.ts
 backend/src/controllers/opsHealthController.ts
 backend/src/services/opsChurches.ts           → queries supabaseAdmin
 backend/src/services/opsChurchMappers.ts      → DTOs whitelist
+backend/src/services/opsWaitlist.ts           → lista `waitlist` (tabela global, sem `church_id`)
+backend/src/services/opsWaitlistMappers.ts    → DTO whitelist (sem `updated_at`)
 backend/src/services/opsHealth.ts              → composição GET /ops/health
 backend/src/services/stripeHealth.ts          → snapshot Stripe compartilhado
 backend/src/utils/opsHealth.ts                → agregação ok/degraded/error
@@ -68,12 +71,13 @@ Rate limit dos GETs de leitura: 60 / 15 min por IP.
 | Rota | Auth | Nota |
 | --- | --- | --- |
 | `/login` | público | RHF+Zod; 401/403 em toast + alerta; consome `POST /ops/login` |
-| `/` | operador (`GET /ops/me`) | Overview comercial (totais + breakdowns). Nav **Overview · Igrejas · Saúde** |
+| `/` | operador (`GET /ops/me`) | Overview comercial (totais + breakdowns). Nav **Overview · Igrejas · Lista de espera · Saúde** |
 | `/churches` | operador | Lista/busca; filtros e paginação na querystring |
 | `/churches/[id]` | operador | Ficha read-only; 404 se UUID inexistente; Voltar reconstrói a query da lista |
+| `/waitlist` | operador | Lista de espera (leads da landing). Busca/filtro/sort na querystring. Sem ficha, sem mutação |
 | `/health` | operador | Saúde: banner geral + cards API/Stripe/jobs + tabela dos 5 crons; **Atualizar** (sem polling) |
 
-Header autenticado: marca, nav, e-mail, logout. Desktop-first. Sem waitlist ou Sentry nesta superfície.
+Header autenticado: marca, nav, e-mail, logout. Desktop-first. Sem Sentry nesta superfície. Overview **não** tem cards de waitlist.
 
 Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?…`. Buckets `none` (**Sem plano** / **Sem assinatura**) **não** viram query (`plan_type=none` é 400 na API). Labels: “Comercialmente ativa/inativa” — nunca badge genérico “Ativo”. Clique na linha da lista abre a ficha; a query da lista viaja na URL da ficha para o Voltar. Nav **Igrejas** vai para `/churches` sem query (reset).
 
@@ -87,6 +91,7 @@ Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?
 | GET | `/api/ops/overview` | `requirePlatformAdmin` + RL 60/15min | Totais comerciais das Igrejas |
 | GET | `/api/ops/churches` | idem | Lista paginada + busca |
 | GET | `/api/ops/churches/:id` | idem | Ficha read-only; 404 se UUID inexistente |
+| GET | `/api/ops/waitlist` | idem | Lista paginada de leads. GET-only. **Não** existe `GET /api/waitlist` |
 | GET | `/api/ops/health` | idem | Saúde agregada (API, Stripe, jobs). HTTP **200** autenticado mesmo se o JSON for `degraded`/`error` |
 
 Erros: `{ error, details }` em PT. Validação Joi da query/params → 400. Anônimo → 401. Não-operador → 403.
@@ -110,6 +115,16 @@ Erros: `{ error, details }` em PT. Validação Joi da query/params → 400. Anô
 Query: `page` (≥1, default 1), `limit` (1–100, default 20), `q` (nome e/ou CNPJ, máx. 80), `plan_type` (`100\|200\|500\|800\|custom`), `subscription_status` (allowlist Stripe), `commercially_active` (`true\|false`), `sort_by` (`created_at\|name\|cnpj`, default `created_at`), `sort_order` (`asc\|desc`, default `desc`).
 
 Envelope `{ data, pagination, filters, sorting }` no padrão members. Item: `id`, `name`, `cnpj`, `plan_type`, `subscription_status`, `commercially_active`, `members_active_count`, `created_at`. Sem endereço na lista.
+
+#### `GET /api/ops/waitlist`
+
+Query: `page` (≥1, default 1), `limit` (1–100, default 20), `q` (nome / e-mail / `church_name`, máx. 80), `plan` (`200\|500\|800\|personalizado` — **não** `custom` nem `plan_type`), `sort_by` (`created_at` only), `sort_order` (`asc\|desc`, default `desc`).
+
+Envelope `{ data, pagination, filters, sorting }`. Item whitelist: `id`, `name`, `email`, `phone`, `church_name`, `city`, `state`, `plan`, `message` (`string \| null`), `created_at`. Sem `updated_at`. Select explícito — nunca `*`.
+
+`waitlist` é tabela global de aquisição (sem `church_id`). **Não** estende ADR-001 / BR-GEN-010. PII de lead é o payload (BR-OPS-008); BR-OPS-006 continua valendo só para Membros de Igreja.
+
+UI: empty “Nenhum lead na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” Mensagem longa: truncate + `<details>`. Plano na UI: **Personalizado**.
 
 #### `GET /api/ops/churches/:id`
 
@@ -142,6 +157,7 @@ UI: se **Atualizar** falhar a rede, a tela preserva o último payload e mostra o
 - O shell do Admin OPS **não** reutiliza o layout `(main)` do Painel.
 - Guard de rotas é client-side nesta fundação; autorização efetiva continua na API.
 - Evitar `npm run build` com `next dev` no mesmo pacote (corrupção de `.next`).
-- Exceção localizada a BR-GEN-010 / API-028: só os GETs de Igrejas (overview/lista/ficha); Painel continua filtrando `church_id`. `GET /api/ops/health` **não** é leitura cross-tenant de Igreja.
+- Exceção localizada a BR-GEN-010 / API-028: só os GETs de Igrejas (overview/lista/ficha); Painel continua filtrando `church_id`. `GET /api/ops/health` **não** é leitura cross-tenant de Igreja. `GET /api/ops/waitlist` também **não** — a tabela não tem `church_id` (BR-OPS-008).
+- Nunca criar `GET /api/waitlist` (rota pública). Captação permanece `POST /api/waitlist` ([[04_modulos/aquisicao]]).
 - `GET /api/ops/health` responde **200** autenticado com `status` no JSON — não copiar o 503 de `GET /api/health/stripe`.
 - `church_users` na ficha conta a tabela; owner só em `churches.user_id` não entra no total.

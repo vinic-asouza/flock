@@ -2,8 +2,8 @@
 type: regras-modulo
 modulo: admin-ops
 ultima_atualizacao: 2026-08-26
-versao: "0.3"
-total_regras: 7
+versao: "0.4"
+total_regras: 8
 tags: [regras, modulo:admin-ops, plataforma]
 ver_tambem:
   - "[[04_modulos/admin-ops]]"
@@ -16,7 +16,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cross-tenant **somente GET** das Igrejas (clientes SaaS) e expor saúde agregada da plataforma (API, Stripe, jobs) — separado do login do Painel da igreja.
+Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cross-tenant **somente GET** das Igrejas (clientes SaaS), listar leads da Lista de espera (tabela `waitlist`, sem `church_id`) e expor saúde agregada da plataforma (API, Stripe, jobs) — separado do login do Painel da igreja.
 
 ## Índice de Regras
 
@@ -29,6 +29,7 @@ Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cro
 | BR-OPS-005 | `/api/ops` de Igrejas é somente GET | Restrição | Ativo |
 | BR-OPS-006 | Sem rol nem diffs de Membros nas respostas ops | Restrição | Ativo |
 | BR-OPS-007 | Saúde agregada visível ao operador | Derivação | Ativo |
+| BR-OPS-008 | Lista de espera no `/api/ops` é somente GET | Restrição | Ativo |
 
 ---
 
@@ -101,3 +102,13 @@ Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cro
 - **Implementado em:** `backend/src/controllers/opsHealthController.ts`; `backend/src/services/opsHealth.ts`; `backend/src/utils/opsHealth.ts`
 - **Testado em:** `backend/src/utils/__tests__/opsHealth.test.ts`; smoke QA DEV-76
 - **Depende de:** BR-OPS-001, BR-OPS-002; relacionado [[BR-GEN-008]]
+
+### BR-OPS-008: Lista de espera no `/api/ops` é somente GET
+- **Declaração:** Leads da tabela `waitlist` no boundary `/api/ops` são somente leitura. Mutar, apagar, converter em Igreja ou exportar CSV **não** existe neste boundary. **Não** há `GET /api/waitlist` (rota pública). `POST /api/waitlist` permanece público ([[02_regras-de-negocio/regras-por-modulo/aquisicao]]). Respostas usam whitelist da tabela (`id`, `name`, `email`, `phone`, `church_name`, `city`, `state`, `plan`, `message`, `created_at` — sem `updated_at`). `church_name` é texto livre, não FK de `churches`. PII de lead (nome, e-mail, telefone) **é** o payload esperado — BR-OPS-006 aplica-se a Membros de Igreja, não a leads. **Não** é exceção a BR-GEN-010 / ADR-001: `waitlist` não tem `church_id`.
+- **Tipo:** Restrição
+- **Gatilho:** `GET /api/ops/waitlist`; tela `/waitlist` (nav **Lista de espera**)
+- **Comportamento esperado:** Só GET; 401 anônimo; 403 não-operador; 400 query inválida; envelope `{ data, pagination, filters, sorting }`. Filtro `plan` ∈ `{200, 500, 800, personalizado}` (não `custom`). Sort v1: `created_at` (`desc` default).
+- **Comportamento em violação:** Não há POST/PUT/PATCH/DELETE de waitlist em `/api/ops`
+- **Implementado em:** `backend/src/routes/ops.ts`; `opsWaitlistController.ts`; `opsWaitlist.ts`; `opsWaitlistMappers.ts`
+- **Testado em:** `opsWaitlistValidator.test.ts`; `opsWaitlist.test.ts`; smoke QA DEV-72
+- **Depende de:** BR-OPS-001, BR-OPS-002; relacionado [[BR-ACQ-002]]
