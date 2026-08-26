@@ -1,6 +1,6 @@
 ---
 type: regras-gerais
-ultima_atualizacao: 2026-07-13
+ultima_atualizacao: 2026-08-26
 versao: "1.0"
 total_regras: 49
 tags: [regras, transversal, global]
@@ -119,7 +119,7 @@ tags: [regras, transversal, global]
 - **Comportamento esperado:** Define igreja ativa e devolve contexto.
 - **Comportamento em violação:** `404` “Igreja não encontrada”.
 - **Implementado em:** `authController.login`; `churchContext.listChurchMembershipsForUser`
-- **Exceções conhecidas:** —
+- **Exceções conhecidas:** Login do **Admin OPS** (`POST /api/ops/login`) — conta de plataforma sem igreja; ver [[BR-OPS-001]] / [[BR-OPS-003]].
 - **Regras relacionadas:** BR-GEN-006, BR-GEN-010
 
 ### BR-GEN-006: Seleção de igreja quando há múltiplos vínculos

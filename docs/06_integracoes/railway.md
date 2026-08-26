@@ -3,7 +3,7 @@ type: integracao
 servico: Railway
 categoria: Hosting
 status: Ativo
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 versao: "1.1"
 dashboard_url: https://railway.app/project/301d94a5-48af-4640-b023-86ce13608e2c
 documentacao_oficial: https://docs.railway.com
@@ -98,6 +98,8 @@ Configuradas no serviço (além das `RAILWAY_*`):
 | `NODE_ENV` | `production` | Variable |
 | `FRONTEND_URL` | Painel (CORS/redirects) | Domínio custom frontend |
 | `LANDING_URL` | Landing (CORS/checkout) | Domínio custom landing |
+| `ADMIN_OPS_URL` | CORS Admin OPS (quando houver serviço) | Default local `:3002` |
+| `PLATFORM_ADMIN_EMAILS` | Allowlist de operadores `/api/ops` | Lista de e-mails; vazia = fail closed |
 | `SUPABASE_URL` / `SUPABASE_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | [[06_integracoes/supabase]] | Dashboard Supabase |
 | `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_ID_M*` / `STRIPE_PUBLISHABLE_KEY` | [[06_integracoes/stripe]] | Dashboard Stripe |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` / `RESEND_FROM_NAME` | [[06_integracoes/resend]] | Dashboard Resend |
@@ -320,7 +322,7 @@ Deploy local “manual” possível via CLI/`railway up`, mas o fluxo documentad
 
 ### CORS / frontend não fala com API
 
-- **Checklist:** `FRONTEND_URL` / `LANDING_URL` no backend = origens reais; `NEXT_PUBLIC_API_URL` sem espaço e com sufixo `/api`.
+- **Checklist:** `FRONTEND_URL` / `LANDING_URL` / `ADMIN_OPS_URL` no backend = origens reais; `NEXT_PUBLIC_API_URL` sem espaço e com sufixo `/api`.
 
 ### Domínio custom / certificado
 

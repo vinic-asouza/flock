@@ -1,6 +1,6 @@
 ---
 type: infraestrutura
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 versao: "1.1"
 cloud_provider: Railway + Supabase
 tags: [arquitetura, infra, deploy, CI/CD, ambientes]
@@ -186,6 +186,8 @@ Não há `.env.example` commitado visível (script tenta copiar `backend/.env.ex
 | `NODE_ENV` | Todos | ⚙️ | `development` / `staging` / `production` | `production` |
 | `FRONTEND_URL` | Backend | ⚙️ | CORS, redirects, e-mails | `http://localhost:3001` |
 | `LANDING_URL` | Backend | ⚙️ | CORS + checkout success URLs | `http://localhost:3000` |
+| `ADMIN_OPS_URL` | Backend | ⚙️ | CORS Admin OPS | `http://localhost:3002` |
+| `PLATFORM_ADMIN_EMAILS` | Backend | ⚙️ | Allowlist de operadores (`/api/ops`); vazia = fail closed | `ops@dominio.com` |
 | `ENABLE_CRON_JOBS` | Backend | ⚙️ | Default on; `false` desliga | `true` |
 | `NEXT_PUBLIC_API_URL` | Front + Landing + Admin OPS | ✅ | Base API com `/api` | `http://localhost:4000/api` |
 | `NEXT_PUBLIC_FRONTEND_URL` | Landing | ⚙️ | Links para o app | `http://localhost:3001` |
@@ -238,7 +240,7 @@ Não há `.env.example` commitado visível (script tenta copiar `backend/.env.ex
 | Grupo | Variáveis |
 | --- | --- |
 | Database/Auth | `SUPABASE_*` |
-| App | `PORT`, `NODE_ENV`, `*_URL`, `ENABLE_CRON_JOBS`, `NEXT_PUBLIC_*` |
+| App | `PORT`, `NODE_ENV`, `*_URL`, `PLATFORM_ADMIN_EMAILS`, `ENABLE_CRON_JOBS`, `NEXT_PUBLIC_*` |
 | Stripe | `STRIPE_*` |
 | Email | `RESEND_*`, `ADMIN_EMAIL` |
 | Observability | `SENTRY_*`, `NEXT_PUBLIC_SENTRY_*`, tokens métricas/health, Slack |

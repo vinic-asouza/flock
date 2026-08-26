@@ -1,6 +1,6 @@
 ---
 type: modulos-index
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 total_modulos: 13
 tags: [módulos, índice]
 ---
@@ -20,7 +20,7 @@ O Flock **não** usa NestJS modules nem pasta `domain/`. A modularização é **
 - **Frontend app:** rotas em `frontend/src/app/(main|auth|public|subscription)/`
 - **Landing:** aquisição (`landing/`)
 - **Admin OPS:** operação da plataforma (`admin-ops/`, local `:3002`)
-- **KB de regras:** particionada em **12** módulos de igreja em `02_regras-de-negocio/regras-por-modulo/` + superfície Admin OPS (regras BR-OPS quando o login existir)
+- **KB de regras:** particionada em **12** módulos de igreja em `02_regras-de-negocio/regras-por-modulo/` + Admin OPS (`BR-OPS-*`)
 
 Este catálogo alinha o recorte de módulos para documentação técnica em `04_modulos/[nome].md`. Utilitários (`middlewares/`, `utils/`, `jobs/` transversais) **não** são módulos de negócio.
 
@@ -107,9 +107,9 @@ graph TD
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |
 | **aquisicao** | Landing, waitlist, entrada de leads/checkout público | Baixa | Ativo | billing | ~5 |
 | **tutoriais** | Guias in-app (conteúdo front) | Baixa | Ativo | auth | ~1 |
-| **admin-ops** | Centro operacional interno (scaffold `admin-ops/` :3002) | Média | Em Desenvolvimento | — | 0 |
+| **admin-ops** | Centro operacional interno (`admin-ops/` :3002 + `/api/ops` auth) | Média | Em Desenvolvimento | auth | 3 |
 
-**Total:** **13** módulos · ~**124** operações HTTP de domínio da igreja (Admin OPS ainda sem API).
+**Total:** **13** módulos · ~**124** operações HTTP de domínio da igreja + **3** `/api/ops`.
 
 ---
 

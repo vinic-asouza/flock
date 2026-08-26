@@ -1,6 +1,6 @@
 ---
 type: api-design
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 versao: "1.0"
 tipo_api: REST
 base_url: /api
@@ -26,7 +26,7 @@ tags: [arquitetura, API, endpoints, contratos]
 | Tenant | Contexto de igreja via auth + cookie/sessão; header opcional `X-Church-Id` |
 | OpenAPI/Swagger | **Não existe** |
 | Testes de API | **Não encontrados** no backend (`*.test.ts` / `*.spec.ts` ausentes) |
-| CORS | `FRONTEND_URL` + `LANDING_URL`; `credentials: true`; headers `Authorization`, `Cookie`, `X-Church-Id`; `exposedHeaders: Content-Disposition` (SPA lê filename de blobs PDF/CSV) |
+| CORS | `FRONTEND_URL` + `LANDING_URL` + `ADMIN_OPS_URL` (default `:3002`); `credentials: true`; headers `Authorization`, `Cookie`, `X-Church-Id`; `exposedHeaders: Content-Disposition` (SPA lê filename de blobs PDF/CSV) |
 
 **Rotas fora de `/api`:** `GET /health`, `GET /metrics` (token interno).
 
@@ -137,8 +137,9 @@ Validação Joi tipicamente: `400` com `error` + `details` (array/objeto de Joi)
 | `Authorization: Bearer` | Fallback / clientes sem cookie |
 | Refresh automático no middleware | Se access expirado, tenta `refreshSession` e reaplica cookies |
 | Blacklist in-memory `global.tokenBlacklist` | Logout / revogação (não distribuída) |
-| `authUserOnly` | JWT sem exigir igreja (`/church/memberships`, `/church/active`) |
+| `authUserOnly` | JWT sem exigir igreja (`/church/memberships`, `/church/active`, `/api/ops/logout`) |
 | `authMiddleware` | JWT + `attachChurchContext` |
+| `requirePlatformAdmin` | JWT + allowlist `PLATFORM_ADMIN_EMAILS` + zero memberships (**sem** church context) |
 | `requireRole(minRole)` | Hierarquia `owner > admin > editor > reader` |
 | `optionalAuth` | Checkout público ou autenticado |
 | Token público na URL | Links de cadastro/integração |
@@ -213,6 +214,14 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | POST | `/api/auth/login` | ❌ | — | Login (RL 10/15min em falhas) | ✅ |
 | POST | `/api/auth/logout` | ✅ | — | Logout | ✅ |
 | POST | `/api/auth/callback` | ❌ | — | Confirmação de e-mail (RL 5/15min) | ✅ |
+
+### Admin OPS (`/api/ops`)
+
+| Método | Rota | Auth | Role | Descrição | Status |
+| --- | --- | --- | --- | --- | --- |
+| POST | `/api/ops/login` | ❌ + allowlist | — | Login operador (RL 10/15min em falhas); sem cookie de igreja | ✅ |
+| POST | `/api/ops/logout` | 👤 | — | Logout sem exigir igreja | ✅ |
+| GET | `/api/ops/me` | 👤 + `requirePlatformAdmin` | — | `{ id, email }` | ✅ |
 
 ### Password (`/api/password`)
 
@@ -466,7 +475,7 @@ Não há webhooks **outbound** do Flock para clientes terceiros.
 1. **Só REST JSON** sob `/api` — não introduzir GraphQL/tRPC sem ADR.
 2. **Sem `/v1` por enquanto** — mudanças breaking exigem coordenação com o app Next; se versionar, documentar aqui.
 3. **Validar com Joi** no padrão dos validators existentes (backend); frontend pode usar Zod.
-4. **Auth:** rotas de domínio = `authMiddleware` + `requireRole`; rotas pré-igreja = `authUserOnly`; públicos = middleware de token de link.
+4. **Auth:** rotas de domínio = `authMiddleware` + `requireRole`; rotas pré-igreja = `authUserOnly`; Admin OPS = `requirePlatformAdmin`; públicos = middleware de token de link. Prefixos específicos (`/api/ops`, `/api/auth`, …) **antes** de `app.use('/api', router)` com `router.use(authMiddleware)` (catch-all).
 5. **Sempre filtrar por `req.church.churchId`** em queries — service_role não isola tenant.
 6. **Erros:** `{ error, details? }` em PT; usar `code` só quando o frontend precisa branchar (ex.: `CHURCH_SELECTION_REQUIRED`).
 7. **Listas grandes:** preferir `page`/`limit` (max 100) + envelope `pagination`; não devolver dumps massivos sem paginação.

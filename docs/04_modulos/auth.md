@@ -3,7 +3,7 @@ type: modulo
 nome: auth
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-25
+ultima_atualizacao: 2026-08-26
 versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, auth]
@@ -440,6 +440,7 @@ Não há classes `*Exception` tipadas — respostas JSON ad hoc.
 
 - [[04_modulos/onboarding]] — register + confirmação  
 - [[04_modulos/igreja-config]], [[04_modulos/membros]], [[04_modulos/integracao]], [[04_modulos/congregacoes]], [[04_modulos/grupos]], [[04_modulos/calendario]], [[04_modulos/relatorios]], [[04_modulos/billing]], [[04_modulos/tutoriais]] — todos usam `authMiddleware` / sessão  
+- [[04_modulos/admin-ops]] — sessão de operador em `/api/ops` (`requirePlatformAdmin`, **sem** church context)  
 
 ```mermaid
 graph LR

@@ -1,6 +1,6 @@
 ---
 type: arquitetura-visao-geral
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 versao: "1.1"
 status: Rascunho
 tags: [arquitetura, visão-geral, stack, C4]
@@ -15,7 +15,7 @@ tags: [arquitetura, visão-geral, stack, C4]
 
 ## 🧭 Resumo Executivo
 
-O Flock é um **monorepo de quatro aplicações** (API Express, Painel Next.js, landing Next.js, Admin OPS Next.js) no padrão **SPA/BFF-like + API REST monolítica**, com persistência em **PostgreSQL via Supabase** (sem ORM). O multi-tenant por `church_id` vive na aplicação. O **Admin OPS** (`admin-ops/`, local `:3002`) é o centro operacional interno da plataforma — **não** é o Painel da Igreja; não usa npm workspaces; stack alinhada ao Painel **sem** Sentry. Auth de staff e `/api/ops` ainda não estão nesta superfície (Issues seguintes). Esta escolha é adequada a um SaaS de gestão eclesiástica ainda coeso: um time pequeno itera rápido, deploy é simples e o domínio cabe em um processo Node. **Trade-offs:** menos isolamento de falhas que microserviços; jobs cron e webhooks Stripe no mesmo runtime da API; sem fila/Redis — processamento assíncrono limitado a cron e fire-and-forget (e-mail).
+O Flock é um **monorepo de quatro aplicações** (API Express, Painel Next.js, landing Next.js, Admin OPS Next.js) no padrão **SPA/BFF-like + API REST monolítica**, com persistência em **PostgreSQL via Supabase** (sem ORM). O multi-tenant por `church_id` vive na aplicação. O **Admin OPS** (`admin-ops/`, local `:3002`) é o centro operacional interno da plataforma — **não** é o Painel da Igreja; não usa npm workspaces; stack alinhada ao Painel **sem** Sentry. Auth de staff na API: `/api/ops` + allowlist `PLATFORM_ADMIN_EMAILS` (UI de login = DEV-75). Esta escolha é adequada a um SaaS de gestão eclesiástica ainda coeso: um time pequeno itera rápido, deploy é simples e o domínio cabe em um processo Node. **Trade-offs:** menos isolamento de falhas que microserviços; jobs cron e webhooks Stripe no mesmo runtime da API; sem fila/Redis — processamento assíncrono limitado a cron e fire-and-forget (e-mail).
 
 ---
 
