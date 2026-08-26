@@ -4,6 +4,7 @@ import type {
   OpsChurchListResponse,
   OpsOverview,
 } from "@/types/opsChurches";
+import type { OpsHealthResponse } from "@/types/opsHealth";
 import type { OpsChurchListQuery } from "@/lib/opsChurchQuery";
 import { toChurchListApiParams } from "@/lib/opsChurchQuery";
 
@@ -129,6 +130,11 @@ class OpsApiService {
     const response = await this.api.get<OpsChurchDetail>(
       `/ops/churches/${id}`
     );
+    return response.data;
+  }
+
+  async getHealth(): Promise<OpsHealthResponse> {
+    const response = await this.api.get<OpsHealthResponse>("/ops/health");
     return response.data;
   }
 }
