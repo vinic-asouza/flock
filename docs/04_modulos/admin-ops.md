@@ -2,7 +2,7 @@
 type: modulo
 nome: Admin OPS
 status: Em Desenvolvimento
-versao: "0.2"
+versao: "0.3"
 owner: plataforma
 ultima_atualizacao: 2026-08-26
 tags: [admin-ops, plataforma, interno]
@@ -20,7 +20,7 @@ dependencias: [auth]
 
 **Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary de auth na API (`/api/ops`).
 
-Estado atual: **scaffold UI** (DEV-73) + **auth de operador na API** (DEV-74). Console read-only, waitlist e saúde ficam para Issues seguintes. UI de login/shell = DEV-75.
+Estado atual: **auth de operador na API** (`/api/ops`) + **login e shell autenticado** no app (`:3002`). Console read-only, waitlist e saúde ficam para Issues seguintes.
 
 **Fora:** Mintlify (usuário da igreja não usa isto). Sentry (DEV-70). Deploy Railway (pedido explícito). Tabela `platform_admins`. npm workspaces.
 
@@ -30,7 +30,9 @@ Estado atual: **scaffold UI** (DEV-73) + **auth de operador na API** (DEV-74). C
 
 ```text
 admin-ops/                                    → Next.js 15, porta 3002, sem @sentry/nextjs
-admin-ops/src/app/                            → `/`, `/login` (placeholders), `robots.ts`
+admin-ops/src/app/                            → `/` (shell), `/login`, `robots.ts`
+admin-ops/src/services/api.ts                 → Axios `withCredentials` → `/api/ops/*`
+admin-ops/src/context/OpsAuthContext.tsx      → bootstrap `GET /ops/me`
 backend/src/services/platformAdmin.ts         → parser allowlist + regra de acesso
 backend/src/middlewares/requirePlatformAdmin.ts
 backend/src/controllers/opsAuthController.ts
@@ -41,7 +43,7 @@ backend/src/routes/ops.ts                     → montado em `/api/ops` (antes d
 
 ## 🔐 Auth
 
-Allowlist `PLATFORM_ADMIN_EMAILS` + conta **sem** membership de igreja. Guard: `authUserOnly` + `requirePlatformAdmin` (**sem** `attachChurchContext`). Não reusar `POST /api/auth/login`.
+Allowlist `PLATFORM_ADMIN_EMAILS` + conta **sem** membership de igreja. Guard na API: `authUserOnly` + `requirePlatformAdmin` (**sem** `attachChurchContext`). Guard na UI: `AuthGate` (client) — deslogado → `/login`; autenticado em `/login` → `/`. Não reusar `POST /api/auth/login`.
 
 Fail closed se a allowlist estiver vazia. Cookies de sessão `flock_access_token` / `flock_refresh_token` / `flock_session`; **não** seta `flock_active_church_id` (limpa no login).
 
@@ -55,8 +57,8 @@ Rate limit do login: 10 tentativas / 15 min por IP, skip de sucesso (mesmo patam
 
 | Rota | Auth | Nota |
 | --- | --- | --- |
-| `/` | pública (scaffold) | Placeholder — ainda não consome a API |
-| `/login` | pública (scaffold) | Formulário desabilitado até DEV-75 |
+| `/` | operador (`GET /ops/me`) | Shell: e-mail, logout, placeholder do console |
+| `/login` | público | RHF+Zod; 401/403 em toast + alerta; consome `POST /ops/login` |
 
 ### API (`/api/ops`)
 
@@ -72,6 +74,7 @@ Rate limit do login: 10 tentativas / 15 min por IP, skip de sucesso (mesmo patam
 
 - Admin OPS ≠ papel `admin` da igreja.
 - Montar `/api/ops` **antes** de `app.use('/api', calendarParticipantsRoutes)` — esse router aplica `authMiddleware` em qualquer path `/api/*` restante.
-- Cookies `flock_*` são os mesmos do Painel: no mesmo browser/domínio, login ops substitui a sessão da igreja (DEV-75).
-- Não copiar o shell `(main)` do Painel para o login (DEV-75).
+- Cookies `flock_*` são os mesmos do Painel: no mesmo browser/domínio, login ops substitui a sessão da igreja (e vice-versa).
+- O shell do Admin OPS **não** reutiliza o layout `(main)` do Painel.
+- Guard de rotas é client-side nesta fundação; autorização efetiva continua na API.
 - Evitar `npm run build` com `next dev` no mesmo pacote (corrupção de `.next`).

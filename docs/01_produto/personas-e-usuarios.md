@@ -94,8 +94,8 @@ owner  >  admin  >  editor  >  reader
 
 - **Identificador:** superfície `admin-ops/` (local `:3002`). Não é `ChurchUserRole`.
 - **Descrição:** Staff do Flock que opera o SaaS (visão cross-tenant futura). **Não** é o `admin` da igreja.
-- **Casos de uso (milestone):** console read-only, waitlist, saúde — **ainda não**. Hoje o app sobe (placeholders) e a API de auth (`/api/ops`) existe.
-- **Acesso:** não usa o Painel da Igreja; conta **sem** membership de igreja; e-mail na `PLATFORM_ADMIN_EMAILS`. UI de login = DEV-75.
+- **Casos de uso (milestone):** console read-only, waitlist, saúde — **ainda não**. Hoje: login + shell autenticado (`/login`, `/`) via `/api/ops`.
+- **Acesso:** não usa o Painel da Igreja; conta **sem** membership de igreja; e-mail na `PLATFORM_ADMIN_EMAILS`; entra em `admin-ops/` `:3002`.
 - **Mintlify:** não — ferramenta interna, não é documentação da igreja.
 
 > **Nota:** Registros na tabela `members` / `integration_members` **não** são personas de login. São dados pastorais gerenciados pelos papéis acima.

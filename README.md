@@ -99,8 +99,7 @@ cd admin-ops
 npm install
 ```
 
-Crie um arquivo `.env.local` na pasta `admin-ops/` quando for integrar a API
-(não é necessário só para subir o scaffold):
+Crie um arquivo `.env.local` na pasta `admin-ops/`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
@@ -166,6 +165,7 @@ O Admin OPS estará disponível em `http://localhost:3002`
 - `npm run build` - Cria build de produção
 - `npm start` - Inicia servidor em produção
 - `npm run lint` - Executa linter
+- `npm test` - Testes unitários do mapeamento de erros de login
 
 ## 🔐 Primeiro Acesso
 

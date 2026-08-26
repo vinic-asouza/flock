@@ -282,7 +282,7 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 
 ### Local / Docker (scripts)
 
-1. Criar `backend/.env`, `frontend/.env.local` (Admin OPS: `admin-ops/.env.local` só quando integrar a API)
+1. Criar `backend/.env`, `frontend/.env.local`, `admin-ops/.env.local` (`NEXT_PUBLIC_API_URL`)
 2. `docker-compose build` / `up -d --build`
 3. Validar `curl localhost:4000/health`
 4. Frontend depende do backend healthy
