@@ -136,9 +136,11 @@ app.use('/api/integration-links', integrationLinksRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api/calendar', calendarRoutes);
-app.use('/api', calendarParticipantsRoutes);
 app.use('/api/church-users', churchUsersRoutes);
+// Antes do catch-all `/api`: calendarParticipants aplica authMiddleware em
+// qualquer path que entre nesse router (inclui /api/ops/login sem cookie).
 app.use('/api/ops', opsRoutes);
+app.use('/api', calendarParticipantsRoutes);
 
 // Rota de healthcheck básico
 app.get('/health', (_req, res) => {
