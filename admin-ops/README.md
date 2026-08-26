@@ -3,9 +3,9 @@
 Centro operacional interno da plataforma Flock. Uso exclusivo da equipe da
 plataforma — **não** é o Painel da Igreja (`frontend/`, `painel.flockapp.com.br`).
 
-Este pacote é o 4º app do monorepo. Nesta entrega (DEV-73) só o scaffold:
-app sobe, build passa, páginas placeholder. Login real, cookies e `/api/ops`
-ficam para Issues seguintes.
+Este pacote é o 4º app do monorepo. Login de operador usa `POST /api/ops/login`
+(cookies httpOnly, `withCredentials`). O console (overview, Igrejas, waitlist)
+fica para Issues seguintes.
 
 ## Tecnologias
 
@@ -34,8 +34,8 @@ O app sobe em `http://localhost:3002`.
 
 ## Variáveis de Ambiente
 
-Crie `.env.local` a partir de `.env.example` quando for integrar a API
-(DEV-75). O scaffold não chama o backend.
+Crie `.env.local` a partir de `.env.example`. O app chama a API em
+`NEXT_PUBLIC_API_URL` (padrão local `http://localhost:4000/api`).
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:4000/api
@@ -48,11 +48,12 @@ NEXT_PUBLIC_API_URL=http://localhost:4000/api
 - `npm start` — servidor de produção
 - `npm run start:railway` — bind `0.0.0.0` e `PORT` (serviço Railway **não** é criado nesta Issue)
 - `npm run lint` — ESLint (`next/core-web-vitals`)
+- `npm test` — mapeamento de erros 401/403 do login
 
-## Rotas (scaffold)
+## Rotas
 
-- `/` — placeholder do app
-- `/login` — placeholder estático (campos desabilitados, sem API)
+- `/login` — e-mail/senha (RHF+Zod) → `/api/ops/login`
+- `/` — shell autenticado (e-mail, logout, placeholder). Deslogado redireciona para `/login`.
 
 ## Deploy
 
