@@ -5,6 +5,7 @@ import {
   stripeComponentStatus,
   type OpsHealthStatus,
 } from '../utils/opsHealth';
+import { withTimeout } from '../utils/withTimeout';
 
 export interface StripeHealthSnapshot {
   status: OpsHealthStatus;
@@ -21,20 +22,6 @@ export function isStripeConfigured(): boolean {
       process.env.STRIPE_PRICE_ID_M500 &&
       process.env.STRIPE_PRICE_ID_M800
   );
-}
-
-async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error('stripe_health_timeout')), ms);
-  });
-  try {
-    return await Promise.race([promise, timeout]);
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-  }
 }
 
 async function fetchLastWebhookProcessedAt(): Promise<string | null> {
@@ -69,7 +56,11 @@ export async function getStripeHealthSnapshot(): Promise<StripeHealthSnapshot> {
 
   let stripe_reachable = false;
   try {
-    await withTimeout(stripe.balance.retrieve(), STRIPE_HEALTH_TIMEOUT_MS);
+    await withTimeout(
+      stripe.balance.retrieve(),
+      STRIPE_HEALTH_TIMEOUT_MS,
+      'stripe_health_timeout'
+    );
     stripe_reachable = true;
   } catch {
     stripe_reachable = false;
