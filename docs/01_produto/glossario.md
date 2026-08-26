@@ -1,7 +1,7 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-08-25
-versao: "1.3"
+ultima_atualizacao: 2026-08-26
+versao: "1.4"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 74
 ---
@@ -118,10 +118,10 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos / visão cross-tenant do time Flock ficam no **Admin OPS** (fora do Painel da igreja).
 
 **Admin OPS** *(código: pacote `admin-ops/`)*  
-> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Scaffold no monorepo; login de staff e console read-only entram em Issues seguintes. Sem documentação Mintlify (ferramenta interna).
+> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth de staff na API (`/api/ops` + allowlist). UI de login/shell e console read-only nas Issues seguintes. Sem documentação Mintlify (ferramenta interna).
 
 **Operador da plataforma**  
-> Staff do Flock (não é `owner`/`admin` da igreja). Persona do Admin OPS. Conta de plataforma, sem `church_users` — autenticação ainda não ligada no scaffold.
+> Staff do Flock (não é `owner`/`admin` da igreja). Persona do Admin OPS. Conta de plataforma, **sem** membership de igreja; e-mail na env `PLATFORM_ADMIN_EMAILS`.
 
 **Assinatura pendente** *(código: `pending_subscriptions`)*  
 > Intenção de plano criada no onboarding ainda não plenamente vinculada à igreja ativa.

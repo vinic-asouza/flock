@@ -1,6 +1,6 @@
 ---
 type: seguranca
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 versao: "1.0"
 auth_provider: Supabase Auth (custom cookie bridge)
 tags: [arquitetura, segurança, auth, OWASP, criptografia]
@@ -40,7 +40,8 @@ tags: [arquitetura, segurança, auth, OWASP, criptografia]
 1. Login → Supabase retorna `access_token` + `refresh_token`  
 2. Backend seta cookies `flock_*`  
 3. Requests subsequentes: cookie (preferido) ou `Authorization: Bearer`  
-4. `authMiddleware` valida via `supabase.auth.getUser(token)` e anexa `req.user` + `req.church`
+4. `authMiddleware` valida via `supabase.auth.getUser(token)` e anexa `req.user` + `req.church`  
+   Rotas `/api/ops/*` autenticadas usam `authUserOnly` + `requirePlatformAdmin` (allowlist, **sem** `attachChurchContext`).
 
 ---
 
@@ -83,7 +84,7 @@ Flags de cookie (`cookieUtils.ts`): `httpOnly: true` · `secure` em production �
 
 | Camada | Mecanismo |
 | --- | --- |
-| Guards | `authMiddleware` / `authUserOnly` / `optionalAuth` + `requireRole(minRole)` |
+| Guards | `authMiddleware` / `authUserOnly` / `optionalAuth` + `requireRole(minRole)` · Admin OPS: `requirePlatformAdmin` |
 | Hierarquia | `reader < editor < admin < owner` (`hasRoleOrHigher`) |
 | Contexto tenant | `attachChurchContext` → `req.church = { churchId, role, accessAllCongregations, congregationIds }` |
 | Escopo congregação | Helpers em `utils/congregationScope.ts` (filtro de listagem + assert em get/write) |
@@ -128,7 +129,7 @@ Configuração em `app.ts`: `helmet()` **sem overrides** + CORS custom.
 
 | Header | Configurado | Valor | Propósito |
 | --- | --- | --- | --- |
-| CORS | ✅ | Allowlist `FRONTEND_URL` + `LANDING_URL`; prod exige `Origin`; `credentials: true`; methods GET/POST/PUT/PATCH/DELETE/OPTIONS; headers `Content-Type`, `Authorization`, `Cookie`, `X-Church-Id`; `exposedHeaders: ['Content-Disposition']` | Controle de origem + filename de download no JS |
+| CORS | ✅ | Allowlist `FRONTEND_URL` + `LANDING_URL` + `ADMIN_OPS_URL` (default `http://localhost:3002`); prod exige `Origin`; `credentials: true`; methods GET/POST/PUT/PATCH/DELETE/OPTIONS; headers `Content-Type`, `Authorization`, `Cookie`, `X-Church-Id`; `exposedHeaders: ['Content-Disposition']` | Controle de origem + filename de download no JS |
 | Helmet (suite) | ✅ | Defaults Helmet 7.x | Baseline |
 | Content-Security-Policy | 🟡 | Default Helmet / possivelmente desligado em versões recentes se não setado — **sem CSP custom no código** | XSS |
 | Strict-Transport-Security | 🟡 | Depende do default Helmet + TLS no proxy Railway | Forçar HTTPS |
@@ -218,7 +219,7 @@ Legenda: ✅ Mitigado · 🟡 Parcial · ❌ Não identificado / frágil
 
 O Tech Lead / Backend Engineer deve verificar em cada PR:
 
-- [ ] Novo endpoint tem auth adequada (`authMiddleware` / token público / Stripe / interno)?
+- [ ] Novo endpoint tem auth adequada (`authMiddleware` / `requirePlatformAdmin` / token público / Stripe / interno)?
 - [ ] Mutação exige `requireRole` mínimo correto (reader vs editor vs admin)?
 - [ ] Toda query de domínio filtra `church_id` do `req.church` (nunca confiar só no body)?
 - [ ] Validação Joi (ou equivalente) no input?

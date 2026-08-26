@@ -1,7 +1,7 @@
 ---
 type: padroes-api
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-08-26
+versao: "1.1"
 tipo_api: REST
 tags: [padrões, API, endpoints]
 ---
@@ -209,6 +209,12 @@ pagination: {
 - **Nível:** 🔴
 - ✅ Limiter dedicado + documentar em módulo
 - ❌ Novo POST público sem RL
+
+### API-031: Prefixos específicos antes de catch-all `/api`
+> `app.use('/api', calendarParticipantsRoutes)` aplica `router.use(authMiddleware)` a **qualquer** path `/api/*` ainda não tratado.
+- **Nível:** 🔴
+- ✅ Montar `/api/ops`, `/api/auth`, `/api/church-users` (e novos prefixos) **antes** desse catch-all
+- ❌ Registrar rota pública nova *depois* de um `app.use('/api', router)` com auth global
 
 ---
 

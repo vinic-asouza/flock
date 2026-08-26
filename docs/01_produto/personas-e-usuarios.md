@@ -1,6 +1,6 @@
 ---
 type: personas-usuarios
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 versao: "1.1"
 tags: [produto, usuários, permissões, personas]
 ---
@@ -94,8 +94,8 @@ owner  >  admin  >  editor  >  reader
 
 - **Identificador:** superfície `admin-ops/` (local `:3002`). Não é `ChurchUserRole`.
 - **Descrição:** Staff do Flock que opera o SaaS (visão cross-tenant futura). **Não** é o `admin` da igreja.
-- **Casos de uso (milestone):** console read-only, waitlist, saúde — **ainda não** nesta entrega. Hoje só o app sobe (placeholders).
-- **Acesso:** não usa o Painel da Igreja; conta prevista **sem** `church_users`. Login/allowlist nas Issues de API e shell.
+- **Casos de uso (milestone):** console read-only, waitlist, saúde — **ainda não**. Hoje o app sobe (placeholders) e a API de auth (`/api/ops`) existe.
+- **Acesso:** não usa o Painel da Igreja; conta **sem** membership de igreja; e-mail na `PLATFORM_ADMIN_EMAILS`. UI de login = DEV-75.
 - **Mintlify:** não — ferramenta interna, não é documentação da igreja.
 
 > **Nota:** Registros na tabela `members` / `integration_members` **não** são personas de login. São dados pastorais gerenciados pelos papéis acima.

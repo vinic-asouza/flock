@@ -54,6 +54,15 @@ export const setActiveChurchId = (res: Response, churchId: string): void => {
   });
 };
 
+export const clearActiveChurchId = (res: Response): void => {
+  res.clearCookie(cookieConfig.names.activeChurchId, {
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
+};
+
 // Função para definir cookie de acesso
 export const setAccessToken = (res: Response, token: string): void => {
   res.cookie(cookieConfig.names.accessToken, token, {

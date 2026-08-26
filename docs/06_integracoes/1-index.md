@@ -1,6 +1,6 @@
 ---
 type: integracoes-index
-ultima_atualizacao: 2026-08-25
+ultima_atualizacao: 2026-08-26
 total_servicos: 7
 tags: [integrações, serviços-externos, índice]
 ---
@@ -104,6 +104,8 @@ graph LR
 | `OPS_ALERTS_ENABLED` | Slack/ops | 🌐 Flag | ⬜ Default on |
 | `FRONTEND_URL` | App URLs (CORS/links) | 🌐 | ⬜ Default localhost |
 | `LANDING_URL` | CORS / checkout redirects | 🌐 | ⬜ |
+| `ADMIN_OPS_URL` | CORS Admin OPS | 🌐 | ⬜ Default `:3002` |
+| `PLATFORM_ADMIN_EMAILS` | Allowlist `/api/ops` | 🌐 | ⬜ Fail closed se vazia |
 | `NEXT_PUBLIC_API_URL` | Frontend→API | 🌐 | ⬜ Default |
 | `NEXT_PUBLIC_LANDING_URL` | Frontend links | 🌐 | ⬜ |
 | `NEXT_PUBLIC_FRONTEND_URL` | Landing CTAs | 🌐 | ⬜ |
