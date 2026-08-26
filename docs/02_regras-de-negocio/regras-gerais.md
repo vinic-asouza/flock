@@ -150,7 +150,7 @@ tags: [regras, transversal, global]
 - **Comportamento em violação:** `404` “Not found” (não vaza existência).
 - **Implementado em:** `middlewares/internalToken.ts`; `app.ts` `/metrics`, `/api/internal/billing/stats`
 - **Exceções conhecidas:** Em non-production, token ausente pode liberar (`next()`)
-- **Regras relacionadas:** —
+- **Regras relacionadas:** [[BR-OPS-007]] (`GET /api/ops/health` usa sessão de operador, não estes tokens)
 
 ---
 

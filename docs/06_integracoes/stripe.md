@@ -3,7 +3,7 @@ type: integracao
 servico: Stripe
 categoria: Pagamentos
 status: Ativo
-ultima_atualizacao: 2026-07-14
+ultima_atualizacao: 2026-08-26
 versao: "1.0"
 dashboard_url: https://dashboard.stripe.com
 documentacao_oficial: https://docs.stripe.com
@@ -92,7 +92,7 @@ Obrigatórias no **boot** da API (`validateStripeConfig` em `backend/src/service
 | --- | --- |
 | `FRONTEND_URL` | success/cancel/return do app autenticado |
 | `LANDING_URL` | checkout público / CORS / redirects da aquisição |
-| `HEALTH_CHECK_TOKEN` | opcional em `GET /api/health/stripe` |
+| `HEALTH_CHECK_TOKEN` | opcional em `GET /api/health/stripe`. **Não** é usado no browser do Admin OPS (`GET /api/ops/health` usa sessão de operador) |
 
 **Não há** `STRIPE_PRICE_ID_M100` — plano 100 é gratuito no app (sem Price Stripe).
 
