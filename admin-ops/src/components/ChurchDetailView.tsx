@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { opsApi } from "@/services/api";
 import type { OpsChurchDetail } from "@/types/opsChurches";
 import {
@@ -14,6 +14,10 @@ import {
   planTypeLabel,
   subscriptionStatusLabel,
 } from "@/lib/opsChurchLabels";
+import {
+  churchesListHref,
+  parseChurchListSearchParams,
+} from "@/lib/opsChurchQuery";
 import { displayValue, formatCnpj, formatDate, formatDateTime } from "@/lib/opsFormat";
 import { PageFrame, Panel } from "@/components/PageFrame";
 import { CommercialBadge } from "@/components/CommercialBadge";
@@ -36,9 +40,29 @@ function DefinitionItem({
   );
 }
 
+function BackToListLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
+    >
+      Voltar à lista
+    </Link>
+  );
+}
+
 export function ChurchDetailView() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const churchId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const searchKey = searchParams.toString();
+  const listHref = useMemo(
+    () =>
+      churchesListHref(
+        parseChurchListSearchParams(new URLSearchParams(searchKey))
+      ),
+    [searchKey]
+  );
 
   const [church, setChurch] = useState<OpsChurchDetail | null>(null);
   const [error, setError] = useState<{ title: string; details?: string } | null>(
@@ -101,14 +125,7 @@ export function ChurchDetailView() {
     return (
       <PageFrame
         title="Igreja não encontrada"
-        actions={
-          <Link
-            href="/churches"
-            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
-          >
-            Voltar à lista
-          </Link>
-        }
+        actions={<BackToListLink href={listHref} />}
       >
         <ErrorState
           title={error?.title || "Igreja não encontrada"}
@@ -138,14 +155,7 @@ export function ChurchDetailView() {
     <PageFrame
       title={church.name}
       description="Ficha somente leitura para suporte. Sem rol de Membros e sem ações de mutação."
-      actions={
-        <Link
-          href="/churches"
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
-        >
-          Voltar à lista
-        </Link>
-      }
+      actions={<BackToListLink href={listHref} />}
     >
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel title="Cadastro e contato">

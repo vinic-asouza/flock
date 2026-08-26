@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { opsApi } from "@/services/api";
@@ -13,6 +13,7 @@ import {
 import {
   OPS_CHURCH_PLAN_TYPES,
   OPS_CHURCH_SUBSCRIPTION_STATUSES,
+  churchDetailHref,
   churchesListHref,
   hasActiveChurchFilters,
   parseChurchListSearchParams,
@@ -31,6 +32,24 @@ function hrefFrom(
   patch: Partial<OpsChurchListQuery>
 ): string {
   return churchesListHref({ ...current, ...patch });
+}
+
+function onChurchRowClick(
+  event: MouseEvent<HTMLTableRowElement>,
+  href: string,
+  navigate: (href: string) => void
+) {
+  if (event.defaultPrevented || event.button !== 0) {
+    return;
+  }
+  if ((event.target as HTMLElement).closest("a")) {
+    return;
+  }
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    window.open(href, "_blank", "noopener,noreferrer");
+    return;
+  }
+  navigate(href);
 }
 
 export function ChurchesListView() {
@@ -254,33 +273,40 @@ export function ChurchesListView() {
                 </tr>
               </thead>
               <tbody>
-                {result.data.map((church) => (
-                  <tr key={church.id} className="border-b border-gray-100 last:border-0">
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/churches/${church.id}`}
-                        className="font-medium text-primary underline-offset-2 hover:underline"
-                      >
-                        {church.name}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-foreground">
-                      {formatCnpj(church.cnpj)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {planTypeLabel(church.plan_type)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {subscriptionStatusLabel(church.subscription_status)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <CommercialBadge active={church.commercially_active} />
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {church.members_active_count}
-                    </td>
-                  </tr>
-                ))}
+                {result.data.map((church) => {
+                  const href = churchDetailHref(church.id, query);
+                  return (
+                    <tr
+                      key={church.id}
+                      className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                      onClick={(event) => onChurchRowClick(event, href, router.push)}
+                    >
+                      <td className="px-4 py-3">
+                        <Link
+                          href={href}
+                          className="font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          {church.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-foreground">
+                        {formatCnpj(church.cnpj)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {planTypeLabel(church.plan_type)}
+                      </td>
+                      <td className="px-4 py-3">
+                        {subscriptionStatusLabel(church.subscription_status)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <CommercialBadge active={church.commercially_active} />
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {church.members_active_count}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  churchDetailHref,
   churchesListHref,
   isFilterableBreakdownKey,
   parseChurchListSearchParams,
@@ -77,6 +78,29 @@ describe("serializeChurchListQuery / churchesListHref", () => {
       sort_order: "desc",
     });
     assert.equal(params.toString(), "");
+  });
+
+  it("should round-trip list filters on the ficha URL", () => {
+    const listQuery = parseChurchListSearchParams(
+      new URLSearchParams("q=Tocixi&commercially_active=true&page=2")
+    );
+    const href = churchDetailHref("b494bd0b-ceb3-4228-b88a-bf3631202e27", listQuery);
+    assert.equal(
+      href,
+      "/churches/b494bd0b-ceb3-4228-b88a-bf3631202e27?page=2&q=Tocixi&commercially_active=true"
+    );
+
+    const fromFicha = parseChurchListSearchParams(
+      new URLSearchParams(href.split("?")[1])
+    );
+    assert.equal(churchesListHref(fromFicha), "/churches?page=2&q=Tocixi&commercially_active=true");
+  });
+
+  it("should omit querystring on the ficha when the list has no filters", () => {
+    assert.equal(
+      churchDetailHref("b494bd0b-ceb3-4228-b88a-bf3631202e27"),
+      "/churches/b494bd0b-ceb3-4228-b88a-bf3631202e27"
+    );
   });
 });
 

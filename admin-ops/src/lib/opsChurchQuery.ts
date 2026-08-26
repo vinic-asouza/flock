@@ -179,6 +179,18 @@ export function churchesListHref(
   return qs ? `/churches?${qs}` : "/churches";
 }
 
+export function churchDetailHref(
+  churchId: string,
+  listQuery: Partial<OpsChurchListQuery> = {}
+): string {
+  const params = serializeChurchListQuery({
+    ...DEFAULT_CHURCH_LIST_QUERY,
+    ...listQuery,
+  });
+  const qs = params.toString();
+  return qs ? `/churches/${churchId}?${qs}` : `/churches/${churchId}`;
+}
+
 export function toChurchListApiParams(
   query: OpsChurchListQuery
 ): Record<string, string | number | boolean> {
