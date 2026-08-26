@@ -4,6 +4,7 @@ import {
   healthStatusLabel,
   jobLastStatusLabel,
   jobNameLabel,
+  staleHealthErrorDetails,
 } from "./opsHealthLabels.ts";
 
 describe("ops health labels", () => {
@@ -27,5 +28,20 @@ describe("ops health labels", () => {
   it("should say Ainda não executou when a job never ran", () => {
     assert.equal(jobLastStatusLabel(null), "Ainda não executou");
     assert.equal(jobLastStatusLabel("failed"), "Falhou");
+  });
+
+  it("should keep API details on first load and note stale payload on refresh", () => {
+    assert.equal(
+      staleHealthErrorDetails("Confira o backend.", false),
+      "Confira o backend."
+    );
+    assert.equal(
+      staleHealthErrorDetails(undefined, true),
+      "Exibindo a última consulta bem-sucedida."
+    );
+    assert.equal(
+      staleHealthErrorDetails("Confira o backend.", true),
+      "Confira o backend. Exibindo a última consulta bem-sucedida."
+    );
   });
 });

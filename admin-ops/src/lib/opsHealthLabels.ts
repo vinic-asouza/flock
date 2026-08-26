@@ -58,3 +58,15 @@ export function overallBannerClass(status: OpsHealthStatus): string {
   }
   return "border-red-200 bg-red-50";
 }
+
+const STALE_HEALTH_NOTE = "Exibindo a última consulta bem-sucedida.";
+
+export function staleHealthErrorDetails(
+  details: string | undefined,
+  hasStalePayload: boolean
+): string | undefined {
+  if (!hasStalePayload) {
+    return details;
+  }
+  return details ? `${details} ${STALE_HEALTH_NOTE}` : STALE_HEALTH_NOTE;
+}

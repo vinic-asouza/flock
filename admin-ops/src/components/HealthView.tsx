@@ -9,6 +9,7 @@ import {
   jobLastStatusLabel,
   jobNameLabel,
   overallBannerClass,
+  staleHealthErrorDetails,
 } from "@/lib/opsHealthLabels";
 import { HealthStatusBadge } from "@/components/HealthStatusBadge";
 import { PageFrame, Panel } from "@/components/PageFrame";
@@ -55,7 +56,6 @@ export function HealthView() {
       const data = await opsApi.getHealth();
       setHealth(data);
     } catch (err) {
-      setHealth(null);
       setError(formatOpsReadError(err));
     } finally {
       setIsLoading(false);
@@ -83,9 +83,15 @@ export function HealthView() {
     >
       {isLoading && !health ? (
         <LoadingState label="Carregando saúde dos sistemas…" />
-      ) : error ? (
-        <ErrorState title={error.title} details={error.details} />
-      ) : health ? (
+      ) : (
+        <>
+          {error ? (
+            <ErrorState
+              title={error.title}
+              details={staleHealthErrorDetails(error.details, Boolean(health))}
+            />
+          ) : null}
+          {health ? (
         <>
           <div
             className={`rounded-lg border px-5 py-4 ${overallBannerClass(health.status)}`}
@@ -183,8 +189,10 @@ export function HealthView() {
               </table>
             </div>
           </Panel>
+            </>
+          ) : null}
         </>
-      ) : null}
+      )}
     </PageFrame>
   );
 }
