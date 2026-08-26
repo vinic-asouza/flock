@@ -1,4 +1,11 @@
 import axios, { AxiosInstance, AxiosError } from "axios";
+import type {
+  OpsChurchDetail,
+  OpsChurchListResponse,
+  OpsOverview,
+} from "@/types/opsChurches";
+import type { OpsChurchListQuery } from "@/lib/opsChurchQuery";
+import { toChurchListApiParams } from "@/lib/opsChurchQuery";
 
 export interface OperatorUser {
   id: string;
@@ -101,6 +108,28 @@ class OpsApiService {
       }
       throw error;
     }
+  }
+
+  async getOverview(): Promise<OpsOverview> {
+    const response = await this.api.get<OpsOverview>("/ops/overview");
+    return response.data;
+  }
+
+  async listChurches(
+    query: OpsChurchListQuery
+  ): Promise<OpsChurchListResponse> {
+    const response = await this.api.get<OpsChurchListResponse>(
+      "/ops/churches",
+      { params: toChurchListApiParams(query) }
+    );
+    return response.data;
+  }
+
+  async getChurch(id: string): Promise<OpsChurchDetail> {
+    const response = await this.api.get<OpsChurchDetail>(
+      `/ops/churches/${id}`
+    );
+    return response.data;
   }
 }
 
