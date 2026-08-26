@@ -1,7 +1,7 @@
 ---
 type: api-design
 ultima_atualizacao: 2026-08-26
-versao: "1.1"
+versao: "1.2"
 tipo_api: REST
 base_url: /api
 tags: [arquitetura, API, endpoints, contratos]
@@ -225,6 +225,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | GET | `/api/ops/overview` | 👤 + `requirePlatformAdmin` | — | Totais comerciais (RL 60/15min) | ✅ |
 | GET | `/api/ops/churches` | 👤 + `requirePlatformAdmin` | — | Lista paginada + busca (RL 60/15min) | ✅ |
 | GET | `/api/ops/churches/:id` | 👤 + `requirePlatformAdmin` | — | Ficha read-only; 404 se inexistente | ✅ |
+| GET | `/api/ops/health` | 👤 + `requirePlatformAdmin` | — | Saúde agregada API/Stripe/jobs (RL 60/15min); **200** com status no JSON | ✅ |
 
 ### Password (`/api/password`)
 

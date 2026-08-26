@@ -9,6 +9,7 @@ import {
   createCustomerPortalSession,
   updateSubscription,
 } from '../services/stripe';
+import { getStripeHealthSnapshot } from '../services/stripeHealth';
 import { setPendingLinkToken } from '../utils/cookieUtils';
 import { supabaseAdmin } from '../services/supabase';
 import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate } from '../services/stripeWebhookService';
@@ -672,45 +673,26 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
  * GET /health/stripe
  */
 export const checkStripeHealth = async (_req: Request, res: Response) => {
-  const stripe_configured =
-    !!process.env.STRIPE_SECRET_KEY &&
-    !!process.env.STRIPE_WEBHOOK_SECRET &&
-    !!process.env.STRIPE_PRICE_ID_M200 &&
-    !!process.env.STRIPE_PRICE_ID_M500 &&
-    !!process.env.STRIPE_PRICE_ID_M800;
+  const snapshot = await getStripeHealthSnapshot();
+  const timestamp = new Date().toISOString();
 
-  if (!stripe_configured) {
+  if (!snapshot.stripe_configured) {
     return res.status(503).json({
       status: 'unhealthy',
       stripe_configured: false,
-      timestamp: new Date().toISOString(),
+      timestamp,
     });
   }
 
-  let stripe_reachable = false;
-  try {
-    await stripe.balance.retrieve();
-    stripe_reachable = true;
-  } catch {
-    stripe_reachable = false;
-  }
-
-  const { data: lastWebhook } = await supabaseAdmin
-    .from('processed_webhook_events')
-    .select('processed_at')
-    .order('processed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
   const payload = {
-    status: stripe_reachable ? 'ok' : 'degraded',
+    status: snapshot.stripe_reachable ? 'ok' : 'degraded',
     stripe_configured: true,
-    stripe_reachable,
-    last_webhook_processed_at: lastWebhook?.processed_at ?? null,
-    timestamp: new Date().toISOString(),
+    stripe_reachable: snapshot.stripe_reachable,
+    last_webhook_processed_at: snapshot.last_webhook_processed_at,
+    timestamp,
   };
 
-  if (!stripe_reachable) {
+  if (!snapshot.stripe_reachable) {
     return res.status(503).json(payload);
   }
 

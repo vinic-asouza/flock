@@ -2,8 +2,8 @@
 type: regras-modulo
 modulo: admin-ops
 ultima_atualizacao: 2026-08-26
-versao: "0.2"
-total_regras: 6
+versao: "0.3"
+total_regras: 7
 tags: [regras, modulo:admin-ops, plataforma]
 ver_tambem:
   - "[[04_modulos/admin-ops]]"
@@ -16,7 +16,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Autorizar o **Operador da plataforma** na API (`/api/ops`) e permitir leitura cross-tenant **somente GET** das Igrejas (clientes SaaS), separado do login do Painel da igreja.
+Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cross-tenant **somente GET** das Igrejas (clientes SaaS) e expor saúde agregada da plataforma (API, Stripe, jobs) — separado do login do Painel da igreja.
 
 ## Índice de Regras
 
@@ -28,6 +28,7 @@ Autorizar o **Operador da plataforma** na API (`/api/ops`) e permitir leitura cr
 | BR-OPS-004 | Cliente comercialmente ativo | Derivação | Ativo |
 | BR-OPS-005 | `/api/ops` de Igrejas é somente GET | Restrição | Ativo |
 | BR-OPS-006 | Sem rol nem diffs de Membros nas respostas ops | Restrição | Ativo |
+| BR-OPS-007 | Saúde agregada visível ao operador | Derivação | Ativo |
 
 ---
 
@@ -90,3 +91,13 @@ Autorizar o **Operador da plataforma** na API (`/api/ops`) e permitir leitura cr
 - **Implementado em:** `backend/src/services/opsChurchMappers.ts`
 - **Testado em:** `backend/src/services/__tests__/opsChurches.test.ts`
 - **Depende de:** BR-OPS-005
+
+### BR-OPS-007: Saúde agregada visível ao operador
+- **Declaração:** O operador autenticado vê a saúde da plataforma (API, Stripe, jobs de billing) em Ok / Degradado / Erro. O endpoint é GET-only; HTTP **200** autenticado mesmo se o JSON for `degraded`/`error` — o status vai no corpo, não no código HTTP. Não usa `INTERNAL_BILLING_TOKEN`, `HEALTH_CHECK_TOKEN` nem `METRICS_TOKEN`. Não é leitura cross-tenant de Igreja (não entra na exceção de BR-GEN-010 / ADR-001).
+- **Tipo:** Derivação
+- **Gatilho:** `GET /api/ops/health`; tela `/health` (botão Atualizar, sem polling)
+- **Comportamento esperado:** Composição em processo. `api` = `ok` se o handler respondeu. Stripe: não configurado → `error`; configurado e inacessível/timeout → `degraded`; configurado e reachable → `ok`. Jobs: algum `failed` → `error`; senão `running` ou never-ran → `degraded`; senão `ok`. Geral: `error` > `degraded` > `ok`. Sempre os 5 crons conhecidos, nesta ordem. Never-ran na UI: “Ainda não executou” (não é Erro).
+- **Comportamento em violação:** 401 anônimo; 403 não-operador; 500 só se a composição quebrar por completo
+- **Implementado em:** `backend/src/controllers/opsHealthController.ts`; `backend/src/services/opsHealth.ts`; `backend/src/utils/opsHealth.ts`
+- **Testado em:** `backend/src/utils/__tests__/opsHealth.test.ts`; smoke QA DEV-76
+- **Depende de:** BR-OPS-001, BR-OPS-002; relacionado [[BR-GEN-008]]

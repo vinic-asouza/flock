@@ -7,6 +7,7 @@ import {
   getOpsOverview,
   listOpsChurches,
 } from '../controllers/opsChurchesController';
+import { getOpsHealth } from '../controllers/opsHealthController';
 import { authUserOnly } from '../middlewares/auth';
 import { requirePlatformAdmin } from '../middlewares/requirePlatformAdmin';
 
@@ -41,5 +42,6 @@ router.get('/me', authUserOnly, requirePlatformAdmin, getOpsMe);
 router.get('/overview', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsOverview);
 router.get('/churches', opsReadLimiter, authUserOnly, requirePlatformAdmin, listOpsChurches);
 router.get('/churches/:id', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsChurch);
+router.get('/health', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsHealth);
 
 export default router;

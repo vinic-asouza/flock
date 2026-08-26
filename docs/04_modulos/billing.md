@@ -3,7 +3,7 @@ type: modulo
 nome: billing
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-17
+ultima_atualizacao: 2026-08-26
 versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, billing]
@@ -42,7 +42,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Eventos: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_*`
 - `checkMemberLimit` / avisos 80/90/100% (e-mail)
 - Crons: cleanup pending, downgrade vencido, integrity RPC, avisos 7/3/1, cleanup webhooks 90d
-- Ops: `/api/health/stripe`, `/api/internal/billing/stats`, métricas Prometheus
+- Ops: `/api/health/stripe`, `/api/internal/billing/stats`, métricas Prometheus. Recorte para o operador: `GET /api/ops/health` (Admin OPS, sessão — **não** substitui os healthchecks de máquina)
 
 ### ❌ Este módulo NÃO é responsável por:
 
@@ -220,7 +220,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 | GET | `/api/health/stripe` | público* | Health SDK + last webhook |
 | GET | `/api/internal/billing/stats` | `INTERNAL_BILLING_TOKEN` | Views + jobs + integrity |
 
-\* health é endpoint HTTP aberto — não expõe secrets; use com cautela em prod.
+\* health é endpoint HTTP aberto — não expõe secrets; use com cautela em prod. O Admin OPS **não** chama estes paths no browser: agrega em processo via `GET /api/ops/health` (HTTP **200** autenticado; ver [[04_modulos/admin-ops]]).
 
 **Total documentado:** **13** rotas HTTP deste módulo (+ `/metrics` com série billing se `METRICS_TOKEN`). Catálogo ≈**14**.
 
