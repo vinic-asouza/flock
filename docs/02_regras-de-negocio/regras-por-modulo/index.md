@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
 ultima_atualizacao: 2026-08-26
-versao: "1.2"
+versao: "1.3"
 total_modulos: 13
-total_regras: 144
+total_regras: 147
 tags: [regras, índice, módulos]
 ---
 
@@ -17,7 +17,7 @@ tags: [regras, índice, módulos]
 | Módulo | Arquivo | Sigla | Regras | Responsabilidade |
 | --- | --- | --- | ---: | --- |
 | Autenticação e Sessão | [[02_regras-de-negocio/regras-por-modulo/auth]] | AUTH | 14 | Login, sessão, senha, confirmação |
-| Admin OPS | [[02_regras-de-negocio/regras-por-modulo/admin-ops]] | OPS | 3 | Allowlist de operador; separado do Painel |
+| Admin OPS | [[02_regras-de-negocio/regras-por-modulo/admin-ops]] | OPS | 6 | Allowlist + leitura GET de Igrejas |
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
 | Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 16 | Rol oficial, import, autocadastro |
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
@@ -30,7 +30,7 @@ tags: [regras, índice, módulos]
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 13 módulos · **144 regras**
+**Total:** 13 módulos · **147 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
@@ -49,4 +49,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-08-26 — BR-OPS-001..003 (auth de operador `/api/ops`, DEV-74).
+2026-08-26 — BR-OPS-004..006 (leitura GET de Igrejas `/api/ops`, DEV-78).

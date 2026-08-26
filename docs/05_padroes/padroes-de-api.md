@@ -1,7 +1,7 @@
 ---
 type: padroes-api
 ultima_atualizacao: 2026-08-26
-versao: "1.1"
+versao: "1.2"
 tipo_api: REST
 tags: [padrões, API, endpoints]
 ---
@@ -201,8 +201,9 @@ pagination: {
 ### API-028: Sempre filtrar `church_id` do contexto
 > Isolamento aplicacional (service_role bypassa RLS).
 - **Nível:** 🔴
-- ✅ `.eq('church_id', req.church!.churchId)` em toda query
+- ✅ `.eq('church_id', req.church!.churchId)` em toda query de domínio da igreja
 - ❌ Confiar só no `id` do path
+- **Exceção:** GETs `/api/ops/overview|churches|churches/:id` — operador (`requirePlatformAdmin`), sem `attachChurchContext`; mapper whitelist (BR-OPS-005/006, ADR-001)
 
 ### API-029: Públicos explícitos + rate limit
 > `/api/public/*`, waitlist, checkout público, webhook Stripe.

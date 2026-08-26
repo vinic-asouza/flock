@@ -1,9 +1,9 @@
 ---
 type: glossario
 ultima_atualizacao: 2026-08-26
-versao: "1.4"
+versao: "1.5"
 tags: [produto, domínio, vocabulário, referência]
-total_termos: 74
+total_termos: 75
 ---
 
 # Glossário do Domínio — Flock
@@ -118,10 +118,13 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Nota:** a API (`GET /api/account/logs`) e a tabela continuam `audit_logs`; a UI evita jargão técnico (UUID, JSON, IP). Logs técnicos / visão cross-tenant do time Flock ficam no **Admin OPS** (fora do Painel da igreja).
 
 **Admin OPS** *(código: pacote `admin-ops/`)*  
-> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth: `/api/ops` + allowlist + login/shell no app. Console read-only nas Issues seguintes. Sem documentação Mintlify (ferramenta interna).
+> Centro operacional interno do SaaS. Superfície própria (local `:3002`), usada pelo **Operador da plataforma**. **Não** é o Painel da Igreja. Auth: `/api/ops` + allowlist + login/shell no app. API read-only de Igrejas (overview, lista, ficha); UI do console nas Issues seguintes. Sem documentação Mintlify (ferramenta interna).
 
 **Operador da plataforma**  
 > Staff do Flock (não é `owner`/`admin` da igreja). Persona do Admin OPS. Conta de plataforma, **sem** membership de igreja; e-mail na env `PLATFORM_ADMIN_EMAILS`.
+
+**Cliente comercialmente ativo** *(código: `commercially_active`)*  
+> Igreja com `subscription_status` Stripe `active` ou `trialing`. Demais valores (incl. `null`) = inativo comercialmente. **Não** confundir com Membro `active`.
 
 **Assinatura pendente** *(código: `pending_subscriptions`)*  
 > Intenção de plano criada no onboarding ainda não plenamente vinculada à igreja ativa.
@@ -276,6 +279,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | “Customer” sem contexto | **Igreja** (cliente SaaS) ou customer Stripe | Evitar misturar billing Stripe com linguagem pastoral |
 | “Role” sem qualificar | **Papel (`ChurchUserRole`)** ou tipo de **Grupo** | “Role” no código = permissão; não cargo eclesial |
 | “Admin” sem contexto | **Admin da igreja** (`ChurchUserRole`) ou **Admin OPS** | Papel do tenant ≠ operação da plataforma |
+| “Ativo” sem contexto | **Membro ativo** ou **cliente comercialmente ativo** | `members.active` ≠ `subscription_status` Stripe |
 | “Member” na UI em inglês | **Membro** | UI é em português |
 | “Workspace/Team” | **Igreja** / **Usuários da igreja** | Vocabulário do produto não usa workspace |
 
@@ -285,7 +289,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 - **A:** Admin OPS, Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
 - **B:** Batismo (tipo de admissão), Billing (ver Assinatura)  
-- **C:** Calendário (item), Checkout, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
+- **C:** Calendário (item), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Evento (tipo calendário), Encontro  
 - **G:** Grupo, Guest/Convidado (calendário)  

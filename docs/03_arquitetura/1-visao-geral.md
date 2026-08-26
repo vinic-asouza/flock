@@ -1,7 +1,7 @@
 ---
 type: arquitetura-visao-geral
 ultima_atualizacao: 2026-08-26
-versao: "1.1"
+versao: "1.2"
 status: Rascunho
 tags: [arquitetura, visão-geral, stack, C4]
 ---
@@ -15,7 +15,7 @@ tags: [arquitetura, visão-geral, stack, C4]
 
 ## 🧭 Resumo Executivo
 
-O Flock é um **monorepo de quatro aplicações** (API Express, Painel Next.js, landing Next.js, Admin OPS Next.js) no padrão **SPA/BFF-like + API REST monolítica**, com persistência em **PostgreSQL via Supabase** (sem ORM). O multi-tenant por `church_id` vive na aplicação. O **Admin OPS** (`admin-ops/`, local `:3002`) é o centro operacional interno da plataforma — **não** é o Painel da Igreja; não usa npm workspaces; stack alinhada ao Painel **sem** Sentry. Auth de staff: `/api/ops` + allowlist `PLATFORM_ADMIN_EMAILS` + login/shell em `admin-ops/` (`:3002`). Esta escolha é adequada a um SaaS de gestão eclesiástica ainda coeso: um time pequeno itera rápido, deploy é simples e o domínio cabe em um processo Node. **Trade-offs:** menos isolamento de falhas que microserviços; jobs cron e webhooks Stripe no mesmo runtime da API; sem fila/Redis — processamento assíncrono limitado a cron e fire-and-forget (e-mail).
+O Flock é um **monorepo de quatro aplicações** (API Express, Painel Next.js, landing Next.js, Admin OPS Next.js) no padrão **SPA/BFF-like + API REST monolítica**, com persistência em **PostgreSQL via Supabase** (sem ORM). O multi-tenant por `church_id` vive na aplicação. O **Admin OPS** (`admin-ops/`, local `:3002`) é o centro operacional interno da plataforma — **não** é o Painel da Igreja; não usa npm workspaces; stack alinhada ao Painel **sem** Sentry. Auth de staff: `/api/ops` + allowlist `PLATFORM_ADMIN_EMAILS` + login/shell em `admin-ops/` (`:3002`) + GETs read-only de Igrejas. Esta escolha é adequada a um SaaS de gestão eclesiástica ainda coeso: um time pequeno itera rápido, deploy é simples e o domínio cabe em um processo Node. **Trade-offs:** menos isolamento de falhas que microserviços; jobs cron e webhooks Stripe no mesmo runtime da API; sem fila/Redis — processamento assíncrono limitado a cron e fire-and-forget (e-mail).
 
 ---
 
@@ -106,7 +106,7 @@ flowchart TB
   staff -->|"HTTPS (local)"| ops
   landing -->|"REST /api"| api
   app -->|"REST /api + cookies"| api
-  ops -.->|"REST /api (previsto)"| api
+  ops -->|"REST /api/ops"| api
   api -->|"Auth JWT"| supabaseAuth
   api -->|"SQL via PostgREST / RPC\n(service_role)"| supabaseDb
   api -->|"Checkout / webhooks"| stripe
@@ -128,7 +128,7 @@ flowchart TB
 | Igreja-config | Igreja, conta, equipe, audit | Alta |
 | Billing | Planos, Stripe, cron de assinatura | Alta |
 | Aquisição / Tutoriais | Waitlist e guias in-app | Baixa |
-| Admin OPS | Superfície interna de operação do SaaS (login/shell; console nas Issues seguintes) | Média |
+| Admin OPS | Superfície interna de operação do SaaS (login/shell + API read-only de Igrejas; UI do console nas Issues seguintes) | Média |
 
 Regras: [[02_regras-de-negocio/regras-por-modulo/index]].
 
