@@ -5,8 +5,11 @@ import type {
   OpsOverview,
 } from "@/types/opsChurches";
 import type { OpsHealthResponse } from "@/types/opsHealth";
+import type { OpsWaitlistListResponse } from "@/types/opsWaitlist";
 import type { OpsChurchListQuery } from "@/lib/opsChurchQuery";
 import { toChurchListApiParams } from "@/lib/opsChurchQuery";
+import type { OpsWaitlistListQuery } from "@/lib/opsWaitlistQuery";
+import { toWaitlistListApiParams } from "@/lib/opsWaitlistQuery";
 
 export interface OperatorUser {
   id: string;
@@ -135,6 +138,16 @@ class OpsApiService {
 
   async getHealth(): Promise<OpsHealthResponse> {
     const response = await this.api.get<OpsHealthResponse>("/ops/health");
+    return response.data;
+  }
+
+  async listWaitlist(
+    query: OpsWaitlistListQuery
+  ): Promise<OpsWaitlistListResponse> {
+    const response = await this.api.get<OpsWaitlistListResponse>(
+      "/ops/waitlist",
+      { params: toWaitlistListApiParams(query) }
+    );
     return response.data;
   }
 }

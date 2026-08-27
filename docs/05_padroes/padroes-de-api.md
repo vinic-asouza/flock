@@ -1,7 +1,7 @@
 ---
 type: padroes-api
 ultima_atualizacao: 2026-08-26
-versao: "1.2"
+versao: "1.3"
 tipo_api: REST
 tags: [padrões, API, endpoints]
 ---
@@ -203,7 +203,8 @@ pagination: {
 - **Nível:** 🔴
 - ✅ `.eq('church_id', req.church!.churchId)` em toda query de domínio da igreja
 - ❌ Confiar só no `id` do path
-- **Exceção:** GETs `/api/ops/overview|churches|churches/:id` — operador (`requirePlatformAdmin`), sem `attachChurchContext`; mapper whitelist (BR-OPS-005/006, ADR-001)
+- **Exceção (tenant):** GETs `/api/ops/overview|churches|churches/:id` — operador (`requirePlatformAdmin`), sem `attachChurchContext`; mapper whitelist (BR-OPS-005/006, ADR-001)
+- **Waitlist:** `GET /api/ops/waitlist` lê tabela global `waitlist` (sem `church_id`) — não estende ADR-001 (BR-OPS-008)
 
 ### API-029: Públicos explícitos + rate limit
 > `/api/public/*`, waitlist, checkout público, webhook Stripe.

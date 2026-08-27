@@ -1,7 +1,7 @@
 ---
 type: regras-gerais
 ultima_atualizacao: 2026-08-26
-versao: "1.0"
+versao: "1.1"
 total_regras: 49
 tags: [regras, transversal, global]
 ---
@@ -173,7 +173,7 @@ tags: [regras, transversal, global]
 - **Comportamento esperado:** Queries filtradas por `req.church.churchId`.
 - **Comportamento em violação:** `404` / negação (registro “não encontrado” na igreja).
 - **Implementado em:** Controllers de domínio (padrão `.eq('church_id', churchId)`); contexto via `X-Church-Id` / cookie
-- **Exceções conhecidas:** Backend usa service_role (RLS bypass) — a regra é **aplicacional**. **Exceção localizada de produto:** GETs `/api/ops/overview`, `/api/ops/churches` e `/api/ops/churches/:id` leem cross-tenant para o **Operador da plataforma** (`requirePlatformAdmin`, sem `attachChurchContext`) — BR-OPS-005/006, [[07_decisoes-tecnicas/ADR-001-leitura-cross-tenant-admin-ops]]. Rotas do Painel continuam filtrando `req.church.churchId`.
+- **Exceções conhecidas:** Backend usa service_role (RLS bypass) — a regra é **aplicacional**. **Exceção localizada de produto:** GETs `/api/ops/overview`, `/api/ops/churches` e `/api/ops/churches/:id` leem cross-tenant para o **Operador da plataforma** (`requirePlatformAdmin`, sem `attachChurchContext`) — BR-OPS-005/006, [[07_decisoes-tecnicas/ADR-001-leitura-cross-tenant-admin-ops]]. `GET /api/ops/waitlist` **não** entra nesta exceção: a tabela `waitlist` não tem `church_id` (BR-OPS-008). Rotas do Painel continuam filtrando `req.church.churchId`.
 - **Regras relacionadas:** BR-GEN-006, BR-GEN-024, BR-OPS-005
 
 ### BR-GEN-011: Um usuário Auth em no máximo uma igreja (convite)

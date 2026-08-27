@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { displayValue, formatCnpj } from "./opsFormat.ts";
+import { displayValue, formatCnpj, formatPhone } from "./opsFormat.ts";
 import { formatOpsReadError, isNotFoundReadError } from "./opsReadErrors.ts";
 
 function apiError(message: string, status: number, details?: string | string[]) {
@@ -18,6 +18,12 @@ describe("opsFormat", () => {
     assert.equal(formatCnpj("12345678000199"), "12.345.678/0001-99");
     assert.equal(formatCnpj(""), "—");
     assert.equal(displayValue("  "), "—");
+  });
+
+  it("should format BR mobile and landline", () => {
+    assert.equal(formatPhone("14999999999"), "(14) 99999-9999");
+    assert.equal(formatPhone("1434141234"), "(14) 3414-1234");
+    assert.equal(formatPhone(""), "—");
   });
 });
 

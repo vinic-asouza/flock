@@ -8,6 +8,7 @@ import { useOpsAuth } from "@/context/OpsAuthContext";
 const NAV_ITEMS = [
   { href: "/", label: "Overview", match: "exact" as const },
   { href: "/churches", label: "Igrejas", match: "prefix" as const },
+  { href: "/waitlist", label: "Lista de espera", match: "exact" as const },
   { href: "/health", label: "Saúde", match: "exact" as const },
 ];
 
