@@ -22,7 +22,7 @@ export function Footer({ onOpenWaitlist }: FooterProps) {
           <div>
             <h3 className="text-primary text-xl font-bold mb-4">Flock</h3>
             <p className="text-sm text-gray-600">
-              Painel de membresia, integração e gestão para igrejas.
+              Organize a vida da sua igreja.
             </p>
           </div>
           <div>

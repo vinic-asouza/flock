@@ -21,10 +21,10 @@ export const viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Flock — membresia, integração e gestão para igrejas",
+    default: "Flock — organize a vida da sua igreja",
     template: "%s | Flock",
   },
-  description: "Membros, integração, congregações, grupos, calendário e relatórios. Feito para a igreja brasileira. Comece grátis até 100 membros.",
+  description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
   keywords: [
     "igreja",
     "gestão de membros",
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     url: siteUrl,
-    title: "Flock — membresia, integração e gestão para igrejas",
-    description: "Membros, integração, congregações, grupos, calendário e relatórios. Feito para a igreja brasileira. Comece grátis até 100 membros.",
+    title: "Flock — organize a vida da sua igreja",
+    description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
     siteName: "Flock",
     images: [
       {
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Flock — membresia, integração e gestão para igrejas",
-    description: "Membros, integração, congregações, grupos, calendário e relatórios. Feito para a igreja brasileira.",
+    title: "Flock — organize a vida da sua igreja",
+    description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
     images: [`${siteUrl}/og-image.jpg`],
   },
   robots: {
@@ -108,7 +108,7 @@ export default function RootLayout({
       "priceCurrency": "BRL",
       "availability": "https://schema.org/InStock"
     },
-    "description": "Painel de membresia, integração e gestão para igrejas. Membros, integração, congregações, grupos, calendário e relatórios.",
+    "description": "Organize a vida da sua igreja. Feito para a igreja brasileira.",
     "url": siteUrl,
     "screenshot": `${siteUrl}/demo/painel.png`,
     "featureList": [

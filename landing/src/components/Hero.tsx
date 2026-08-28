@@ -20,7 +20,7 @@ export function Hero({ onOpenWaitlist }: HeroProps) {
           {/* Left Column - Text Content */}
           <div className="text-left min-w-0">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary mb-2.5 leading-tight break-words">
-              Membros, integração, congregações, grupos, calendário e relatórios. No Painel da sua igreja.
+              Organize a vida da sua igreja.
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 leading-relaxed">
               Feito para a igreja brasileira. Comece grátis até 100 membros.
@@ -43,7 +43,7 @@ export function Hero({ onOpenWaitlist }: HeroProps) {
                 href="#features"
                 className="bg-white text-primary px-6 sm:px-8 py-3 min-h-11 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl sm:hover:scale-105 inline-flex items-center justify-center w-full sm:w-auto"
               >
-                Ver o Painel
+                Ver o Flock
               </Link>
             </div>
           </div>
