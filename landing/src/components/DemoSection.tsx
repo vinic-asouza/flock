@@ -40,7 +40,7 @@ const demoItems: DemoItem[] = [
     id: 'groups',
     title: 'Grupos',
     description: 'Ministérios, células, equipes. Crie, acompanhe e conduza o trabalho dos grupos.',
-    image: '/demo/functions.png',
+    image: '/demo/groups.png',
   },
   {
     id: 'calendar',
