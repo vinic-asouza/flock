@@ -12,7 +12,7 @@ export function StatsGraphics() {
   }, []);
 
   return (
-    <div className="relative w-full h-full min-h-[280px] sm:min-h-[360px] lg:min-h-[600px] flex items-center justify-center min-w-0 overflow-hidden">
+    <div className="relative w-full h-full min-h-[280px] sm:min-h-[360px] lg:min-h-[600px] flex flex-col items-center justify-center min-w-0 overflow-hidden">
       <div className={`grid grid-cols-2 gap-3 sm:gap-4 lg:gap-6 w-full max-w-2xl min-w-0 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         {/* Card 1 - Estatísticas de Membros */}
         <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -207,6 +207,11 @@ export function StatsGraphics() {
       {/* Elementos decorativos flutuantes */}
       <div className="absolute top-10 right-10 w-16 h-16 bg-primary/10 rounded-full blur-xl opacity-50 animate-pulse" />
       <div className="absolute bottom-10 left-10 w-20 h-20 bg-[#0d0a3a]/10 rounded-full blur-xl opacity-50 animate-pulse" style={{ animationDelay: '1s' }} />
+      
+      {/* Caption explicativa */}
+      <p className={`text-xs text-gray-500 text-center mt-4 max-w-md transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        Prévia ilustrativa do Painel. Dados não representam cliente real.
+      </p>
     </div>
   );
 }

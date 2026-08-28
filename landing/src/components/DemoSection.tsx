@@ -21,7 +21,7 @@ const demoItems: DemoItem[] = [
   {
     id: 'members',
     title: 'Gestão de Membros',
-    description: 'Cadastre e gerencie todos os membros da sua igreja com informações completas. Filtre por congregação, cargo, idade e muito mais. Mantenha seus dados sempre organizados.',
+    description: 'Cadastre e gerencie todos os membros da sua igreja com informações completas. Filtre por congregação, grupo, idade e muito mais. Mantenha seus dados sempre organizados. Importe a lista em CSV.',
     image: '/demo/members.png',
   },
   {
@@ -37,10 +37,16 @@ const demoItems: DemoItem[] = [
     image: '/demo/congregation.png',
   },
   {
-    id: 'functions',
-    title: 'Controle de Cargos',
-    description: 'Gerencie os cargos e funções da sua igreja de forma eficiente. Organize a estrutura hierárquica e atribua responsabilidades de forma clara e organizada.',
+    id: 'groups',
+    title: 'Grupos',
+    description: 'Gerencie ministérios, células e equipes da sua igreja. Um membro pode estar em vários grupos. Organize a estrutura e atribua responsabilidades de forma clara.',
     image: '/demo/functions.png',
+  },
+  {
+    id: 'calendar',
+    title: 'Calendário',
+    description: 'Programação, eventos e reuniões com recorrência. Mantenha a agenda da sua igreja organizada e acessível a toda a equipe.',
+    image: '/demo/calendar.png',
   },
   {
     id: 'reports',
@@ -223,14 +229,14 @@ export function DemoSection() {
 
         <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
-            href="#waitlist"
+            href="#pricing"
             onClick={(e) => {
               e.preventDefault();
-              window.location.hash = '#waitlist';
+              window.location.hash = '#pricing';
               setTimeout(() => {
-                const waitlistSection = document.getElementById('waitlist');
-                if (waitlistSection) {
-                  waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                const pricingSection = document.getElementById('pricing');
+                if (pricingSection) {
+                  pricingSection.scrollIntoView({ behavior: 'smooth' });
                 }
               }, 100);
             }}
@@ -240,8 +246,7 @@ export function DemoSection() {
               backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
             }}
           >
-            <Video size={18} className="sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Agende uma Demonstração Online</span>
+            <span className="text-sm sm:text-base">Ver planos</span>
           </a>
         </div>
       </div>

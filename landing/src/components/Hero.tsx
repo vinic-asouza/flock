@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { StatsGraphics } from './StatsGraphics';
 import { useState } from 'react';
+import { buildFreeRegisterUrl } from '@/utils/planFunnel';
 
 interface HeroProps {
   onOpenWaitlist?: () => void;
@@ -19,19 +20,19 @@ export function Hero({ onOpenWaitlist }: HeroProps) {
           {/* Left Column - Text Content */}
           <div className="text-left min-w-0">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary mb-2.5 leading-tight break-words">
-              Gerencie sua Igreja de Forma Inteligente e Simples
+              Membros, integração, congregações, grupos, calendário e relatórios. No Painel da sua igreja.
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-8 leading-relaxed">
-              Sistema completo para gestão eclesiástica. Tudo que sua igreja precisa em um só lugar.
+              Feito para a igreja brasileira. Comece grátis até 100 membros.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
-                href="#pricing"
+                href={buildFreeRegisterUrl(process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001')}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 className="group bg-primary text-white px-6 sm:px-8 py-3 min-h-11 rounded-lg text-base sm:text-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl sm:hover:scale-105 relative overflow-hidden w-full sm:w-auto"
               >
-                <span className="relative z-10">Assinar Agora</span>
+                <span className="relative z-10">Começar grátis</span>
                 <ArrowRight 
                   size={20} 
                   className={`relative z-10 transition-all duration-300 ${isHovered ? 'translate-x-2 scale-110' : ''}`}
@@ -42,7 +43,7 @@ export function Hero({ onOpenWaitlist }: HeroProps) {
                 href="#features"
                 className="bg-white text-primary px-6 sm:px-8 py-3 min-h-11 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl sm:hover:scale-105 inline-flex items-center justify-center w-full sm:w-auto"
               >
-                Conhecer Recursos
+                Ver o Painel
               </Link>
             </div>
           </div>

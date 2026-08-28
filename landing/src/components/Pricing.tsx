@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Building2, BarChart3, Check, Sparkles, Gift } from 'lucide-react';
+import { Users, Building2, BarChart3, Check, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { CheckoutButton } from './CheckoutButton';
 import { fetchPlans, type ApiPlan } from '@/services/plans';
@@ -17,30 +17,30 @@ const PLAN_ICONS: Record<string, React.ElementType> = {
 
 const PLAN_FEATURES: Record<string, string[]> = {
   '200': [
-    'Gestão completa de membros',
-    'Múltiplas congregações',
-    'Relatórios detalhados',
-    'Exportação de dados em PDF',
-    'Interface moderna e responsiva',
-    'Segurança e criptografia',
+    'Membros (import/export CSV)',
+    'Integração de pré-membros',
+    'Congregações (múltiplas)',
+    'Grupos (ministérios, células, equipes)',
+    'Calendário com recorrência',
+    'Relatórios (CSV/PDF)',
     'Suporte comercial',
   ],
   '500': [
-    'Gestão completa de membros',
-    'Múltiplas congregações',
-    'Relatórios detalhados',
-    'Exportação de dados em PDF',
-    'Interface moderna e responsiva',
-    'Segurança e criptografia',
+    'Membros (import/export CSV)',
+    'Integração de pré-membros',
+    'Congregações (múltiplas)',
+    'Grupos (ministérios, células, equipes)',
+    'Calendário com recorrência',
+    'Relatórios (CSV/PDF)',
     'Suporte comercial',
   ],
   '800': [
-    'Gestão completa de membros',
-    'Múltiplas congregações',
-    'Relatórios detalhados',
-    'Exportação de dados em PDF',
-    'Interface moderna e responsiva',
-    'Segurança e criptografia',
+    'Membros (import/export CSV)',
+    'Integração de pré-membros',
+    'Congregações (múltiplas)',
+    'Grupos (ministérios, células, equipes)',
+    'Calendário com recorrência',
+    'Relatórios (CSV/PDF)',
     'Suporte dedicado',
   ],
 };
@@ -81,8 +81,11 @@ export function Pricing() {
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Planos e Preços
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-4">
             Escolha o plano ideal para o tamanho da sua igreja
+          </p>
+          <p className="text-sm text-gray-600 max-w-3xl mx-auto">
+            Mesmo produto em todos os planos. O que muda é o teto de membros ativos. No plano 800, suporte dedicado.
           </p>
         </div>
 
@@ -119,20 +122,7 @@ export function Pricing() {
                 key={plan.id}
                 className="bg-white rounded-xl border-2 border-gray-200 hover:border-primary/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col relative"
               >
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 max-w-[calc(100%-1rem)]">
-                  <div
-                    className="text-white text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1.5 rounded-full shadow-lg flex items-center justify-center gap-1.5 text-center"
-                    style={{
-                      backgroundColor: '#090725',
-                      backgroundImage: 'linear-gradient(to right, #090725,rgb(22, 18, 85), #090725)',
-                    }}
-                  >
-                    <Sparkles size={14} className="text-yellow-300" />
-                    Preços oficiais
-                  </div>
-                </div>
-
-                <div className="text-center mb-6 pt-2">
+                <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
                     <IconComponent className="w-8 h-8 text-primary" />
                   </div>
@@ -177,7 +167,7 @@ export function Pricing() {
 
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center">
           <p className="text-sm text-gray-700">
-            Precisa de gestão para mais de <strong>800 membros</strong>?{' '}
+            Mais de <strong>800 membros</strong> ou quer conversar?{' '}
             <a
               href="#waitlist?plan=personalizado"
               className="text-primary font-semibold hover:text-[#0d0a3a] transition-colors underline"
@@ -189,9 +179,8 @@ export function Pricing() {
                 }, 100);
               }}
             >
-              Entre em contato com nosso suporte
+              Entre em contato
             </a>
-            {' '}para consultar opções personalizadas.
           </p>
         </div>
       </div>

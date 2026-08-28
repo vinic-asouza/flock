@@ -6,33 +6,33 @@ import { FileText, Users, BarChart3 } from 'lucide-react';
 const processes = [
   {
     icon: FileText,
-    title: 'Cadastre sua igreja',
-    description: 'Escolha o plano mais adequado para sua igreja e realize sua assinatura',
+    title: 'Crie a igreja grátis',
+    description: 'Registro, congregação principal, plano 100 — comece sem custo',
   },
   {
     icon: Users,
-    title: 'Adicione as informações',
-    description: 'Configure congregações, cadastre membros e mantenha as informações da sua igreja atualizadas',
+    title: 'Monte o Painel',
+    description: 'Membros (inclui import CSV), integração, congregações, grupos e calendário',
   },
   {
     icon: BarChart3,
-    title: 'Visualize os dados',
-    description: 'Acesse estatísticas importantes sobre sua igreja por meio de relatórios detalhados',
+    title: 'Acompanhe pelos relatórios',
+    description: 'Totais e demografia; CSV só da lista de membros',
   },
 ];
 
 const benefits = [
   {
-    title: 'Gestão completa e centralizada',
-    description: 'Gerencie as informações de membresia da sua igreja em uma única plataforma. Elimine planilhas dispersas e tenha tudo organizado e acessível.',
+    title: 'Feito para a igreja brasileira',
+    description: 'CNPJ, telefone, IBGE, vocabulário eclesial. O Painel fala a língua da sua secretaria e do seu pastor.',
   },
   {
-    title: 'Relatórios e análises inteligentes',
-    description: 'Obtenha dados valiosos sobre sua igreja através de relatórios detalhados, gráficos interativos e análises que ajudam a entender melhor sua comunidade.',
+    title: 'Secretaria e pastor no mesmo Painel',
+    description: 'Papéis Dono / Admin / Editor / Leitor. Cada um vê e edita o que precisa, na mesma plataforma.',
   },
   {
-    title: 'Segurança e confiabilidade',
-    description: 'Seus dados estão protegidos com criptografia avançada. Mantenha as informações da sua igreja sempre seguras.',
+    title: 'Começa grátis até 100 membros ativos',
+    description: 'O plano só muda o teto de membros. Funcionalidades iguais em todos os planos.',
   },
 ];
 
@@ -70,11 +70,11 @@ export function ProcessSection() {
           {/* Lado Esquerdo - Imagem */}
           <div className="relative flex justify-center order-2 lg:order-1">
             <Image
-              src="/11409.jpg"
-              alt="Flock - Gestão de Igrejas"
+              src="/demo/painel.png"
+              alt="Prévia do Painel do Flock"
               width={500}
               height={500}
-              className="rounded-xl w-full max-w-xs md:max-w-sm lg:max-w-md"
+              className="rounded-xl w-full max-w-xs md:max-w-sm lg:max-w-md shadow-lg"
               priority
             />
           </div>

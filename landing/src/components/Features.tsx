@@ -1,35 +1,35 @@
-import { Users, Building2, BarChart3, Shield, FileText, Zap } from 'lucide-react';
+import { Users, UserPlus, Building2, UsersRound, Calendar, BarChart3 } from 'lucide-react';
 
 const features = [
   {
     icon: Users,
-    title: 'Gestão de Membros',
-    description: 'Cadastre e gerencie todos os membros da sua igreja com informações completas e organizadas.',
+    title: 'Membros',
+    description: 'Cadastre, filtre e atualize o rol. Importe a lista em CSV e exporte em CSV/PDF.',
+  },
+  {
+    icon: UserPlus,
+    title: 'Integração',
+    description: 'Acompanhe pré-membros (status, mentor, conversão) até entrarem no rol.',
   },
   {
     icon: Building2,
     title: 'Congregações',
-    description: 'Organize sua igreja em múltiplas congregações e gerencie cada uma de forma independente.',
+    description: 'Organize campus/pontos dentro da mesma igreja, com congregação principal.',
+  },
+  {
+    icon: UsersRound,
+    title: 'Grupos',
+    description: 'Ministérios, células e equipes. Um membro pode estar em vários.',
+  },
+  {
+    icon: Calendar,
+    title: 'Calendário',
+    description: 'Programação, eventos e reuniões com recorrência.',
   },
   {
     icon: BarChart3,
-    title: 'Relatórios Detalhados',
-    description: 'Visualize estatísticas demográficas, estruturais e temporais da sua igreja.',
-  },
-  {
-    icon: Shield,
-    title: 'Seguro e Confiável',
-    description: 'Seus dados estão protegidos com criptografia e isolamento completo por igreja.',
-  },
-  {
-    icon: FileText,
-    title: 'Exportação de Dados',
-    description: 'Exporte relatórios em PDF e mantenha seus dados sempre acessíveis.',
-  },
-  {
-    icon: Zap,
-    title: 'Interface Moderna',
-    description: 'Sistema intuitivo e responsivo, acessível de qualquer dispositivo.',
+    title: 'Relatórios',
+    description: 'Totais, demografia e estrutura no Painel. Lista de membros em CSV; o resto em PDF.',
   },
 ];
 
@@ -39,10 +39,10 @@ export function Features() {
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Recursos Completos para sua Igreja
+            O que sua igreja encontra no Painel
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            Tudo que você precisa para gerenciar sua igreja de forma eficiente
+            Membros, integração, congregações, grupos, calendário e relatórios — o que já está shipped.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -60,6 +60,11 @@ export function Features() {
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{feature.description}</p>
             </div>
           ))}
+        </div>
+        <div className="text-center mt-8 text-sm text-gray-600 max-w-3xl mx-auto">
+          <p>
+            <strong>Isolamento por igreja.</strong> Dados no Brasil.
+          </p>
         </div>
       </div>
     </section>
