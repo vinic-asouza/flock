@@ -12,16 +12,10 @@
   --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #fbfbfdfc;
-  }
-}
-
 html {
   background: var(--background);
   height: 100%;
+  color-scheme: light;
 }
 
 body {
