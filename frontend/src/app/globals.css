@@ -49,7 +49,7 @@ button, a, [role=button], .cursor-pointer {
 
 /* Background consistente para containers principais */
 .bg-app {
-  background-color: var(--foreground) !important;
+  background-color: var(--background) !important;
 }
 
 /* Placeholder mais escuro */
