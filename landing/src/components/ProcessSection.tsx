@@ -6,18 +6,18 @@ import { FileText, Users, BarChart3 } from 'lucide-react';
 const processes = [
   {
     icon: FileText,
-    title: 'Crie a igreja grátis',
-    description: 'Registro, congregação principal, plano 100 — comece sem custo',
+    title: 'Crie a igreja, de graça',
+    description: 'Cadastre e já comece.',
   },
   {
     icon: Users,
-    title: 'Monte o Painel',
-    description: 'Membros (inclui import CSV), integração, congregações, grupos e calendário',
+    title: 'Traga o que vocês já usam',
+    description: 'Planilha ou outro sistema: a lista entra no Flock e o rol fica pronto para o dia a dia.',
   },
   {
     icon: BarChart3,
-    title: 'Acompanhe pelos relatórios',
-    description: 'Totais e demografia; CSV só da lista de membros',
+    title: 'Acompanhe',
+    description: 'Veja os números da igreja quando precisar.',
   },
 ];
 
