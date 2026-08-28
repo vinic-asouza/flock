@@ -24,15 +24,15 @@ const processes = [
 const benefits = [
   {
     title: 'Feito para a igreja brasileira',
-    description: 'CNPJ, telefone, IBGE, vocabulário eclesial. O Painel fala a língua da sua secretaria e do seu pastor.',
+    description: 'A linguagem e o jeito de trabalhar da igreja daqui. Não é um software gringo.',
   },
   {
-    title: 'Secretaria e pastor no mesmo Painel',
-    description: 'Papéis Dono / Admin / Editor / Leitor. Cada um vê e edita o que precisa, na mesma plataforma.',
+    title: 'A liderança no mesmo lugar',
+    description: 'Pastor, líderes e quem cuida do rol vêem a mesma igreja. Trabalho em sintonia, sem cada um numa lista diferente.',
   },
   {
-    title: 'Começa grátis até 100 membros ativos',
-    description: 'O plano só muda o teto de membros. Funcionalidades iguais em todos os planos.',
+    title: 'Comece grátis',
+    description: 'Até 100 membros sem pagar. Quando a igreja crescer, o plano acompanha. O Flock é o mesmo.',
   },
 ];
 
@@ -82,7 +82,7 @@ export function ProcessSection() {
           {/* Lado Direito - Texto */}
           <div className="order-1 lg:order-2">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-6 md:mb-8">
-              Porque escolher o Flock?
+              Por que igrejas escolhem o Flock?
             </h2>
 
             <div className="space-y-6">

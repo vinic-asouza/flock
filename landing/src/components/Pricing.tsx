@@ -17,30 +17,30 @@ const PLAN_ICONS: Record<string, React.ElementType> = {
 
 const PLAN_FEATURES: Record<string, string[]> = {
   '200': [
-    'Membros (import/export CSV)',
-    'Integração de pré-membros',
-    'Congregações (múltiplas)',
-    'Grupos (ministérios, células, equipes)',
-    'Calendário com recorrência',
-    'Relatórios (CSV/PDF)',
+    'Rol de membros',
+    'Quem está chegando',
+    'Congregações',
+    'Ministérios e equipes',
+    'Agenda da igreja',
+    'Relatórios',
     'Suporte comercial',
   ],
   '500': [
-    'Membros (import/export CSV)',
-    'Integração de pré-membros',
-    'Congregações (múltiplas)',
-    'Grupos (ministérios, células, equipes)',
-    'Calendário com recorrência',
-    'Relatórios (CSV/PDF)',
+    'Rol de membros',
+    'Quem está chegando',
+    'Congregações',
+    'Ministérios e equipes',
+    'Agenda da igreja',
+    'Relatórios',
     'Suporte comercial',
   ],
   '800': [
-    'Membros (import/export CSV)',
-    'Integração de pré-membros',
-    'Congregações (múltiplas)',
-    'Grupos (ministérios, células, equipes)',
-    'Calendário com recorrência',
-    'Relatórios (CSV/PDF)',
+    'Rol de membros',
+    'Quem está chegando',
+    'Congregações',
+    'Ministérios e equipes',
+    'Agenda da igreja',
+    'Relatórios',
     'Suporte dedicado',
   ],
 };
@@ -79,13 +79,13 @@ export function Pricing() {
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Planos e Preços
+            Quanto custa
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-4">
-            Escolha o plano ideal para o tamanho da sua igreja
+            Escolha pelo tamanho da sua igreja. O Flock é o mesmo em todos os planos.
           </p>
           <p className="text-sm text-gray-600 max-w-3xl mx-auto">
-            Mesmo produto em todos os planos. O que muda é o teto de membros ativos. No plano 800, suporte dedicado.
+            O que muda é quantos membros cabem. No plano de 800, o atendimento é mais próximo.
           </p>
         </div>
 
