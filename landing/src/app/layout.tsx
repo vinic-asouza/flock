@@ -21,10 +21,10 @@ export const viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Flock - Sistema de Gerenciamento de Membros de Igrejas",
+    default: "Flock — organize a vida da sua igreja",
     template: "%s | Flock",
   },
-  description: "Gerencie membros, cargos e congregações da sua igreja de forma simples e eficiente. Sistema completo para gestão eclesiástica com painel de controle, relatórios e muito mais.",
+  description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
   keywords: [
     "igreja",
     "gestão de membros",
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     url: siteUrl,
-    title: "Flock - Sistema de Gerenciamento de Membros de Igrejas",
-    description: "Gerencie membros, cargos e congregações da sua igreja de forma simples e eficiente. Sistema completo para gestão eclesiástica.",
+    title: "Flock — organize a vida da sua igreja",
+    description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
     siteName: "Flock",
     images: [
       {
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Flock - Sistema de Gerenciamento de Membros de Igrejas",
-    description: "Gerencie membros, cargos e congregações da sua igreja de forma simples e eficiente.",
+    title: "Flock — organize a vida da sua igreja",
+    description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
     images: [`${siteUrl}/og-image.jpg`],
   },
   robots: {
@@ -108,16 +108,16 @@ export default function RootLayout({
       "priceCurrency": "BRL",
       "availability": "https://schema.org/InStock"
     },
-    "description": "Sistema completo para gestão eclesiástica. Gerencie membros, cargos e congregações da sua igreja de forma simples e eficiente.",
+    "description": "Organize a vida da sua igreja. Feito para a igreja brasileira.",
     "url": siteUrl,
     "screenshot": `${siteUrl}/demo/painel.png`,
     "featureList": [
       "Gestão de Membros",
-      "Controle de Cargos",
+      "Integração de Pré-Membros",
       "Gestão de Congregações",
-      "Relatórios Detalhados",
-      "Painel de Informações",
-      "Controle de Integração"
+      "Grupos (Ministérios, Células, Equipes)",
+      "Calendário com Recorrência",
+      "Relatórios Detalhados"
     ]
   };
 

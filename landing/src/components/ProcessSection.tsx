@@ -6,33 +6,33 @@ import { FileText, Users, BarChart3 } from 'lucide-react';
 const processes = [
   {
     icon: FileText,
-    title: 'Cadastre sua igreja',
-    description: 'Escolha o plano mais adequado para sua igreja e realize sua assinatura',
+    title: 'Crie a igreja, de graça',
+    description: 'Cadastre e já comece.',
   },
   {
     icon: Users,
-    title: 'Adicione as informações',
-    description: 'Configure congregações, cadastre membros e mantenha as informações da sua igreja atualizadas',
+    title: 'Traga o que vocês já usam',
+    description: 'Planilha ou outro sistema: a lista entra no Flock e o rol fica pronto para o dia a dia.',
   },
   {
     icon: BarChart3,
-    title: 'Visualize os dados',
-    description: 'Acesse estatísticas importantes sobre sua igreja por meio de relatórios detalhados',
+    title: 'Acompanhe',
+    description: 'Veja os números da igreja quando precisar.',
   },
 ];
 
 const benefits = [
   {
-    title: 'Gestão completa e centralizada',
-    description: 'Gerencie as informações de membresia da sua igreja em uma única plataforma. Elimine planilhas dispersas e tenha tudo organizado e acessível.',
+    title: 'Feito para a igreja brasileira',
+    description: 'A linguagem e o jeito de trabalhar da igreja daqui. Não é um software gringo.',
   },
   {
-    title: 'Relatórios e análises inteligentes',
-    description: 'Obtenha dados valiosos sobre sua igreja através de relatórios detalhados, gráficos interativos e análises que ajudam a entender melhor sua comunidade.',
+    title: 'A liderança no mesmo lugar',
+    description: 'Pastor, líderes e quem cuida do rol vêem a mesma igreja. Trabalho em sintonia, sem cada um numa lista diferente.',
   },
   {
-    title: 'Segurança e confiabilidade',
-    description: 'Seus dados estão protegidos com criptografia avançada. Mantenha as informações da sua igreja sempre seguras.',
+    title: 'Comece grátis',
+    description: 'Até 100 membros sem pagar. Quando a igreja crescer, o plano acompanha. O Flock é o mesmo.',
   },
 ];
 
@@ -70,11 +70,11 @@ export function ProcessSection() {
           {/* Lado Esquerdo - Imagem */}
           <div className="relative flex justify-center order-2 lg:order-1">
             <Image
-              src="/11409.jpg"
-              alt="Flock - Gestão de Igrejas"
+              src="/demo/painel.png"
+              alt="Prévia do Painel do Flock"
               width={500}
               height={500}
-              className="rounded-xl w-full max-w-xs md:max-w-sm lg:max-w-md"
+              className="rounded-xl w-full max-w-xs md:max-w-sm lg:max-w-md shadow-lg"
               priority
             />
           </div>
@@ -82,7 +82,7 @@ export function ProcessSection() {
           {/* Lado Direito - Texto */}
           <div className="order-1 lg:order-2">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-6 md:mb-8">
-              Porque escolher o Flock?
+              Por que igrejas escolhem o Flock?
             </h2>
 
             <div className="space-y-6">

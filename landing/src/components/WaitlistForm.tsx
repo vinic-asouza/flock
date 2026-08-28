@@ -409,7 +409,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
                 size={20}
                 className="relative z-10 mr-1"
               />
-              <span className="relative z-10">Enviar Solicitação de Contato</span>
+              <span className="relative z-10">Enviar mensagem</span>
               <div className="absolute inset-0 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </>
           )}

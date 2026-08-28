@@ -1,35 +1,35 @@
-import { Users, Building2, BarChart3, Shield, FileText, Zap } from 'lucide-react';
+import { Users, UserPlus, Building2, UsersRound, Calendar, BarChart3 } from 'lucide-react';
 
 const features = [
   {
     icon: Users,
-    title: 'Gestão de Membros',
-    description: 'Cadastre e gerencie todos os membros da sua igreja com informações completas e organizadas.',
+    title: 'Membros',
+    description: 'O rol da igreja. Quem é membro, quem saiu, quem precisa atualizar. Encontre qualquer pessoa na hora.',
+  },
+  {
+    icon: UserPlus,
+    title: 'Integração',
+    description: 'Quem está chegando na igreja, até virar membro. Sem perder gente no caminho.',
   },
   {
     icon: Building2,
     title: 'Congregações',
-    description: 'Organize sua igreja em múltiplas congregações e gerencie cada uma de forma independente.',
+    description: 'Várias congregações, um só cadastro. Cada ponto da igreja no seu lugar.',
+  },
+  {
+    icon: UsersRound,
+    title: 'Grupos',
+    description: 'Ministérios, células e equipes. Crie o grupo, acompanhe quem faz parte e conduza o trabalho da equipe.',
+  },
+  {
+    icon: Calendar,
+    title: 'Calendário',
+    description: 'Cultos, reuniões e eventos, visíveis para a liderança.',
   },
   {
     icon: BarChart3,
-    title: 'Relatórios Detalhados',
-    description: 'Visualize estatísticas demográficas, estruturais e temporais da sua igreja.',
-  },
-  {
-    icon: Shield,
-    title: 'Seguro e Confiável',
-    description: 'Seus dados estão protegidos com criptografia e isolamento completo por igreja.',
-  },
-  {
-    icon: FileText,
-    title: 'Exportação de Dados',
-    description: 'Exporte relatórios em PDF e mantenha seus dados sempre acessíveis.',
-  },
-  {
-    icon: Zap,
-    title: 'Interface Moderna',
-    description: 'Sistema intuitivo e responsivo, acessível de qualquer dispositivo.',
+    title: 'Relatórios',
+    description: 'As estatísticas da sua igreja: quantos membros, como está o crescimento, o perfil da congregação. Números claros para a liderança acompanhar e decidir.',
   },
 ];
 
@@ -39,10 +39,10 @@ export function Features() {
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Recursos Completos para sua Igreja
+            O que o Flock faz pela sua igreja
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            Tudo que você precisa para gerenciar sua igreja de forma eficiente
+            O dia a dia da igreja, num só lugar.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -60,6 +60,14 @@ export function Features() {
               <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{feature.description}</p>
             </div>
           ))}
+        </div>
+        <div className="text-center mt-8 space-y-3 max-w-3xl mx-auto">
+          <p className="text-sm text-gray-600">
+            <strong>Os dados da sua igreja ficam só com a sua igreja.</strong> Seguros.
+          </p>
+          <p className="text-xs text-gray-500">
+            Já tem a lista em planilha ou em outro sistema? Traga para o Flock.
+          </p>
         </div>
       </div>
     </section>

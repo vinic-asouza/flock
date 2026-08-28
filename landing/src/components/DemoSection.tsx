@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Video, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 interface DemoItem {
   id: string;
@@ -14,38 +14,44 @@ interface DemoItem {
 const demoItems: DemoItem[] = [
   {
     id: 'dashboard',
-    title: 'Painel de Informações',
-    description: 'Visualize estatísticas completas da sua igreja em tempo real. Acompanhe membros, batismos, recebimento e muito mais através de gráficos interativos e relatórios detalhados.',
+    title: 'A home da sua igreja',
+    description: 'Veja o que acontece: membros ativos, crescimento, próximos eventos. A visão geral que a liderança precisa.',
     image: '/demo/painel.png',
   },
   {
     id: 'members',
-    title: 'Gestão de Membros',
-    description: 'Cadastre e gerencie todos os membros da sua igreja com informações completas. Filtre por congregação, cargo, idade e muito mais. Mantenha seus dados sempre organizados.',
+    title: 'Membros (rol)',
+    description: 'O rol completo da igreja. Quem é membro, quem saiu, dados atualizados. Encontre qualquer pessoa na hora.',
     image: '/demo/members.png',
   },
   {
     id: 'integration',
-    title: 'Controle de Integração',
-    description: 'Gerencie o processo de integração de novos membros de forma organizada. Acompanhe o status de cada integrante e facilite a transição para membros efetivos.',
+    title: 'Quem está chegando',
+    description: 'As pessoas que estão conhecendo a igreja, antes de se tornarem membros. Acompanhe cada passo do caminho.',
     image: '/demo/integration.png',
   },
   {
     id: 'congregations',
     title: 'Congregações',
-    description: 'Organize sua igreja em múltiplas congregações e gerencie cada uma de forma independente. Visualize membros por congregação e mantenha tudo centralizado.',
+    description: 'Várias congregações no mesmo cadastro. Cada ponto da igreja organizado e visível.',
     image: '/demo/congregation.png',
   },
   {
-    id: 'functions',
-    title: 'Controle de Cargos',
-    description: 'Gerencie os cargos e funções da sua igreja de forma eficiente. Organize a estrutura hierárquica e atribua responsabilidades de forma clara e organizada.',
-    image: '/demo/functions.png',
+    id: 'groups',
+    title: 'Grupos',
+    description: 'Ministérios, células, equipes. Crie, acompanhe e conduza o trabalho dos grupos.',
+    image: '/demo/groups.png',
+  },
+  {
+    id: 'calendar',
+    title: 'Calendário',
+    description: 'Cultos, reuniões, eventos. A agenda da igreja visível para quem lidera.',
+    image: '/demo/calendar.png',
   },
   {
     id: 'reports',
-    title: 'Relatórios Detalhados',
-    description: 'Gere relatórios completos sobre demografia, estrutura da igreja, batismos e muito mais. Exporte em PDF e mantenha histórico completo dos seus dados.',
+    title: 'As estatísticas da sua igreja',
+    description: 'Quantos membros, como está o crescimento, o perfil da congregação. Os números que a liderança acompanha.',
     image: '/demo/details.png',
   },
 ];
@@ -96,10 +102,10 @@ export function DemoSection() {
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Veja o Flock em Ação
+            Veja como fica na prática
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-            Explore as principais funcionalidades do sistema e descubra como ele pode transformar a gestão da sua igreja
+            Do rol à agenda, do jeito que a igreja trabalha.
           </p>
         </div>
 
@@ -223,14 +229,14 @@ export function DemoSection() {
 
         <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a
-            href="#waitlist"
+            href="#pricing"
             onClick={(e) => {
               e.preventDefault();
-              window.location.hash = '#waitlist';
+              window.location.hash = '#pricing';
               setTimeout(() => {
-                const waitlistSection = document.getElementById('waitlist');
-                if (waitlistSection) {
-                  waitlistSection.scrollIntoView({ behavior: 'smooth' });
+                const pricingSection = document.getElementById('pricing');
+                if (pricingSection) {
+                  pricingSection.scrollIntoView({ behavior: 'smooth' });
                 }
               }, 100);
             }}
@@ -240,8 +246,7 @@ export function DemoSection() {
               backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
             }}
           >
-            <Video size={18} className="sm:w-5 sm:h-5" />
-            <span className="text-sm sm:text-base">Agende uma Demonstração Online</span>
+            <span className="text-sm sm:text-base">Ver planos</span>
           </a>
         </div>
       </div>

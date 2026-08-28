@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X, LogIn } from 'lucide-react';
 import { landingAnchor } from '@/utils/landingLinks';
+import { buildFreeRegisterUrl } from '@/utils/planFunnel';
 
 interface HeaderProps {
   onOpenWaitlist?: () => void;
@@ -82,10 +83,10 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               <span>Acessar Painel</span>
             </Link>
             <Link
-              href={landingAnchor('#pricing', pathname)}
+              href={buildFreeRegisterUrl(FRONTEND_URL)}
               className="inline-flex min-h-11 items-center bg-white text-primary px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg"
             >
-              Assinar agora
+              Começar grátis
             </Link>
           </div>
 
@@ -147,11 +148,11 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               <span>Acessar Painel</span>
             </Link>
             <Link
-              href={landingAnchor('#pricing', pathname)}
+              href={buildFreeRegisterUrl(FRONTEND_URL)}
               className="flex min-h-11 w-full items-center justify-center bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               onClick={closeMenu}
             >
-              Assinar agora
+              Começar grátis
             </Link>
           </div>
         )}
