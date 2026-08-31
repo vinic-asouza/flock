@@ -11,23 +11,6 @@ import {
 } from './index';
 import { calculateAgeSafe, dash, formatDateSafe, formatPhoneBR } from './format';
 
-const baptismTypeLabels: Record<string, string> = {
-  catolica: 'Na igreja católica',
-  adulto_nesta_igreja: 'Adulto — nesta igreja',
-  adulto_outra_igreja: 'Adulto — em outra igreja',
-  crianca_nesta_igreja: 'Criança — nesta igreja',
-  crianca_outra_igreja: 'Criança — em outra igreja',
-  novo_convertido: 'Novo convertido',
-  sem_religiao: 'Novo convertido — sem religião anterior',
-};
-
-const sundayAttendanceLabels: Record<string, string> = {
-  todos_os_domingos: 'Todos os domingos',
-  regularmente: 'Regularmente',
-  as_vezes: 'Às vezes',
-  nao: 'Não',
-};
-
 function memberIsMemberLabel(
   value: 'sim' | 'nao' | 'falecido' | boolean | null | undefined,
   feminine = false
@@ -137,7 +120,7 @@ export function renderMemberProfilePdf(
     { label: 'CEP', value: dash(member.cep) },
   ]);
 
-  drawSectionTitle(ctx, 'Informações Eclesiásticas');
+  drawSectionTitle(ctx, 'Vínculo na igreja');
   drawKeyValueGrid(ctx, [
     { label: 'Congregação', value: member.congregation?.name || '—' },
     { label: 'Data de Recebimento', value: formatDateSafe(member.admission_date) },
@@ -156,81 +139,6 @@ export function renderMemberProfilePdf(
     drawKeyValueGrid(ctx, [{ label: 'Grupos / Ministérios', value: 'Nenhum grupo vinculado', fullWidth: true }], {
       columns: 1,
     });
-  }
-
-  const hasEcclesiasticalHistory =
-    !!member.years_evangelical ||
-    (member.evangelical_family !== undefined && member.evangelical_family !== null) ||
-    (member.is_baptized !== undefined && member.is_baptized !== null) ||
-    !!member.reason_joining ||
-    !!member.time_attending ||
-    !!member.sunday_attendance ||
-    (member.weekly_activities !== undefined && member.weekly_activities !== null) ||
-    (member.previous_church_active !== undefined && member.previous_church_active !== null);
-
-  if (hasEcclesiasticalHistory) {
-    drawSectionTitle(ctx, 'Histórico Eclesiástico');
-    const history: Array<{ label: string; value: string; fullWidth?: boolean }> = [];
-
-    if (member.years_evangelical) {
-      const yearsLabel = member.years_evangelical === '1' ? 'ano' : 'anos';
-      history.push({
-        label: 'Cristão evangélico há',
-        value: `${member.years_evangelical} ${yearsLabel}`,
-      });
-    }
-    if (member.evangelical_family !== undefined && member.evangelical_family !== null) {
-      history.push({
-        label: 'Família cristã evangélica',
-        value: member.evangelical_family ? 'Sim' : 'Não',
-      });
-    }
-    if (member.is_baptized !== undefined && member.is_baptized !== null) {
-      let baptizedText = member.is_baptized ? 'Sim' : 'Não';
-      if (member.is_baptized && member.baptism_type) {
-        baptizedText += ` — ${baptismTypeLabels[member.baptism_type] || member.baptism_type}`;
-      }
-      history.push({ label: 'Batizado(a)', value: baptizedText, fullWidth: true });
-      if (member.baptism_other_church_name) {
-        history.push({ label: 'Igreja anterior', value: member.baptism_other_church_name, fullWidth: true });
-      }
-      if (member.previous_religion) {
-        history.push({ label: 'Religião anterior', value: member.previous_religion, fullWidth: true });
-      }
-    }
-    if (member.previous_church_active !== undefined && member.previous_church_active !== null) {
-      history.push({
-        label: 'Era membro ativo da igreja anterior',
-        value: member.previous_church_active ? 'Sim' : 'Não',
-        fullWidth: true,
-      });
-    }
-    if (member.time_attending) {
-      history.push({ label: 'Frequenta a igreja há', value: member.time_attending });
-    }
-    if (member.sunday_attendance) {
-      history.push({
-        label: 'Cultos',
-        value: sundayAttendanceLabels[member.sunday_attendance] || member.sunday_attendance,
-      });
-    }
-    if (member.weekly_activities !== undefined && member.weekly_activities !== null) {
-      history.push({
-        label: 'Atividades semanais',
-        value: member.weekly_activities
-          ? `Sim${member.weekly_activities_which ? ` — ${member.weekly_activities_which}` : ''}`
-          : 'Não',
-        fullWidth: true,
-      });
-    }
-    if (member.reason_joining) {
-      history.push({
-        label: 'Motivo de tornar-se membro',
-        value: member.reason_joining,
-        fullWidth: true,
-      });
-    }
-    drawKeyValueGrid(ctx, history);
   }
 
   endPdfResponse(ctx);

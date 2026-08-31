@@ -65,6 +65,29 @@ const mapMaritalStatusToMember = (status?: string | null): Member['marital_statu
   }
 };
 
+const MEMBER_ECCLESIASTICAL_KEYS = [
+  'years_evangelical',
+  'evangelical_family',
+  'is_baptized',
+  'baptism_type',
+  'baptism_other_church_name',
+  'previous_religion',
+  'previous_church_active',
+  'reason_joining',
+  'time_attending',
+  'sunday_attendance',
+  'weekly_activities',
+  'weekly_activities_which',
+] as const;
+
+function omitEcclesiasticalFromMemberPayload<T extends Record<string, unknown>>(payload: T): T {
+  const next = { ...payload };
+  for (const key of MEMBER_ECCLESIASTICAL_KEYS) {
+    delete next[key];
+  }
+  return next;
+}
+
 const mapAdmissionTypeToMember = (admission?: string | null): string | undefined => {
   if (!admission) return undefined;
 
@@ -704,8 +727,9 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
     const { groups, ...dataWithoutGroups } = req.body as any;
     const groupIds = Array.isArray(groups) ? groups : [];
 
-    // Montar payload base do membro a partir do integrante + dados enviados (sem grupos)
-    const baseMemberPayload: Partial<Member> = {
+    // Montar payload base do membro a partir do integrante + dados enviados (sem grupos).
+    // BR-INT-016: questionário eclesiástico permanece só em integration_members.
+    const baseMemberPayload: Partial<Member> = omitEcclesiasticalFromMemberPayload({
       ...dataWithoutGroups,
       name: integrationMember.name,
       birth: integrationMember.birth ?? dataWithoutGroups.birth,
@@ -717,7 +741,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       congregation_id: dataWithoutGroups.congregation_id ?? integrationMember.expected_congregation_id,
       church_id: churchId,
       active: true
-    };
+    } as Record<string, unknown>) as Partial<Member>;
 
     // Normalizar datas (birth, baptism_date, admission_date, etc.) para evitar problemas de timezone
     const normalizedMemberPayload = normalizeMemberDates(baseMemberPayload as unknown as Record<string, unknown>) as Partial<Member>;

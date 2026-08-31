@@ -77,22 +77,24 @@ export interface Member {
   congregation_id?: string;
   children?: Child[];
   active: boolean;
-  // Informações Eclesiásticas
-  years_evangelical?: string;
-  evangelical_family?: boolean;
-  is_baptized?: boolean;
-  baptism_type?: 'catolica' | 'adulto_nesta_igreja' | 'adulto_outra_igreja' | 'crianca_nesta_igreja' | 'crianca_outra_igreja' | 'novo_convertido' | 'sem_religiao';
-  baptism_other_church_name?: string;
-  previous_religion?: string;
-  previous_church_active?: boolean;
-  reason_joining?: string;
-  time_attending?: string;
-  sunday_attendance?: 'todos_os_domingos' | 'regularmente' | 'as_vezes' | 'nao';
-  weekly_activities?: boolean;
-  weekly_activities_which?: string;
   created_at: Date;
   updated_at: Date;
 }
+
+export type IntegrationBaptismType =
+  | 'catolica'
+  | 'adulto_nesta_igreja'
+  | 'adulto_outra_igreja'
+  | 'crianca_nesta_igreja'
+  | 'crianca_outra_igreja'
+  | 'novo_convertido'
+  | 'sem_religiao';
+
+export type IntegrationSundayAttendance =
+  | 'todos_os_domingos'
+  | 'regularmente'
+  | 'as_vezes'
+  | 'nao';
 
 export interface IntegrationMember {
   id: string;
@@ -107,6 +109,19 @@ export interface IntegrationMember {
   expected_congregation_id?: string | null;
   mentor_id?: string | null;
   notes?: string | null;
+  // Questionário eclesiástico (BR-INT-016)
+  years_evangelical?: string | null;
+  evangelical_family?: boolean | null;
+  is_baptized?: boolean | null;
+  baptism_type?: IntegrationBaptismType | null;
+  baptism_other_church_name?: string | null;
+  previous_religion?: string | null;
+  previous_church_active?: boolean | null;
+  reason_joining?: string | null;
+  time_attending?: string | null;
+  sunday_attendance?: IntegrationSundayAttendance | null;
+  weekly_activities?: boolean | null;
+  weekly_activities_which?: string | null;
   status: 'em_progresso' | 'integrado' | 'descartado';
   created_at: Date;
   updated_at: Date;

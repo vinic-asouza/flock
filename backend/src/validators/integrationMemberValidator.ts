@@ -130,6 +130,42 @@ const integrationMemberSchema = Joi.object<Partial<IntegrationMember>>({
       'string.max': 'Observações não podem ter mais de 5000 caracteres'
     }),
 
+  // BR-INT-003 / BR-INT-016: questionário eclesiástico (opcional)
+  years_evangelical: Joi.string().optional().allow(null, '').empty(''),
+  evangelical_family: Joi.boolean().optional().allow(null),
+  is_baptized: Joi.boolean().optional().allow(null),
+  baptism_type: Joi.string()
+    .valid(
+      'catolica',
+      'adulto_nesta_igreja',
+      'adulto_outra_igreja',
+      'crianca_nesta_igreja',
+      'crianca_outra_igreja',
+      'novo_convertido',
+      'sem_religiao'
+    )
+    .optional()
+    .allow(null, '')
+    .empty('')
+    .messages({
+      'any.only': 'Tipo de batismo inválido',
+    }),
+  baptism_other_church_name: Joi.string().optional().allow(null, '').empty(''),
+  previous_religion: Joi.string().optional().allow(null, '').empty(''),
+  previous_church_active: Joi.boolean().optional().allow(null),
+  reason_joining: Joi.string().optional().allow(null, '').empty(''),
+  time_attending: Joi.string().optional().allow(null, '').empty(''),
+  sunday_attendance: Joi.string()
+    .valid('todos_os_domingos', 'regularmente', 'as_vezes', 'nao')
+    .optional()
+    .allow(null, '')
+    .empty('')
+    .messages({
+      'any.only': 'Frequência de cultos inválida',
+    }),
+  weekly_activities: Joi.boolean().optional().allow(null),
+  weekly_activities_which: Joi.string().optional().allow(null, '').empty(''),
+
   status: Joi.string()
     .valid('em_progresso', 'integrado', 'descartado')
     .optional()
