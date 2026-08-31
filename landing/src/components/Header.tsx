@@ -24,8 +24,9 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
     'flex min-h-11 items-center text-white/90 hover:text-white transition-colors font-medium';
 
   return (
+    <>
     <header
-      className="sticky top-0 z-50 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary shadow-lg pt-[env(safe-area-inset-top,0px)]"
+      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary shadow-lg pt-[env(safe-area-inset-top,0px)]"
       style={{
         backgroundColor: '#090725',
         backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
@@ -168,5 +169,11 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
         )}
       </nav>
     </header>
+    <div
+      className="h-16 shrink-0"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      aria-hidden
+    />
+    </>
   );
 }

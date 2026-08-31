@@ -37,11 +37,8 @@ export function CTA() {
         <div id="waitlist" className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 md:p-8 lg:p-10 min-w-0 overflow-hidden scroll-mt-24">
           <div className="text-center mb-6 md:mb-8">
             <h3 className="text-xl sm:text-2xl font-bold text-primary mb-2">
-              Mais de 800 membros ou quer uma demonstração?
+              Tire suas dúvidas ou solicite uma demonstração preenchendo o formulário abaixo
             </h3>
-            <p className="text-sm sm:text-base text-gray-600">
-              Fale com a equipe do Flock
-            </p>
           </div>
           <WaitlistForm />
         </div>

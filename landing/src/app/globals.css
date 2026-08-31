@@ -76,6 +76,23 @@ input::placeholder, textarea::placeholder {
   box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
 }
 
+.hero-title {
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #090725;
+  background-image: linear-gradient(
+    90deg,
+    #090725 0%,
+    #1a1655 32%,
+    #6b66d4 50%,
+    #1a1655 68%,
+    #090725 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 details > summary::-webkit-details-marker {
   display: none;
 }

@@ -5,16 +5,9 @@ import { Users, Building2, BarChart3, Check, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { CheckoutButton } from './CheckoutButton';
 import { fetchPlans, type ApiPlan } from '@/services/plans';
-import { buildLoginCheckoutUrl, buildFreeRegisterUrl, type PaidPlanId } from '@/utils/planFunnel';
+import { buildLoginCheckoutUrl, buildFreeRegisterUrl, PLAN_DISPLAY_NAMES, type PaidPlanId } from '@/utils/planFunnel';
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
-
-const PLAN_DISPLAY_NAMES: Record<string, string> = {
-  '100': 'Grátis',
-  '200': 'Essencial',
-  '500': 'Crescimento',
-  '800': 'Completo',
-};
 
 const PLAN_ICONS: Record<string, React.ElementType> = {
   '200': Users,
@@ -161,7 +154,15 @@ export function Pricing() {
                         <div className="flex-shrink-0 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center mt-0.5">
                           <Check className="w-3 h-3 text-primary" aria-hidden />
                         </div>
-                        <span className="text-sm text-gray-700">{feature}</span>
+                        <span
+                          className={
+                            feature === 'Suporte dedicado'
+                              ? 'text-sm font-bold text-primary'
+                              : 'text-sm text-gray-700'
+                          }
+                        >
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -185,7 +186,7 @@ export function Pricing() {
 
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center">
           <p className="text-sm text-gray-700">
-            Mais de <strong>800 membros</strong> ou quer conversar?{' '}
+            Sua igreja tem mais de 800 membros?{' '}
             <a
               href="#waitlist?plan=personalizado"
               className="text-primary font-semibold hover:text-[#0d0a3a] transition-colors underline"
@@ -198,7 +199,8 @@ export function Pricing() {
               }}
             >
               Entre em contato
-            </a>
+            </a>{' '}
+            para um orçamento personalizado.
           </p>
         </div>
       </div>

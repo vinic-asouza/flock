@@ -49,8 +49,9 @@ const benefits = [
     description: 'Acesse as informações da sua igreja pelo computador, tablet ou celular.',
   },
   {
-    title: 'Comece grátis.',
-    description: 'Igrejas com até 100 membros podem começar gratuitamente.',
+    title: 'Teste grátis até 100 membros.',
+    description:
+      'Use o Flock para conhecer as funcionalidades e ver se faz sentido para a realidade da sua igreja.',
   },
 ];
 
@@ -81,14 +82,11 @@ export function ProcessSection() {
               const IconComponent = process.icon;
               return (
                 <div key={process.step} className="text-center relative">
-                  <p className="text-xs font-semibold tracking-widest text-white/50 mb-2">
-                    {process.step}
-                  </p>
                   <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
                     <IconComponent className="w-8 h-8 text-white" aria-hidden />
                   </div>
                   <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3">
-                    {process.title}
+                    {process.step}. {process.title}
                   </h3>
                   <p className="text-xs md:text-sm text-white/90 leading-relaxed">
                     {process.description}

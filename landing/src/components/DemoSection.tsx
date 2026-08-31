@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 interface DemoItem {
   id: string;
+  navLabel: string;
   title: string;
   description: string;
   image: string;
@@ -14,42 +15,49 @@ interface DemoItem {
 const demoItems: DemoItem[] = [
   {
     id: 'dashboard',
+    navLabel: 'Home',
     title: 'A home da sua igreja',
     description: 'Veja o que acontece: membros ativos, crescimento, próximos eventos. A visão geral que a liderança precisa.',
     image: '/demo/painel.png',
   },
   {
     id: 'members',
+    navLabel: 'Membros',
     title: 'Membros (rol)',
     description: 'O rol completo da igreja. Quem é membro, quem saiu, dados atualizados. Encontre qualquer pessoa na hora.',
     image: '/demo/members.png',
   },
   {
     id: 'integration',
+    navLabel: 'Integração',
     title: 'Quem está chegando',
     description: 'As pessoas que estão conhecendo a igreja, antes de se tornarem membros. Acompanhe cada passo do caminho.',
     image: '/demo/integration.png',
   },
   {
     id: 'congregations',
+    navLabel: 'Congregações',
     title: 'Congregações',
     description: 'Várias congregações no mesmo cadastro. Cada ponto da igreja organizado e visível.',
     image: '/demo/congregation.png',
   },
   {
     id: 'groups',
+    navLabel: 'Grupos',
     title: 'Grupos',
     description: 'Ministérios, células, equipes. Crie, acompanhe e conduza o trabalho dos grupos.',
     image: '/demo/groups.png',
   },
   {
     id: 'calendar',
+    navLabel: 'Calendário',
     title: 'Calendário',
     description: 'Cultos, reuniões, eventos. A agenda da igreja visível para quem lidera.',
     image: '/demo/calendar.png',
   },
   {
     id: 'reports',
+    navLabel: 'Relatórios',
     title: 'As estatísticas da sua igreja',
     description: 'Quantos membros, como está o crescimento, o perfil da congregação. Os números que a liderança acompanha.',
     image: '/demo/details.png',
@@ -119,29 +127,27 @@ export function DemoSection() {
               }}
             >
               <div className="mb-6">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {demoItems.map((_, index) => (
+                <nav
+                  aria-label="Módulos da demonstração"
+                  className="flex lg:flex-col gap-1 overflow-x-auto mb-5 -mx-1 px-1 pb-1 [scrollbar-width:thin]"
+                >
+                  {demoItems.map((item, index) => (
                     <button
-                      key={index}
+                      key={item.id}
                       type="button"
                       onClick={() => goToSlide(index)}
-                      className={`min-h-11 min-w-11 flex items-center justify-center rounded-full transition-all duration-300 ${
+                      className={`shrink-0 min-h-11 px-3 rounded-lg text-left text-sm transition-colors ${
                         index === currentIndex
-                          ? 'bg-white/40 px-3'
-                          : 'bg-white/10 hover:bg-white/20'
+                          ? 'bg-white text-primary font-semibold'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white'
                       }`}
-                      aria-label={`Ir para slide ${index + 1}`}
                       aria-current={index === currentIndex ? 'true' : undefined}
                     >
-                      <span
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          index === currentIndex ? 'bg-white w-6' : 'bg-white/60 w-2'
-                        }`}
-                      />
+                      {item.navLabel}
                     </button>
                   ))}
-                </div>
-                <h3 className="text-xl md:text-2xl font-bold mb-4">
+                </nav>
+                <h3 className="text-xl md:text-2xl font-bold mb-3">
                   {currentItem.title}
                 </h3>
                 <p className="text-sm md:text-base text-white/90 leading-relaxed">

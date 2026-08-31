@@ -8,8 +8,14 @@ const faqs = [
     answer: 'Sim. Você pode trazer os dados que sua igreja já possui.',
   },
   {
-    question: 'O Flock funciona para congregações?',
-    answer: 'Sim. Você pode organizar múltiplas congregações em uma única conta.',
+    question: 'Posso gerenciar mais de uma igreja? (congregações/filiais)',
+    answer:
+      'Sim. Você pode organizar múltiplas congregações e filiais em uma única conta. O limite de membros segue o plano vinculado à conta.',
+  },
+  {
+    question: 'Posso convidar usuários para acessar minha igreja?',
+    answer:
+      'Sim. Você pode convidar usuários ilimitados por e-mail e definir permissões específicas para cada um.',
   },
   {
     question: 'Meus dados ficam seguros?',
@@ -17,7 +23,7 @@ const faqs = [
   },
   {
     question: 'Posso começar gratuitamente?',
-    answer: 'Sim. Igrejas com até 100 membros podem começar sem pagar.',
+    answer: 'Sim. Podem ser cadastrados até 100 membros de forma gratuita.',
   },
   {
     question: 'Posso cancelar quando quiser?',

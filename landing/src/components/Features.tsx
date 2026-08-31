@@ -51,7 +51,7 @@ export function Features() {
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <p className="text-base sm:text-lg font-semibold text-primary mb-2">
-            Sua igreja ainda depende de planilhas?
+            Sua igreja ainda depende de fichas ou planilhas?
           </p>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             O que o Flock resolve no dia a dia
@@ -78,11 +78,8 @@ export function Features() {
           ))}
         </div>
         <div className="text-center mt-8 space-y-3 max-w-3xl mx-auto">
-          <p className="text-sm text-gray-600">
-            <strong>Os dados da sua igreja pertencem à sua igreja.</strong> Cada igreja possui seu próprio ambiente, com dados isolados, controle de acesso e autenticação segura.
-          </p>
-          <p className="text-xs text-gray-500">
-            Já tem a lista em planilha ou em outro sistema? Traga para o Flock.
+          <p className="text-sm text-gray-500">
+            Já tem a lista em planilha ou em outro sistema? Nós vamos te ajudar a migrar para o Flock.
           </p>
         </div>
       </div>
