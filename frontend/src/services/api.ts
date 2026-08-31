@@ -966,6 +966,31 @@ class ApiService {
     return { blob: response.data, filename };
   }
 
+  async exportIntegrationRegistrationFormPDF(): Promise<{ blob: Blob; filename: string }> {
+    const response = await this.api.get('/export/integration/registration-form/pdf', {
+      responseType: 'blob',
+    });
+
+    if (response.data instanceof Blob && response.data.type === 'application/json') {
+      const text = await response.data.text();
+      let errorMsg = 'Erro ao baixar ficha de pré-cadastro.';
+      try {
+        const json = JSON.parse(text) as { error?: string; details?: string };
+        const detail = Array.isArray(json.details) ? json.details.join('; ') : json.details;
+        errorMsg = detail ? `${json.error}: ${detail}` : json.error || errorMsg;
+      } catch {
+        // keep generic message
+      }
+      throw new Error(errorMsg);
+    }
+
+    const filename = getFilenameFromContentDisposition(
+      response.headers['content-disposition'] as string | undefined
+    ) ?? `ficha-pre-cadastro-${new Date().toISOString().split('T')[0]}.pdf`;
+
+    return { blob: response.data, filename };
+  }
+
   async exportDashboardPDF(congregationId?: string): Promise<Blob> {
     const params = new URLSearchParams();
     if (congregationId) {
