@@ -17,6 +17,7 @@ import {
   assertCongregationAccess,
   resolveScopedCongregationFilter,
 } from '../utils/congregationScope';
+import { omitEcclesiasticalFromMemberPayload } from '../utils/omitEcclesiasticalFromMemberPayload';
 import { debug, error as logError } from '../utils/logger';
 
 const DEFAULT_PAGE = 1;
@@ -64,29 +65,6 @@ const mapMaritalStatusToMember = (status?: string | null): Member['marital_statu
       return undefined;
   }
 };
-
-const MEMBER_ECCLESIASTICAL_KEYS = [
-  'years_evangelical',
-  'evangelical_family',
-  'is_baptized',
-  'baptism_type',
-  'baptism_other_church_name',
-  'previous_religion',
-  'previous_church_active',
-  'reason_joining',
-  'time_attending',
-  'sunday_attendance',
-  'weekly_activities',
-  'weekly_activities_which',
-] as const;
-
-function omitEcclesiasticalFromMemberPayload<T extends Record<string, unknown>>(payload: T): T {
-  const next = { ...payload };
-  for (const key of MEMBER_ECCLESIASTICAL_KEYS) {
-    delete next[key];
-  }
-  return next;
-}
 
 const mapAdmissionTypeToMember = (admission?: string | null): string | undefined => {
   if (!admission) return undefined;
