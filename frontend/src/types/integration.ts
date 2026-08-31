@@ -6,6 +6,21 @@ export type IntegrationMaritalStatus = 'solteiro' | 'casado' | 'divorciado' | 'v
 
 export type IntegrationAdmissionType = 'batismo' | 'transferencia' | 'profissao de fe' | 'outro';
 
+export type IntegrationBaptismType =
+  | 'catolica'
+  | 'adulto_nesta_igreja'
+  | 'adulto_outra_igreja'
+  | 'crianca_nesta_igreja'
+  | 'crianca_outra_igreja'
+  | 'novo_convertido'
+  | 'sem_religiao';
+
+export type IntegrationSundayAttendance =
+  | 'todos_os_domingos'
+  | 'regularmente'
+  | 'as_vezes'
+  | 'nao';
+
 export interface IntegrationMember {
   id: string;
   church_id: string;
@@ -19,6 +34,18 @@ export interface IntegrationMember {
   expected_congregation_id?: string | null;
   mentor_id?: string | null;
   notes?: string | null;
+  years_evangelical?: string | null;
+  evangelical_family?: boolean | null;
+  is_baptized?: boolean | null;
+  baptism_type?: IntegrationBaptismType | null;
+  baptism_other_church_name?: string | null;
+  previous_religion?: string | null;
+  previous_church_active?: boolean | null;
+  reason_joining?: string | null;
+  time_attending?: string | null;
+  sunday_attendance?: IntegrationSundayAttendance | null;
+  weekly_activities?: boolean | null;
+  weekly_activities_which?: string | null;
   status: IntegrationStatus;
   created_at: string;
   updated_at: string;
@@ -48,6 +75,18 @@ export interface IntegrationMemberPayload {
   expected_congregation_id?: string | null;
   mentor_id?: string | null;
   notes?: string | null;
+  years_evangelical?: string | null;
+  evangelical_family?: boolean | null;
+  is_baptized?: boolean | null;
+  baptism_type?: IntegrationBaptismType | null;
+  baptism_other_church_name?: string | null;
+  previous_religion?: string | null;
+  previous_church_active?: boolean | null;
+  reason_joining?: string | null;
+  time_attending?: string | null;
+  sunday_attendance?: IntegrationSundayAttendance | null;
+  weekly_activities?: boolean | null;
+  weekly_activities_which?: string | null;
   status?: IntegrationStatus;
 }
 

@@ -52,7 +52,7 @@ export function EditIntegrationModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Editar integrante"
-      size="lg"
+      size="xl"
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >

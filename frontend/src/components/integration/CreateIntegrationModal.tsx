@@ -44,7 +44,7 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
       isOpen={isOpen}
       onClose={handleClose}
       title="Cadastrar integrante"
-      size="lg"
+      size="xl"
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
     >

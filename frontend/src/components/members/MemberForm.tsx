@@ -58,19 +58,6 @@ interface Member {
   active: boolean;
   congregation?: { id: string; name: string; abbreviation?: string | null; address: string; city: string; state: string; leader?: string; phone?: string } | null;
   groups?: Array<{ id: string; name: string; type: string; status: boolean; congregation_id?: string | null; memberGroupId?: string; addedAt?: string; congregations?: { id: string; name: string; abbreviation?: string | null } | null }>;
-  // Informações Eclesiásticas
-  years_evangelical?: string;
-  evangelical_family?: boolean;
-  is_baptized?: boolean;
-  baptism_type?: string;
-  baptism_other_church_name?: string;
-  previous_religion?: string;
-  previous_church_active?: boolean;
-  reason_joining?: string;
-  time_attending?: string;
-  sunday_attendance?: string;
-  weekly_activities?: boolean;
-  weekly_activities_which?: string;
 }
 
 interface MemberFormProps {
@@ -252,14 +239,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const occupationOtherValue = watch('occupation_other');
   const selectedMaritalStatus = watch('marital_status');
   const selectedCongregationId = watch('congregation_id');
-  const isBaptized = watch('is_baptized');
-  const baptismType = watch('baptism_type');
-  const weeklyActivities = watch('weekly_activities');
 
   const isCasado = selectedMaritalStatus === 'Casado' || selectedMaritalStatus === 'União Estável';
-  const showPreviousChurchActive = baptismType === 'adulto_outra_igreja' || baptismType === 'crianca_outra_igreja';
-  const showBaptismOtherChurch = baptismType === 'adulto_outra_igreja' || baptismType === 'crianca_outra_igreja';
-  const showPreviousReligion = baptismType === 'novo_convertido';
 
   useEffect(() => {
     // Somente erro de API: validação client-side já faz scroll no handleInvalidSubmit
@@ -287,12 +268,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       value === null || value === undefined ? undefined : value;
     const genderValues = ['Masculino', 'Feminino'] as const;
     const maritalValues = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável'] as const;
-    const baptismTypeValues = [
-      'catolica', 'adulto_nesta_igreja', 'adulto_outra_igreja',
-      'crianca_nesta_igreja', 'crianca_outra_igreja',
-      'novo_convertido', 'sem_religiao',
-    ] as const;
-    const sundayValues = ['todos_os_domingos', 'regularmente', 'as_vezes', 'nao'] as const;
     const parentMemberValues = ['sim', 'nao', 'falecido'] as const;
 
     setValue('name', member.name);
@@ -348,30 +323,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     setValue('city', asStr(member.city));
     setValue('state', asStr(member.state));
     setValue('cep', member.cep ? member.cep.replace(/\D/g, '') : '');
-
-    // Informações Eclesiásticas
-    setValue('years_evangelical', asStr(member.years_evangelical));
-    setValue('evangelical_family', asBool(member.evangelical_family));
-    setValue('is_baptized', asBool(member.is_baptized));
-    setValue(
-      'baptism_type',
-      member.baptism_type && baptismTypeValues.includes(member.baptism_type as typeof baptismTypeValues[number])
-        ? (member.baptism_type as typeof baptismTypeValues[number])
-        : undefined
-    );
-    setValue('baptism_other_church_name', asStr(member.baptism_other_church_name));
-    setValue('previous_religion', asStr(member.previous_religion));
-    setValue('previous_church_active', asBool(member.previous_church_active));
-    setValue('reason_joining', asStr(member.reason_joining));
-    setValue('time_attending', asStr(member.time_attending));
-    setValue(
-      'sunday_attendance',
-      member.sunday_attendance && sundayValues.includes(member.sunday_attendance as typeof sundayValues[number])
-        ? (member.sunday_attendance as typeof sundayValues[number])
-        : undefined
-    );
-    setValue('weekly_activities', asBool(member.weekly_activities));
-    setValue('weekly_activities_which', asStr(member.weekly_activities_which));
 
     setValue('baptism_date', formatDateFromISO(member.baptism_date));
     setValue('admission', asStr(member.admission));
@@ -911,166 +862,6 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             isLoading={isLoading}
             {...register('complement')}
           />
-        </div>
-      </div>
-
-      {/* ─── INFORMAÇÕES ECLESIÁSTICAS ─── */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-          Informações Eclesiásticas
-        </h3>
-
-        <div className="space-y-5">
-          {/* É cristão evangélico há quantos anos? */}
-          <Input
-            label="É cristão evangélico há quantos anos?"
-            placeholder="Ex: 10"
-            error={errors.years_evangelical?.message}
-            isLoading={isLoading}
-            {...register('years_evangelical')}
-          />
-
-          {/* Vem de família cristã evangélica? */}
-          <RadioSimNao
-            label="Vem de família Cristã Evangélica?"
-            value={watch('evangelical_family')}
-            onChange={(v) => setValue('evangelical_family', v)}
-            disabled={isLoading}
-          />
-
-          {/* Já é batizado? */}
-          <div className="space-y-3">
-            <RadioSimNao
-              label="Já é batizado(a)?"
-              value={isBaptized}
-              onChange={(v) => { setValue('is_baptized', v); if (!v) { setValue('baptism_type', undefined); setValue('baptism_other_church_name', ''); setValue('previous_religion', ''); } }}
-              disabled={isLoading}
-            />
-
-            {isBaptized && (
-              <div className="pl-4 border-l-2 border-primary/30 space-y-3">
-                <p className="text-sm font-medium text-gray-700">Selecione uma opção:</p>
-                {[
-                  { v: 'catolica', l: 'Fui batizado(a) na igreja católica' },
-                  { v: 'adulto_nesta_igreja', l: 'Fui batizado(a) quando adulto — nesta igreja' },
-                  { v: 'adulto_outra_igreja', l: 'Fui batizado(a) quando adulto — em outra igreja evangélica' },
-                  { v: 'crianca_nesta_igreja', l: 'Fui batizado(a) quando criança — nesta igreja' },
-                  { v: 'crianca_outra_igreja', l: 'Fui batizado(a) quando criança — em outra igreja evangélica' },
-                  { v: 'novo_convertido', l: 'Sou novo(a) convertido(a) — minha religião anterior era:' },
-                  { v: 'sem_religiao', l: 'Sou novo(a) convertido(a) — não tinha religião anterior' },
-                ].map(({ v, l }) => (
-                  <label key={v} className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="radio"
-                      name="baptism_type"
-                      checked={baptismType === v}
-                      onChange={() => {
-                        setValue('baptism_type', v as MemberFormData['baptism_type']);
-                        setValue('baptism_other_church_name', '');
-                        setValue('previous_religion', '');
-                      }}
-                      disabled={isLoading}
-                      className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 flex-shrink-0"
-                    />
-                    <span className="text-sm text-gray-700 group-hover:text-gray-900">{l}</span>
-                  </label>
-                ))}
-
-                {showBaptismOtherChurch && (
-                  <div className="pl-6">
-                    <Input
-                      label="Nome da igreja que foi batizado"
-                      placeholder="Nome da igreja em que foi batizado(a)"
-                      error={errors.baptism_other_church_name?.message}
-                      isLoading={isLoading}
-                      {...register('baptism_other_church_name')}
-                    />
-                  </div>
-                )}
-
-                {showPreviousReligion && (
-                  <div className="pl-6">
-                    <Input
-                      label="Qual era sua religião anterior?"
-                      placeholder="Ex: Espírita, Católica, etc."
-                      error={errors.previous_religion?.message}
-                      isLoading={isLoading}
-                      {...register('previous_religion')}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Membro ativo da igreja anterior (só para quem veio de outra igreja) */}
-          {showPreviousChurchActive && (
-            <RadioSimNao
-              label="Atualmente é ou era membro ativo da igreja anterior?"
-              value={watch('previous_church_active')}
-              onChange={(v) => setValue('previous_church_active', v)}
-              disabled={isLoading}
-            />
-          )}
-
-          {/* Motivo de tornar-se membro */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Descreva o(s) motivo(s) de ter decidido tornar-se membro de nossa Igreja
-            </label>
-            <textarea
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
-              rows={3}
-              placeholder="Escreva aqui..."
-              disabled={isLoading}
-              {...register('reason_joining')}
-            />
-          </div>
-
-          {/* Há quanto tempo frequenta? */}
-          <Input
-            label="Há quanto tempo frequenta a 3ª IPI?"
-            placeholder="Ex: 2 anos"
-            error={errors.time_attending?.message}
-            isLoading={isLoading}
-            {...register('time_attending')}
-          />
-
-          {/* Frequência dominical */}
-          <Select
-            label="Frequenta nossos cultos?"
-            value={watch('sunday_attendance') || ''}
-            onChange={(value) => setValue('sunday_attendance', value as MemberFormData['sunday_attendance'])}
-            options={[
-              { value: '', label: 'Selecione uma opção' },
-              { value: 'regularmente', label: 'Regularmente' },
-              { value: 'as_vezes', label: 'Às vezes' },
-              { value: 'nao', label: 'Não' },
-            ]}
-            disabled={isLoading}
-          />
-
-          {/* Atividade semanal */}
-          <div className="space-y-3">
-            <RadioSimNao
-              label="Participa de alguma outra atividade semanal?"
-              value={weeklyActivities}
-              onChange={(v) => { setValue('weekly_activities', v); if (!v) setValue('weekly_activities_which', ''); }}
-              disabled={isLoading}
-            />
-            {weeklyActivities && (
-              <div className="pl-4 border-l-2 border-primary/30">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quais atividades?</label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
-                  rows={2}
-                  placeholder="Descreva as atividades..."
-                  disabled={isLoading}
-                  {...register('weekly_activities_which')}
-                />
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

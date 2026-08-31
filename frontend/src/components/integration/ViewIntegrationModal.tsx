@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Loader, MessageCircle, User, Clipboard, Info, Download, Loader2, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { Loader, User, Clipboard, Info, Download, Loader2, Trash2, UserPlus, XCircle } from 'lucide-react';
 import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember } from '@/types';
 import { DeleteIntegrationModal } from './DeleteIntegrationModal';
@@ -54,6 +54,92 @@ const admissionLabels: Record<string, string> = {
   'profissao de fe': 'Profissão de Fé',
   outro: 'Outro'
 };
+
+const sundayAttendanceLabels: Record<string, string> = {
+  todos_os_domingos: 'Todos os domingos',
+  regularmente: 'Regularmente',
+  as_vezes: 'Às vezes',
+  nao: 'Não'
+};
+
+const baptismTypeLabels: Record<string, string> = {
+  catolica: 'Na igreja católica',
+  adulto_nesta_igreja: 'Adulto — nesta igreja',
+  adulto_outra_igreja: 'Adulto — em outra igreja',
+  crianca_nesta_igreja: 'Criança — nesta igreja',
+  crianca_outra_igreja: 'Criança — em outra igreja',
+  novo_convertido: 'Novo convertido',
+  sem_religiao: 'Novo convertido — sem religião anterior'
+};
+
+function hasValue(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== '';
+}
+
+function simNao(value: boolean | null | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  return value ? 'Sim' : 'Não';
+}
+
+function buildEcclesiasticalItems(member: IntegrationMember): { label: string; value: string }[] {
+  const items: { label: string; value: string }[] = [];
+
+  if (member.expected_admission_type) {
+    items.push({
+      label: 'Tipo de recebimento previsto',
+      value: admissionLabels[member.expected_admission_type] || member.expected_admission_type
+    });
+  }
+  if (member.expected_congregation || member.expected_congregation_id) {
+    items.push({
+      label: 'Congregação prevista',
+      value: getCongregationDisplayName(member.expected_congregation) || 'Não definida'
+    });
+  }
+  if (hasValue(member.years_evangelical)) {
+    const yearsLabel = member.years_evangelical === '1' ? 'ano' : 'anos';
+    items.push({ label: 'Cristão evangélico há', value: `${member.years_evangelical} ${yearsLabel}` });
+  }
+  const evangelicalFamily = simNao(member.evangelical_family);
+  if (evangelicalFamily) items.push({ label: 'Família cristã evangélica', value: evangelicalFamily });
+  if (member.is_baptized !== undefined && member.is_baptized !== null) {
+    let baptized = member.is_baptized ? 'Sim' : 'Não';
+    if (member.is_baptized && member.baptism_type) {
+      baptized += ` — ${baptismTypeLabels[member.baptism_type] || member.baptism_type}`;
+    }
+    items.push({ label: 'Batizado(a)', value: baptized });
+  }
+  if (hasValue(member.baptism_other_church_name)) {
+    items.push({ label: 'Igreja em que foi batizado(a)', value: member.baptism_other_church_name as string });
+  }
+  if (hasValue(member.previous_religion)) {
+    items.push({ label: 'Religião anterior', value: member.previous_religion as string });
+  }
+  const previousActive = simNao(member.previous_church_active);
+  if (previousActive) items.push({ label: 'Era membro ativo da igreja anterior', value: previousActive });
+  if (hasValue(member.time_attending)) {
+    items.push({ label: 'Frequenta a igreja há', value: member.time_attending as string });
+  }
+  if (hasValue(member.sunday_attendance)) {
+    items.push({
+      label: 'Cultos',
+      value: sundayAttendanceLabels[member.sunday_attendance as string] || (member.sunday_attendance as string)
+    });
+  }
+  if (member.weekly_activities !== undefined && member.weekly_activities !== null) {
+    items.push({
+      label: 'Atividades semanais',
+      value: member.weekly_activities
+        ? `Sim${member.weekly_activities_which ? ` — ${member.weekly_activities_which}` : ''}`
+        : 'Não'
+    });
+  }
+  if (hasValue(member.reason_joining)) {
+    items.push({ label: 'Motivo de tornar-se membro', value: member.reason_joining as string });
+  }
+
+  return items;
+}
 
 export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, canEdit = true, onDelete, onConvert, onDiscard }: ViewIntegrationModalProps) {
   const readOnly = canEdit === false;
@@ -234,34 +320,13 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InfoSection
-                title="Informações Pessoais"
+                title="Informações pessoais"
                 icon={<User size={20} />}
                 items={[
                   { label: 'Data de Nascimento', value: formatDate(member.birth) },
                   { label: 'Idade', value: age !== null ? `${age} anos` : '—' },
                   { label: 'Gênero', value: member.gender ? (genderLabels[member.gender] || member.gender) : '—' },
                   { label: 'Estado civil', value: member.marital_status ? (maritalLabels[member.marital_status] || member.marital_status) : '—' },
-                  { label: 'Notas', value: member.notes || '—' }
-                ]}
-              />
-
-              <InfoSection
-                title="Processo de Integração"
-                icon={<Clipboard size={20} />}
-                items={[
-                  { label: 'Tipo de recebimento previsto', value: member.expected_admission_type ? (admissionLabels[member.expected_admission_type] || member.expected_admission_type) : '—' },
-                  { label: 'Congregação prevista', value: getCongregationDisplayName(member.expected_congregation) || 'Não definida' },
-                  { label: 'Responsável/Discipulador', value: member.mentor?.name || '—' },
-                  { label: 'Contato do responsável', value: member.mentor?.phone || member.mentor?.whatsapp || '—' }
-                ]}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoSection
-                title="Contato"
-                icon={<MessageCircle size={20} />}
-                items={[
                   { label: 'Telefone', value: formatPhone(member.phone) },
                   {
                     label: 'WhatsApp',
@@ -271,14 +336,29 @@ export function ViewIntegrationModal({ isOpen, onClose, integrationMemberId, can
                 ]}
               />
 
-              <InfoSection
-                title="Notas"
-                icon={<Info size={20} />}
-                items={[
-                  { label: 'Observações', value: member.notes || 'Nenhuma anotação registrada' }
-                ]}
-              />
+              {(() => {
+                const ecclesiasticalItems = buildEcclesiasticalItems(member);
+                if (ecclesiasticalItems.length === 0) return null;
+                return (
+                  <InfoSection
+                    title="Informações eclesiásticas"
+                    icon={<Clipboard size={20} />}
+                    items={ecclesiasticalItems}
+                  />
+                );
+              })()}
             </div>
+
+            <InfoSection
+              title="Acompanhamento"
+              icon={<Info size={20} />}
+              items={[
+                { label: 'Responsável/Discipulador', value: member.mentor?.name || '—' },
+                { label: 'Contato do responsável', value: formatPhone(member.mentor?.phone || member.mentor?.whatsapp) || '—' },
+                { label: 'Status', value: statusLabels[member.status] ?? member.status },
+                { label: 'Observações', value: member.notes || 'Nenhuma anotação registrada' }
+              ]}
+            />
 
             {/* Footer com ações para integrantes em progresso */}
             {member && member.status === 'em_progresso' && (

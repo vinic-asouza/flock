@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
+import { useAuth } from '@/context/AuthContext';
 import { validatePhone, validateDateFormat } from '@/utils/validations';
 import { formatPhone, formatDateToISO, maskPhoneInput } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
@@ -18,8 +19,12 @@ import {
   IntegrationMaritalStatus,
   IntegrationStatus
 } from '@/types';
-
-// formatDateToISO agora é importado de @/utils
+import {
+  EcclesiasticalQuestionnaire,
+  ecclesiasticalDefaultValues,
+  ecclesiasticalFieldsFromForm,
+  ecclesiasticalQuestionnaireSchema,
+} from './EcclesiasticalQuestionnaire';
 
 const integrationSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -79,7 +84,7 @@ const integrationSchema = z.object({
     z.literal(''),
     z.enum(['em_progresso', 'integrado', 'descartado'])
   ]).optional(),
-});
+}).merge(ecclesiasticalQuestionnaireSchema);
 
 type IntegrationFormData = z.infer<typeof integrationSchema>;
 
@@ -121,6 +126,9 @@ const statusOptions: { value: '' | IntegrationStatus; label: string }[] = [
   { value: 'descartado', label: 'Descartado' }
 ];
 
+function asBool(value: boolean | null | undefined): boolean | undefined {
+  return value === null || value === undefined ? undefined : value;
+}
 
 export function IntegrationForm({
   initialData = null,
@@ -129,10 +137,11 @@ export function IntegrationForm({
   onSubmit,
   onCancel
 }: IntegrationFormProps) {
+  const { user } = useAuth();
+  const churchName = user?.name?.trim() || '';
   const { congregations, loading: loadingFilters } = useFiltersData();
   const {
     options: mentorOptionsData,
-    // loading: loadingMentors,
     setSearch: setMentorSearch
   } = useMemberOptions();
 
@@ -159,7 +168,20 @@ export function IntegrationForm({
       expected_congregation_id: initialData?.expected_congregation_id ?? '',
       mentor_id: initialData?.mentor_id ?? '',
       notes: initialData?.notes ?? '',
-      status: initialData?.status ?? 'em_progresso'
+      status: initialData?.status ?? 'em_progresso',
+      ...ecclesiasticalDefaultValues,
+      years_evangelical: initialData?.years_evangelical ?? '',
+      evangelical_family: asBool(initialData?.evangelical_family),
+      is_baptized: asBool(initialData?.is_baptized),
+      baptism_type: initialData?.baptism_type ?? undefined,
+      baptism_other_church_name: initialData?.baptism_other_church_name ?? '',
+      previous_religion: initialData?.previous_religion ?? '',
+      previous_church_active: asBool(initialData?.previous_church_active),
+      reason_joining: initialData?.reason_joining ?? '',
+      time_attending: initialData?.time_attending ?? '',
+      sunday_attendance: initialData?.sunday_attendance ?? undefined,
+      weekly_activities: asBool(initialData?.weekly_activities),
+      weekly_activities_which: initialData?.weekly_activities_which ?? '',
     }
   });
 
@@ -172,6 +194,12 @@ export function IntegrationForm({
     register('expected_congregation_id');
     register('mentor_id');
     register('status');
+    register('evangelical_family');
+    register('is_baptized');
+    register('baptism_type');
+    register('previous_church_active');
+    register('sunday_attendance');
+    register('weekly_activities');
   }, [register]);
 
   useEffect(() => {
@@ -187,10 +215,21 @@ export function IntegrationForm({
       setValue('mentor_id', initialData.mentor_id ?? '');
       setValue('notes', initialData.notes ?? '');
       setValue('status', initialData.status ?? 'em_progresso');
+      setValue('years_evangelical', initialData.years_evangelical ?? '');
+      setValue('evangelical_family', asBool(initialData.evangelical_family));
+      setValue('is_baptized', asBool(initialData.is_baptized));
+      setValue('baptism_type', initialData.baptism_type ?? undefined);
+      setValue('baptism_other_church_name', initialData.baptism_other_church_name ?? '');
+      setValue('previous_religion', initialData.previous_religion ?? '');
+      setValue('previous_church_active', asBool(initialData.previous_church_active));
+      setValue('reason_joining', initialData.reason_joining ?? '');
+      setValue('time_attending', initialData.time_attending ?? '');
+      setValue('sunday_attendance', initialData.sunday_attendance ?? undefined);
+      setValue('weekly_activities', asBool(initialData.weekly_activities));
+      setValue('weekly_activities_which', initialData.weekly_activities_which ?? '');
       if (initialData.mentor?.name) {
         setSelectedMentorLabel(initialData.mentor.name);
       }
-      // Inicializar displays formatados
       if (initialData.phone) {
         setPhoneDisplay(formatPhone(initialData.phone) || '');
       }
@@ -198,7 +237,6 @@ export function IntegrationForm({
         setWhatsappDisplay(formatPhone(initialData.whatsapp) || '');
       }
     } else {
-      // Limpar displays quando não há initialData
       setPhoneDisplay('');
       setWhatsappDisplay('');
     }
@@ -273,7 +311,8 @@ export function IntegrationForm({
       expected_admission_type: data.expected_admission_type ? (data.expected_admission_type as IntegrationAdmissionType) : null,
       expected_congregation_id: data.expected_congregation_id && data.expected_congregation_id !== '' ? data.expected_congregation_id : null,
       mentor_id: data.mentor_id && data.mentor_id !== '' ? data.mentor_id : null,
-      notes: data.notes && data.notes.trim() !== '' ? data.notes.trim() : null
+      notes: data.notes && data.notes.trim() !== '' ? data.notes.trim() : null,
+      ...ecclesiasticalFieldsFromForm(data),
     };
 
     if (mode === 'edit') {
@@ -285,114 +324,142 @@ export function IntegrationForm({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Nome completo"
-          placeholder="Informe o nome"
-          {...register('name')}
-          error={errors.name?.message}
-          disabled={isLoading}
-        />
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+          Informações pessoais
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Nome completo"
+            placeholder="Informe o nome"
+            {...register('name')}
+            error={errors.name?.message}
+            disabled={isLoading}
+          />
 
-        <Input
-          label="Data de nascimento"
-          type="date"
-          {...register('birth')}
-          error={errors.birth?.message}
-          disabled={isLoading}
-        />
+          <Input
+            label="Data de nascimento"
+            type="date"
+            {...register('birth')}
+            error={errors.birth?.message}
+            disabled={isLoading}
+          />
 
-        <Select
-          options={genderOptions.map(option => ({ value: option.value, label: option.label }))}
-          value={watch('gender') ?? ''}
-          onChange={(value) => setValue('gender', value as IntegrationFormData['gender'])}
-          label="Gênero"
-          placeholder="Selecione"
-          disabled={isLoading}
-        />
-
-        <Select
-          options={maritalStatusOptions.map(option => ({ value: option.value, label: option.label }))}
-          value={watch('marital_status') ?? ''}
-          onChange={(value) => setValue('marital_status', value as IntegrationFormData['marital_status'])}
-          label="Estado civil"
-          placeholder="Selecione"
-          disabled={isLoading}
-        />
-
-        <Input
-          label="Telefone"
-          placeholder="(11) 3333-3333"
-          value={phoneDisplay}
-          onChange={(e) => handlePhoneChange(e, 'phone')}
-          maxLength={15}
-          error={errors.phone?.message}
-          disabled={isLoading}
-        />
-
-        <Input
-          label="WhatsApp"
-          placeholder="(11) 99999-9999"
-          value={whatsappDisplay}
-          onChange={(e) => handlePhoneChange(e, 'whatsapp')}
-          maxLength={15}
-          error={errors.whatsapp?.message}
-          disabled={isLoading}
-        />
-
-        <Select
-          options={admissionTypeOptions.map(option => ({ value: option.value, label: option.label }))}
-          value={watch('expected_admission_type') ?? ''}
-          onChange={(value) => setValue('expected_admission_type', value as IntegrationFormData['expected_admission_type'])}
-          label="Tipo de recebimento previsto"
-          placeholder="Selecione"
-          disabled={isLoading}
-        />
-
-        <Select
-          options={congregationOptions}
-          value={watch('expected_congregation_id') ?? ''}
-          onChange={(value) => setValue('expected_congregation_id', value as IntegrationFormData['expected_congregation_id'])}
-          label="Congregação prevista"
-          placeholder="Selecione"
-          disabled={isLoading || loadingFilters}
-          helperText={loadingFilters ? 'Carregando congregações...' : undefined}
-        />
-
-        <Select
-          options={mentorSelectOptions}
-          value={mentorId}
-          onChange={handleMentorChange}
-          label="Responsável / Discipulador"
-          placeholder="Digite para buscar"
-          disabled={isLoading}
-          helperText="Busque pelo nome para localizar o responsável"
-          searchable
-          onSearchChange={setMentorSearch}
-        />
-
-        {mode === 'edit' && (
           <Select
-            options={statusOptions.map(option => ({ value: option.value, label: option.label }))}
-            value={watch('status') ?? ''}
-            onChange={(value) => setValue('status', value as IntegrationFormData['status'])}
-            label="Status"
+            options={genderOptions.map(option => ({ value: option.value, label: option.label }))}
+            value={watch('gender') ?? ''}
+            onChange={(value) => setValue('gender', value as IntegrationFormData['gender'])}
+            label="Gênero"
             placeholder="Selecione"
             disabled={isLoading}
           />
-        )}
+
+          <Select
+            options={maritalStatusOptions.map(option => ({ value: option.value, label: option.label }))}
+            value={watch('marital_status') ?? ''}
+            onChange={(value) => setValue('marital_status', value as IntegrationFormData['marital_status'])}
+            label="Estado civil"
+            placeholder="Selecione"
+            disabled={isLoading}
+          />
+
+          <Input
+            label="Telefone"
+            placeholder="(11) 3333-3333"
+            value={phoneDisplay}
+            onChange={(e) => handlePhoneChange(e, 'phone')}
+            maxLength={15}
+            error={errors.phone?.message}
+            disabled={isLoading}
+          />
+
+          <Input
+            label="WhatsApp"
+            placeholder="(11) 99999-9999"
+            value={whatsappDisplay}
+            onChange={(e) => handlePhoneChange(e, 'whatsapp')}
+            maxLength={15}
+            error={errors.whatsapp?.message}
+            disabled={isLoading}
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Observações
-        </label>
-        <textarea
-          {...register('notes')}
-          className="w-full min-h-[100px] rounded-md border border-gray-300 bg-white px-3 py-2 text-[15px] text-[#222] placeholder-[#888] focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none transition-colors"
-          placeholder="Anotações sobre o acompanhamento deste integrante"
-          disabled={isLoading}
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+          Informações eclesiásticas
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Select
+            options={admissionTypeOptions.map(option => ({ value: option.value, label: option.label }))}
+            value={watch('expected_admission_type') ?? ''}
+            onChange={(value) => setValue('expected_admission_type', value as IntegrationFormData['expected_admission_type'])}
+            label="Tipo de recebimento previsto"
+            placeholder="Selecione"
+            disabled={isLoading}
+          />
+
+          <Select
+            options={congregationOptions}
+            value={watch('expected_congregation_id') ?? ''}
+            onChange={(value) => setValue('expected_congregation_id', value as IntegrationFormData['expected_congregation_id'])}
+            label="Congregação prevista"
+            placeholder="Selecione"
+            disabled={isLoading || loadingFilters}
+            helperText={loadingFilters ? 'Carregando congregações...' : undefined}
+          />
+        </div>
+        <EcclesiasticalQuestionnaire
+          churchName={churchName}
+          isLoading={isLoading}
+          register={register}
+          watch={watch}
+          setValue={setValue}
+          errors={errors}
         />
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+          Acompanhamento
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Select
+            options={mentorSelectOptions}
+            value={mentorId}
+            onChange={handleMentorChange}
+            label="Responsável / Discipulador"
+            placeholder="Digite para buscar"
+            disabled={isLoading}
+            helperText="Busque pelo nome para localizar o responsável"
+            searchable
+            onSearchChange={setMentorSearch}
+          />
+
+          {mode === 'edit' && (
+            <Select
+              options={statusOptions.map(option => ({ value: option.value, label: option.label }))}
+              value={watch('status') ?? ''}
+              onChange={(value) => setValue('status', value as IntegrationFormData['status'])}
+              label="Status"
+              placeholder="Selecione"
+              disabled={isLoading}
+            />
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="integration_notes" className="block text-sm font-medium text-gray-700 mb-2">
+            Observações
+          </label>
+          <textarea
+            id="integration_notes"
+            {...register('notes')}
+            className="w-full min-h-[100px] rounded-md border border-gray-300 bg-white px-3 py-2 text-[16px] md:text-[15px] text-[#222] placeholder-[#888] focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none transition-colors"
+            placeholder="Anotações sobre o acompanhamento deste integrante"
+            disabled={isLoading}
+          />
+        </div>
       </div>
 
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
@@ -406,4 +473,3 @@ export function IntegrationForm({
     </form>
   );
 }
-
