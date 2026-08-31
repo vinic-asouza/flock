@@ -15,7 +15,7 @@ export function CTA() {
         backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
       }}
     >
-      <div className="max-w-4xl mx-auto min-w-0">
+      <div className="max-w-6xl mx-auto min-w-0">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2.5 break-words">
             Sua igreja merece uma gestão mais simples.
@@ -34,13 +34,18 @@ export function CTA() {
           </p>
         </div>
 
-        <div id="waitlist" className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 md:p-8 lg:p-10 min-w-0 overflow-hidden scroll-mt-24">
-          <div className="text-center mb-6 md:mb-8">
-            <h3 className="text-xl sm:text-2xl font-bold text-primary mb-2">
+        <div
+          id="waitlist"
+          className="scroll-mt-24 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,32rem)] gap-8 lg:gap-12 lg:items-center min-w-0"
+        >
+          <div className="min-w-0">
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white leading-[1.15] tracking-tight break-words">
               Tire suas dúvidas ou solicite uma demonstração preenchendo o formulário abaixo
             </h3>
           </div>
-          <WaitlistForm />
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-5 min-w-0 overflow-hidden w-full">
+            <WaitlistForm />
+          </div>
         </div>
       </div>
     </section>
