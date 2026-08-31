@@ -150,17 +150,6 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
 
   const isLoading = externalLoading || isSubmitting;
 
-  const fieldClass =
-    'w-full min-h-11 h-11 md:h-10 md:min-h-10 text-base px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed';
-  const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
-
-  const planOptions = [
-    { value: '200' as const, label: PLAN_DISPLAY_NAMES['200'], description: 'Até 200 membros' },
-    { value: '500' as const, label: PLAN_DISPLAY_NAMES['500'], description: 'Até 500 membros' },
-    { value: '800' as const, label: PLAN_DISPLAY_NAMES['800'], description: 'Até 800 membros' },
-    { value: 'personalizado' as const, label: 'Personalizado', description: 'Mais de 800 membros' },
-  ];
-
   // Mensagem de sucesso
   if (isSubmitted) {
     return (
@@ -191,43 +180,26 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
   }
 
   return (
-    <form onSubmit={handleSubmit(internalOnSubmit)} className="space-y-3 min-w-0">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="name" className={labelClass}>
-            Nome Completo *
-          </label>
-          <input
-            id="name"
-            type="text"
-            {...register('name')}
-            className={fieldClass}
-            placeholder="Seu nome completo"
-          />
-          {errors.name && (
-            <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
-          )}
-        </div>
-        <div>
-          <label htmlFor="churchName" className={labelClass}>
-            Nome da Igreja *
-          </label>
-          <input
-            id="churchName"
-            type="text"
-            {...register('churchName')}
-            className={fieldClass}
-            placeholder="Nome da sua igreja"
-          />
-          {errors.churchName && (
-            <p className="mt-1 text-xs text-red-600">{errors.churchName.message}</p>
-          )}
-        </div>
+    <form onSubmit={handleSubmit(internalOnSubmit)} className="space-y-4 min-w-0">
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
+          Nome Completo *
+        </label>
+        <input
+          id="name"
+          type="text"
+          {...register('name')}
+          className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+          placeholder="Seu nome completo"
+        />
+        {errors.name && (
+          <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="email" className={labelClass}>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
             Email *
           </label>
           <input
@@ -235,15 +207,16 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
             type="email"
             autoComplete="email"
             {...register('email')}
-            className={fieldClass}
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             placeholder="seu@email.com"
           />
           {errors.email && (
             <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
           )}
         </div>
+
         <div>
-          <label htmlFor="phone" className={labelClass}>
+          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
             Contato *
           </label>
           <input
@@ -254,7 +227,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
             value={phoneValue}
             onChange={handlePhoneChange}
             maxLength={15}
-            className={fieldClass}
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             placeholder="(11) 99999-9999"
           />
           {errors.phone && (
@@ -263,15 +236,31 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
         </div>
       </div>
 
+      <div>
+        <label htmlFor="churchName" className="block text-sm font-medium text-gray-700 mb-1.5">
+          Nome da Igreja *
+        </label>
+        <input
+          id="churchName"
+          type="text"
+          {...register('churchName')}
+          className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+          placeholder="Nome da sua igreja"
+        />
+        {errors.churchName && (
+          <p className="mt-1 text-xs text-red-600">{errors.churchName.message}</p>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label htmlFor="state" className={labelClass}>
+          <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1.5">
             Estado *
           </label>
           <select
             id="state"
             {...register('state')}
-            className={fieldClass}
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
             disabled={loadingStates}
           >
             <option value="">Selecione um estado</option>
@@ -293,14 +282,15 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
             <p className="mt-1 text-xs text-red-600">{errors.state.message}</p>
           )}
         </div>
+
         <div>
-          <label htmlFor="city" className={labelClass}>
+          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1.5">
             Cidade *
           </label>
           <select
             id="city"
             {...register('city')}
-            className={fieldClass}
+            className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
             disabled={!watchedState || loadingCities}
           >
             <option value="">Selecione uma cidade</option>
@@ -327,89 +317,99 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(10.5rem,13rem)_1fr] gap-3 items-stretch">
-        <div>
-          <p className={labelClass}>Plano de Interesse *</p>
-          <div className="flex flex-col gap-1.5" role="group" aria-label="Plano de interesse">
-            {planOptions.map((plan) => {
-              const isSelected = watch('plan') === plan.value;
-              return (
-                <button
-                  key={plan.value}
-                  type="button"
-                  onClick={() => setValue('plan', plan.value, { shouldValidate: true })}
-                  className={`
-                    relative min-h-11 md:min-h-9 px-2.5 py-1.5 rounded-lg border text-left transition-all duration-200
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Plano de Interesse *
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { value: '200', label: PLAN_DISPLAY_NAMES['200'], description: 'Até 200 membros' },
+            { value: '500', label: PLAN_DISPLAY_NAMES['500'], description: 'Até 500 membros' },
+            { value: '800', label: PLAN_DISPLAY_NAMES['800'], description: 'Até 800 membros' },
+            { value: 'personalizado', label: 'Personalizado', description: 'Mais de 800 membros' },
+          ].map((plan) => {
+            const isSelected = watch('plan') === plan.value;
+            return (
+              <button
+                key={plan.value}
+                type="button"
+                onClick={() => setValue('plan', plan.value as '200' | '500' | '800' | 'personalizado', { shouldValidate: true })}
+                className={`
+                  relative min-h-11 p-3 sm:p-2 rounded-lg border-1 transition-all duration-200 text-left
+                  ${isSelected
+                    ? 'border-primary bg-primary/5 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-md'
+                  }
+                  ${errors.plan ? 'border-red-300' : ''}
+                `}
+              >
+                <div className="flex items-start gap-2">
+                  <div className={`
+                    mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0
                     ${isSelected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 bg-white hover:border-primary/50'
+                      ? 'border-primary bg-primary'
+                      : 'border-gray-300 bg-white'
                     }
-                    ${errors.plan ? 'border-red-300' : ''}
-                  `}
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`
-                        w-3.5 h-3.5 rounded border-2 flex items-center justify-center flex-shrink-0
-                        ${isSelected ? 'border-primary bg-primary' : 'border-gray-300 bg-white'}
-                      `}
-                    >
-                      {isSelected && (
-                        <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
+                  `}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className={`font-semibold text-sm ${isSelected ? 'text-primary' : 'text-gray-900'}`}>
+                      {plan.label}
                     </div>
-                    <div className="min-w-0">
-                      <div className={`font-semibold text-sm leading-tight ${isSelected ? 'text-primary' : 'text-gray-900'}`}>
-                        {plan.label}
-                      </div>
-                      <div className="text-[11px] text-gray-500 leading-tight">
-                        {plan.description}
-                      </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {plan.description}
                     </div>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-          {errors.plan && (
-            <p className="mt-1 text-xs text-red-600">{errors.plan.message}</p>
-          )}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <div className="flex flex-col min-w-0">
-          <label htmlFor="message" className={labelClass}>
-            Mensagem
-          </label>
-          <textarea
-            id="message"
-            {...register('message')}
-            rows={5}
-            className={`${fieldClass} h-full min-h-[8.5rem] md:min-h-0 resize-none`}
-            placeholder="Deixe uma mensagem adicional (opcional)"
-          />
-          {errors.message && (
-            <p className="mt-1 text-xs text-red-600">{errors.message.message}</p>
-          )}
-        </div>
+        {errors.plan && (
+          <p className="mt-2 text-xs text-red-600">{errors.plan.message}</p>
+        )}
       </div>
 
-      <div className="pt-1">
+      <div>
+        <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1.5">
+          Mensagem
+        </label>
+        <textarea
+          id="message"
+          {...register('message')}
+          rows={4}
+          className="w-full min-h-11 px-3 py-2 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none"
+          placeholder="Deixe uma mensagem adicional (opcional)"
+        />
+        {errors.message && (
+          <p className="mt-1 text-xs text-red-600">{errors.message.message}</p>
+        )}
+      </div>
+
+      <div className="pt-3">
         <button
           type="submit"
           disabled={isLoading || (errorStates !== null && states.length === 0)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="group w-full bg-primary text-white px-6 py-2.5 min-h-11 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#0d0a3a] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl sm:hover:scale-105 relative overflow-hidden"
+          className="group w-full bg-primary text-white px-6 py-3 min-h-11 rounded-lg text-base font-semibold hover:bg-[#0d0a3a] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl sm:hover:scale-105 relative overflow-hidden"
         >
           {isLoading ? (
             <>
-              <Loader className="animate-spin" size={18} />
+              <Loader className="animate-spin" size={20} />
               Enviando...
             </>
           ) : (
             <>
-              <Mail size={18} className="relative z-10" />
+              <Mail
+                size={20}
+                className="relative z-10 mr-1"
+              />
               <span className="relative z-10">Enviar mensagem</span>
               <div className="absolute inset-0 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </>
