@@ -463,7 +463,7 @@ Se houver frontend:
 
 Valide:
 
-- interface respeita jornada;
+- interface respeita jornada **e a spec de UX/UI da Issue, se existir**;
 - loading, success, empty e error states existem;
 - permissões refletem comportamento esperado;
 - mensagens são claras;

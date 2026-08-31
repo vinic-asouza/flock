@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-08-19
-versao: "1.6"
+ultima_atualizacao: 2026-08-31
+versao: "1.7"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -17,7 +17,9 @@ Cheat sheet operacional. Detalhe completo: [[00_meta/linear-cursor-workflow]].
 ```
 Backlog
   → [comando: iniciar desenvolvimento / refinar]
-  → Product Analyst → Software Architect
+  → Product Analyst (classifica impacto visual: nenhum | menor | maior)
+  → UX/UI Designer **somente se** menor ou maior (workflow §8.3)
+  → Software Architect
   → move para Todo → [para e avisa no chat]
 
 Todo
@@ -49,7 +51,7 @@ Deploy (manual)
   → só com pedido explícito; Railway; marcação na Issue (sem status Released)
 ```
 
-O usuário **comanda no chat**; o **agente** move o status Linear (exceto `Backlog` → `Todo`, que ocorre ao concluir PA + SA).
+O usuário **comanda no chat**; o **agente** move o status Linear (exceto `Backlog` → `Todo`, que ocorre ao concluir PA + UX/UI se §8.3 + SA).
 
 ---
 
@@ -58,9 +60,23 @@ O usuário **comanda no chat**; o **agente** move o status Linear (exceto `Backl
 Ao concluir a etapa autorizada: atualizar Linear + aviso no chat + **parar**.  
 A próxima etapa só começa com comando explícito no chat.
 
-Exceção: `Backlog` → `Todo` após PA + SA (move, avisa, para — não inicia execução).
+Exceção: `Backlog` → `Todo` após PA + UX/UI **quando §8.3 exigir** + SA (move, avisa, para — não inicia execução).
 
 Detalhe: workflow §15.2.
+
+---
+
+## Gate de UX/UI (rápido)
+
+Não é obrigatório em toda Issue. Heurística completa: workflow §8.3.
+
+| Classificação | Quando | O que o designer entrega |
+| --- | --- | --- |
+| `nenhum` | Nada do que o usuário vê muda (API, job, infra, docs, bugfix que só restaura) | Não atua; SA segue |
+| `menor` | Parte de componente, copy, botão/campo em tela existente | Spec **objetiva** |
+| `maior` | Tela, seção ou componente grande novo/redesenhado; IA; jornada | Spec **completa** |
+
+PA classifica. Orquestrador aplica a heurística se o PA omitir (na dúvida: `menor`). UX/UI pode corrigir com justificativa. Pedido explícito no chat prevalece sobre `nenhum`.
 
 ---
 
@@ -122,7 +138,8 @@ Detalhe: workflow §15.6.
 
 | Etapa Linear | Agente | MDC | Output |
 | --- | --- | --- | --- |
-| Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + handoff para SA |
+| Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + classificação visual + handoff para UX/UI **ou** SA |
+| Backlog | UX/UI Designer | `.cursor/rules/ux-ui-designer.mdc` | **Condicional** (§8.3): spec ou skip na Issue + handoff para SA |
 | Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + move para `Todo` + aviso no chat |
 | Todo | — | — | Aguarda comando de execução |
 | In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + commit + push + PR (§15.6) + resumo na Issue |
@@ -140,6 +157,7 @@ Detalhe: workflow §15.6.
 | Agente | Template |
 | --- | --- |
 | Product Analyst | [[00_meta/templates/template-refinamento]] |
+| UX/UI Designer | [[00_meta/templates/template-ux-ui]] |
 | Software Architect | [[00_meta/templates/template-arquitetura-issue]] |
 | QA Analyst | [[00_meta/templates/template-qa-report]] |
 
@@ -189,8 +207,9 @@ Formato mínimo de toda atualização (workflow §7):
 
 - Criar arquivo por Issue em `docs/`
 - Duplicar histórico do Linear no repositório
-- Mover status sem comando de avanço (exceto `Backlog` → `Todo` após PA + SA)
+- Mover status sem comando de avanço (exceto `Backlog` → `Todo` após PA + UX/UI se §8.3 + SA)
 - Pular etapa ou acionar o próximo papel de outra etapa
+- Acionar UX/UI em demanda sem impacto visual (ou pular UX/UI quando §8.3 exigir)
 - **Regredir `Review` / `Document` / `Done` → `In Progress`** (automação Git/PR: restaurar na hora, §15.6)
 - Abrir o primeiro PR da Issue fora de `In Progress`
 - Passar `state` genérico (`started`) no MCP — usar nome exato do status

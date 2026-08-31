@@ -2,14 +2,14 @@
 type: template-linear
 agente: Product Analyst
 destino: Issue Linear via MCP
-ultima_atualizacao: 2026-07-14
+ultima_atualizacao: 2026-08-31
 ---
 
 # Template — Refinamento de Produto (Linear)
 
 > **Não salve este conteúdo como arquivo no repositório.**  
 > Cole / publique na **própria Issue do Linear** via MCP.  
-> Workflow: `docs/00_meta/linear-cursor-workflow.md`
+> Workflow: `docs/00_meta/linear-cursor-workflow.md` (§8.3 Gate de UX/UI)
 
 Use como estrutura da seção:
 
@@ -49,6 +49,13 @@ Consulte: `docs/02_regras-de-negocio/`
 
 Consulte: `docs/01_produto/personas-e-usuarios.md`
 
+### Impacto visual (UX/UI)
+**Classificação:** nenhum | menor | maior
+**Justificativa:** _O que o usuário vê mudar, ou por que nada visível muda._
+**Próximo:** UX/UI Designer | Software Architect
+
+Heurística: workflow §8.3. `nenhum` = API/job/infra/docs/refactor/bugfix que só restaura. `menor` = parte de componente, campo/botão/copy em tela existente. `maior` = tela, seção ou componente grande, IA, jornada.
+
 ### Dependências de Produto
 - Issues Linear relacionadas:
 - 
@@ -63,11 +70,11 @@ Consulte: `docs/01_produto/personas-e-usuarios.md`
 _(Bloqueantes devem estar resolvidas antes de Todo.)_
 
 ### Próximo Passo
-Software Architect — Análise Técnica
+UX/UI Designer (se menor/maior) · Software Architect (se nenhum)
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado
-**Próximo agente recomendado:** Software Architect
+**Próximo agente recomendado:** UX/UI Designer | Software Architect
 **Motivo:**
 **Pontos de atenção:**
 - 

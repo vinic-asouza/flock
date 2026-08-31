@@ -32,15 +32,16 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 
 1. Ler a Issue no Linear via MCP.
 2. Ler o refinamento do Product Analyst.
-3. Ler a análise técnica do Software Architect.
-4. Ler atualizações do Backend Engineer, se existirem.
-5. Consultar a base de conhecimento do repositório.
-6. Implementar apenas o escopo definido.
-7. **Commitar** as alterações deste passo (workflow §15.4) e **push**.
-8. Garantir o PR da Issue (abrir se ainda não houver; se houver, o push já atualiza — workflow §15.6). Relê o Linear e restaure `In Progress` se a automação GitHub tiver mudado o status.
-9. Atualizar a Issue no Linear com o que foi implementado (incluir URL do PR).
-10. Registrar telas, componentes, estados tratados, integrações e testes.
-11. Fazer handoff para Backend Engineer (se o backend ainda faltar) ou **usuário no chat** se a execução da etapa acabou. Não acionar Tech Lead.
+3. Ler a spec de UX/UI (se o Gate §8.3 tiver acionado o designer).
+4. Ler a análise técnica do Software Architect.
+5. Ler atualizações do Backend Engineer, se existirem.
+6. Consultar a base de conhecimento do repositório.
+7. Implementar apenas o escopo definido.
+8. **Commitar** as alterações deste passo (workflow §15.4) e **push**.
+9. Garantir o PR da Issue (abrir se ainda não houver; se houver, o push já atualiza — workflow §15.6). Relê o Linear e restaure `In Progress` se a automação GitHub tiver mudado o status.
+10. Atualizar a Issue no Linear com o que foi implementado (incluir URL do PR).
+11. Registrar telas, componentes, estados tratados, integrações e testes.
+12. Fazer handoff para Backend Engineer (se o backend ainda faltar) ou **usuário no chat** se a execução da etapa acabou. Não acionar Tech Lead.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -81,6 +82,7 @@ Use MCP Linear para ler:
 - descrição;
 - status;
 - refinamento do Product Analyst;
+- spec ou skip do UX/UI Designer, se houver (workflow §8.3);
 - análise técnica do Software Architect;
 - execução do Backend Engineer, se houver;
 - critérios de aceite;
@@ -307,6 +309,7 @@ Evite duplicar componentes quando já houver padrão existente.
 
 Ao implementar interface:
 
+- siga a spec de UX/UI da Issue quando ela existir (não reinventar layout, copy ou estados já especificados);
 - use componentes existentes antes de criar novos;
 - siga design system, padrões visuais e convenções do projeto;
 - preserve consistência de espaçamento, tipografia, botões e feedbacks;
@@ -642,6 +645,7 @@ Neste caso (obrigatório — workflow §15.1):
 
 - Usar MCP Linear quando houver Issue associada.
 - Ler refinamento de Product Analyst.
+- Ler spec de UX/UI quando existir (workflow §8.3); implementar alinhado a ela.
 - Ler análise do Software Architect.
 - Ler execução do Backend Engineer, se houver.
 - Consultar base de conhecimento relevante.
@@ -663,7 +667,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Criar arquivos temporários por Issue.
 - Implementar fora do escopo sem autorização.
 - Ignorar critérios de aceite.
-- Criar padrão visual novo sem necessidade.
+- Criar padrão visual novo sem necessidade (e sem spec de UX que o peça).
 - Hardcodar dados que deveriam vir da API.
 - Expor secrets no frontend.
 - Confiar apenas no frontend para segurança.
@@ -797,6 +801,7 @@ Antes de encerrar sua atuação, verifique:
 ```txt
 [ ] Li a Issue no Linear via MCP
 [ ] Li refinamento do Product Analyst
+[ ] Li spec/skip de UX/UI, se houver
 [ ] Li análise do Software Architect
 [ ] Li execução do Backend Engineer, se aplicável
 [ ] Consultei workflow Linear + Cursor

@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-08-19
-versao: "1.7"
+ultima_atualizacao: 2026-08-31
+versao: "1.8"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -32,6 +32,7 @@ Toda análise específica de uma demanda deve ser registrada diretamente na Issu
 Isso inclui:
 
 - Refinamento de produto
+- Classificação de impacto visual (UX/UI) e especificação de experiência, quando aplicável
 - Análise técnica
 - Plano de implementação
 - Decisões tomadas durante a execução
@@ -115,7 +116,7 @@ Backlog → Todo → In Progress → Review → Document → Done
 Notas:
 
 - O status no Linear chama-se **`Review`** (não “In Review”). Na UI, `Review` aparece na categoria Started, junto de `In Progress` e `Document`. Os agentes operam pelos **nomes dos status**.
-- O refinamento de produto e a análise técnica ocorrem com a Issue em `Backlog`. Ao concluir PA + SA sem bloqueios, o agente **move para `Todo`**, avisa no chat e **para**.
+- O refinamento ocorre com a Issue em `Backlog`: Product Analyst, depois **UX/UI Designer só se houver impacto visual** (§8.3), depois Software Architect. Ao concluir o trio aplicável sem bloqueios, o agente **move para `Todo`**, avisa no chat e **para**.
 - `Todo` significa: Issue pronta, **aguardando comando no chat** para iniciar execução.
 - Em `Review`, atuam **Tech Lead** (code review) e **QA Analyst** (validação funcional), nesta ordem, na mesma autorização de review.
 - `Document` vem **antes** de `Done`. Writers só entram com comando no chat.
@@ -130,8 +131,9 @@ Quem move o status: o **agente**, quando a transição for permitida pelo Gate d
 
 | Etapa Linear | Agente Cursor | Responsabilidade |
 | --- | --- | --- |
-| Backlog | Product Analyst | Refinar valor de produto, escopo, critérios de aceite, regras de negócio e impactos |
-| Backlog | Software Architect | Refinar análise técnica, riscos, arquitetura, dependências e abordagem |
+| Backlog | Product Analyst | Refinar valor de produto, escopo, critérios de aceite, regras de negócio, impactos e **classificar impacto visual (UX/UI)** |
+| Backlog | UX/UI Designer | **Condicional** (§8.3): especificar experiência/interface WEB quando houver mudança visual que o usuário vê; rigor `menor` ou `maior` |
+| Backlog | Software Architect | Refinar análise técnica, riscos, arquitetura, dependências e abordagem — **depois** do PA e do UX/UI quando este tiver atuado |
 | Todo | — | Issue pronta; aguarda comando no chat para execução |
 | In Progress | Backend Engineer | Implementar APIs, regras de negócio, integrações e lógica backend (commit + push; abrir PR se ainda não houver — §15.6) |
 | In Progress | Frontend Engineer | Implementar interface, UX/UI e integrações com APIs (commit + push; abrir PR se ainda não houver — §15.6) |
@@ -150,7 +152,7 @@ Quando o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o pap
 
 | Status Linear | Comando no chat | Ação |
 | --- | --- | --- |
-| `Backlog` | Iniciar desenvolvimento / refinar | Product Analyst → Software Architect → mover para `Todo` → aviso e parar |
+| `Backlog` | Iniciar desenvolvimento / refinar | Product Analyst → UX/UI Designer **se** impacto visual (§8.3) → Software Architect → mover para `Todo` → aviso e parar |
 | `Todo` | Sem comando de execução | **Não** implementar. Informar que a Issue está em `Todo` e aguardar “iniciar execução” |
 | `Todo` | Iniciar execução | Mover para `In Progress` → Backend e/ou Frontend Engineer |
 | `In Progress` | Iniciar execução / voltar ajustes | Backend e/ou Frontend Engineer (não iniciar Review) |
@@ -162,7 +164,7 @@ Quando o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o pap
 | `Document` | Concluir / mover para `Done` | Mover para `Done` **e** perguntar merge do PR (§15.3) |
 | Qualquer | Deploy | Só se o pedido for explícito |
 
-Dentro de uma etapa já autorizada, os pares rodam **na mesma sessão**, sem gate interno: PA → SA; BE e/ou FE; Tech Lead → QA; Technical Writer → Documentation Writer.
+Dentro de uma etapa já autorizada, os pares rodam **na mesma sessão**, sem gate interno: PA → UX/UI (se §8.3) → SA; BE e/ou FE; Tech Lead → QA; Technical Writer → Documentation Writer.
 
 ---
 
@@ -214,6 +216,7 @@ Cada agente deve assinar sua seção com o nome do papel, não com nome pessoal.
 Exemplos:
 
 - `## Product Analyst — Refinamento de Produto`
+- `## UX/UI Designer — Especificação de Experiência` (ou `— Skip`)
 - `## Software Architect — Análise Técnica`
 - `## Tech Lead — Code Review`
 - `## QA Analyst — Validação Funcional`
@@ -226,11 +229,11 @@ Exemplos:
 
 A demanda nasce no Linear em `Backlog`, normalmente como uma ideia, bug, melhoria ou refatoração.
 
-Quando o usuário iniciar o desenvolvimento pelo chat da IDE (Issue provavelmente em `Backlog`), o orquestrador aciona Product Analyst e, em seguida, Software Architect — mesmo que o pedido seja genérico (“desenvolver esta Issue”).
+Quando o usuário iniciar o desenvolvimento pelo chat da IDE (Issue provavelmente em `Backlog`), o orquestrador aciona Product Analyst; em seguida o **UX/UI Designer somente se o Gate §8.3 mandar**; em seguida Software Architect — mesmo que o pedido seja genérico (“desenvolver esta Issue”).
 
 Pedidos equivalentes:
 
-> Refinar esta Issue usando Product Analyst e Software Architect.  
+> Refinar esta Issue.  
 > Iniciar o desenvolvimento da Issue [ID].
 
 ### 8.2 Product Analyst
@@ -253,21 +256,102 @@ O Product Analyst deve:
    - Critérios de aceite
    - Riscos de produto
    - Perguntas em aberto
-4. Atualizar a própria Issue no Linear.
-5. Não criar arquivo de refinamento no repositório.
-6. Fazer handoff para o Software Architect (mesmo etapa; sem gate de chat).
+4. **Classificar impacto visual (UX/UI)** como `nenhum`, `menor` ou `maior`, com justificativa de uma linha (§8.3).
+5. Atualizar a própria Issue no Linear.
+6. Não criar arquivo de refinamento no repositório.
+7. Fazer handoff (mesma etapa; sem gate de chat):
+   - `menor` ou `maior` → **UX/UI Designer**
+   - `nenhum` → **Software Architect**
 
-### 8.3 Software Architect
+O Product Analyst **não** escreve spec de layout, componentes ou a11y — isso é papel do UX/UI quando o Gate mandar.
+
+### 8.3 Gate de UX/UI (condicional)
+
+O UX/UI Designer **não** atua em toda Issue. Entra só quando a demanda envolve **implementação ou mudança de elementos visuais no frontend que o usuário vê** (Painel, landing, `/public/*`, funil `(auth)`, Admin OPS).
+
+Ordem na mesma sessão:
+
+```txt
+Product Analyst
+  → classifica Impacto visual: nenhum | menor | maior
+  → se nenhum: Software Architect
+  → se menor ou maior: UX/UI Designer (rigor correspondente) → Software Architect
+```
+
+O Software Architect **só começa** depois do Product Analyst e, quando o impacto for `menor` ou `maior`, depois do UX/UI (ou de um skip justificado na Issue).
+
+#### 8.3.1 Quem classifica
+
+1. **Product Analyst (obrigatório):** toda Issue refinada inclui `Impacto visual (UX/UI)` + justificativa curta.
+2. **Orquestrador:** se o PA omitiu a classificação, aplicar as heurísticas abaixo **antes** de pular o UX/UI. Na dúvida, acionar o UX/UI em modo `menor`.
+3. **UX/UI Designer:** no início, **confirma ou corrige** a classificação (upgrade, downgrade ou skip). Correção exige justificativa na Issue. Não inflar rigor; não pular tela/seção nova.
+
+Pedido explícito no chat (“atuar como UX/UI Designer”) prevalece sobre `nenhum`.
+
+#### 8.3.2 Quando NÃO entra (`nenhum`)
+
+Use `nenhum` quando **nada** do que o usuário vê muda:
+
+- só backend (API, job, migration, webhook, RLS) sem alteração de tela;
+- infra, env, CI, Railway, secrets;
+- docs / Mintlify sem mudança de UI;
+- testes sem mudança de UI;
+- refatoração sem mudança visível ao usuário;
+- bugfix que **restaura** comportamento já especificado, sem alterar layout, hierarquia, copy visível, estados de tela ou controles.
+
+Ligar um endpoint novo a um formulário **já existente**, sem campo, estado ou controle novo → `nenhum`.
+
+#### 8.3.3 Quando entra e com que rigor
+
+Entra se houver implementação ou mudança de elemento visual que impacta o usuário.
+
+**`menor` (modo objetivo)** — partes de componentes e alterações visuais pequenas em superfície existente:
+
+- campo, botão, badge, label ou ação em toolbar/modal já existente;
+- microcopy de controle existente;
+- ajuste pontual de a11y/touch (`min-h-11`, label) sem redesenhar o bloco;
+- empty/error em superfície existente sem layout novo;
+- mostrar/ocultar controle já previsto por permissão, sem novo padrão de UI.
+
+**`maior` (modo rigoroso)** — telas, seções e componentes grandes:
+
+- nova rota, página ou tela;
+- nova seção relevante em tela existente;
+- componente grande novo ou redesenho de bloco substancial;
+- mudança de IA/navegação (nav, abas, shell);
+- jornada nova ou funil público/auth/landing redesenhado;
+- formulário ou fluxo substancialmente reestruturado;
+- nova superfície (ex.: tela pública, OPS) ou padrão de UI novo no kit.
+
+Na fronteira (ex.: “mais um campo” vs. “form reestruturado”): `menor` se a IA e o layout do bloco permanecem; `maior` se o usuário passa a cumprir a tarefa de outro jeito.
+
+#### 8.3.4 Rigor da spec na Issue
+
+| Classificação | Profundidade | Output |
+| --- | --- | --- |
+| `nenhum` | Não atua | PA justifica o skip; SA segue |
+| `menor` | Objetivo: o que muda, componente, estados afetados, copy, 1–3 critérios de UX | Seção compacta |
+| `maior` | Completo: IA/fluxo, layout mobile+desktop por tela, componentes, estados, a11y/touch, copy, critérios de UX | Spec completa (`template-ux-ui.md`) |
+
+Skip pelo UX/UI (PA marcou `menor`/`maior` mas não há impacto visual): registrar `## UX/UI Designer — Skip` com motivo e handoff ao SA. Não inventar spec.
+
+#### 8.3.5 Como SA e FE usam a spec
+
+- O Software Architect lê a spec (ou o skip) e reflete no plano técnico de frontend (rotas, componentes, estados) **sem contradizer** a direção de UX, salvo risco técnico explícito na análise.
+- O Frontend Engineer implementa alinhado à spec quando ela existir.
+
+### 8.4 Software Architect
 
 O Software Architect deve:
 
-1. Ler a Issue já refinada pelo Product Analyst.
-2. Consultar a base de conhecimento:
+1. Ler a Issue já refinada pelo Product Analyst e, se houver, a spec ou o skip do UX/UI Designer.
+2. Se o PA classificou `menor` ou `maior` e ainda **não** houver seção de UX/UI nem skip justificado, **não** analisar: o orquestrador deve acionar o UX/UI antes.
+3. Consultar a base de conhecimento:
    - `docs/03_arquitetura/`
    - `docs/04_modulos/`
    - `docs/05_padroes/`
    - `docs/06_integracoes/`
-3. Refinar:
+4. Refinar:
    - Abordagem técnica
    - Impacto arquitetural
    - Módulos afetados
@@ -275,20 +359,20 @@ O Software Architect deve:
    - Riscos técnicos
    - Estratégia de implementação
    - Requisitos de banco/API/infra se aplicável
-   - Plano técnico de alto nível
-4. Atualizar a própria Issue no Linear.
-5. Não criar arquivo de análise técnica no repositório.
+   - Plano técnico de alto nível (frontend alinhado à spec de UX, se houver)
+5. Atualizar a própria Issue no Linear.
+6. Não criar arquivo de análise técnica no repositório.
 
-### 8.4 Saída do Refinamento
+### 8.5 Saída do Refinamento
 
-Após Product Analyst e Software Architect concluírem suas análises, sem perguntas bloqueantes:
+Após Product Analyst, UX/UI Designer **quando o Gate §8.3 exigir**, e Software Architect concluírem, sem perguntas bloqueantes:
 
 1. Mover a Issue para `Todo`.
 2. Registrar a movimentação na Issue.
 3. Emitir o **aviso de etapa concluída no chat** (§15.2) e **parar**.
 4. **Não** acionar Backend/Frontend Engineer nesta sessão.
 
-Caso existam perguntas bloqueantes, aplicar o **Gate de Decisão** (§15.1). A Issue permanece em `Backlog` até isso.
+Caso existam perguntas bloqueantes (de qualquer um dos papéis do Backlog), aplicar o **Gate de Decisão** (§15.1). A Issue permanece em `Backlog` até isso.
 
 ---
 
@@ -337,14 +421,14 @@ Se ainda houver frontend na mesma autorização, fazer handoff para o Frontend E
 O Frontend Engineer deve:
 
 1. Ler a Issue no Linear via MCP.
-2. Identificar critérios de aceite e fluxos esperados.
+2. Identificar critérios de aceite, fluxos esperados e a **spec de UX/UI** (se o Gate §8.3 tiver acionado o designer).
 3. Consultar a base de conhecimento relevante:
    - Produto
    - Jornadas
    - Módulos
    - Padrões de código
    - Padrões de API
-4. Implementar a interface necessária.
+4. Implementar a interface necessária, alinhada à spec de UX quando ela existir.
 5. **Commitar** as alterações deste passo (§15.4) e **push** na feature branch.
 6. Garantir o PR da Issue (§15.6): abrir se ainda não existir; se existir, o push já atualiza.
 7. Relê o status no Linear; se a automação GitHub tiver alterado, restaurar `In Progress`.
@@ -576,7 +660,7 @@ O deploy é um processo manual e **não possui status próprio** no Linear.
 
 - Criar arquivos temporários por Issue no repositório.
 - Duplicar histórico do Linear em arquivos `.md`.
-- Mover uma Issue de etapa sem comando de avanço (exceto `Backlog` → `Todo` após PA + SA).
+- Mover uma Issue de etapa sem comando de avanço (exceto `Backlog` → `Todo` após PA + UX/UI se §8.3 + SA).
 - Pular etapa ou acionar o próximo papel de **outra** etapa na mesma sessão.
 - **Regredir** Issue de `Review`, `Document` ou `Done` para `In Progress` — nem por “começar a trabalhar”, nem ao atualizar descrição/comentário, nem por efeito colateral de PR/docs (restaurar na hora — §15.6).
 - Passar `state` no MCP com tipo genérico (`started`) em vez do nome exato do status.
@@ -600,7 +684,8 @@ Quando uma **decisão importante** for necessária para avançar a etapa, o agen
 
 | Etapa | Exemplos de decisão bloqueante |
 | --- | --- |
-| Backlog (Product Analyst) | Escopo, problema, comportamento esperado, personas, regras de negócio, critérios de aceite |
+| Backlog (Product Analyst) | Escopo, problema, comportamento esperado, personas, regras de negócio, critérios de aceite, classificação de impacto visual |
+| Backlog (UX/UI Designer) | Direção de jornada/layout que muda o aceite, padrão visual novo (nav, shell, tokens), conflito a11y vs. estética |
 | Backlog (Software Architect) | Trade-off técnico com impacto de produto, ADR necessário, dependência externa/config, migration arriscada |
 | In Progress (Engineers) | Ambiguidade de escopo/contrato, regra indefinida, mudança fora do plano sem autorização |
 | Review (Tech Lead) | Aceitar risco residual, exception a padrão, escopo vs. implementação, ADR pendente |
@@ -664,13 +749,13 @@ O Gate de Avanço é distinto do Gate de Decisão. Decisão = dúvida **dentro**
 Ao concluir a etapa autorizada: atualizar o Linear + **aviso estruturado no chat** + **parar**.  
 A próxima etapa só começa com **comando explícito** no chat.
 
-Exceção: `Backlog` → `Todo` após PA + SA concluídos, sem bloqueios — o agente move, avisa e para (não inicia execução).
+Exceção: `Backlog` → `Todo` após PA + UX/UI **quando §8.3 exigir** + SA concluídos, sem bloqueios — o agente move, avisa e para (não inicia execução).
 
 ### Transições
 
 | Transição | Quando o agente move |
 | --- | --- |
-| `Backlog` → `Todo` | Automático após PA + SA concluídos, sem perguntas bloqueantes; depois aviso e para |
+| `Backlog` → `Todo` | Automático após PA + UX/UI (se §8.3) + SA concluídos, sem perguntas bloqueantes; depois aviso e para |
 | `Todo` → `In Progress` | Só com comando no chat para iniciar execução |
 | `In Progress` → `Review` | Só com comando no chat para iniciar review |
 | `Review` → `In Progress` | Só se o usuário mandar voltar ajustes |
@@ -822,7 +907,8 @@ Além das pré-condições abaixo, toda transição **exceto** `Backlog` → `To
 
 Permitido quando:
 
-- Product Analyst concluiu refinamento.
+- Product Analyst concluiu refinamento, **incluindo classificação de impacto visual** (§8.3).
+- UX/UI Designer concluiu spec ou skip justificado, **se** o impacto for `menor` ou `maior` (omitido se `nenhum`).
 - Software Architect concluiu análise técnica.
 - Não há perguntas bloqueantes (se houve, foram resolvidas via Gate de Decisão §15.1 e registradas no Linear).
 - Critérios de aceite estão claros.
@@ -912,7 +998,7 @@ Formato recomendado:
 - [item 2]
 ```
 
-Pares da **mesma** etapa (sem gate de chat): Software Architect após Product Analyst; Frontend Engineer após Backend Engineer (se houver UI); QA Analyst após Tech Lead; Documentation Writer após Technical Writer.
+Pares da **mesma** etapa (sem gate de chat): UX/UI Designer após Product Analyst **se** §8.3; Software Architect após Product Analyst (e após UX/UI quando este tiver atuado); Frontend Engineer após Backend Engineer (se houver UI); QA Analyst após Tech Lead; Documentation Writer após Technical Writer.
 
 Ao **fechar a etapa**: próximo passo = **aguardar comando do usuário no chat** (Gate de Avanço §15.2).
 
@@ -942,7 +1028,8 @@ Quando o status for `bloqueado` por falta de decisão, o próximo passo imediato
 ```
 Backlog
 → [comando: iniciar desenvolvimento / refinar]
-→ Product Analyst atualiza Issue no Linear
+→ Product Analyst atualiza Issue no Linear (inclui classificação de impacto visual)
+→ UX/UI Designer, **somente se** impacto `menor` ou `maior` (§8.3)
 → Software Architect atualiza Issue no Linear
 → Issue vai para Todo
 → aviso no chat e PARA
@@ -988,6 +1075,7 @@ Os arquivos em `docs/00_meta/templates/` são **estruturas de texto**, não dest
 | Template | Destino do conteúdo |
 | --- | --- |
 | `template-refinamento.md` | Issue Linear (Product Analyst) |
+| `template-ux-ui.md` | Issue Linear (UX/UI Designer) |
 | `template-arquitetura-issue.md` | Issue Linear (Software Architect) |
 | `template-qa-report.md` | Issue Linear (QA Analyst) |
 | `template-release-notes.md` | `docs/releases/` (permanente) |
@@ -1080,7 +1168,7 @@ Todo MDC deve instruir o agente a:
 
 ```md
 - Não pular etapa. Não acionar o próximo papel de outra etapa.
-- Mover status só com comando de avanço (exceto Backlog → Todo após PA + SA).
+- Mover status só com comando de avanço (exceto Backlog → Todo após PA + UX/UI se §8.3 + SA).
 - Ao fim da etapa: aviso no chat e parar.
 - Commitar cada passo que alterar código ou docs/.
 - Push após o commit. Engineers: abrir o PR em In Progress se ainda não houver (um por Issue). Writers: só push no PR existente.
@@ -1102,3 +1190,17 @@ Os MDCs de Technical Writer e Documentation Writer devem instruir:
 ```
 
 Detalhe: workflow §15.5.
+
+### 20.9 Gate de UX/UI e rigor nos MDCs
+
+Os MDCs de Product Analyst, UX/UI Designer, Software Architect e Frontend Engineer devem instruir:
+
+```md
+- UX/UI Designer não é obrigatório em toda Issue. Entra só com impacto visual no frontend que o usuário vê (workflow §8.3).
+- Product Analyst classifica nenhum | menor | maior. Orquestrador e UX/UI podem corrigir com justificativa.
+- menor = spec objetiva; maior = spec completa. Skip justificado vai ao SA sem inventar layout.
+- Software Architect só começa depois do UX/UI quando o impacto for menor ou maior.
+- Frontend Engineer segue a spec de UX quando ela existir.
+```
+
+Detalhe: workflow §8.3.

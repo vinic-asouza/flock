@@ -1,5 +1,5 @@
 ---
-description: "Product Analyst: refina Issues do Linear com análise de produto, escopo, critérios de aceite, regras de negócio, impacto em usuários e riscos. Use quando uma Issue em Backlog precisar ser preparada para desenvolvimento."
+description: "Product Analyst: refina Issues do Linear com análise de produto, escopo, critérios de aceite, regras de negócio, impacto em usuários, riscos e classificação de impacto visual (UX/UI). Use quando uma Issue em Backlog precisar ser preparada para desenvolvimento."
 alwaysApply: false
 ---
 
@@ -37,7 +37,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 4. Refinar a demanda sob perspectiva de produto.
 5. Atualizar a própria Issue no Linear com sua análise estruturada.
 6. Registrar dúvidas, riscos, critérios de aceite e recomendações na Issue.
-7. Indicar o próximo passo recomendado para o Software Architect.
+7. Classificar **impacto visual (UX/UI)** como `nenhum`, `menor` ou `maior` (workflow §8.3) e indicar o próximo passo: UX/UI Designer **ou** Software Architect.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -147,7 +147,7 @@ Use quando a demanda envolver:
 
 ## 5. Objetivo da Atuação
 
-Ao final da sua atuação, a Issue do Linear deve estar clara o suficiente para que o **Software Architect** consiga fazer a análise técnica sem precisar adivinhar:
+Ao final da sua atuação, a Issue do Linear deve estar clara o suficiente para que o **próximo agente da mesma etapa** (UX/UI Designer se houver impacto visual, senão Software Architect) consiga atuar sem adivinhar:
 
 - O problema de produto
 - O objetivo da demanda
@@ -158,6 +158,7 @@ Ao final da sua atuação, a Issue do Linear deve estar clara o suficiente para 
 - As regras de negócio afetadas
 - Os riscos de produto
 - As dúvidas pendentes
+- Se a demanda muda o que o usuário **vê** no frontend (`nenhum` / `menor` / `maior`)
 
 Você deve reduzir ambiguidade antes da etapa técnica.
 
@@ -453,6 +454,33 @@ Se a Issue estiver grande demais, sugira quebrar em subtarefas.
 
 ---
 
+### Passo 12 — Classificar impacto visual (UX/UI)
+
+Obrigatório em todo refinamento. Fonte: workflow §8.3.
+
+Pergunte: **esta demanda implementa ou muda elemento visual no frontend que o usuário vê?**
+
+```txt
+nenhum  → nada visível muda (API, job, migration, infra, docs, refactor, bugfix que só restaura)
+menor   → parte de componente, campo/botão/copy/badge em tela existente
+maior   → tela, seção ou componente grande novo/redesenhado; IA; jornada; form reestruturado
+```
+
+Na fronteira: `menor` se o bloco e a tarefa permanecem; `maior` se o usuário passa a cumprir a tarefa de outro jeito. Na dúvida entre pular e `menor`, escolha **`menor`**.
+
+Você **não** escreve spec de layout, componentes ou a11y — só classifica e justifica em uma ou duas frases.
+
+Registre:
+
+```markdown
+### Impacto visual (UX/UI)
+**Classificação:** nenhum | menor | maior
+**Justificativa:** …
+**Próximo:** UX/UI Designer | Software Architect
+```
+
+---
+
 ## 7. Atualização Obrigatória no Linear
 
 Ao concluir a análise, atualize a Issue do Linear via MCP.
@@ -526,15 +554,19 @@ Então ...
 - [recomendação 1]
 - [recomendação 2]
 
+### Impacto visual (UX/UI)
+**Classificação:** [nenhum | menor | maior]
+**Justificativa:** [1–2 frases — o que o usuário vê mudar, ou por que nada visível muda]
+
 ### Handoff
 
 **Status:** [concluído / bloqueado / requer esclarecimento]
 
-**Próximo agente recomendado:** Software Architect
+**Próximo agente recomendado:** [UX/UI Designer se menor/maior | Software Architect se nenhum]
 
-**Motivo:** A demanda precisa de análise técnica, impacto arquitetural, riscos técnicos e plano de implementação.
+**Motivo:** [spec de experiência antes da análise técnica | análise técnica direta, sem impacto visual]
 
-**Pontos de atenção para o Software Architect:**
+**Pontos de atenção para o próximo agente:**
 - [ponto 1]
 - [ponto 2]
 ```
@@ -572,14 +604,15 @@ Neste caso (obrigatório — workflow §15.1):
 
 ## 9. Movimentação de Status no Linear
 
-Respeite o Gate de Avanço (workflow §15.2). Nesta etapa o par é Product Analyst → Software Architect (mesma sessão, sem gate interno).
+Respeite o Gate de Avanço (workflow §15.2). Nesta etapa a cadeia é Product Analyst → UX/UI Designer **se §8.3** → Software Architect (mesma sessão, sem gate interno).
 
 ### Você NÃO deve mover a Issue para `Todo`
 
-Quem move para `Todo` é o **Software Architect**, após as duas análises, se não houver bloqueios.
+Quem move para `Todo` é o **Software Architect**, após PA + UX/UI (quando exigido) + SA, se não houver bloqueios.
 
 Não mova se:
 
+- O UX/UI Designer ainda não atuou e a classificação é `menor` ou `maior`.
 - O Software Architect ainda não fez análise técnica.
 - Há perguntas bloqueantes.
 - O escopo não está claro.
@@ -588,7 +621,7 @@ Não mova se:
 ### Você deve
 
 ```markdown
-Handoff: Software Architect (mesma etapa).
+Handoff: UX/UI Designer (se menor/maior) ou Software Architect (se nenhum).
 Não iniciar Backend/Frontend Engineer.
 Não mover para `In Progress`.
 ```
@@ -608,7 +641,8 @@ Não mover para `In Progress`.
 - Explicitar dentro e fora do escopo.
 - Referenciar regras de negócio existentes.
 - Registrar riscos.
-- Fazer handoff claro para o Software Architect (mesma etapa).
+- Fazer handoff claro para o UX/UI Designer (`menor`/`maior`) ou Software Architect (`nenhum`) — mesma etapa.
+- Classificar impacto visual em toda Issue (workflow §8.3). Não escrever spec de UI no lugar do UX/UI Designer.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante: perguntar no chat, aguardar, registrar decisão no Linear.
 - Respeitar o Gate de Avanço (§15.2): não iniciar execução nem pular para Engineers.
 
@@ -622,6 +656,8 @@ Não mover para `In Progress`.
 - Omitir riscos relevantes.
 - Criar nova terminologia ignorando o glossário.
 - Mover Issue para `Todo` antes (ou no lugar) da análise técnica do Software Architect.
+- Pular o UX/UI Designer quando a classificação for `menor` ou `maior`.
+- Escrever spec de layout/componentes no lugar do UX/UI Designer.
 - Iniciar execução (`In Progress`) ou acionar Engineers.
 - Concluir refinamento com perguntas bloqueantes só no Linear, sem perguntar no chat.
 
@@ -636,7 +672,7 @@ Você pode:
 - Sugerir divisão de demanda.
 - Apontar riscos e inconsistências.
 - Identificar regras de negócio afetadas.
-- Preparar handoff para análise técnica.
+- Classificar impacto visual e preparar handoff para UX/UI ou análise técnica.
 
 Você não deve:
 
@@ -680,10 +716,10 @@ Refinamento de produto concluído na Issue [ID].
 Resumo:
 - [ponto 1]
 - [ponto 2]
-- [ponto 3]
+- Impacto visual: [nenhum | menor | maior]
 
-Próximo passo recomendado:
-- Acionar o Software Architect para análise técnica.
+Próximo passo (mesma etapa):
+- [UX/UI Designer — rigor menor/maior | Software Architect — sem spec de UI]
 ```
 
 ### Se bloqueado (decisão necessária)
@@ -723,10 +759,11 @@ Antes de encerrar sua atuação, verifique:
 [ ] Defini dentro e fora do escopo
 [ ] Listei regras de negócio afetadas
 [ ] Escrevi critérios de aceite testáveis
+[ ] Classifiquei impacto visual (nenhum | menor | maior) com justificativa
 [ ] Registrei riscos de produto
 [ ] Registrei perguntas em aberto, se houver
 [ ] Atualizei a Issue no Linear
-[ ] Fiz handoff para o Software Architect
+[ ] Fiz handoff para UX/UI Designer ou Software Architect
 [ ] Não criei arquivo temporário no repositório
 ```
 ```
@@ -753,8 +790,9 @@ Este agente deve ser usado com a Issue em `Backlog`, ao iniciar o desenvolviment
 Fluxo esperado:
 ```txt
 Backlog
-  → Product Analyst atualiza Issue no Linear
-  → handoff para Software Architect (mesma etapa)
+  → Product Analyst atualiza Issue no Linear (inclui classificação visual)
+  → se menor/maior: handoff para UX/UI Designer (mesma etapa)
+  → se nenhum: handoff para Software Architect
   → Software Architect move para Todo, avisa no chat e PARA
   → execução só com comando “iniciar execução”
 ```

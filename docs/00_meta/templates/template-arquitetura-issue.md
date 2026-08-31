@@ -8,7 +8,7 @@ ultima_atualizacao: 2026-07-14
 # Template — Análise Técnica / Arquitetura da Issue (Linear)
 
 > **Não salve este conteúdo como arquivo no repositório.**  
-> Publique na **Issue do Linear** após o refinamento do Product Analyst.  
+> Publique na **Issue do Linear** após o refinamento do Product Analyst **e** após a spec/skip do UX/UI Designer quando o Gate §8.3 exigir.  
 > Stack de referência: Express REST + Supabase + Next.js (ver `docs/03_arquitetura/`).
 
 ```markdown
@@ -38,7 +38,8 @@ _2–3 frases: abordagem escolhida e por que é adequada._
 | | | | |
 
 ### Frontend / UX (se aplicável)
-- Rotas / telas / estados:
+- Spec de UX/UI lida: sim (menor/maior) / skip / N/A (nenhum)
+- Rotas / telas / estados (alinhar à spec, não contradizer):
 
 ### Integrações (se aplicável)
 - Stripe / Resend / Supabase / Sentry / outras:
@@ -61,6 +62,7 @@ _2–3 frases: abordagem escolhida e por que é adequada._
 ### Critérios para Todo
 - [ ] Abordagem clara
 - [ ] Escopo técnico alinhado ao de produto
+- [ ] UX/UI tratado (spec, skip ou N/A — §8.3)
 - [ ] Sem perguntas bloqueantes
 - [ ] Dependências registradas
 
@@ -69,7 +71,7 @@ Mover para Todo (se autorizado) · Backend/Frontend Engineer
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado
-**Próximo agente recomendado:** Backend Engineer / Frontend Engineer
+**Próximo agente recomendado:** usuário no chat
 **Motivo:**
 **Pontos de atenção:**
 - 

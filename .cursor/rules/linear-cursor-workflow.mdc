@@ -26,9 +26,9 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 1. Com Issue associada: **ler e atualizar no Linear via MCP** — não depender só do chat.
 2. **Nunca** criar arquivos temporários por Issue (`refinamento-*`, `qa-report-*`, `analise-tecnica-*`, pastas `docs/refinamentos/`, etc.).
 3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente **com impacto técnico ou de usabilidade** (produto, regra, arquitetura, módulo, integração, padrão, ADR, fluxo/tela). Ajustes visuais finos e polimento de CSS **não** entram em docs — detalhe fica no Linear (workflow §15.5). A etapa `Document` avalia; **escrever** não é automático.
-4. Respeitar o papel solicitado; **não pular etapas**. Pares da mesma etapa (PA→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão.
+4. Respeitar o papel solicitado; **não pular etapas**. Pares da mesma etapa (PA→UX/UI se §8.3→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão.
 5. Não fazer deploy automático sem pedido explícito do usuário. Autorizar `Done` ou mergear PR **não** é autorização de deploy.
-6. **Gate de Avanço (workflow §15.2):** o usuário comanda no chat; o agente move o status. Não mover sem o comando correspondente — **exceto** `Backlog` → `Todo` após Product Analyst + Software Architect. Ao fim da etapa: aviso no chat e **parar**.
+6. **Gate de Avanço (workflow §15.2):** o usuário comanda no chat; o agente move o status. Não mover sem o comando correspondente — **exceto** `Backlog` → `Todo` após Product Analyst + UX/UI Designer (se §8.3) + Software Architect. Ao fim da etapa: aviso no chat e **parar**.
 7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir a etapa, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **só então** conclua. Não invente a decisão; não feche a etapa com perguntas bloqueantes só no Linear.
 8. **Status vs GitHub (workflow §15.6 / §11.1):** abrir o **primeiro** PR da Issue em `In Progress` (um por Issue; depois só push). Não abrir o primeiro PR em `Review`, `Document` ou `Done`. Em `save_issue`, omitir `state` (exceto restaurar o status da etapa ou concluir para `Done`); nunca usar tipo genérico `started`. Se a automação Git/PR regressar o status, restaurar o **nome exato** da etapa imediatamente (`In Progress` / `Review` / `Document` / `Done`).
 9. **Commit por passo (workflow §15.4):** cada atuação que alterar código ou `docs/` permanentes gera **um commit** ao final daquele papel (BE, FE, correção pós-review, Technical Writer), seguido de **push**.
@@ -42,7 +42,7 @@ Se o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o agente*
 
 | Status | Comando no chat | Ação |
 | --- | --- | --- |
-| `Backlog` | Iniciar desenvolvimento / refinar | `product-analyst.mdc` → `software-architect.mdc` → `Todo` → aviso e parar |
+| `Backlog` | Iniciar desenvolvimento / refinar | `product-analyst.mdc` → `ux-ui-designer.mdc` **se** impacto visual (nenhum/menor/maior, workflow §8.3) → `software-architect.mdc` → `Todo` → aviso e parar |
 | `Todo` | Sem comando de execução | Não implementar. Avisar que está em `Todo` e aguardar “iniciar execução” |
 | `Todo` | Iniciar execução | Mover para `In Progress` → Engineers |
 | `In Progress` | Iniciar execução / voltar ajustes | Engineers (não iniciar Review) |
@@ -55,6 +55,23 @@ Se o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o agente*
 | Qualquer | Deploy | Só se o pedido for explícito |
 
 Após Review, o aviso no chat **deve** listar apontamentos do Linear (obrigatórios vs. opcionais).
+
+## Gate de UX/UI (orquestração)
+
+O UX/UI Designer **não** entra em toda Issue. Fonte: workflow §8.3.
+
+Depois do Product Analyst, leia a classificação `Impacto visual (UX/UI)`:
+
+| Valor | Ação |
+| --- | --- |
+| `nenhum` | Pular UX/UI; ir ao Software Architect |
+| `menor` | Carregar `ux-ui-designer.mdc` em **modo objetivo**, depois SA |
+| `maior` | Carregar `ux-ui-designer.mdc` em **modo rigoroso**, depois SA |
+| Ausente | Aplicar heurística §8.3; na dúvida, modo `menor` |
+
+UX/UI pode corrigir a classificação com justificativa na Issue (upgrade, downgrade ou skip). Pedido explícito no chat prevalece sobre `nenhum`.
+
+Não acionar UX/UI em API/job/infra/docs/refactor sem mudança visível. Não pular UX/UI em tela, seção ou componente grande novo.
 
 ## Formato mínimo na Issue
 
@@ -84,6 +101,7 @@ Templates: `docs/00_meta/templates/`.
 | Situação | Regra |
 | --- | --- |
 | Refinar produto | `product-analyst.mdc` |
+| Spec / revisão de UX/UI WEB (Backlog, se §8.3) | `ux-ui-designer.mdc` |
 | Análise técnica | `software-architect.mdc` |
 | Implementar API/backend | `backend-engineer.mdc` |
 | Implementar UI | `frontend-engineer.mdc` |
@@ -93,3 +111,5 @@ Templates: `docs/00_meta/templates/`.
 | Docs usabilidade Mintlify (status Document) | `documentation-writer.mdc` |
 
 Se houver conflito entre um MDC de papel e este workflow, **priorize o workflow**.
+
+Gate de UX/UI: `docs/00_meta/linear-cursor-workflow.md` §8.3.

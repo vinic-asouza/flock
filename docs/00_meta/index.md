@@ -1,8 +1,8 @@
 ---
 type: index
 secao: 00_meta
-ultima_atualizacao: 2026-08-17
-versao: "1.3"
+ultima_atualizacao: 2026-08-31
+versao: "1.4"
 tags: [meta, índice, workflow]
 ---
 
@@ -25,6 +25,7 @@ Documentação sobre **como o time e os agentes trabalham** — não sobre o pro
 | `template-refinamento.md` | **Issue Linear** (Product Analyst) |
 | `template-arquitetura-issue.md` | **Issue Linear** (Software Architect) |
 | `template-qa-report.md` | **Issue Linear** (QA Analyst) |
+| `template-ux-ui.md` | **Issue Linear** (UX/UI Designer) |
 | `template-release-notes.md` | `docs/releases/` (artefato permanente de release) |
 | `template-modulo.md` | `docs/04_modulos/[nome].md` (KB permanente) |
 | `template-adr.md` | `docs/07_decisoes-tecnicas/` (KB permanente) |
