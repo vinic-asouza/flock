@@ -13,6 +13,7 @@ import { logAudit } from '../utils/auditLogger';
 import { renderMemberProfilePdf } from '../utils/pdf/renderMemberProfile';
 import { renderIntegrationProfilePdf } from '../utils/pdf/renderIntegrationProfile';
 import { renderBlankRegistrationPdf } from '../utils/pdf/renderBlankRegistration';
+import { renderBlankPreRegistrationPdf } from '../utils/pdf/renderBlankPreRegistration';
 import { renderLandscapeListPdf } from '../utils/pdf/renderList';
 import { renderDashboardPdf } from '../utils/pdf/renderDashboard';
 import {
@@ -1400,6 +1401,43 @@ export const exportMemberRegistrationFormPDF = async (req: AuthRequest, res: Res
     return;
   } catch (error) {
     console.error('❌ Erro ao gerar ficha de cadastro em branco:', error);
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Erro interno do servidor',
+        details: error instanceof Error ? error.message : 'Erro desconhecido',
+      });
+    }
+  }
+};
+
+export const exportIntegrationRegistrationFormPDF = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Não autorizado',
+        details: 'Usuário não está autenticado',
+      });
+    }
+
+    const churchId = req.church!.churchId;
+    const { data: churchData, error: churchError } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('id', churchId)
+      .single();
+
+    if (churchError || !churchData) {
+      return res.status(404).json({
+        error: 'Igreja não encontrada',
+        details: churchError?.message || 'Não foi possível carregar os dados da igreja',
+      });
+    }
+
+    renderBlankPreRegistrationPdf(res, churchData.name || 'Igreja');
+    return;
+  } catch (error) {
+    console.error('❌ Erro ao gerar ficha de pré-cadastro em branco:', error);
 
     if (!res.headersSent) {
       res.status(500).json({
