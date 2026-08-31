@@ -61,6 +61,10 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Usado em:** módulo Integração + links públicos de integração  
 - **UI:** “Integrante” / “Integração” · código: `IntegrationMember`
 
+**Ficha de pré-cadastro**  
+> PDF A4 em branco para captação presencial de **integrante** (pessoais + eclesiásticas, inclusive questionário). Título visível fixo no documento. Distinta da **Ficha de Cadastro de Membro** (rol) e da ficha preenchida do integrante.  
+- **Usado em:** Integração (hub `/integration`) + Relatórios (export)  
+- **UI:** “Ficha de pré-cadastro” (desktop) / “Ficha” (mobile)
 **Questionário eclesiástico** *(código: campos em `integration_members`)*  
 > Bloco pastoral de origem, batismo, frequência e motivo de ingresso. Vive **só** no Integrante (Painel e autointegração pública). Não faz parte do cadastro de Membro nem do convert.  
 - **Atributos-chave:** `years_evangelical`, `evangelical_family`, `is_baptized`, `baptism_type`, `baptism_other_church_name`, `previous_religion`, `previous_church_active`, `reason_joining`, `time_attending`, `sunday_attendance`, `weekly_activities`, `weekly_activities_which`  
@@ -300,6 +304,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - **C:** Calendário (item), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Evento (tipo calendário), Encontro  
+- **F:** Ficha de pré-cadastro  
 - **G:** Grupo, Guest/Convidado (calendário)  
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração  

@@ -24,13 +24,13 @@ tags: [regras, índice, módulos]
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
-| Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 12 | Painel e exportações |
+| Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 15 | Igreja, conta, equipe, audit |
 | Billing | [[02_regras-de-negocio/regras-por-modulo/billing]] | BILL | 16 | Planos, Stripe, limites |
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 13 módulos · **154 regras**
+**Total:** 13 módulos · **155 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 

@@ -1,7 +1,7 @@
 ---
 type: api-design
-ultima_atualizacao: 2026-08-26
-versao: "1.3"
+ultima_atualizacao: 2026-08-31
+versao: "1.4"
 tipo_api: REST
 base_url: /api
 tags: [arquitetura, API, endpoints, contratos]
@@ -339,7 +339,9 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 
 | Método | Rota | Auth | Role | Descrição | Status |
 | --- | --- | --- | --- | --- | --- |
+| GET | `/api/export/members/registration-form/pdf` | ✅ | ≥ reader | Ficha de cadastro em branco (membro) | ✅ |
 | GET | `/api/export/member/:id/pdf` | ✅ | ≥ reader | PDF membro | ✅ |
+| GET | `/api/export/integration/registration-form/pdf` | ✅ | ≥ reader | Ficha de pré-cadastro em branco (integrante) | ✅ |
 | GET | `/api/export/integration/:id/pdf` | ✅ | ≥ reader | PDF integrante | ✅ |
 | GET | `/api/export/dashboard/pdf` | ✅ | ≥ reader | PDF dashboard | ✅ |
 | POST | `/api/export/members/list` | ✅ | ≥ reader | Lista membros PDF | ✅ |

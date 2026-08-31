@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { LinkIcon, Plus } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { FileText, LinkIcon, Plus } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { useAuth } from '@/context/AuthContext';
@@ -57,6 +58,7 @@ function IntegrationPageContent() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportingList, setExportingList] = useState(false);
+  const [preRegistrationLoading, setPreRegistrationLoading] = useState(false);
   const [integrationLinksModalOpen, setIntegrationLinksModalOpen] = useState(false);
 
   useEffect(() => {
@@ -134,6 +136,28 @@ function IntegrationPageContent() {
     setSelectedMember(null);
   };
 
+  const handleDownloadPreRegistrationForm = useCallback(async () => {
+    try {
+      setPreRegistrationLoading(true);
+      const { blob, filename } = await apiService.exportIntegrationRegistrationFormPDF();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Ficha de pré-cadastro baixada com sucesso!');
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Erro ao baixar ficha de pré-cadastro.';
+      toast.error(errorMessage);
+    } finally {
+      setPreRegistrationLoading(false);
+    }
+  }, []);
+
   const handleExportIntegrationList = async (selectedFields: string[]) => {
     try {
       setExportingList(true);
@@ -181,6 +205,17 @@ function IntegrationPageContent() {
         subtitle="Gerencie integrantes em processo de integração e converta-os em membros."
         actions={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Button
+              variant="secondary"
+              onClick={handleDownloadPreRegistrationForm}
+              className="inline-flex items-center justify-center gap-2 min-h-11"
+              isLoading={preRegistrationLoading}
+              title="Baixar ficha em branco para impressão e preenchimento manual"
+            >
+              <FileText size={18} className="shrink-0" />
+              <span className="hidden sm:inline">Ficha de pré-cadastro</span>
+              <span className="sm:hidden">Ficha</span>
+            </Button>
             <Button
               onClick={() => setIntegrationLinksModalOpen(true)}
               variant="secondary"

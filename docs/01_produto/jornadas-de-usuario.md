@@ -164,7 +164,7 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 3. Editor converte integrante → membro oficial (**não** copia o questionário)
 4. Continua na jornada J6
 
-**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Autointegração pública: ver J11.
+**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Botão **Ficha** (rótulo curto) na toolbar. Autointegração pública: ver J11.
 
 ### J8 — Estrutura e agenda
 
