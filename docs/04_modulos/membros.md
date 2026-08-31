@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-25
-versao: "1.5"
+ultima_atualizacao: 2026-08-31
+versao: "1.6"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -89,7 +89,7 @@ frontend/src/app/
 └── public/register/[token]/      → form autocadastro
 
 Testes: `utils/__tests__/csvParser.test.ts` (mapping/skip/legado). CRUD/HTTP sem suite dedicada.
-Migrations: colunas eclesiásticas (`add_member_form_fields_v2` etc.) no Supabase — sem pasta local.
+Migrations: recebimento e família em `members`; questionário eclesiástico só em `integration_members` (DEV-91). Sem pasta local de migrations.
 ```
 
 ---
@@ -116,9 +116,7 @@ Cadastro oficial do membro no tenant.
 | spouse, wedding_date, *_is_member | … | NULL | — | Família |
 | father_name, mother_name | text | NULL | — | Filiação |
 | children | jsonb | NULL | `[]` | `[{name,birth}]` |
-| baptism_*, admission*, occupation | … | NULL | — | Eclesiástico / admissão |
-| years_evangelical, evangelical_family, is_baptized, baptism_type, … | … | NULL | — | Form v2 |
-| sunday_attendance, weekly_activities* | … | NULL | — | Frequência |
+| baptism_*, admission*, occupation | … | NULL | — | Recebimento / batismo / profissão (não é o questionário pastoral) |
 | active | boolean | NULL | `true` | Conta na quota se true |
 | created_at | timestamptz | NULL | now() | Criação |
 
@@ -214,7 +212,7 @@ Capability de autocadastro.
 
 | Ação | Visibilidade | Descrição |
 | --- | --- | --- |
-| **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 alinhado ao form v2 para impressão e preenchimento manual. |
+| **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 para impressão: pessoais, família, contato/endereço, **Informações de Recebimento** (sem questionário eclesiástico). |
 
 Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
 
@@ -237,7 +235,7 @@ Seções principais do modal de visualização (paridade com o PDF de perfil):
 
 1. **Informações Pessoais** — layout em duas colunas (gênero, idade, nascimento, naturalidade | estado civil, data de casamento/união, profissão).
 2. **Família** — seção de primeiro nível com cônjuge, pai, mãe e filhos; exibida apenas se houver ao menos um dado familiar.
-3. Contato / Endereço / Informações Eclesiásticas / Histórico Eclesiástico (quando houver dados).
+3. Contato / Endereço / **Vínculo na igreja** (congregação, data de batismo, recebimento, grupos — quando houver dados). Sem Histórico Eclesiástico / questionário (fonte: Integrante, [[BR-INT-016]]).
 
 > O formulário create/edit (`MemberForm`) ainda pode agrupar cônjuge em Informações Básicas — alinhamento visual form ↔ view é follow-up separado.
 
@@ -257,7 +255,7 @@ Seções principais do modal de visualização (paridade com o PDF de perfil):
   congregation_id: string;      // UUID obrigatório (BR-MEM-017)
   groups?: string[];            // UUIDs de groups da igreja
   children?: Array<{ name: string; birth: string }>;
-  // + campos eclesiásticos form v2 (baptism_type, sunday_attendance, …)
+  // questionário eclesiástico NÃO entra (BR-INT-016 / BR-MEM-004)
   active?: boolean;             // create força/assume true (BR-MEM-005)
 }
 
@@ -572,6 +570,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-31 | 1.6 | Questionário eclesiástico sai de membros (BR-MEM-004 / BR-INT-016); ficha: **Vínculo na igreja** | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
 | 2026-07-21 | 1.2 | UX edição: feedback de validação/sucesso; hydrate null-safe (enums) | DEV-23 |

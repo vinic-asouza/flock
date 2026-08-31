@@ -49,15 +49,15 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 
 **Membro** *(código: `Member`, `members`)*  
 > Pessoa no **rol oficial** da igreja. **Não** possui login no Flock por ser membro.  
-- **Atributos-chave:** `name`, `birth`, `gender`, `active`, `congregation_id`, dados eclesiásticos (`admission`, batismo, etc.)  
+- **Atributos-chave:** `name`, `birth`, `gender`, `active`, `congregation_id`, recebimento (`admission`, `admission_date`, `baptism_date`)  
 - **Relacionamentos:** igreja; opcional congregação; N grupos (`member_groups`); pode ser mentor de integrantes  
 - **Usado em:** Membros, Relatórios, Grupos, Calendário, limite de plano  
-- **UI:** “Membros” · soft delete / `active`
+- **UI:** “Membros” · soft delete / `active` · ficha: bloco **Vínculo na igreja** (não é o questionário pastoral)
 
 **Integrante** *(código: `IntegrationMember`, `integration_members`)*  
 > Pré-membro em processo de **Integração** antes de entrar no rol oficial.  
-- **Atributos-chave:** `name`, `status`, `mentor_id`, `expected_congregation_id`, `expected_admission_type`  
-- **Relacionamentos:** igreja; mentor = um `Member`; conversão gera `Member`  
+- **Atributos-chave:** `name`, `status`, `mentor_id`, `expected_congregation_id`, `expected_admission_type`, questionário eclesiástico (12 campos opcionais)  
+- **Relacionamentos:** igreja; mentor = um `Member`; conversão gera `Member` **sem** copiar o questionário  
 - **Usado em:** módulo Integração + links públicos de integração  
 - **UI:** “Integrante” / “Integração” · código: `IntegrationMember`
 
@@ -65,6 +65,11 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > PDF A4 em branco para captação presencial de **integrante** (pessoais + eclesiásticas, inclusive questionário). Título visível fixo no documento. Distinta da **Ficha de Cadastro de Membro** (rol) e da ficha preenchida do integrante.  
 - **Usado em:** Integração (hub `/integration`) + Relatórios (export)  
 - **UI:** “Ficha de pré-cadastro” (desktop) / “Ficha” (mobile)
+**Questionário eclesiástico** *(código: campos em `integration_members`)*  
+> Bloco pastoral de origem, batismo, frequência e motivo de ingresso. Vive **só** no Integrante (Painel e autointegração pública). Não faz parte do cadastro de Membro nem do convert.  
+- **Atributos-chave:** `years_evangelical`, `evangelical_family`, `is_baptized`, `baptism_type`, `baptism_other_church_name`, `previous_religion`, `previous_church_active`, `reason_joining`, `time_attending`, `sunday_attendance`, `weekly_activities`, `weekly_activities_which`  
+- **Usado em:** Integração (form, ficha, PDF do integrante)  
+- **UI:** seção “Informações eclesiásticas” do integrante · **não** confundir com **Vínculo na igreja** na ficha do membro
 
 **Grupo** *(código: `Group`, `groups`)*  
 > Estrutura interna (ministério, célula, classe, etc.) para organizar membros.  
@@ -279,6 +284,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | Evitar | Usar em vez disso | Motivo |
 | --- | --- | --- |
 | Chamar Membro de “usuário” | **Membro** vs **Usuário (da igreja)** | Membro não faz login; Usuário sim |
+| “Informações Eclesiásticas” na ficha do membro | **Vínculo na igreja** (recebimento/congregação/grupos) ou **Questionário eclesiástico** (Integrante) | O questionário pastoral não vive no rol |
 | “Igreja” para filial local | **Congregação** | Igreja = tenant; Congregação = unidade interna |
 | “Integração” no sentido técnico (API) | Nomear o sistema externo (Stripe, …) | “Integração” no Flock = módulo de pré-membros |
 | “Cargo” como módulo atual | **Grupo** (tipo Ministério/… ) | Cargos CRUD legado; modelo vigente é Grupos |
@@ -305,6 +311,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - **M:** Membro, Mentor, Membership, Ministério (tipo de grupo)  
 - **O:** Operador da plataforma, Owner (`dono`)  
 - **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Programação  
+- **Q:** Questionário eclesiástico  
 - **R:** Recebimento (tipo/data), Reader, Recorrência, Reunião  
 - **S:** Soft delete, Subscription status, Sincronizar assinatura  
 - **T:** Tenant, Tipo de grupo, Trialing  
@@ -315,7 +322,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## Contagem e arquivos analisados
 
-**Total de termos documentados:** 73 _(frontmatter `total_termos`)_.
+**Total de termos documentados:** 76 _(frontmatter `total_termos`)_.
 
 **Arquivos analisados:**
 

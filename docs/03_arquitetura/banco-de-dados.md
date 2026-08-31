@@ -1,7 +1,7 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-07-16
-versao: "1.1"
+ultima_atualizacao: 2026-08-31
+versao: "1.2"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
 tags: [arquitetura, banco-de-dados, schema, ERD]
@@ -9,7 +9,7 @@ tags: [arquitetura, banco-de-dados, schema, ERD]
 
 # Banco de Dados — Flock
 
-> Fonte da verdade: schema **live** do projeto Supabase `flock-app-01` (`lzsybtvywrhwsxtsywbw`), inspecionado via MCP em 2026-07-13.  
+> Fonte da verdade: schema **live** do projeto Supabase `flock-app-01` (`lzsybtvywrhwsxtsywbw`), inspecionado via MCP em 2026-07-13; colunas do questionário eclesiástico conferidas em 2026-08-31 (DEV-91).  
 > Dump local de referência (pode estar atrasado): `backend/bd-structure.sql`.  
 > Visão de sistema: [[03_arquitetura/visao-geral]].
 
@@ -325,7 +325,7 @@ erDiagram
 ---
 
 #### members
-> Cadastro pastoral/administrativo do membro (PII denso). Campos eclesiásticos ampliados na migration `add_member_form_fields_v2`.
+> Cadastro pastoral/administrativo do membro (PII denso). Recebimento (`admission`, `admission_date`, `baptism_date`) permanece aqui. O questionário pastoral (origem, batismo, frequência) vive em `integration_members` (DEV-91); as colunas correspondentes foram removidas de `members`. A migration histórica `add_member_form_fields_v2` adicionou o questionário em `members` — não é mais o schema vigente.
 
 | Campo | Tipo | Restrições | Default | Descrição |
 | --- | --- | --- | --- | --- |
@@ -363,18 +363,6 @@ erDiagram
 | spouse_is_member | boolean | NULL | — | Cônjuge é membro |
 | father_is_member | text | NULL, CHECK sim/nao/falecido | — | Pai membro |
 | mother_is_member | text | NULL, CHECK sim/nao/falecido | — | Mãe membro |
-| years_evangelical | text | NULL | — | Anos como evangélico |
-| evangelical_family | boolean | NULL | — | Família evangélica |
-| is_baptized | boolean | NULL | — | Batizado |
-| baptism_type | text | NULL, CHECK catolica/adulto_*/crianca_*/… | — | Tipo batismo |
-| baptism_other_church_name | text | NULL | — | Igreja do batismo externo |
-| previous_religion | text | NULL | — | Religião anterior |
-| previous_church_active | boolean | NULL | — | Ativo em igreja anterior |
-| reason_joining | text | NULL | — | Motivo ingresso |
-| time_attending | text | NULL | — | Tempo frequentando |
-| sunday_attendance | text | NULL, CHECK todos_os_domingos/regularmente/as_vezes/nao | — | Frequência domingo |
-| weekly_activities | boolean | NULL | — | Atividades semanais |
-| weekly_activities_which | text | NULL | — | Quais atividades |
 
 **Índices:** PK; `congregation_id`; parcial `(church_id, congregation_id, active)` WHERE active; GIN `children`.
 
@@ -400,6 +388,18 @@ erDiagram
 | expected_congregation_id | uuid | NULL, FK SET NULL | — | Congregação pretendida |
 | mentor_id | uuid | NULL, FK → members SET NULL | — | Mentor |
 | notes | text | NULL | — | Notas |
+| years_evangelical | text | NULL | — | Anos como evangélico (questionário) |
+| evangelical_family | boolean | NULL | — | Família evangélica |
+| is_baptized | boolean | NULL | — | Batizado |
+| baptism_type | text | NULL, CHECK catolica / adulto_nesta_igreja / adulto_outra_igreja / crianca_nesta_igreja / crianca_outra_igreja / novo_convertido / sem_religiao | — | Tipo de batismo |
+| baptism_other_church_name | text | NULL | — | Igreja do batismo externo |
+| previous_religion | text | NULL | — | Religião anterior |
+| previous_church_active | boolean | NULL | — | Ativo em igreja anterior |
+| reason_joining | text | NULL | — | Motivo de ingresso |
+| time_attending | text | NULL | — | Tempo frequentando a igreja |
+| sunday_attendance | text | NULL, CHECK todos_os_domingos / regularmente / as_vezes / nao | — | Frequência domingo (UI: 3 opções; CHECK aceita `todos_os_domingos`) |
+| weekly_activities | boolean | NULL | — | Atividades semanais |
+| weekly_activities_which | text | NULL | — | Quais atividades |
 | status | integration_status_enum | NOT NULL | `em_progresso` | em_progresso/integrado/descartado |
 | created_at / updated_at | timestamptz | NOT NULL | utc now | Auditoria |
 
@@ -820,7 +820,7 @@ Regras que o Backend Engineer / agentes devem seguir com o schema **real**:
 4. **Timestamps** — preferir `timestamptz`; nem toda tabela tem `updated_at` (`members` não tem — não adicionar silenciosamente sem migration).
 5. **Tenant** — toda query de domínio DEVE filtrar `church_id` resolvido do usuário; service_role não isola sozinho.
 6. **RLS** — tabelas `public` têm RLS; código server-side depende de service_role. Não abrir policies amplas para `anon` sem ADR.
-7. **Enums vs CHECK** — ao alterar valor permitido, atualizar constraint + validators Joi/Zod + docs; alinhar `members` (text/CHECK) vs `integration_members` (PG enum).
+7. **Enums vs CHECK** — ao alterar valor permitido, atualizar constraint + validators Joi/Zod + docs; alinhar `members` (text/CHECK) vs `integration_members` (PG enum para gênero/civil/status; questionário eclesiástico é text + CHECK em `integration_members`).
 8. **Migrations** — aplicar no Supabase com timestamp+slug; commitar SQL de referência se o time passar a versionar; atualizar este doc e cuidado com dump `bd-structure.sql` desatualizado.
 9. **Billing** — respeitar CHECKs de `plan_type`/`subscription_status`; uniques parciais Stripe; usar RPC `link_pending_to_church` em vez de duplicar lógica de vínculo.
 10. **Webhooks** — claim em `processed_webhook_events` por `stripe_event_id` unique; respeitar `outcome` e `last_stripe_event_created` para ordenação.

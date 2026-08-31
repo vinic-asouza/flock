@@ -108,42 +108,6 @@ export function renderBlankRegistrationPdf(res: Response, churchName: string): v
     { label: 'Complemento', flex: 1.2 },
   ]);
 
-  drawSectionTitle(ctx, 'Informações Eclesiásticas');
-  drawUnderlineField(ctx, 'É cristão evangélico há quantos anos?');
-  drawCheckboxGroup(ctx, 'Vem de família cristã evangélica?', ['Sim', 'Não'], 2);
-  drawCheckboxGroup(ctx, 'Já é batizado(a)?', ['Sim', 'Não'], 2);
-  drawCheckboxGroup(
-    ctx,
-    'Se batizado(a), marque uma opção',
-    [
-      'Fui batizado(a) na igreja católica',
-      'Fui batizado(a) quando adulto — nesta igreja',
-      'Fui batizado(a) quando adulto — em outra igreja evangélica',
-      'Fui batizado(a) quando criança — nesta igreja',
-      'Fui batizado(a) quando criança — em outra igreja evangélica',
-      'Sou novo(a) convertido(a) — minha religião anterior era:',
-      'Sou novo(a) convertido(a) — não tinha religião anterior',
-    ],
-    1
-  );
-  drawUnderlineField(ctx, 'Nome da igreja em que foi batizado(a)');
-  drawUnderlineField(ctx, 'Qual era sua religião anterior?');
-  drawCheckboxGroup(
-    ctx,
-    'Atualmente é ou era membro ativo da igreja anterior?',
-    ['Sim', 'Não'],
-    2
-  );
-  drawTextAreaLines(
-    ctx,
-    'Descreva o(s) motivo(s) de ter decidido tornar-se membro de nossa igreja',
-    3
-  );
-  drawUnderlineField(ctx, 'Há quanto tempo frequenta a igreja?');
-  drawCheckboxGroup(ctx, 'Frequenta nossos cultos?', ['Regularmente', 'Às vezes', 'Não'], 3);
-  drawCheckboxGroup(ctx, 'Participa de alguma outra atividade semanal?', ['Sim', 'Não'], 2);
-  drawUnderlineField(ctx, 'Quais atividades?');
-
   drawSectionTitle(ctx, 'Informações de Recebimento');
   drawCheckboxGroup(ctx, 'Membro infantil (criança / sem profissão de fé)', ['Sim', 'Não'], 2);
   drawCheckboxGroup(

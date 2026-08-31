@@ -574,7 +574,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
-| 2026-08-31 | 1.8 | GET `/export/integration/registration-form/pdf` + BR-REL-013 (ficha de pré-cadastro) | DEV-92 |
+| 2026-08-31 | 1.8 | Ficha em branco e ficha de membro sem questionário; ficha de integrante inclui o bloco | DEV-91 |
 | 2026-08-25 | 1.7 | POST `/export/congregation/members/list` + BR-REL-012 (rol ativo no modal) | DEV-47 |
 | 2026-08-25 | 1.6 | CSV de membros: catálogo operacional, flags de família, BR-REL-007 no CSV; grupos só PDF | DEV-49 |
 | 2026-08-20 | 1.5 | Kit Flock Print (`utils/pdf`), BR-REL-011, fields deprecated → 400, testes listFields | DEV-25 |

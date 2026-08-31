@@ -1,7 +1,7 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-08-26
-versao: "1.4"
+ultima_atualizacao: 2026-08-31
+versao: "1.5"
 total_modulos: 13
 total_regras: 155
 tags: [regras, índice, módulos]
@@ -20,7 +20,7 @@ tags: [regras, índice, módulos]
 | Admin OPS | [[02_regras-de-negocio/regras-por-modulo/admin-ops]] | OPS | 8 | Allowlist + leitura GET de Igrejas + Lista de espera + saúde agregada |
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
 | Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 18 | Rol oficial, import, autocadastro |
-| Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
+| Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 16 | Pré-membros e conversão |
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |

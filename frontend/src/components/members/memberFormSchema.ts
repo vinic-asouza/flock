@@ -73,23 +73,6 @@ export const memberSchema = z.object({
     .refine((val) => !val || val.trim() === '' || validateCEP(val), {
       message: 'CEP inválido. Deve conter 8 dígitos',
     }),
-  // Informações Eclesiásticas
-  years_evangelical: z.string().optional().or(z.literal('')),
-  evangelical_family: z.boolean().optional(),
-  is_baptized: z.boolean().optional(),
-  baptism_type: z.enum([
-    'catolica', 'adulto_nesta_igreja', 'adulto_outra_igreja',
-    'crianca_nesta_igreja', 'crianca_outra_igreja',
-    'novo_convertido', 'sem_religiao',
-  ]).optional(),
-  baptism_other_church_name: z.string().optional().or(z.literal('')),
-  previous_religion: z.string().optional().or(z.literal('')),
-  previous_church_active: z.boolean().optional(),
-  reason_joining: z.string().optional().or(z.literal('')),
-  time_attending: z.string().optional().or(z.literal('')),
-  sunday_attendance: z.enum(['todos_os_domingos', 'regularmente', 'as_vezes', 'nao']).optional(),
-  weekly_activities: z.boolean().optional(),
-  weekly_activities_which: z.string().optional().or(z.literal('')),
   // Informações de Recebimento
   baptism_date: z.string()
     .optional()

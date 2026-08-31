@@ -13,6 +13,12 @@ import {
   IntegrationGender,
   IntegrationMaritalStatus
 } from '@/types';
+import {
+  EcclesiasticalQuestionnaire,
+  ecclesiasticalDefaultValues,
+  ecclesiasticalFieldsFromForm,
+  ecclesiasticalQuestionnaireSchema,
+} from '@/components/integration/EcclesiasticalQuestionnaire';
 
 const phoneRefine = (val: string | undefined) => {
   if (!val || val.trim() === '') return true;
@@ -21,7 +27,6 @@ const phoneRefine = (val: string | undefined) => {
 };
 const phoneMessage = 'Telefone inválido (10 ou 11 dígitos)';
 
-// Schema de validação (sem expected_admission_type, mentor_id, notes)
 const integrationSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   birth: z
@@ -40,7 +45,7 @@ const integrationSchema = z.object({
   phone: z.string().optional().refine(phoneRefine, phoneMessage),
   whatsapp: z.string().optional().refine(phoneRefine, phoneMessage),
   expected_congregation_id: z.union([z.literal(''), z.string().uuid()]).optional(),
-});
+}).merge(ecclesiasticalQuestionnaireSchema);
 
 type IntegrationFormData = z.infer<typeof integrationSchema>;
 
@@ -68,7 +73,6 @@ const maritalStatusOptions: { value: '' | IntegrationMaritalStatus; label: strin
   { value: 'outro', label: 'Outro' }
 ];
 
-// Função para formatar telefone
 const formatPhone = (value: string): string => {
   const numbers = value.replace(/\D/g, '');
   if (numbers.length <= 10) {
@@ -78,10 +82,11 @@ const formatPhone = (value: string): string => {
   }
 };
 
-export function PublicIntegrationForm({ 
-  onSubmit, 
-  onCancel, 
+export function PublicIntegrationForm({
+  onSubmit,
+  onCancel,
   isLoading = false,
+  churchName,
   congregations = [],
   submitDisabled = false,
 }: PublicIntegrationFormProps) {
@@ -106,6 +111,7 @@ export function PublicIntegrationForm({
       phone: '',
       whatsapp: '',
       expected_congregation_id: '',
+      ...ecclesiasticalDefaultValues,
     }
   });
 
@@ -131,15 +137,14 @@ export function PublicIntegrationForm({
       phone: data.phone && data.phone.trim() !== '' ? data.phone.trim() : null,
       whatsapp: data.whatsapp && data.whatsapp.trim() !== '' ? data.whatsapp.trim() : null,
       expected_congregation_id: data.expected_congregation_id && data.expected_congregation_id !== '' ? data.expected_congregation_id : null,
-      // Campos não incluídos no formulário público:
       expected_admission_type: null,
       mentor_id: null,
-      notes: null
+      notes: null,
+      ...ecclesiasticalFieldsFromForm(data),
     };
 
     await onSubmit(payload);
 
-    // Limpar formulário após sucesso
     setPhoneDisplay('');
     setWhatsappDisplay('');
     reset();
@@ -159,65 +164,81 @@ export function PublicIntegrationForm({
     register('gender');
     register('marital_status');
     register('expected_congregation_id');
+    register('evangelical_family');
+    register('is_baptized');
+    register('baptism_type');
+    register('previous_church_active');
+    register('sunday_attendance');
+    register('weekly_activities');
   }, [register]);
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 p-4 sm:p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Nome completo"
-          placeholder="Informe o nome"
-          {...register('name')}
-          error={errors.name?.message}
-          disabled={isLoading}
-        />
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+          Informações pessoais
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Nome completo"
+            placeholder="Informe o nome"
+            {...register('name')}
+            error={errors.name?.message}
+            disabled={isLoading}
+          />
 
-        <Input
-          label="Data de nascimento"
-          type="date"
-          {...register('birth')}
-          error={errors.birth?.message}
-          disabled={isLoading}
-        />
+          <Input
+            label="Data de nascimento"
+            type="date"
+            {...register('birth')}
+            error={errors.birth?.message}
+            disabled={isLoading}
+          />
 
-        <Select
-          options={genderOptions.map(option => ({ value: option.value, label: option.label }))}
-          value={watch('gender') ?? ''}
-          onChange={(value) => setValue('gender', value as IntegrationFormData['gender'])}
-          label="Gênero"
-          placeholder="Selecione"
-          disabled={isLoading}
-        />
+          <Select
+            options={genderOptions.map(option => ({ value: option.value, label: option.label }))}
+            value={watch('gender') ?? ''}
+            onChange={(value) => setValue('gender', value as IntegrationFormData['gender'])}
+            label="Gênero"
+            placeholder="Selecione"
+            disabled={isLoading}
+          />
 
-        <Select
-          options={maritalStatusOptions.map(option => ({ value: option.value, label: option.label }))}
-          value={watch('marital_status') ?? ''}
-          onChange={(value) => setValue('marital_status', value as IntegrationFormData['marital_status'])}
-          label="Estado civil"
-          placeholder="Selecione"
-          disabled={isLoading}
-        />
+          <Select
+            options={maritalStatusOptions.map(option => ({ value: option.value, label: option.label }))}
+            value={watch('marital_status') ?? ''}
+            onChange={(value) => setValue('marital_status', value as IntegrationFormData['marital_status'])}
+            label="Estado civil"
+            placeholder="Selecione"
+            disabled={isLoading}
+          />
 
-        <Input
-          label="Telefone"
-          placeholder="(00) 00000-0000"
-          value={phoneDisplay}
-          onChange={(e) => handlePhoneChange(e, 'phone')}
-          maxLength={15}
-          error={errors.phone?.message}
-          disabled={isLoading}
-        />
+          <Input
+            label="Telefone"
+            placeholder="(00) 00000-0000"
+            value={phoneDisplay}
+            onChange={(e) => handlePhoneChange(e, 'phone')}
+            maxLength={15}
+            error={errors.phone?.message}
+            disabled={isLoading}
+          />
 
-        <Input
-          label="WhatsApp"
-          placeholder="(00) 00000-0000"
-          value={whatsappDisplay}
-          onChange={(e) => handlePhoneChange(e, 'whatsapp')}
-          maxLength={15}
-          error={errors.whatsapp?.message}
-          disabled={isLoading}
-        />
+          <Input
+            label="WhatsApp"
+            placeholder="(00) 00000-0000"
+            value={whatsappDisplay}
+            onChange={(e) => handlePhoneChange(e, 'whatsapp')}
+            maxLength={15}
+            error={errors.whatsapp?.message}
+            disabled={isLoading}
+          />
+        </div>
+      </div>
 
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+          Informações eclesiásticas
+        </h3>
         <Select
           options={congregationOptions}
           value={watch('expected_congregation_id') ?? ''}
@@ -225,6 +246,14 @@ export function PublicIntegrationForm({
           label="Congregação prevista"
           placeholder="Selecione"
           disabled={isLoading}
+        />
+        <EcclesiasticalQuestionnaire
+          churchName={churchName}
+          isLoading={isLoading}
+          register={register}
+          watch={watch}
+          setValue={setValue}
+          errors={errors}
         />
       </div>
 
@@ -241,4 +270,3 @@ export function PublicIntegrationForm({
     </form>
   );
 }
-
