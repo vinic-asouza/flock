@@ -160,7 +160,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
             </Link>
             <Link
               href={buildFreeRegisterUrl(FRONTEND_URL)}
-              className="flex min-h-11 w-full items-center justify-center bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+              className="flex min-h-11 w-full items-center justify-center bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 sm:hover:scale-105 transition-all duration-300"
               onClick={closeMenu}
             >
               Começar grátis

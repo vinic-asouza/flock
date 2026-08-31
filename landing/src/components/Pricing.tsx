@@ -82,10 +82,7 @@ export function Pricing() {
             Comece grátis. Cresça quando sua igreja crescer.
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-4">
-            Todas as funcionalidades. Um único Flock.
-          </p>
-          <p className="text-sm text-gray-600 max-w-3xl mx-auto">
-            Você paga apenas pelo tamanho da sua igreja.
+            Todas as funcionalidades. Uma única assinatura. <br /> Você paga apenas pelo tamanho da sua igreja.
           </p>
         </div>
 
@@ -103,7 +100,7 @@ export function Pricing() {
               </div>
               <Link
                 href={buildFreeRegisterUrl(FRONTEND_URL)}
-                className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-colors text-sm sm:text-base"
+                className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base"
               >
                 Começar grátis
               </Link>

@@ -40,16 +40,6 @@ export function ReportsHighlight() {
                 </li>
               ))}
             </ul>
-            <a
-              href="#pricing"
-              onClick={(e) => {
-                e.preventDefault();
-                scrollToPricing();
-              }}
-              className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base font-semibold border border-primary/20 hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl"
-            >
-              Conhecer o Flock
-            </a>
           </div>
           <div className="relative min-w-0 order-first lg:order-last">
             <Image

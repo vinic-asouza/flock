@@ -25,7 +25,7 @@ export function CTA() {
           </p>
           <Link
             href={buildFreeRegisterUrl(FRONTEND_URL)}
-            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105"
           >
             Começar grátis
           </Link>
