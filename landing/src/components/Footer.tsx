@@ -22,7 +22,7 @@ export function Footer({ onOpenWaitlist }: FooterProps) {
           <div>
             <h3 className="text-primary text-xl font-bold mb-4">Flock</h3>
             <p className="text-sm text-gray-600">
-              Organize a vida da sua igreja.
+              A gestão da sua igreja, em um só lugar.
             </p>
           </div>
           <div>
@@ -44,12 +44,17 @@ export function Footer({ onOpenWaitlist }: FooterProps) {
                 </Link>
               </li>
               <li>
+                <Link href={landingAnchor('#faq', pathname)} className={linkClass}>
+                  FAQ
+                </Link>
+              </li>
+              <li>
                 <Link
                   href={landingAnchor('#waitlist', pathname)}
                   className={linkClass}
                   onClick={onOpenWaitlist}
                 >
-                  Solicitar Contato
+                  Contato
                 </Link>
               </li>
             </ul>

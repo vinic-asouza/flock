@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
 
 interface DemoItem {
   id: string;
+  navLabel: string;
   title: string;
   description: string;
   image: string;
@@ -14,42 +15,49 @@ interface DemoItem {
 const demoItems: DemoItem[] = [
   {
     id: 'dashboard',
-    title: 'A home da sua igreja',
+    navLabel: 'Painel',
+    title: 'A visão geral da sua igreja',
     description: 'Veja o que acontece: membros ativos, crescimento, próximos eventos. A visão geral que a liderança precisa.',
     image: '/demo/painel.png',
   },
   {
     id: 'members',
+    navLabel: 'Membros',
     title: 'Membros (rol)',
     description: 'O rol completo da igreja. Quem é membro, quem saiu, dados atualizados. Encontre qualquer pessoa na hora.',
     image: '/demo/members.png',
   },
   {
     id: 'integration',
+    navLabel: 'Integração',
     title: 'Quem está chegando',
     description: 'As pessoas que estão conhecendo a igreja, antes de se tornarem membros. Acompanhe cada passo do caminho.',
     image: '/demo/integration.png',
   },
   {
     id: 'congregations',
+    navLabel: 'Congregações',
     title: 'Congregações',
     description: 'Várias congregações no mesmo cadastro. Cada ponto da igreja organizado e visível.',
     image: '/demo/congregation.png',
   },
   {
     id: 'groups',
+    navLabel: 'Grupos',
     title: 'Grupos',
     description: 'Ministérios, células, equipes. Crie, acompanhe e conduza o trabalho dos grupos.',
     image: '/demo/groups.png',
   },
   {
     id: 'calendar',
+    navLabel: 'Calendário',
     title: 'Calendário',
     description: 'Cultos, reuniões, eventos. A agenda da igreja visível para quem lidera.',
     image: '/demo/calendar.png',
   },
   {
     id: 'reports',
+    navLabel: 'Relatórios',
     title: 'As estatísticas da sua igreja',
     description: 'Quantos membros, como está o crescimento, o perfil da congregação. Os números que a liderança acompanha.',
     image: '/demo/details.png',
@@ -98,15 +106,38 @@ export function DemoSection() {
   const currentItem = demoItems[currentIndex];
 
   return (
-    <section id="demo" className="py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
+    <section id="demo" className="scroll-mt-24 py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
       <div className="max-w-7xl mx-auto min-w-0">
-        <div className="text-center mb-16">
+        <div className="text-center mb-8">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Veja como fica na prática
+            Quer conhecer o Flock antes de começar?
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-            Do rol à agenda, do jeito que a igreja trabalha.
+            Fale com nossa equipe e veja o Flock funcionando na prática.
           </p>
+        </div>
+
+        <div className="text-center mb-8 sm:mb-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a
+            href="#waitlist"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold border border-primary/20 hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl"
+          >
+            Agendar demonstração
+          </a>
+          <a
+            href="#pricing"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center text-sm sm:text-base text-primary font-medium hover:underline"
+          >
+            Ver planos
+          </a>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -119,29 +150,27 @@ export function DemoSection() {
               }}
             >
               <div className="mb-6">
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {demoItems.map((_, index) => (
+                <nav
+                  aria-label="Módulos da demonstração"
+                  className="flex lg:flex-col gap-1 overflow-x-auto mb-5 -mx-1 px-1 pb-1 [scrollbar-width:thin]"
+                >
+                  {demoItems.map((item, index) => (
                     <button
-                      key={index}
+                      key={item.id}
                       type="button"
                       onClick={() => goToSlide(index)}
-                      className={`min-h-11 min-w-11 flex items-center justify-center rounded-full transition-all duration-300 ${
+                      className={`shrink-0 min-h-11 px-3 rounded-lg text-left text-sm transition-colors ${
                         index === currentIndex
-                          ? 'bg-white/40 px-3'
-                          : 'bg-white/10 hover:bg-white/20'
+                          ? 'bg-white text-primary font-semibold'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white'
                       }`}
-                      aria-label={`Ir para slide ${index + 1}`}
                       aria-current={index === currentIndex ? 'true' : undefined}
                     >
-                      <span
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          index === currentIndex ? 'bg-white w-6' : 'bg-white/60 w-2'
-                        }`}
-                      />
+                      {item.navLabel}
                     </button>
                   ))}
-                </div>
-                <h3 className="text-xl md:text-2xl font-bold mb-4">
+                </nav>
+                <h3 className="text-xl md:text-2xl font-bold mb-3">
                   {currentItem.title}
                 </h3>
                 <p className="text-sm md:text-base text-white/90 leading-relaxed">
@@ -225,29 +254,6 @@ export function DemoSection() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a
-            href="#pricing"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.hash = '#pricing';
-              setTimeout(() => {
-                const pricingSection = document.getElementById('pricing');
-                if (pricingSection) {
-                  pricingSection.scrollIntoView({ behavior: 'smooth' });
-                }
-              }, 100);
-            }}
-            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 text-white px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold sm:hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
-            style={{
-              backgroundColor: '#090725',
-              backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
-            }}
-          >
-            <span className="text-sm sm:text-base">Ver planos</span>
-          </a>
         </div>
       </div>
     </section>

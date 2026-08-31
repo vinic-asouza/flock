@@ -3,8 +3,8 @@ type: modulo
 nome: aquisicao
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-08-26
-versao: "1.2"
+ultima_atualizacao: 2026-08-31
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
 depende_de: [billing, onboarding]
@@ -64,18 +64,22 @@ backend/src/
 
 landing/                                  → Next.js :3000
 ├── src/app/
-│   ├── page.tsx                          → Home marketing
-│   ├── waitlist/page.tsx                 → Formulario waitlist
+│   ├── page.tsx                          → Home marketing (ordem das seções abaixo)
+│   ├── waitlist/page.tsx                 → Formulário waitlist
 │   ├── layout.tsx / sitemap.ts           → SEO
 ├── src/components/
+│   ├── AudienceSection.tsx               → #para-quem
+│   ├── OverviewSection.tsx               → #visao-geral
+│   ├── ReportsHighlight.tsx              → #relatorios
+│   ├── FaqSection.tsx                    → #faq
 │   ├── Pricing.tsx / CheckoutButton.tsx  → CTAs plano
-│   ├── WaitlistForm.tsx
-│   ├── Hero, Features, CTA, …
+│   ├── WaitlistForm.tsx                  → form #waitlist (home) e /waitlist
+│   ├── Hero, Features, DemoSection, ProcessSection, CTA, Header, Footer
 ├── src/services/
 │   ├── waitlist.ts                       → POST API
 │   └── plans.ts                          → GET /api/plans
 ├── src/utils/
-│   ├── planFunnel.ts                     → register/login URLs + sessionStorage
+│   ├── planFunnel.ts                     → register/login URLs + sessionStorage + PLAN_DISPLAY_NAMES
 │   ├── landingLinks.ts                   → anchors `/#seção` fora de `/`
 │   ├── waitlistPlan.ts                   → parse plan URL
 │   └── formatWaitlistError.ts
@@ -138,7 +142,7 @@ Operações de superfície (não são rotas backend deste módulo, mas fazem par
 
 | Superfície | Descrição |
 | --- | --- |
-| Landing `/` | Marketing + pricing |
+| Landing `/` | Marketing: hero, para quem, visão, recursos, relatórios, demo, processo, planos, FAQ, CTA |
 | Landing `/waitlist` | Formulário |
 | CTA pago | Redirect `FRONTEND_URL/register?plan=200\|500\|800` |
 | CTA free | Redirect `…/register?plan=100` |
@@ -231,7 +235,7 @@ sequenceDiagram
   participant ONB as onboarding
   participant BILL as billing
 
-  V->>L: Assinar Agora (plan 200|500|800)
+  V->>L: Escolher este plano (plan 200|500|800)
   L->>L: sessionStorage flock_selected_plan
   L->>App: redirect register?plan=
   Note over App,BILL: daqui em diante onboarding/billing
@@ -257,15 +261,23 @@ stateDiagram-v2
 
 App isolada `landing/` (Next.js :3000). **Não** reutiliza shell/`Modal`/`MobileNavDrawer` do app autenticado ([[04_modulos/config]] / DEV-26). Breakpoint canônico desta superfície: **`md` (768px)** — nav desktop vs hamburger.
 
+**Home `/` (ordem):** Hero → Para quem (`#para-quem`) → Visão geral (`#visao-geral`) → Recursos (`#features`) → Relatórios (`#relatorios`) → Demo (`#demo`) → Processo (`#como-funciona`) → Planos (`#pricing`) → FAQ (`#faq`) → CTA (Começar grátis + form). Funil self-serve inalterado: 100 → registro; 200/500/800 → checkout; contato só excepcional (DEV-83).
+
+**Nav:** Recursos · Demonstração · Planos · FAQ · Contato. CTA primário **Começar grátis** → `register?plan=100`.
+
+**Nomes comerciais na landing** (ids de plano inalterados): Grátis (`100`) · Essencial (`200`) · Crescimento (`500`, selo “Mais escolhido”) · Completo (`800`). Fonte: `PLAN_DISPLAY_NAMES` em `planFunnel.ts`. O Painel autenticado continua “Plano 100/200/…”.
+
 **Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+` / `sm+` conforme bloco) permanece equivalente. Sem migrar funil para rotas full-page nem Stripe hosted no botão de pricing.
 
-- **Header:** logo à esquerda, hamburger à direita (`justify-between`); menu empilhado com alvos ≥44px; `env(safe-area-inset-top)` no sticky; fecha ao navegar.
-- **Root:** `overflow-x-hidden` + `min-w-0`; `viewportFit: cover` no layout; toast abaixo do header sticky (~4.5rem + safe-area).
-- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado.
-- **WaitlistForm** (home `#waitlist` + `/waitlist`): inputs `text-base` (≥16px, evita zoom iOS) + `min-h-11`; chips de plano touch; estados erro/sucesso/toast preservados.
-- **DemoSection:** setas/dots com alvos touch; container sem overflow.
+- **Header:** `position: fixed` + spacer `h-16` (sticky quebrava com `overflow-x: hidden` em `html`/`body`); logo à esquerda, hamburger à direita (`justify-between`); menu empilhado com alvos ≥44px; `env(safe-area-inset-top)`; fecha ao navegar.
+- **Root:** `overflow-x-hidden` + `min-w-0`; `viewportFit: cover` no layout; toast abaixo do header (~4.5rem + safe-area).
+- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado. Pricing: faixa Grátis + cards pagos; CTA do card **Escolher este plano**.
+- **FAQ `#faq`:** accordion nativo (`<details>`/`<summary>`); âncora no Header/Footer.
+- **CTA final:** bloco Começar grátis acima; `id="waitlist"` no **card do form** (não no H2 do fechamento), para Contato/hash posicionarem o formulário.
+- **WaitlistForm** (home `#waitlist` + `/waitlist`): inputs `text-base` (≥16px, evita zoom iOS) + `min-h-11`; planos Essencial / Crescimento / Completo / Personalizado (valores `200|500|800|personalizado`; sem `100` — a API não aceita); estados erro/sucesso/toast preservados.
+- **DemoSection:** nav de módulos no lugar de dots; setas com alvos touch; CTAs Agendar demonstração / Ver planos; container sem overflow.
 - **StatsGraphics:** SVG pizza `w-full h-full` (sem overflow horizontal); altura mobile reduzida (`min-h-[280px]`).
-- **`/waitlist` P1:** Header/Footer usam `landingLinks.ts` — anchors viram `/#features`, `/#pricing`, etc.
+- **`/waitlist`:** Header/Footer usam `landingLinks.ts` — anchors viram `/#features`, `/#pricing`, `/#faq`, `/#waitlist`, etc.
 
 ---
 
@@ -395,6 +407,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-31 | 1.3 | Home: 4 seções novas (para quem, visão, relatórios, FAQ); nomes comerciais Grátis/Essencial/Crescimento/Completo; header `fixed`; `id=waitlist` no form. Funil e BR-ACQ inalterados | DEV-90 |
 | 2026-08-26 | 1.2 | Lista autenticada de leads no Admin OPS (`GET /api/ops/waitlist`); POST público intacto | DEV-72 |
 | 2026-08-17 | 1.1 | UX mobile/tablet da landing (`/`, `/waitlist`): header touch, overflow, waitlist 16px, `landingLinks`, toast/safe-area | DEV-36 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo aquisição | — |

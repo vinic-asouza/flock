@@ -1,5 +1,12 @@
 export const SELECTED_PLAN_STORAGE_KEY = 'flock_selected_plan';
 
+export const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  '100': 'Grátis',
+  '200': 'Essencial',
+  '500': 'Crescimento',
+  '800': 'Completo',
+};
+
 export type PaidPlanId = '200' | '500' | '800';
 
 export function isPaidPlanId(value: string | null | undefined): value is PaidPlanId {

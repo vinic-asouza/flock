@@ -24,8 +24,9 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
     'flex min-h-11 items-center text-white/90 hover:text-white transition-colors font-medium';
 
   return (
+    <>
     <header
-      className="sticky top-0 z-50 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary shadow-lg pt-[env(safe-area-inset-top,0px)]"
+      className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary shadow-lg pt-[env(safe-area-inset-top,0px)]"
       style={{
         backgroundColor: '#090725',
         backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
@@ -53,7 +54,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
           </div>
 
           {/* Desktop Navigation - Centralized Links */}
-          <div className="hidden md:flex md:items-center md:justify-center md:flex-1 md:space-x-8">
+          <div className="hidden md:flex md:items-center md:justify-center md:flex-1 md:space-x-5 lg:space-x-8">
             <Link href={landingAnchor('#features', pathname)} className={navLinkClass}>
               Recursos
             </Link>
@@ -62,6 +63,9 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
             </Link>
             <Link href={landingAnchor('#pricing', pathname)} className={navLinkClass}>
               Planos
+            </Link>
+            <Link href={landingAnchor('#faq', pathname)} className={navLinkClass}>
+              FAQ
             </Link>
             <Link
               href={landingAnchor('#waitlist', pathname)}
@@ -129,6 +133,13 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               Planos
             </Link>
             <Link
+              href={landingAnchor('#faq', pathname)}
+              className={`${navLinkClass} px-2`}
+              onClick={closeMenu}
+            >
+              FAQ
+            </Link>
+            <Link
               href={landingAnchor('#waitlist', pathname)}
               className={`${navLinkClass} px-2`}
               onClick={() => {
@@ -149,7 +160,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
             </Link>
             <Link
               href={buildFreeRegisterUrl(FRONTEND_URL)}
-              className="flex min-h-11 w-full items-center justify-center bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+              className="flex min-h-11 w-full items-center justify-center bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 sm:hover:scale-105 transition-all duration-300"
               onClick={closeMenu}
             >
               Começar grátis
@@ -158,5 +169,11 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
         )}
       </nav>
     </header>
+    <div
+      className="h-16 shrink-0"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      aria-hidden
+    />
+    </>
   );
 }

@@ -8,6 +8,7 @@ import { Loader, ArrowRight, CheckCircle2, ArrowLeft, Mail } from 'lucide-react'
 import { waitlistService } from '@/services/waitlist';
 import toast from 'react-hot-toast';
 import { readPlanFromLocation, parseWaitlistPlanParam } from '@/utils/waitlistPlan';
+import { PLAN_DISPLAY_NAMES } from '@/utils/planFunnel';
 import { useIbgeData } from '@/hooks/useIbgeData';
 
 const waitlistSchema = z.object({
@@ -322,9 +323,9 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { value: '200', label: 'Plano 200', description: 'Até 200 membros' },
-            { value: '500', label: 'Plano 500', description: 'Até 500 membros' },
-            { value: '800', label: 'Plano 800', description: 'Até 800 membros' },
+            { value: '200', label: PLAN_DISPLAY_NAMES['200'], description: 'Até 200 membros' },
+            { value: '500', label: PLAN_DISPLAY_NAMES['500'], description: 'Até 500 membros' },
+            { value: '800', label: PLAN_DISPLAY_NAMES['800'], description: 'Até 800 membros' },
             { value: 'personalizado', label: 'Personalizado', description: 'Mais de 800 membros' },
           ].map((plan) => {
             const isSelected = watch('plan') === plan.value;

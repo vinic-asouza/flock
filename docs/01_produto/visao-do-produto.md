@@ -1,8 +1,8 @@
 ---
 type: visao-produto
 status: Rascunho
-ultima_atualizacao: 2026-08-26
-versao: "1.5"
+ultima_atualizacao: 2026-08-31
+versao: "1.6"
 tags: [produto, estratégia, contexto]
 ---
 
@@ -20,7 +20,7 @@ O **Flock** ajuda **líderes e equipes de igrejas** a **organizar membresia, int
 
 ## 💡 Proposta de Valor
 
-- Um único lugar para a vida administrativa da igreja (membros, estrutura, agenda e indicadores).
+- Um único lugar para a vida administrativa da igreja (membros, estrutura, agenda e indicadores). Promessa pública da landing: **A gestão da sua igreja, em um só lugar.**
 - Captação de novos membros com menos fricção (formulários públicos e fluxo de integração).
 - Visibilidade demográfica e operacional sem depender de planilhas.
 - Isolamento por igreja: cada organização vê apenas os próprios dados.
@@ -64,7 +64,7 @@ _(Comparação competitiva formal: não identificada no código — preencher ma
 | Estrutura | Congregações e grupos (ministérios, células, etc.) | Organizar a igreja além da lista plana de nomes |
 | Agenda | Calendário de eventos/reuniões com participantes | Centralizar programação e participação |
 | Inteligência | Painel e relatórios demográficos/temporais | Enxergar perfil e evolução da membership |
-| Captação | Links públicos + landing (pricing/waitlist) | Captar interesses e leads sem atrito |
+| Captação | Links públicos + landing (home com FAQ, pricing e waitlist) | Captar interesses e leads sem atrito |
 | Administração | Igreja, conta, usuários, auditoria, tutoriais | Operar a conta com segurança e onboarding |
 | Assinatura | Planos e portal Stripe | Escalar o plano conforme o tamanho da igreja |
 

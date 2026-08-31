@@ -1,7 +1,7 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-08-26
-versao: "1.8"
+ultima_atualizacao: 2026-08-31
+versao: "1.9"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 75
 ---
@@ -83,7 +83,8 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Faixa comercial que define o **limite de membros** e preço da assinatura.  
 - **Valores:** `100` (grátis), `200`, `500`, `800`, `custom`  
 - **Usado em:** Billing, limites, landing pricing  
-- **UI:** “Plano 100/200/…” 
+- **UI landing:** Grátis (`100`) · Essencial (`200`) · Crescimento (`500`) · Completo (`800`) — `PLAN_DISPLAY_NAMES` em `landing/src/utils/planFunnel.ts`  
+- **UI Painel:** “Plano 100/200/…” (Configurações → Plano; inalterado nesta Issue) 
 
 **Assinatura** *(código: campos Stripe em `churches` + `pending_subscriptions`)*  
 > Contrato de cobrança da igreja junto ao Stripe (status, datas, customer/subscription IDs).  
@@ -238,11 +239,11 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 | Constante / conceito | Valor | Significado |
 | --- | --- | --- |
-| Plano `100` | 0 / 100 membros | Plano gratuito |
-| Plano `200` | R$ 29,99 / 200 | Pago pequeno |
-| Plano `500` | R$ 59,99 / 500 | Pago médio |
-| Plano `800` | R$ 89,99 / 800 | Pago grande |
-| `custom` / `personalizado` | — | Plano sob medida (schema/waitlist); pouco exposto na landing |
+| Plano `100` | 0 / 100 membros | Plano gratuito — landing: **Grátis** |
+| Plano `200` | R$ 29,99 / 200 | Pago pequeno — landing: **Essencial** |
+| Plano `500` | R$ 59,99 / 500 | Pago médio — landing: **Crescimento** (selo “Mais escolhido”) |
+| Plano `800` | R$ 89,99 / 800 | Pago grande — landing: **Completo** |
+| `custom` / `personalizado` | — | Plano sob medida (schema/waitlist); form da landing: **Personalizado** |
 | Limite de membros | = `plan.members` | Quota que trava criações ao estourar |
 | Avisos de limite | ~80% / 90% / 100% | E-mails de proximidade do teto |
 | `past_due` | grace | Mantém plano mas bloqueia **novos** membros |
