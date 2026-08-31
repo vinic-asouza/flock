@@ -15,8 +15,8 @@ interface DemoItem {
 const demoItems: DemoItem[] = [
   {
     id: 'dashboard',
-    navLabel: 'Home',
-    title: 'A home da sua igreja',
+    navLabel: 'Painel',
+    title: 'A visão geral da sua igreja',
     description: 'Veja o que acontece: membros ativos, crescimento, próximos eventos. A visão geral que a liderança precisa.',
     image: '/demo/painel.png',
   },
@@ -108,13 +108,36 @@ export function DemoSection() {
   return (
     <section id="demo" className="scroll-mt-24 py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
       <div className="max-w-7xl mx-auto min-w-0">
-        <div className="text-center mb-16">
+        <div className="text-center mb-8">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Quer conhecer o Flock antes de começar?
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             Fale com nossa equipe e veja o Flock funcionando na prática.
           </p>
+        </div>
+
+        <div className="text-center mb-8 sm:mb-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a
+            href="#waitlist"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold border border-primary/20 hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl"
+          >
+            Agendar demonstração
+          </a>
+          <a
+            href="#pricing"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center text-sm sm:text-base text-primary font-medium hover:underline"
+          >
+            Ver planos
+          </a>
         </div>
 
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -231,29 +254,6 @@ export function DemoSection() {
               </div>
             </div>
           </div>
-        </div>
-
-        <div className="text-center mt-8 sm:mt-12 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a
-            href="#waitlist"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold border border-primary/20 hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl"
-          >
-            Agendar demonstração
-          </a>
-          <a
-            href="#pricing"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center text-sm sm:text-base text-primary font-medium hover:underline"
-          >
-            Ver planos
-          </a>
         </div>
       </div>
     </section>
