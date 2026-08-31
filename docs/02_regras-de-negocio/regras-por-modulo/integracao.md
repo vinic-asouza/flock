@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: integracao
-ultima_atualizacao: 2026-07-14
-versao: "1.1"
-total_regras: 15
+ultima_atualizacao: 2026-08-31
+versao: "1.2"
+total_regras: 16
 tags: [regras, modulo:integracao]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -34,6 +34,7 @@ Qualificar pré-membros até conversão ao rol ou descarte.
 | BR-INT-013 | DELETE permanente | Gatilho | Ativo |
 | BR-INT-014 | Link público válido | Restrição | Ativo |
 | BR-INT-015 | Race max_uses | Gatilho | Ativo |
+| BR-INT-016 | Questionário só no Integrante | Fato | Ativo |
 
 ---
 
@@ -62,24 +63,24 @@ Qualificar pré-membros até conversão ao rol ou descarte.
 - **Depende de:** —
 
 ### BR-INT-003: Campos validados
-- **Declaração:** Nome obrigatório; nascimento não futuro; enums válidos; fones se informados.
+- **Declaração:** Nome obrigatório; nascimento não futuro; enums de gênero/estado civil/status válidos; fones se informados. Questionário eclesiástico (12 campos) é opcional: `years_evangelical`, `evangelical_family`, `is_baptized`, `baptism_type` (7 valores: catolica / adulto_nesta_igreja / adulto_outra_igreja / crianca_nesta_igreja / crianca_outra_igreja / novo_convertido / sem_religiao), `baptism_other_church_name`, `previous_religion`, `previous_church_active`, `reason_joining`, `time_attending`, `sunday_attendance` (todos_os_domingos / regularmente / as_vezes / nao — UI expõe 3 opções), `weekly_activities`, `weekly_activities_which`. String vazia é normalizada para omitido.
 - **Tipo:** Restrição
-- **Gatilho:** Create/update
+- **Gatilho:** Create/update autenticado e POST público
 - **Comportamento esperado:** OK
 - **Comportamento em violação:** 400
 - **Implementado em:** `integrationMemberValidator.ts`
-- **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Testado em:** `validators/__tests__/integrationMemberValidator.test.ts`
+- **Depende de:** [[BR-INT-016]]
 
 ### BR-INT-004: Público sem mentor
-- **Declaração:** Cadastro público cria em_progresso sem mentor/admission/notes.
+- **Declaração:** Cadastro público cria `em_progresso` sem mentor, `expected_admission_type` nem notes (forçados nulos). Persiste o questionário eclesiástico e a congregação prevista se informados.
 - **Tipo:** Fato
 - **Gatilho:** POST public integration
-- **Comportamento esperado:** Integrante mínimo
+- **Comportamento esperado:** Integrante em_progresso; questionário opcional gravado em `integration_members`
 - **Comportamento em violação:** —
 - **Implementado em:** `publicIntegrationController.ts`
 - **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Depende de:** [[BR-INT-016]]
 
 ### 📝 Regras de Atualização / Edição
 
@@ -165,14 +166,14 @@ Qualificar pré-membros até conversão ao rol ou descarte.
 - **Depende de:** —
 
 ### BR-INT-012: Convert valida Member
-- **Declaração:** Payload deve passar validateMember.
+- **Declaração:** Payload do membro deve passar `validateMember`. O questionário eclesiástico **não** faz parte desse contrato e é omitido antes da validação (BR-INT-016).
 - **Tipo:** Restrição
 - **Gatilho:** POST convert
 - **Comportamento esperado:** OK
 - **Comportamento em violação:** 400
-- **Implementado em:** `integrationController.ts`
-- **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Implementado em:** `integrationController.ts`, `omitEcclesiasticalFromMemberPayload.ts`
+- **Testado em:** `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts`, `validators/__tests__/memberValidator.test.ts`
+- **Depende de:** [[BR-INT-016]], [[BR-MEM-004]]
 
 ### 🗑️ Regras de Exclusão / Desativação
 
@@ -207,6 +208,16 @@ Qualificar pré-membros até conversão ao rol ou descarte.
 - **Implementado em:** `publicIntegrationController.ts`
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
+
+### BR-INT-016: Questionário só no Integrante
+- **Declaração:** Os 12 campos do questionário eclesiástico pertencem a `integration_members`. Create/update autenticado e cadastro público os persistem no integrante. O convert **não** copia esses campos para `members` (`omitEcclesiasticalFromMemberPayload`). Cadastro direto de membro (Painel e link público de registro) não aceita nem armazena o questionário.
+- **Tipo:** Fato
+- **Gatilho:** Create/update de integrante; POST público; POST convert; create/update de membro
+- **Comportamento esperado:** Fonte da verdade = Integrante; membro só guarda recebimento/vínculo (`admission`, `admission_date`, `baptism_date`, `congregation_id`, `active`)
+- **Comportamento em violação:** 400 se o payload de membro incluir campos do questionário (Joi strip/reject)
+- **Implementado em:** `omitEcclesiasticalFromMemberPayload.ts`, `integrationController.ts` (convert), `memberValidator.ts`, `integrationMemberValidator.ts`
+- **Testado em:** `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts`, `validators/__tests__/memberValidator.test.ts`, `validators/__tests__/integrationMemberValidator.test.ts`
+- **Depende de:** [[BR-INT-003]], [[BR-INT-004]], [[BR-INT-012]], [[BR-MEM-004]]
 
 ---
 

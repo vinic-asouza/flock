@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-25
-versao: "1.7"
+ultima_atualizacao: 2026-08-31
+versao: "1.8"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -168,9 +168,9 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
-| GET | `/api/export/members/registration-form/pdf` | ✅ | ≥ reader | Ficha de cadastro **em branco** (A4, form v2) |
-| GET | `/api/export/member/:id/pdf` | ✅ | ≥ reader | Ficha PDF membro **preenchida** |
-| GET | `/api/export/integration/:id/pdf` | ✅ | ≥ reader | Ficha PDF integração |
+| GET | `/api/export/members/registration-form/pdf` | ✅ | ≥ reader | Ficha de cadastro **em branco** (A4; sem questionário) |
+| GET | `/api/export/member/:id/pdf` | ✅ | ≥ reader | Ficha PDF membro **preenchida** (bloco **Vínculo na igreja**; sem Histórico Eclesiástico) |
+| GET | `/api/export/integration/:id/pdf` | ✅ | ≥ reader | Ficha PDF integração (inclui questionário preenchido) |
 | GET | `/api/export/dashboard/pdf` | ✅ | ≥ reader | Dashboard PDF (reusa getMemberReports) |
 | POST | `/api/export/members/list` | ✅ | ≥ reader | Lista membros PDF |
 | POST | `/api/export/members/list/csv` | ✅ | ≥ reader | Lista membros CSV |
@@ -193,7 +193,7 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 // 500 — erro na geração PDF
 ```
 
-Template alinhado ao formulário de membros v2: Informações Básicas, Família (até 3 filhos + nota para folha adicional), Contato e Endereço, Informações Eclesiásticas, Informações de Recebimento. Campos com linhas/checkboxes para preenchimento manuscrito; cabeçalho com nome da igreja. **Não** pré-preenche dados de membro existente (MVP).
+Template alinhado ao cadastro operacional de membros: Informações Básicas, Família (até 3 filhos + nota para folha adicional), Contato e Endereço, Informações de Recebimento. **Não** inclui o questionário eclesiástico (fonte: Integrante — [[BR-INT-016]]). Campos com linhas/checkboxes para preenchimento manuscrito; cabeçalho com nome da igreja. **Não** pré-preenche dados de membro existente (MVP).
 
 ### Rate limit — `GET /reports`
 
@@ -537,6 +537,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-31 | 1.8 | Ficha em branco e ficha de membro sem questionário; ficha de integrante inclui o bloco | DEV-91 |
 | 2026-08-25 | 1.7 | POST `/export/congregation/members/list` + BR-REL-012 (rol ativo no modal) | DEV-47 |
 | 2026-08-25 | 1.6 | CSV de membros: catálogo operacional, flags de família, BR-REL-007 no CSV; grupos só PDF | DEV-49 |
 | 2026-08-20 | 1.5 | Kit Flock Print (`utils/pdf`), BR-REL-011, fields deprecated → 400, testes listFields | DEV-25 |
