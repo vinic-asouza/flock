@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { IntegrationForm } from './IntegrationForm';
 import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember, IntegrationMemberPayload } from '@/types';
+
+const FORM_ID = 'create-integration-form';
 
 interface CreateIntegrationModalProps {
   isOpen: boolean;
@@ -47,6 +50,28 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
       size="xl"
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
+      footer={
+        <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleClose}
+            disabled={isLoading}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={FORM_ID}
+            isLoading={isLoading}
+            disabled={isLoading}
+            className="min-h-11 w-full sm:w-auto"
+          >
+            Cadastrar integrante
+          </Button>
+        </div>
+      }
     >
       <div className="flex flex-col min-h-0 p-4 sm:p-6 space-y-4">
         {error && (
@@ -57,6 +82,8 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
 
         <div className="flex-1 min-h-0">
           <IntegrationForm
+            formId={FORM_ID}
+            showActions={false}
             mode="create"
             onSubmit={handleSubmit}
             onCancel={handleClose}
@@ -67,4 +94,3 @@ export function CreateIntegrationModal({ isOpen, onClose, onSuccess }: CreateInt
     </Modal>
   );
 }
-

@@ -118,24 +118,28 @@ export function timeAttendingLabel(churchName?: string | null): string {
 }
 
 function RadioSimNao({
+  name,
   label,
   value,
   onChange,
   disabled,
 }: {
+  name: string;
   label: string;
   value?: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" role="radiogroup" aria-label={label}>
       <span className="block text-sm font-medium text-gray-700">{label}</span>
       <div className="flex items-center min-h-[42px] gap-4 flex-wrap">
         {[{ v: true, l: 'Sim' }, { v: false, l: 'Não' }].map(({ v, l }) => (
           <label key={l} className="flex items-center gap-2 cursor-pointer min-h-11">
             <input
               type="radio"
+              name={name}
+              value={v ? 'sim' : 'nao'}
               checked={value === v}
               onChange={() => onChange(v)}
               disabled={disabled}
@@ -190,6 +194,7 @@ export function EcclesiasticalQuestionnaire<T extends FieldValues>({
       />
 
       <RadioSimNao
+        name="evangelical_family"
         label="Vem de família Cristã Evangélica?"
         value={watch('evangelical_family' as Path<T>) as boolean | undefined}
         onChange={(v) => setValue('evangelical_family' as Path<T>, v as T[Path<T>])}
@@ -198,6 +203,7 @@ export function EcclesiasticalQuestionnaire<T extends FieldValues>({
 
       <div className="space-y-3">
         <RadioSimNao
+          name="is_baptized"
           label="Já é batizado(a)?"
           value={isBaptized}
           onChange={(v) => {
@@ -263,6 +269,7 @@ export function EcclesiasticalQuestionnaire<T extends FieldValues>({
 
       {showPreviousChurchActive && (
         <RadioSimNao
+          name="previous_church_active"
           label="Atualmente é ou era membro ativo da igreja anterior?"
           value={watch('previous_church_active' as Path<T>) as boolean | undefined}
           onChange={(v) => setValue('previous_church_active' as Path<T>, v as T[Path<T>])}
@@ -312,6 +319,7 @@ export function EcclesiasticalQuestionnaire<T extends FieldValues>({
 
       <div className="space-y-3">
         <RadioSimNao
+          name="weekly_activities"
           label="Participa de alguma outra atividade semanal?"
           value={weeklyActivities}
           onChange={(v) => {

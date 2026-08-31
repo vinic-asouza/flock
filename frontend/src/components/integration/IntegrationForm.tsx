@@ -92,6 +92,8 @@ interface IntegrationFormProps {
   initialData?: IntegrationMember | null;
   mode: 'create' | 'edit';
   isLoading?: boolean;
+  formId?: string;
+  showActions?: boolean;
   onSubmit: (payload: IntegrationMemberPayload) => Promise<void>;
   onCancel: () => void;
 }
@@ -134,6 +136,8 @@ export function IntegrationForm({
   initialData = null,
   mode,
   isLoading = false,
+  formId,
+  showActions = true,
   onSubmit,
   onCancel
 }: IntegrationFormProps) {
@@ -323,7 +327,7 @@ export function IntegrationForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Informações pessoais
@@ -462,14 +466,16 @@ export function IntegrationForm({
         </div>
       </div>
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading} className="min-h-11 w-full sm:w-auto">
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isLoading} className="min-h-11 w-full sm:w-auto">
-          {mode === 'create' ? 'Cadastrar integrante' : 'Salvar alterações'}
-        </Button>
-      </div>
+      {showActions && (
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={isLoading} className="min-h-11 w-full sm:w-auto">
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isLoading} className="min-h-11 w-full sm:w-auto">
+            {mode === 'create' ? 'Cadastrar integrante' : 'Salvar alterações'}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }
