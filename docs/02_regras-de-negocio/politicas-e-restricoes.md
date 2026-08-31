@@ -1,7 +1,7 @@
 ---
 type: politicas-restricoes
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-08-31
+versao: "1.1"
 total_regras: 28
 tags: [políticas, planos, limites, SaaS, compliance]
 ---
@@ -57,7 +57,9 @@ Sistema de planos **identificado** e monetizado via Stripe. Identificadores são
 
 Fonte de preços/limites comerciais: **HARDCODED** em `backend/src/config/plans.ts` (+ espelho `PLAN_LIMITS` em `planLimits.ts`). Chaves Stripe e URLs: **CONFIGURÁVEL** via env (`STRIPE_*`, `FRONTEND_URL`, …).
 
-### Plano 100 Membros (Gratuito) 💰
+**Nomes na landing** (rótulos; ids inalterados): Grátis · Essencial · Crescimento · Completo. O Painel autenticado continua “Plano 100/200/…”. Não são tiers de feature — a diferenciação real continua sendo a quota de membros.
+
+### Plano 100 Membros (Grátis) 💰
 
 - **Identificador:** `'100'`
 - **Descrição:** Entrada sem cobrança; teto de 100 membros ativos.
@@ -71,11 +73,11 @@ Fonte de preços/limites comerciais: **HARDCODED** em `backend/src/config/plans.
 | --- | --- | --- |
 | Membros, integração, grupos, congregações, calendário, relatórios, PDF, links públicos, tutoriais | ✅ | Mesmo conjunto dos planos pagos |
 | Billing / portal Stripe | 🔒 admin+ | Sem cobrança ativa tipicamente |
-| Suporte | Landing: “Comece grátis” | Diferenciação comercial, não feature flag |
+| Suporte | Landing: “Começar grátis” | Diferenciação comercial, não feature flag |
 
-### Plano 200 Membros 💰
+### Plano 200 Membros (Essencial) 💰
 
-- **Identificador:** `'200'`
+- **Identificador:** `'200'` · landing: **Essencial**
 - **Descrição:** Igrejas pequenas · **R$ 29,99**/mês (**HARDCODED** em `PLAN_CONFIG`)
 - **Limite membros:** 200 → bloqueio + upgrade prompt
 
@@ -84,14 +86,14 @@ Fonte de preços/limites comerciais: **HARDCODED** em `backend/src/config/plans.
 | Funcionalidades core do app | ✅ (iguais ao free, com maior teto) |
 | Landing: “Suporte comercial” | Copy de marketing |
 
-### Plano 500 Membros 💰
+### Plano 500 Membros (Crescimento) 💰
 
-- **Identificador:** `'500'` · **R$ 59,99** · limite **500**
+- **Identificador:** `'500'` · **R$ 59,99** · limite **500** · landing: **Crescimento** (selo “Mais escolhido”)
 - Features core: ✅ · Copy: suporte comercial
 
-### Plano 800 Membros 💰
+### Plano 800 Membros (Completo) 💰
 
-- **Identificador:** `'800'` · **R$ 89,99** · limite **800**
+- **Identificador:** `'800'` · **R$ 89,99** · limite **800** · landing: **Completo**
 - Features core: ✅ · Copy landing: “Suporte dedicado”
 
 ### Plano custom / personalizado 💰

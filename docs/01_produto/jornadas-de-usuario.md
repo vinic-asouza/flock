@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-08-26
-versao: "1.18"
+ultima_atualizacao: 2026-08-31
+versao: "1.19"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -45,7 +45,7 @@ tags: [produto, UX, fluxos, jornadas]
 ### Landing (marketing)
 
 ```text
-/              → Homepage (hero, features, pricing, CTA)
+/              → Homepage (hero, para quem, visão, recursos, relatórios, demo, processo, planos, FAQ, CTA/waitlist)
 └── /waitlist  → Lista de espera
 ```
 
@@ -86,6 +86,8 @@ Fonte única: `NAV_ITEMS` (`frontend/src/components/main/navItems.ts`), consumid
 
 **Funil auth / onboarding (`(auth)` + `/subscription/*`):** layout próprio (não usa shell `(main)`). Em mobile, painel de formulário com scroll, safe-area e alvos touch; painel marketing do `(auth)` só a partir de **`lg` (1024px)**. Rotas: login, register, checkout, forgot/reset/create-password; retorno Stripe em `/subscription/success|cancel`.
 
+**Nav da landing (pública):** Recursos (`#features`) · Demonstração (`#demo`) · Planos (`#pricing`) · FAQ (`#faq`) · Contato (`#waitlist`). CTA primário **Começar grátis** → `/register?plan=100`. Header `fixed` (não sticky). Em `/waitlist`, os mesmos hashes viram `/#…` via `landingLinks.ts`.
+
 **Header:** igreja ativa / switcher, alerta de limite de membros (oculto < `md`), badge de plano, papel, e-mail, logout; atalho para plano; hamburger só < `md`.
 
 **Settings:** navegação por abas (`?tab=`); abas `payment`, `users`, `logs` só para `admin`/`owner`.
@@ -102,7 +104,7 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 
 ### J1 — Cadastro free (novo owner)
 
-1. Landing → “Comece grátis” → `/register?plan=100`
+1. Landing → **Começar grátis** → `/register?plan=100`
 2. Preenche conta + igreja → `POST /api/auth/register`
 3. Mensagem de confirmar e-mail → link → `/auth/callback` → app (`/`)
 4. Plano free ativável via checkout/settings conforme estado da subscription
@@ -119,7 +121,7 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 
 **Desvio:** usuário já logado na landing pode ser mandado a `/register` em vez de `/checkout` _(limitação conhecida — ver levantamento)_.
 
-**Mobile (Landing / J1–J2 + waitlist):** site público `flockapp.com.br` (`landing/`, rotas `/` e `/waitlist`) operável em ~375px — header com hamburger à direita, CTAs `min-h-11`, pricing em 1 coluna, formulário waitlist com inputs ≥16px (sem zoom iOS), demo/carrossel touch, sem scroll horizontal. Em `/waitlist`, links de seção do Header/Footer apontam para `/#…` na home. Após redirect para `/register` ou `/login`, continua o funil `(auth)` (DEV-27). **Não** usa menu ☰ do app autenticado.
+**Mobile (Landing / J1–J2 + waitlist):** site público `flockapp.com.br` (`landing/`, rotas `/` e `/waitlist`) operável em ~375px — header `fixed` com hamburger à direita, CTAs `min-h-11`, pricing em 1 coluna, FAQ accordion, formulário waitlist com inputs ≥16px (sem zoom iOS), demo/carrossel touch, sem scroll horizontal. Em `/waitlist`, links de seção do Header/Footer apontam para `/#…` na home. Após redirect para `/register` ou `/login`, continua o funil `(auth)` (DEV-27). **Não** usa menu ☰ do app autenticado.
 
 ### J3 — Login e seleção de igreja
 
@@ -300,7 +302,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 16. Módulo **Relatórios** (J9): hub `/`, seções do painel e modais de drill-down são operáveis em ~375px — CTAs touch, sheet/`dvh`, sideLayout com chips no mobile; sem migrar drill-downs para rotas full-page; `ReportsFilters` não está montado na Home.
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
-19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), CTAs touch, waitlist ≥16px, links `/#…` a partir de `/waitlist`; funil register/login inalterado após redirect.
+19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), header `fixed`, CTAs touch, waitlist ≥16px, âncoras `/#faq` e `/#waitlist` a partir de `/waitlist`; funil register/login inalterado após redirect.
 20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (overview), `/churches`, `/churches/[id]`, `/waitlist`, `/health`. Auth: `POST /api/ops/login`. Console: `GET /api/ops/overview`, `/churches`, `/churches/:id`, `/waitlist`, `/health`. Não usar o shell do Painel. Sentry continua fora.
 
 ---
