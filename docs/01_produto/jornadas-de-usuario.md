@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-08-31
-versao: "1.19"
+versao: "1.20"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -149,8 +149,8 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 ### J6 — Ciclo de vida do membro (core)
 
 1. `/members` → listar / filtrar / grid|lista
-2. Criar (modal/form) ou importar CSV _(multi-step)_ ou link público
-3. Editar / alterar status / exportar PDF
+2. Criar (modal/form) ou importar CSV _(multi-step)_ ou link público — cadastro operacional + recebimento; **sem** questionário eclesiástico
+3. Editar / alterar status / exportar PDF (ficha: **Vínculo na igreja**)
 4. Soft delete
 
 **Bloqueios:** role `reader`; limite de plano / `past_due`.
@@ -159,9 +159,9 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 
 ### J7 — Integração → membro
 
-1. `/integration` ou link `/public/integration/[token]`
+1. `/integration` ou link `/public/integration/[token]` — form com pessoais + questionário eclesiástico (Painel também: Acompanhamento)
 2. Acompanhar status (`em_progresso` / etc.)
-3. Editor converte integrante → membro oficial
+3. Editor converte integrante → membro oficial (**não** copia o questionário)
 4. Continua na jornada J6
 
 **Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Autointegração pública: ver J11.
@@ -203,7 +203,7 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 
 1. Editor cria link (modais em Membros / Integração)
 2. Visitante abre `/public/register|[integration]/[token]`
-3. Submit cria membro/integrante na igreja do link
+3. Submit cria membro (cadastro operacional, **sem** questionário) ou integrante (pessoais + questionário + congregação prevista)
 4. Rate limit e validade/usos do token
 
 **Mobile:**

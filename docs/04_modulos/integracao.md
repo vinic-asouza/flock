@@ -3,8 +3,8 @@ type: modulo
 nome: integracao
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-07-29
-versao: "1.1"
+ultima_atualizacao: 2026-08-31
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, integracao]
 depende_de: [auth, igreja-config, membros, congregacoes]
@@ -20,7 +20,7 @@ integracoes: [Supabase PostgreSQL]
 
 ## 1. 📌 Visão Geral
 
-É o funil pastoral **antes** da pessoa entrar na cota de membros: cadastros leves (enums em minúsculo), status `em_progresso` → `integrado` | `descartado`, e operação `POST .../convert` que materializa um `members` completo via `validateMember`.
+É o funil pastoral **antes** da pessoa entrar na cota de membros: cadastros leves (enums em minúsculo), questionário eclesiástico opcional, status `em_progresso` → `integrado` | `descartado`, e operação `POST .../convert` que materializa um `members` operacional (sem copiar o questionário — [[BR-INT-016]]).
 
 Resolve o gap entre interesse/visitante e rol oficial (sem consumir vaga do plano até a conversão).
 
@@ -71,6 +71,7 @@ backend/src/
 │   └── publicPostLimiter.ts
 ├── utils/
 │   ├── integrationValidations.ts   → nome único, mentor, cong.
+│   ├── omitEcclesiasticalFromMemberPayload.ts → convert (BR-INT-016)
 │   ├── planLimits.ts               → só no convert
 │   └── auditLogger.ts
 └── types/index.ts                  → IntegrationMember
@@ -79,7 +80,13 @@ frontend/src/app/
 ├── (main)/integration/             → UI pipeline
 └── public/integration/[token]/    → form público
 
-Testes dedicados: inexistentes.
+frontend/src/components/integration/
+├── IntegrationForm.tsx             → 3 seções (pessoais / eclesiásticas / Acompanhamento)
+├── EcclesiasticalQuestionnaire.tsx → questionário compartilhado
+├── PublicIntegrationForm.tsx       → 2 seções (pessoais + eclesiásticas)
+└── ViewIntegrationModal.tsx        → mesmas seções em leitura
+
+Testes: `validators/__tests__/integrationMemberValidator.test.ts`, `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts`. CRUD/HTTP sem suite dedicada.
 ```
 
 ---
@@ -103,6 +110,7 @@ Pré-membro em acompanhamento.
 | expected_congregation_id | uuid | NULL | — | Congregação prevista (SET NULL) |
 | mentor_id | uuid | NULL | — | FK → members (SET NULL) |
 | notes | text | NULL | — | ≤5000 chars (Joi) |
+| years_evangelical … weekly_activities_which | text/boolean | NULL | — | Questionário eclesiástico (12 campos, todos opcionais; ver [[BR-INT-003]]) |
 | status | integration_status_enum | NOT NULL | `em_progresso` | Pipeline |
 | created_at / updated_at | timestamptz | NOT NULL | utc now | Audit row |
 
@@ -190,6 +198,11 @@ Espelho dos registration links (sem `default_congregation_id`).
   mentor_id?: string | null;                 // uuid member mesma igreja
   notes?: string | null;
   status?: 'em_progresso'|'integrado'|'descartado'; // default create: em_progresso
+  // questionário eclesiástico opcional (BR-INT-003 / BR-INT-016):
+  // years_evangelical, evangelical_family, is_baptized, baptism_type,
+  // baptism_other_church_name, previous_religion, previous_church_active,
+  // reason_joining, time_attending, sunday_attendance, weekly_activities,
+  // weekly_activities_which
 }
 
 // Response 201: IntegrationMember (+ joins opcionais)
@@ -203,6 +216,7 @@ Espelho dos registration links (sem `default_congregation_id`).
 // Request body: campos Member (validateMember) + groups?: string[]
 // Completa dados ausentes a partir do integrante (name, birth, phone, admission map, cong.)
 // active forçado true
+// Questionário eclesiástico NÃO é copiado para members (BR-INT-016 / omitEcclesiasticalFromMemberPayload)
 
 // Response 201:
 { member: Member; integrationMember: IntegrationMember /* status integrado */ }
@@ -224,14 +238,14 @@ Envelope: `{ data, pagination, filters }` (padrão similar a members).
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/integracao]] (**15** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/integracao]] (**16** regras).
 
 | ID | Declaração curta |
 | --- | --- |
 | BR-INT-001 | Create autenticado default `em_progresso` |
 | BR-INT-002 | Nome único na igreja (ilike) |
-| BR-INT-003 | Campos/enums/fones validados |
-| BR-INT-004 | Público: sem mentor/admission/notes forçados |
+| BR-INT-003 | Campos/enums/fones validados; questionário opcional |
+| BR-INT-004 | Público: sem mentor/admission/notes; persiste questionário |
 | BR-INT-005 | Mentor = membro da mesma igreja |
 | BR-INT-006 | Mentor na cong. prevista; se `expected_congregation_id` null, qualquer cong. |
 | BR-INT-007 | `expected_congregation_id` da mesma igreja |
@@ -243,6 +257,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/integracao]] (**15** regras).
 | BR-INT-013 | DELETE permanente |
 | BR-INT-014 | Link público: ativo, expiração, usos |
 | BR-INT-015 | Race max_uses → delete integrante + 409 |
+| BR-INT-016 | Questionário pertence ao Integrante; convert não copia |
 
 **Inferido:** PUT pode ir a `descartado`/`integrado` sem passar pelo convert — confirmar produto (risco de `integrado` sem row em `members`).
 
@@ -317,8 +332,8 @@ sequenceDiagram
   API-->>V: valid + church + congregations
 
   V->>API: POST /public/integration/:token
-  API->>API: validateIntegrationMember (mínimo)
-  API->>DB: INSERT em_progresso (sem mentor)
+  API->>API: validateIntegrationMember (mínimo + questionário opcional)
+  API->>DB: INSERT em_progresso (sem mentor/admission/notes; questionário se informado)
   API->>DB: increment current_uses
   alt race max_uses
     API->>DB: DELETE integration_member
@@ -358,7 +373,11 @@ stateDiagram-v2
 
 ### UI — hub e modais (`/integration`)
 
-Hub autenticado em `frontend/src/app/(main)/integration/page.tsx` + `components/integration/*`.
+**Form autenticado (`IntegrationForm`):** três seções na ordem — Informações pessoais → Informações eclesiásticas (questionário + tipo de recebimento previsto + congregação prevista) → Acompanhamento (mentor, status na edição, observações). Modal `xl`; CTAs no footer sticky.
+
+**Form público (`PublicIntegrationForm`):** duas seções — pessoais e eclesiásticas (questionário + congregação prevista). Sem mentor, tipo de recebimento previsto, observações nem status. Copy de `time_attending` usa o nome da igreja do link.
+
+**Ficha (`ViewIntegrationModal`):** mesmas seções em leitura; questionário só com valores preenchidos.
 
 **Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, Convert, View, export PDF da lista e links de autocadastro usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno). Export de lista PDF passa por esse `Modal` (não overlay ad hoc). Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Autocadastro público: `/public/integration/[token]` com safe-area + `PublicIntegrationForm` (CTAs full-width no mobile).
 
@@ -427,7 +446,9 @@ N/A — **sem** jobs/cron específicos deste módulo. Convert e público são s�
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| Unit/Integration/E2E | — | 0% | N/A |
+| Unit | `validators/__tests__/integrationMemberValidator.test.ts` | questionário | Aceita 12 campos opcionais; rejeita enum inválido |
+| Unit | `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts` | convert | Omit do questionário no payload de membro |
+| Unit | `validators/__tests__/memberValidator.test.ts` | BR-MEM-004 | Rejeita campos do questionário no membro |
 
 **Gaps:**
 
@@ -484,6 +505,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-31 | 1.2 | Questionário eclesiástico no Integrante (BR-INT-016); form 3 seções; público inclui questionário | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo integração | — |
 | 2026-07-29 | 1.1 | UX mobile/tablet: hub, Convert, Modal sheet, public integration, export via Modal | DEV-29 |
 
@@ -495,7 +517,7 @@ graph LR
 | --- | --- |
 | Módulo documentado | **integracao** ✅ |
 | Endpoints | **14** |
-| Regras BR-INT | **15** |
+| Regras BR-INT | **16** |
 | Integrações externas | Supabase PostgreSQL apenas |
 | Jobs/cron | Nenhum |
-| Testes | Nenhum dedicado |
+| Testes | Validators + omit helper |

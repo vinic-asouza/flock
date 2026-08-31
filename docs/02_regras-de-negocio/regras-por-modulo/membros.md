@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: membros
-ultima_atualizacao: 2026-08-25
-versao: "1.2"
+ultima_atualizacao: 2026-08-31
+versao: "1.3"
 total_regras: 18
 tags: [regras, modulo:membros]
 ver_tambem:
@@ -75,14 +75,14 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Depende de:** —
 
 ### BR-MEM-004: Campos obrigatórios do membro
-- **Declaração:** Membro exige nome, nascimento (não futuro), gênero, estado civil, endereço/cidade/UF, tipo e data de recebimento; docs/CEP/fones válidos se informados.
+- **Declaração:** Membro exige nome, nascimento (não futuro), gênero, estado civil, endereço/cidade/UF, tipo e data de recebimento; docs/CEP/fones válidos se informados. O questionário eclesiástico **não** faz parte do contrato de membro (fica no Integrante — [[BR-INT-016]]).
 - **Tipo:** Restrição
-- **Gatilho:** Create/update/validate
-- **Comportamento esperado:** Validação OK
+- **Gatilho:** Create/update/validate (Painel, público de registro, convert)
+- **Comportamento esperado:** Validação OK; campos do questionário rejeitados/omitidos
 - **Comportamento em violação:** 400 Dados inválidos
 - **Implementado em:** `validators/memberValidator.ts`
-- **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Testado em:** `validators/__tests__/memberValidator.test.ts`
+- **Depende de:** [[BR-INT-016]]
 
 ### BR-MEM-005: Nascimento active true
 - **Declaração:** Todo membro criado nasce com active=true.

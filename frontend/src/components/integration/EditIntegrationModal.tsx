@@ -2,9 +2,12 @@
 
 import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { IntegrationForm } from './IntegrationForm';
 import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember, IntegrationMemberPayload } from '@/types';
+
+const FORM_ID = 'edit-integration-form';
 
 interface EditIntegrationModalProps {
   isOpen: boolean;
@@ -52,9 +55,33 @@ export function EditIntegrationModal({
       isOpen={isOpen}
       onClose={handleClose}
       title="Editar integrante"
-      size="lg"
+      size="xl"
       closeOnOverlayClick={!isLoading}
       closeOnEscape={!isLoading}
+      footer={
+        member ? (
+          <div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleClose}
+              disabled={isLoading}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form={FORM_ID}
+              isLoading={isLoading}
+              disabled={isLoading}
+              className="min-h-11 w-full sm:w-auto"
+            >
+              Salvar alterações
+            </Button>
+          </div>
+        ) : undefined
+      }
     >
       <div className="flex flex-col min-h-0 p-4 sm:p-6 space-y-4">
         {error && (
@@ -65,6 +92,8 @@ export function EditIntegrationModal({
 
         <div className="flex-1 min-h-0">
           <IntegrationForm
+            formId={FORM_ID}
+            showActions={false}
             mode="edit"
             initialData={member}
             onSubmit={handleSubmit}
@@ -76,4 +105,3 @@ export function EditIntegrationModal({
     </Modal>
   );
 }
-

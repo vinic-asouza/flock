@@ -56,19 +56,6 @@ interface Member {
     congregations?: { id: string; name: string; abbreviation?: string | null } | null;
   }>;
   active: boolean;
-  // Informações Eclesiásticas
-  years_evangelical?: string;
-  evangelical_family?: boolean;
-  is_baptized?: boolean;
-  baptism_type?: string;
-  baptism_other_church_name?: string;
-  previous_religion?: string;
-  previous_church_active?: boolean;
-  reason_joining?: string;
-  time_attending?: string;
-  sunday_attendance?: string;
-  weekly_activities?: boolean;
-  weekly_activities_which?: string;
 }
 
 interface ViewMemberModalProps {
@@ -396,7 +383,7 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                 </div>
               )}
 
-              {/* Contato, Endereço e Informações Eclesiásticas */}
+              {/* Contato, Endereço e Vínculo na igreja */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Coluna 1: Contato e Endereço */}
                 <div className="space-y-6">
@@ -462,11 +449,11 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                   </div>
                 </div>
 
-                {/* Coluna 2: Informações Eclesiásticas */}
+                {/* Coluna 2: Vínculo na igreja */}
                 <div className="space-y-4">
                   <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
                     <Church size={20} />
-                    Informações Eclesiásticas
+                    Vínculo na igreja
                   </h4>
 
                   <div className="space-y-3">
@@ -536,90 +523,6 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                 </div>
               </div>
 
-              {/* Histórico Eclesiástico */}
-              {(member.years_evangelical || member.evangelical_family !== undefined || member.is_baptized !== undefined || member.reason_joining || member.time_attending || member.sunday_attendance || member.weekly_activities !== undefined) && (
-                <div className="space-y-4">
-                  <h4 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                    <Church size={20} />
-                    Histórico Eclesiástico
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {member.years_evangelical && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Cristão evangélico há</span>
-                        <p className="text-gray-900">{member.years_evangelical} {member.years_evangelical === '1' ? 'ano' : 'anos'}</p>
-                      </div>
-                    )}
-                    {member.evangelical_family !== undefined && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Família cristã evangélica</span>
-                        <p className="text-gray-900">{member.evangelical_family ? 'Sim' : 'Não'}</p>
-                      </div>
-                    )}
-                    {member.is_baptized !== undefined && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Batizado(a)</span>
-                        <p className="text-gray-900">
-                          {member.is_baptized ? 'Sim' : 'Não'}
-                          {member.is_baptized && member.baptism_type && (
-                            <span className="block text-xs text-gray-500 mt-0.5">
-                              {{
-                                'catolica': 'Na igreja católica',
-                                'adulto_nesta_igreja': 'Adulto — nesta igreja',
-                                'adulto_outra_igreja': 'Adulto — em outra igreja',
-                                'crianca_nesta_igreja': 'Criança — nesta igreja',
-                                'crianca_outra_igreja': 'Criança — em outra igreja',
-                                'novo_convertido': 'Novo convertido',
-                                'sem_religiao': 'Novo convertido — sem religião anterior',
-                              }[member.baptism_type] || member.baptism_type}
-                            </span>
-                          )}
-                          {member.baptism_other_church_name && (
-                            <span className="block text-xs text-gray-500">Igreja: {member.baptism_other_church_name}</span>
-                          )}
-                          {member.previous_religion && (
-                            <span className="block text-xs text-gray-500">Religião anterior: {member.previous_religion}</span>
-                          )}
-                        </p>
-                      </div>
-                    )}
-                    {member.previous_church_active !== undefined && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Era membro ativo da igreja anterior</span>
-                        <p className="text-gray-900">{member.previous_church_active ? 'Sim' : 'Não'}</p>
-                      </div>
-                    )}
-                    {member.time_attending && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Frequenta a igreja há</span>
-                        <p className="text-gray-900">{member.time_attending}</p>
-                      </div>
-                    )}
-                    {member.sunday_attendance && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Cultos</span>
-                        <p className="text-gray-900">
-                          {{ 'todos_os_domingos': 'Todos os domingos', 'regularmente': 'Regularmente', 'as_vezes': 'Às vezes', 'nao': 'Não' }[member.sunday_attendance] || member.sunday_attendance}
-                        </p>
-                      </div>
-                    )}
-                    {member.weekly_activities !== undefined && (
-                      <div>
-                        <span className="text-sm font-medium text-gray-500">Atividades semanais</span>
-                        <p className="text-gray-900">
-                          {member.weekly_activities ? `Sim${member.weekly_activities_which ? ` — ${member.weekly_activities_which}` : ''}` : 'Não'}
-                        </p>
-                      </div>
-                    )}
-                    {member.reason_joining && (
-                      <div className="md:col-span-2">
-                        <span className="text-sm font-medium text-gray-500">Motivo de tornar-se membro</span>
-                        <p className="text-gray-900 text-sm whitespace-pre-line">{member.reason_joining}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Footer fixo */}

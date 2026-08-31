@@ -17,6 +17,7 @@ import {
   assertCongregationAccess,
   resolveScopedCongregationFilter,
 } from '../utils/congregationScope';
+import { omitEcclesiasticalFromMemberPayload } from '../utils/omitEcclesiasticalFromMemberPayload';
 import { debug, error as logError } from '../utils/logger';
 
 const DEFAULT_PAGE = 1;
@@ -704,8 +705,9 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
     const { groups, ...dataWithoutGroups } = req.body as any;
     const groupIds = Array.isArray(groups) ? groups : [];
 
-    // Montar payload base do membro a partir do integrante + dados enviados (sem grupos)
-    const baseMemberPayload: Partial<Member> = {
+    // Montar payload base do membro a partir do integrante + dados enviados (sem grupos).
+    // BR-INT-016: questionário eclesiástico permanece só em integration_members.
+    const baseMemberPayload: Partial<Member> = omitEcclesiasticalFromMemberPayload({
       ...dataWithoutGroups,
       name: integrationMember.name,
       birth: integrationMember.birth ?? dataWithoutGroups.birth,
@@ -717,7 +719,7 @@ export const convertIntegrationMember = async (req: AuthRequest, res: Response) 
       congregation_id: dataWithoutGroups.congregation_id ?? integrationMember.expected_congregation_id,
       church_id: churchId,
       active: true
-    };
+    } as Record<string, unknown>) as Partial<Member>;
 
     // Normalizar datas (birth, baptism_date, admission_date, etc.) para evitar problemas de timezone
     const normalizedMemberPayload = normalizeMemberDates(baseMemberPayload as unknown as Record<string, unknown>) as Partial<Member>;
