@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-25
-versao: "1.7"
+ultima_atualizacao: 2026-08-31
+versao: "1.8"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -45,7 +45,7 @@ Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota públic
 - Agregar indicadores de membros + integração (`getMemberReports`)
 - Endpoints de aniversariantes (count/list) no escopo de reports de UX
 - Rate limit específico em `GET /members/reports` (10/IP/min)
-- Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (template impressão), ficha integração, dashboard, listas (membros / integração / grupo / grupos / congregações / **membros da congregação**)
+- Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (membro), **ficha de pré-cadastro em branco** (integrante), ficha integração preenchida, dashboard, listas (membros / integração / grupo / grupos / congregações / **membros da congregação**)
 - Export CSV de lista de membros (único CSV do produto; campos selecionáveis alinhados ao cadastro operacional)
 - Escopo sempre `church_id` do contexto autenticado
 - Validação Joi de filtros de relatório (`reportFiltersSchema`)
@@ -66,7 +66,7 @@ Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota públic
 ```
 backend/src/
 ├── routes/
-│   ├── export.ts                 → 11 rotas /api/export/*
+│   ├── export.ts                 → 12 rotas /api/export/*
 │   └── members.ts                → /reports + /birthdays/* (também CRUD membros)
 ├── controllers/
 │   ├── exportController.ts       → fetch/validate + orquestra renderers
@@ -80,8 +80,8 @@ backend/src/
         ├── tokens.ts / document.ts / sections.ts / table.ts / formFields.ts
         ├── listFields.ts         → colunas, labels PDF/CSV (`memberCsvFieldLabels`), resolveExportColumns
         ├── integrationLabels.ts
-        ├── render*.ts            → ficha, lista, dashboard, blank, calendário (usado pelo módulo calendário)
-        └── __tests__/listFields.test.ts
+        ├── render*.ts            → ficha, lista, dashboard, blank (membro + pré-cadastro), calendário (usado pelo módulo calendário)
+        └── __tests__/listFields.test.ts, renderBlankPreRegistration.test.ts
 
 frontend/src/
 ├── app/page.tsx                  → Home = painel Vision UI
@@ -94,7 +94,7 @@ App mounts:
   app.use('/api/export', exportRoutes)
   app.use('/api/members', memberRoutes)  // reports/birthdays aqui
 
-Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest; inclui labels CSV e flags de família) e `validators/__tests__/congregationValidator.test.ts` (body do export de membros da congregação).
+Testes: unitários leves em `utils/pdf/__tests__/listFields.test.ts` (Jest; inclui labels CSV e flags de família), `renderBlankPreRegistration.test.ts` (título/filename/A4) e `validators/__tests__/congregationValidator.test.ts` (body do export de membros da congregação).
 Migrations: N/A — sem schema próprio.
 ```
 
@@ -170,7 +170,8 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 | --- | --- | --- | --- | --- |
 | GET | `/api/export/members/registration-form/pdf` | ✅ | ≥ reader | Ficha de cadastro **em branco** (A4, form v2) |
 | GET | `/api/export/member/:id/pdf` | ✅ | ≥ reader | Ficha PDF membro **preenchida** |
-| GET | `/api/export/integration/:id/pdf` | ✅ | ≥ reader | Ficha PDF integração |
+| GET | `/api/export/integration/registration-form/pdf` | ✅ | ≥ reader | Ficha de pré-cadastro **em branco** (A4) |
+| GET | `/api/export/integration/:id/pdf` | ✅ | ≥ reader | Ficha PDF integração **preenchida** |
 | GET | `/api/export/dashboard/pdf` | ✅ | ≥ reader | Dashboard PDF (reusa getMemberReports) |
 | POST | `/api/export/members/list` | ✅ | ≥ reader | Lista membros PDF |
 | POST | `/api/export/members/list/csv` | ✅ | ≥ reader | Lista membros CSV |
@@ -180,7 +181,7 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | Lista congregações PDF |
 | POST | `/api/export/congregation/members/list` | ✅ | ≥ reader | Membros ativos de uma congregação PDF |
 
-**Total:** **14** endpoints (3 reports + 11 export).
+**Total:** **15** endpoints (3 reports + 12 export).
 
 ### Contrato — `GET /api/export/members/registration-form/pdf`
 
@@ -193,7 +194,22 @@ Auth: `authMiddleware` + `requireRole('reader')` em todas as rotas deste módulo
 // 500 — erro na geração PDF
 ```
 
-Template alinhado ao formulário de membros v2: Informações Básicas, Família (até 3 filhos + nota para folha adicional), Contato e Endereço, Informações Eclesiásticas, Informações de Recebimento. Campos com linhas/checkboxes para preenchimento manuscrito; cabeçalho com nome da igreja. **Não** pré-preenche dados de membro existente (MVP).
+Template alinhado ao formulário de membros v2: Informações Básicas, Família (até 3 filhos + nota para folha adicional), Contato e Endereço, Informações Eclesiásticas, Informações de Recebimento. Campos com linhas/checkboxes para preenchimento manuscrito; cabeçalho com nome da igreja. **Não** pré-preenche dados de membro existente (MVP). Sem questionário eclesiástico (esse bloco vive no integrante — BR-REL-013).
+
+### Contrato — `GET /api/export/integration/registration-form/pdf`
+
+```typescript
+// Sem query/body — gera template em branco da igreja autenticada.
+// Path estático **antes** de GET /integration/:id/pdf (senão `registration-form` vira :id).
+// Response: application/pdf
+// Content-Disposition: attachment; filename="ficha-pre-cadastro-{slug-igreja}-{YYYY-MM-DD}.pdf"
+// Título visível no PDF: "Ficha de pré-cadastro"
+// 401 — não autenticado
+// 404 — igreja não encontrada
+// 500 — erro na geração PDF
+```
+
+Template alinhado ao formulário de integrante: data do preenchimento, Informações pessoais, Informações eclesiásticas (tipo de recebimento previsto, congregação prevista, questionário completo no papel). **Não** inclui Acompanhamento (mentor/status/observações) nem campos de membro (família, endereço, e-mail). **Não** pré-preenche dados de integrante existente (BR-REL-013).
 
 ### Rate limit — `GET /reports`
 
@@ -298,7 +314,7 @@ UI congregação: `CongregationModal` → **Exportar lista** → `ExportCongrega
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**12** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**13** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -314,6 +330,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/relatorios]] (**12** regras).
 | BR-REL-010 | Export grupos exige `filters.types[]` (min 1, GroupType) |
 | BR-REL-011 | PDFs do tenant usam kit Flock Print (header/footer/orientação) |
 | BR-REL-012 | Export de membros da congregação: endpoint dedicado, só ativos, nome completo |
+| BR-REL-013 | Ficha de pré-cadastro em branco: template da igreja, sem dados de integrante |
 
 ---
 
@@ -377,6 +394,26 @@ sequenceDiagram
   PDF-->>API: stream A4
   API-->>UI: application/pdf + Content-Disposition
   UI-->>U: download ficha-cadastro-membro-*.pdf
+```
+
+### Fluxo: Ficha de pré-cadastro em branco (PDF)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Reader+
+  participant UI as integration/page
+  participant API as exportIntegrationRegistrationFormPDF
+  participant PDF as renderBlankPreRegistrationPdf
+  participant DB as PostgreSQL
+
+  U->>UI: Clicar "Ficha de pré-cadastro"
+  UI->>API: GET /api/export/integration/registration-form/pdf
+  API->>DB: select churches.name (church_id)
+  API->>PDF: renderBlankPreRegistrationPdf(churchName)
+  PDF-->>API: stream A4 portrait
+  API-->>UI: application/pdf + Content-Disposition
+  UI-->>U: download ficha-pre-cadastro-*.pdf
 ```
 
 ### Fluxo: Dashboard PDF
@@ -537,6 +574,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-08-31 | 1.8 | GET `/export/integration/registration-form/pdf` + BR-REL-013 (ficha de pré-cadastro) | DEV-92 |
 | 2026-08-25 | 1.7 | POST `/export/congregation/members/list` + BR-REL-012 (rol ativo no modal) | DEV-47 |
 | 2026-08-25 | 1.6 | CSV de membros: catálogo operacional, flags de família, BR-REL-007 no CSV; grupos só PDF | DEV-49 |
 | 2026-08-20 | 1.5 | Kit Flock Print (`utils/pdf`), BR-REL-011, fields deprecated → 400, testes listFields | DEV-25 |
@@ -553,9 +591,9 @@ graph LR
 | Item | Valor |
 | --- | --- |
 | Módulo documentado | **relatorios** ✅ |
-| Endpoints | **14** (3 agregados/aniversários + 11 export) |
-| Regras BR-REL | **12** |
+| Endpoints | **15** (3 agregados/aniversários + 12 export) |
+| Regras BR-REL | **13** |
 | Entidades próprias | **0** (read-only) |
 | Integrações | Supabase + PDFKit (Flock Print) |
 | Jobs | Nenhum |
-| Testes | Unitários leves (`listFields`, labels CSV, validator do export de congregação) |
+| Testes | Unitários leves (`listFields`, labels CSV, validator do export de congregação, renderer da ficha de pré-cadastro) |

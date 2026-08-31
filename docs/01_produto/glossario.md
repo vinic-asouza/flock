@@ -1,9 +1,9 @@
 ---
 type: glossario
 ultima_atualizacao: 2026-08-31
-versao: "1.9"
+versao: "1.10"
 tags: [produto, domínio, vocabulário, referência]
-total_termos: 75
+total_termos: 76
 ---
 
 # Glossário do Domínio — Flock
@@ -60,6 +60,11 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Relacionamentos:** igreja; mentor = um `Member`; conversão gera `Member`  
 - **Usado em:** módulo Integração + links públicos de integração  
 - **UI:** “Integrante” / “Integração” · código: `IntegrationMember`
+
+**Ficha de pré-cadastro**  
+> PDF A4 em branco para captação presencial de **integrante** (pessoais + eclesiásticas, inclusive questionário). Título visível fixo no documento. Distinta da **Ficha de Cadastro de Membro** (rol) e da ficha preenchida do integrante.  
+- **Usado em:** Integração (hub `/integration`) + Relatórios (export)  
+- **UI:** “Ficha de pré-cadastro” (desktop) / “Ficha” (mobile)
 
 **Grupo** *(código: `Group`, `groups`)*  
 > Estrutura interna (ministério, célula, classe, etc.) para organizar membros.  
@@ -293,6 +298,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - **C:** Calendário (item), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Evento (tipo calendário), Encontro  
+- **F:** Ficha de pré-cadastro  
 - **G:** Grupo, Guest/Convidado (calendário)  
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração  
@@ -309,7 +315,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## Contagem e arquivos analisados
 
-**Total de termos documentados:** 72 _(frontmatter `total_termos`)_.
+**Total de termos documentados:** 73 _(frontmatter `total_termos`)_.
 
 **Arquivos analisados:**
 

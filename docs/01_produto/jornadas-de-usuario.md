@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-08-31
-versao: "1.19"
+versao: "1.20"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -160,11 +160,12 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 ### J7 — Integração → membro
 
 1. `/integration` ou link `/public/integration/[token]`
-2. Acompanhar status (`em_progresso` / etc.)
-3. Editor converte integrante → membro oficial
-4. Continua na jornada J6
+2. Captação presencial: reader+ baixa **Ficha de pré-cadastro** no hub, imprime e transcreve depois no cadastro
+3. Acompanhar status (`em_progresso` / etc.)
+4. Editor converte integrante → membro oficial
+5. Continua na jornada J6
 
-**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Autointegração pública: ver J11.
+**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Botão **Ficha** (rótulo curto) na toolbar. Autointegração pública: ver J11.
 
 ### J8 — Estrutura e agenda
 

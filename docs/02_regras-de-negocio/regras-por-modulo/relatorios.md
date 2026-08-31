@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-08-25
-versao: "1.6"
-total_regras: 12
+ultima_atualizacao: 2026-08-31
+versao: "1.7"
+total_regras: 13
 tags: [regras, modulo:relatorios]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -32,6 +32,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 | BR-REL-010 | Export grupos exige types | Restrição | Ativo |
 | BR-REL-011 | Flock Print (padrão PDF) | Fato | Ativo |
 | BR-REL-012 | Export membros da congregação | Restrição | Ativo |
+| BR-REL-013 | Ficha de pré-cadastro em branco | Fato | Ativo |
 
 ---
 
@@ -163,6 +164,16 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Testado em:** `validators/__tests__/congregationValidator.test.ts`; smoke DEV-47
 - **Depende de:** [[BR-REL-001]], [[BR-REL-006]], [[BR-REL-007]], [[BR-REL-008]], [[BR-REL-011]], [[BR-CON-008]], [[BR-CON-009]], [[BR-CON-014]]
 
+### BR-REL-013: Ficha de pré-cadastro em branco
+- **Declaração:** `GET /api/export/integration/registration-form/pdf` gera PDF A4 portrait (kit Flock Print) da igreja autenticada. Título visível fixo: **Ficha de pré-cadastro**. É template em branco (sem dados de integrante): pessoais + eclesiásticas (tipo de recebimento previsto, congregação prevista, questionário completo no papel). **Não** inclui Acompanhamento (mentor, status, observações) nem campos de membro (família, endereço, e-mail). UI no hub `/integration`, reader+, não gated por `canEdit`. Distinto de `GET /members/registration-form/pdf` e de `GET /integration/:id/pdf`. Path estático **antes** de `GET /integration/:id/pdf`.
+- **Tipo:** Fato
+- **Gatilho:** Botão **Ficha de pré-cadastro** no hub / GET dedicado
+- **Comportamento esperado:** Download A4; filename `ficha-pre-cadastro-{slug}-{YYYY-MM-DD}.pdf`
+- **Comportamento em violação:** 401 / 403 / 404 igreja; 500 se headers ainda não enviados
+- **Implementado em:** `exportController.exportIntegrationRegistrationFormPDF` + `utils/pdf/renderBlankPreRegistration.ts` + `integration/page.tsx`
+- **Testado em:** `utils/pdf/__tests__/renderBlankPreRegistration.test.ts`; QA DEV-92
+- **Depende de:** [[BR-REL-001]], [[BR-REL-006]], [[BR-REL-011]], [[BR-INT-003]], [[BR-INT-008]]
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -171,4 +182,4 @@ Oferecer indicadores demográficos/operacionais e exportações.
 
 ---
 
-*Atualizado em 2026-08-25 (DEV-47).*
+*Atualizado em 2026-08-31 (DEV-92).*

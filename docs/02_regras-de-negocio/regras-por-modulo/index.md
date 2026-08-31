@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-08-26
-versao: "1.5"
+ultima_atualizacao: 2026-08-31
+versao: "1.6"
 total_modulos: 13
-total_regras: 149
+total_regras: 150
 tags: [regras, índice, módulos]
 ---
 
@@ -24,13 +24,13 @@ tags: [regras, índice, módulos]
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
-| Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 12 | Painel e exportações |
+| Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 15 | Igreja, conta, equipe, audit |
 | Billing | [[02_regras-de-negocio/regras-por-modulo/billing]] | BILL | 16 | Planos, Stripe, limites |
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 13 módulos · **149 regras**
+**Total:** 13 módulos · **150 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
@@ -49,4 +49,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-08-26 — BR-OPS-008 (Lista de espera `GET /api/ops/waitlist`, DEV-72).
+2026-08-31 — BR-REL-013 (ficha de pré-cadastro em branco, DEV-92).
