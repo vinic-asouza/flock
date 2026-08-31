@@ -9,6 +9,13 @@ import { buildLoginCheckoutUrl, buildFreeRegisterUrl, type PaidPlanId } from '@/
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
 
+const PLAN_DISPLAY_NAMES: Record<string, string> = {
+  '100': 'Grátis',
+  '200': 'Essencial',
+  '500': 'Crescimento',
+  '800': 'Completo',
+};
+
 const PLAN_ICONS: Record<string, React.ElementType> = {
   '200': Users,
   '500': Building2,
@@ -75,17 +82,17 @@ export function Pricing() {
   }, []);
 
   return (
-    <section id="pricing" className="py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
+    <section id="pricing" className="scroll-mt-24 py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
       <div className="max-w-7xl mx-auto min-w-0">
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Quanto custa
+            Comece grátis. Cresça quando sua igreja crescer.
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-4">
-            Escolha pelo tamanho da sua igreja. O Flock é o mesmo em todos os planos.
+            Todas as funcionalidades. Um único Flock.
           </p>
           <p className="text-sm text-gray-600 max-w-3xl mx-auto">
-            O que muda é quantos membros cabem. No plano de 800, o atendimento é mais próximo.
+            Você paga apenas pelo tamanho da sua igreja.
           </p>
         </div>
 
@@ -97,7 +104,7 @@ export function Pricing() {
                   <Gift className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{freePlan.name}</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{PLAN_DISPLAY_NAMES[freePlan.id] ?? 'Grátis'}</h3>
                   <p className="text-sm text-gray-600">Até {freePlan.members} membros — {freePlan.priceFormatted}</p>
                 </div>
               </div>
@@ -105,7 +112,7 @@ export function Pricing() {
                 href={buildFreeRegisterUrl(FRONTEND_URL)}
                 className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-colors text-sm sm:text-base"
               >
-                Comece grátis
+                Começar grátis
               </Link>
             </div>
           </div>
@@ -116,17 +123,28 @@ export function Pricing() {
             const planId = plan.id as PaidPlanId;
             const IconComponent = PLAN_ICONS[plan.id] || Users;
             const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES['200'];
+            const isFeatured = plan.id === '500';
+            const displayName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name;
 
             return (
               <div
                 key={plan.id}
-                className="bg-white rounded-xl border-2 border-gray-200 hover:border-primary/50 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col relative"
+                className={`bg-white rounded-xl border-2 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col relative ${
+                  isFeatured
+                    ? 'border-primary hover:border-primary'
+                    : 'border-gray-200 hover:border-primary/50'
+                }`}
               >
+                {isFeatured && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                    Mais escolhido
+                  </span>
+                )}
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <IconComponent className="w-8 h-8 text-primary" />
+                    <IconComponent className="w-8 h-8 text-primary" aria-hidden />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-extrabold text-gray-900">{plan.name}</h3>
+                  <h3 className="text-xl md:text-2xl font-extrabold text-gray-900">{displayName}</h3>
                   <p className="text-sm md:text-base text-gray-600 mb-4">
                     Até {plan.members} membros
                   </p>
@@ -141,7 +159,7 @@ export function Pricing() {
                     {features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <div className="flex-shrink-0 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center mt-0.5">
-                          <Check className="w-3 h-3 text-primary" />
+                          <Check className="w-3 h-3 text-primary" aria-hidden />
                         </div>
                         <span className="text-sm text-gray-700">{feature}</span>
                       </li>
@@ -151,7 +169,7 @@ export function Pricing() {
 
                 <div className="mt-auto space-y-2">
                   <CheckoutButton plan={planId} className="w-full">
-                    Assinar Agora
+                    Escolher este plano
                   </CheckoutButton>
                   <Link
                     href={buildLoginCheckoutUrl(planId, FRONTEND_URL)}

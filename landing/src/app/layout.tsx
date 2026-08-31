@@ -21,10 +21,10 @@ export const viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Flock — organize a vida da sua igreja",
+    default: "Flock — a gestão da sua igreja, em um só lugar",
     template: "%s | Flock",
   },
-  description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
+  description: "A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.",
   keywords: [
     "igreja",
     "gestão de membros",
@@ -53,8 +53,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "pt_BR",
     url: siteUrl,
-    title: "Flock — organize a vida da sua igreja",
-    description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
+    title: "Flock — a gestão da sua igreja, em um só lugar",
+    description: "A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.",
     siteName: "Flock",
     images: [
       {
@@ -67,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Flock — organize a vida da sua igreja",
-    description: "Feito para a igreja brasileira. Comece grátis até 100 membros.",
+    title: "Flock — a gestão da sua igreja, em um só lugar",
+    description: "A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.",
     images: [`${siteUrl}/og-image.jpg`],
   },
   robots: {
@@ -108,7 +108,7 @@ export default function RootLayout({
       "priceCurrency": "BRL",
       "availability": "https://schema.org/InStock"
     },
-    "description": "Organize a vida da sua igreja. Feito para a igreja brasileira.",
+    "description": "A gestão da sua igreja, em um só lugar. Comece grátis até 100 membros.",
     "url": siteUrl,
     "screenshot": `${siteUrl}/demo/painel.png`,
     "featureList": [

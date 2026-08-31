@@ -53,7 +53,7 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
           </div>
 
           {/* Desktop Navigation - Centralized Links */}
-          <div className="hidden md:flex md:items-center md:justify-center md:flex-1 md:space-x-8">
+          <div className="hidden md:flex md:items-center md:justify-center md:flex-1 md:space-x-5 lg:space-x-8">
             <Link href={landingAnchor('#features', pathname)} className={navLinkClass}>
               Recursos
             </Link>
@@ -62,6 +62,9 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
             </Link>
             <Link href={landingAnchor('#pricing', pathname)} className={navLinkClass}>
               Planos
+            </Link>
+            <Link href={landingAnchor('#faq', pathname)} className={navLinkClass}>
+              FAQ
             </Link>
             <Link
               href={landingAnchor('#waitlist', pathname)}
@@ -127,6 +130,13 @@ export function Header({ onOpenWaitlist }: HeaderProps) {
               onClick={closeMenu}
             >
               Planos
+            </Link>
+            <Link
+              href={landingAnchor('#faq', pathname)}
+              className={`${navLinkClass} px-2`}
+              onClick={closeMenu}
+            >
+              FAQ
             </Link>
             <Link
               href={landingAnchor('#waitlist', pathname)}
