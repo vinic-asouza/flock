@@ -26,9 +26,11 @@ import {
   OpsDetailSkeleton,
   OpsEmpty,
   OpsError,
+  OpsMailtoLink,
   OpsPage,
   OpsPageHeader,
   OpsPanel,
+  OpsWhatsAppLink,
 } from "@/components/ui";
 
 function DefinitionItem({
@@ -202,11 +204,11 @@ export function ChurchDetailView() {
             />
             <DefinitionItem
               label="E-mail da Igreja"
-              value={displayValue(church.email_church)}
+              value={<OpsMailtoLink email={church.email_church} />}
             />
             <DefinitionItem
               label="Telefone da Igreja"
-              value={displayValue(church.phone_church)}
+              value={<OpsWhatsAppLink phone={church.phone_church} />}
             />
             <div className="sm:col-span-2">
               <DefinitionItem

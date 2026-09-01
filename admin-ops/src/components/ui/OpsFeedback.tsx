@@ -47,9 +47,11 @@ export function OpsStatCard({
 export function OpsBadge({
   children,
   tone,
+  className,
 }: {
   children: ReactNode;
   tone: "success" | "neutral" | "warning" | "danger";
+  className?: string;
 }) {
   const tones = {
     success: "bg-emerald-50 text-emerald-800",
@@ -61,8 +63,9 @@ export function OpsBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-        tones[tone]
+        "inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium",
+        tones[tone],
+        className
       )}
     >
       {children}
@@ -148,7 +151,7 @@ export function OpsCardListSkeleton({ cards = 4 }: { cards?: number }) {
       aria-label="Carregando lista"
     >
       {Array.from({ length: cards }).map((_, index) => (
-        <OpsSkeleton key={index} className="h-28" />
+        <OpsSkeleton key={index} className="h-20" />
       ))}
     </div>
   );

@@ -5,6 +5,7 @@ import {
   planTypeLabel,
   sortBreakdownEntries,
   subscriptionStatusLabel,
+  subscriptionStatusTone,
 } from "./opsChurchLabels.ts";
 
 describe("ops church labels", () => {
@@ -17,6 +18,9 @@ describe("ops church labels", () => {
     assert.equal(subscriptionStatusLabel(null), "Sem assinatura");
     assert.equal(subscriptionStatusLabel("none"), "Sem assinatura");
     assert.equal(subscriptionStatusLabel("trialing"), "Em trial");
+    assert.equal(subscriptionStatusTone("active"), "success");
+    assert.equal(subscriptionStatusTone("past_due"), "danger");
+    assert.equal(subscriptionStatusTone("trialing"), "warning");
   });
 
   it("should keep none buckets last in breakdowns", () => {

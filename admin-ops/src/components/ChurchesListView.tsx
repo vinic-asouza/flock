@@ -1,16 +1,26 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CreditCard,
+  Fingerprint,
+  MapPin,
+  Search,
+  Users,
+} from "lucide-react";
 import { opsApi } from "@/services/api";
-import type { OpsChurchListResponse } from "@/types/opsChurches";
+import type { OpsChurchListItem, OpsChurchListResponse } from "@/types/opsChurches";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
 import {
   commerciallyActiveLabel,
   planTypeLabel,
   subscriptionStatusLabel,
+  subscriptionStatusTone,
 } from "@/lib/opsChurchLabels";
 import {
   OPS_CHURCH_PLAN_TYPES,
@@ -24,24 +34,34 @@ import {
   type OpsChurchSortField,
   type OpsChurchSubscriptionStatus,
 } from "@/lib/opsChurchQuery";
-import { formatCnpj } from "@/lib/opsFormat";
+import {
+  displayValue,
+  formatCityState,
+  formatCnpj,
+  formatDate,
+  formatDateTime,
+} from "@/lib/opsFormat";
 import {
   OpsBadge,
   OpsButton,
+  OpsButtonLink,
+  OpsCardListSkeleton,
   OpsClearFiltersLink,
+  OpsContactField,
+  OpsDetailGrid,
+  OpsDetailItem,
   OpsEmpty,
   OpsError,
   OpsFilterBar,
   OpsInput,
+  OpsListCard,
+  OpsListCardAccordion,
+  OpsListCardHeader,
+  OpsMetaItem,
   OpsPage,
   OpsPageHeader,
   OpsPagination,
   OpsSelect,
-  OpsTable,
-  OpsTableHead,
-  OpsTableSkeleton,
-  OpsTd,
-  OpsTh,
 } from "@/components/ui";
 
 function hrefFrom(
@@ -51,22 +71,95 @@ function hrefFrom(
   return churchesListHref({ ...current, ...patch });
 }
 
-function onChurchRowClick(
-  event: MouseEvent<HTMLTableRowElement>,
-  href: string,
-  navigate: (href: string) => void
-) {
-  if (event.defaultPrevented || event.button !== 0) {
-    return;
-  }
-  if ((event.target as HTMLElement).closest("a")) {
-    return;
-  }
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    window.open(href, "_blank", "noopener,noreferrer");
-    return;
-  }
-  navigate(href);
+function ChurchCard({
+  church,
+  href,
+}: {
+  church: OpsChurchListItem;
+  href: string;
+}) {
+  const address = [church.address, church.city, church.state]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" — ");
+
+  return (
+    <OpsListCard>
+      <OpsListCardHeader>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-sm font-semibold">
+              <Link
+                href={href}
+                className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {church.name}
+              </Link>
+            </h2>
+            <OpsBadge tone={church.commercially_active ? "success" : "neutral"}>
+              {commerciallyActiveLabel(church.commercially_active)}
+            </OpsBadge>
+            <OpsBadge tone="neutral">{planTypeLabel(church.plan_type)}</OpsBadge>
+            <OpsBadge tone={subscriptionStatusTone(church.subscription_status)}>
+              {subscriptionStatusLabel(church.subscription_status)}
+            </OpsBadge>
+          </div>
+          <ul className="mt-1.5 flex flex-col gap-1 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+            <OpsMetaItem icon={MapPin}>
+              {formatCityState(church.city, church.state)}
+            </OpsMetaItem>
+            <OpsMetaItem icon={Users}>
+              {church.members_active_count}{" "}
+              {church.members_active_count === 1 ? "membro ativo" : "membros ativos"}
+            </OpsMetaItem>
+            <OpsMetaItem icon={CalendarDays}>
+              {formatDate(church.created_at)}
+            </OpsMetaItem>
+          </ul>
+        </div>
+        <OpsButtonLink href={href} size="sm" className="shrink-0">
+          Abrir ficha
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </OpsButtonLink>
+      </OpsListCardHeader>
+
+      <OpsListCardAccordion>
+        <OpsDetailGrid>
+          <OpsDetailItem icon={Fingerprint} label="CNPJ">
+            <span className="font-mono text-xs">{formatCnpj(church.cnpj)}</span>
+          </OpsDetailItem>
+          <OpsDetailItem icon={Building2} label="Denominação">
+            {displayValue(church.denomination)}
+          </OpsDetailItem>
+          <OpsContactField
+            kind="email"
+            label="E-mail da Igreja"
+            value={church.email_church}
+          />
+          <OpsContactField
+            kind="phone"
+            label="Telefone da Igreja"
+            value={church.phone_church}
+          />
+          <OpsDetailItem icon={MapPin} label="Endereço" wide>
+            {address || "—"}
+          </OpsDetailItem>
+          <OpsDetailItem icon={Users} label="Membros">
+            {church.members_active_count} ativos · {church.members_inactive_count}{" "}
+            inativos
+          </OpsDetailItem>
+          <OpsDetailItem icon={CreditCard} label="Vigência da assinatura">
+            {church.subscription_start_date || church.subscription_end_date
+              ? `${formatDate(church.subscription_start_date)} → ${formatDate(church.subscription_end_date)}`
+              : "—"}
+          </OpsDetailItem>
+          <OpsDetailItem icon={CalendarDays} label="Cadastrada em" wide>
+            {formatDateTime(church.created_at)}
+          </OpsDetailItem>
+        </OpsDetailGrid>
+      </OpsListCardAccordion>
+    </OpsListCard>
+  );
 }
 
 export function ChurchesListView() {
@@ -135,14 +228,11 @@ export function ChurchesListView() {
     <OpsPage>
       <OpsPageHeader
         title="Igrejas"
-        description="Busca e filtros sobre as Igrejas da plataforma. Clique em uma linha para abrir a ficha."
+        description="Busca e filtros sobre as Igrejas da plataforma. Abra a ficha para o histórico completo."
       />
 
       <OpsFilterBar>
-        <form
-          onSubmit={onSearch}
-          className="flex flex-wrap items-end gap-3"
-        >
+        <form onSubmit={onSearch} className="flex flex-wrap items-end gap-3">
           <OpsInput
             label="Busca"
             type="search"
@@ -243,7 +333,7 @@ export function ChurchesListView() {
       </OpsFilterBar>
 
       {isLoading ? (
-        <OpsTableSkeleton />
+        <OpsCardListSkeleton />
       ) : error ? (
         <OpsError title={error.title} details={error.details} />
       ) : result && result.data.length === 0 ? (
@@ -254,60 +344,15 @@ export function ChurchesListView() {
         </OpsEmpty>
       ) : result ? (
         <>
-          <OpsTable>
-            <OpsTableHead>
-              <tr>
-                <OpsTh>Igreja</OpsTh>
-                <OpsTh fit>CNPJ</OpsTh>
-                <OpsTh fit>Plano</OpsTh>
-                <OpsTh fit>Assinatura</OpsTh>
-                <OpsTh fit>Situação</OpsTh>
-                <OpsTh fit className="text-right">
-                  Membros ativos
-                </OpsTh>
-              </tr>
-            </OpsTableHead>
-            <tbody>
-              {result.data.map((church) => {
-                const href = churchDetailHref(church.id, query);
-                return (
-                  <tr
-                    key={church.id}
-                    className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50"
-                    onClick={(event) =>
-                      onChurchRowClick(event, href, router.push)
-                    }
-                  >
-                    <OpsTd className="max-w-[18rem]" title={church.name}>
-                      <Link
-                        href={href}
-                        className="block truncate font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      >
-                        {church.name}
-                      </Link>
-                    </OpsTd>
-                    <OpsTd fit className="font-mono text-xs text-foreground">
-                      {formatCnpj(church.cnpj)}
-                    </OpsTd>
-                    <OpsTd fit>{planTypeLabel(church.plan_type)}</OpsTd>
-                    <OpsTd fit>
-                      {subscriptionStatusLabel(church.subscription_status)}
-                    </OpsTd>
-                    <OpsTd fit>
-                      <OpsBadge
-                        tone={church.commercially_active ? "success" : "neutral"}
-                      >
-                        {commerciallyActiveLabel(church.commercially_active)}
-                      </OpsBadge>
-                    </OpsTd>
-                    <OpsTd fit className="text-right tabular-nums">
-                      {church.members_active_count}
-                    </OpsTd>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </OpsTable>
+          <div className="flex flex-col gap-2">
+            {result.data.map((church) => (
+              <ChurchCard
+                key={church.id}
+                church={church}
+                href={churchDetailHref(church.id, query)}
+              />
+            ))}
+          </div>
 
           {pagination ? (
             <OpsPagination

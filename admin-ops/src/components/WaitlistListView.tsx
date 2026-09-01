@@ -5,20 +5,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   Check,
-  ChevronDown,
   Church,
-  Mail,
+  CreditCard,
   MapPin,
   MessageSquareText,
-  Phone,
   Search,
   Trash2,
 } from "lucide-react";
-import {
-  Disclosure,
-  DisclosureButton,
-  DisclosurePanel,
-} from "@headlessui/react";
 import toast from "react-hot-toast";
 import { opsApi } from "@/services/api";
 import type { OpsWaitlistListItem, OpsWaitlistListResponse } from "@/types/opsWaitlist";
@@ -40,23 +33,29 @@ import {
   type OpsWaitlistStatus,
   type OpsWaitlistStatusFilter,
 } from "@/lib/opsWaitlistQuery";
-import { displayValue, formatDate, formatDateTime, formatPhone } from "@/lib/opsFormat";
+import { formatCityState, formatDate, formatDateTime } from "@/lib/opsFormat";
 import {
   OpsBadge,
   OpsButton,
   OpsCardListSkeleton,
   OpsClearFiltersLink,
   OpsConfirmDialog,
+  OpsContactField,
+  OpsDetailGrid,
+  OpsDetailItem,
   OpsEmpty,
   OpsError,
   OpsFilterBar,
   OpsInput,
+  OpsListCard,
+  OpsListCardAccordion,
+  OpsListCardHeader,
+  OpsMetaItem,
   OpsPage,
   OpsPageHeader,
   OpsPagination,
   OpsSelect,
 } from "@/components/ui";
-import { cn } from "@/lib/cn";
 
 function hrefFrom(
   current: OpsWaitlistListQuery,
@@ -77,17 +76,6 @@ function statusBadgeTone(
   return "warning";
 }
 
-function locationLabel(lead: OpsWaitlistListItem): string {
-  const city = displayValue(lead.city);
-  if (!lead.state) {
-    return city;
-  }
-  if (city === "—") {
-    return lead.state;
-  }
-  return `${lead.city}/${lead.state}`;
-}
-
 function WaitlistLeadCard({
   lead,
   busy,
@@ -102,146 +90,79 @@ function WaitlistLeadCard({
   const pending = lead.status === "pending";
 
   return (
-    <article className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+    <OpsListCard>
+      <OpsListCardHeader>
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-primary">{lead.name}</h2>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-primary">{lead.name}</h2>
             <OpsBadge tone={statusBadgeTone(lead.status)}>
               {waitlistStatusLabel(lead.status)}
             </OpsBadge>
           </div>
-          <ul className="mt-3 flex flex-col gap-2 text-sm text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
-            <li className="flex min-w-0 items-center gap-1.5">
-              <Church className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span className="truncate" title={lead.church_name}>
-                {lead.church_name}
-              </span>
-            </li>
-            <li className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span>{locationLabel(lead)}</span>
-            </li>
-            <li className="flex items-center gap-1.5">
-              <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span>{formatDate(lead.created_at)}</span>
-            </li>
+          <ul className="mt-1.5 flex flex-col gap-1 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+            <OpsMetaItem icon={Church} title={lead.church_name}>
+              {lead.church_name}
+            </OpsMetaItem>
+            <OpsMetaItem icon={MapPin}>
+              {formatCityState(lead.city, lead.state)}
+            </OpsMetaItem>
+            <OpsMetaItem icon={CalendarDays}>
+              {formatDate(lead.created_at)}
+            </OpsMetaItem>
           </ul>
         </div>
         {pending ? (
-          <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-1.5">
             <OpsButton
               type="button"
               variant="secondary"
+              size="sm"
               disabled={busy}
+              aria-label="Marcar como convertido"
               onClick={onConvert}
             >
-              <Check className="h-4 w-4" aria-hidden />
-              Marcar como convertido
+              <Check className="h-3.5 w-3.5" aria-hidden />
+              Converter
             </OpsButton>
             <OpsButton
               type="button"
               variant="ghost"
+              size="sm"
               className="text-red-600 hover:bg-red-50 hover:text-red-700"
               disabled={busy}
+              aria-label="Excluir da lista"
               onClick={onDiscard}
             >
-              <Trash2 className="h-4 w-4" aria-hidden />
-              Excluir da lista
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              Excluir
             </OpsButton>
           </div>
         ) : null}
-      </div>
+      </OpsListCardHeader>
 
-      <Disclosure>
-        {({ open }) => (
-          <>
-            <DisclosureButton className="flex w-full items-center justify-between border-t border-gray-100 bg-gray-50 px-5 py-2.5 text-left text-sm font-medium text-primary hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary">
-              {open ? "Menos informações" : "Mais informações"}
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 shrink-0 text-muted transition-transform",
-                  open && "rotate-180"
-                )}
-                aria-hidden
-              />
-            </DisclosureButton>
-            <DisclosurePanel className="border-t border-gray-100 px-5 py-4">
-              <dl className="grid gap-4 sm:grid-cols-2">
-                <div className="flex gap-2">
-                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  <div className="min-w-0">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                      E-mail
-                    </dt>
-                    <dd className="mt-0.5 break-all text-sm text-foreground">
-                      {lead.email}
-                    </dd>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                      Telefone
-                    </dt>
-                    <dd className="mt-0.5 text-sm text-foreground">
-                      {formatPhone(lead.phone)}
-                    </dd>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Church className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                      Plano de interesse
-                    </dt>
-                    <dd className="mt-0.5 text-sm text-foreground">
-                      {waitlistPlanLabel(lead.plan)}
-                    </dd>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                      Cadastro
-                    </dt>
-                    <dd className="mt-0.5 text-sm text-foreground">
-                      {formatDateTime(lead.created_at)}
-                    </dd>
-                  </div>
-                </div>
-                {lead.status !== "pending" && lead.status_updated_at ? (
-                  <div className="flex gap-2 sm:col-span-2">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                    <div>
-                      <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                        Situação atualizada em
-                      </dt>
-                      <dd className="mt-0.5 text-sm text-foreground">
-                        {formatDateTime(lead.status_updated_at)}
-                      </dd>
-                    </div>
-                  </div>
-                ) : null}
-                <div className="flex gap-2 sm:col-span-2">
-                  <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-muted" aria-hidden />
-                  <div className="min-w-0">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-muted">
-                      Mensagem
-                    </dt>
-                    <dd className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">
-                      {lead.message?.trim() ? lead.message : "—"}
-                    </dd>
-                  </div>
-                </div>
-              </dl>
-            </DisclosurePanel>
-          </>
-        )}
-      </Disclosure>
-    </article>
+      <OpsListCardAccordion>
+        <OpsDetailGrid>
+          <OpsContactField kind="email" label="E-mail" value={lead.email} />
+          <OpsContactField kind="phone" label="Telefone" value={lead.phone} />
+          <OpsDetailItem icon={CreditCard} label="Plano de interesse">
+            {waitlistPlanLabel(lead.plan)}
+          </OpsDetailItem>
+          <OpsDetailItem icon={CalendarDays} label="Cadastro">
+            {formatDateTime(lead.created_at)}
+          </OpsDetailItem>
+          {lead.status !== "pending" && lead.status_updated_at ? (
+            <OpsDetailItem icon={Check} label="Situação atualizada em" wide>
+              {formatDateTime(lead.status_updated_at)}
+            </OpsDetailItem>
+          ) : null}
+          <OpsDetailItem icon={MessageSquareText} label="Mensagem" wide>
+            <span className="whitespace-pre-wrap">
+              {lead.message?.trim() ? lead.message : "—"}
+            </span>
+          </OpsDetailItem>
+        </OpsDetailGrid>
+      </OpsListCardAccordion>
+    </OpsListCard>
   );
 }
 
@@ -420,7 +341,7 @@ export function WaitlistListView() {
         </OpsEmpty>
       ) : result ? (
         <>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             {result.data.map((lead) => (
               <WaitlistLeadCard
                 key={lead.id}

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { displayValue, formatCnpj, formatPhone } from "./opsFormat.ts";
+import { displayValue, formatCityState, formatCnpj, formatPhone } from "./opsFormat.ts";
 import { formatOpsReadError, isNotFoundReadError } from "./opsReadErrors.ts";
 
 function apiError(message: string, status: number, details?: string | string[]) {
@@ -24,6 +24,8 @@ describe("opsFormat", () => {
     assert.equal(formatPhone("14999999999"), "(14) 99999-9999");
     assert.equal(formatPhone("1434141234"), "(14) 3414-1234");
     assert.equal(formatPhone(""), "—");
+    assert.equal(formatCityState("Marília", "SP"), "Marília/SP");
+    assert.equal(formatCityState("  ", "SP"), "SP");
   });
 });
 

@@ -222,7 +222,7 @@ Não faz parte de J1–J12 nem do Mintlify. Ator: **Operador da plataforma**. Ap
 
 1. `/login` → `POST /api/ops/login` (allowlist; conta **sem** igreja).
 2. `/` overview: totais de Igrejas (geral, comercialmente ativas/inativas) + breakdowns por plano e status Stripe.
-3. Recorte do overview ou nav **Igrejas** → `/churches` (busca nome/CNPJ, filtros, paginação). Clique na linha → ficha.
+3. Recorte do overview ou nav **Igrejas** → `/churches` (busca nome/CNPJ, filtros, paginação). Cards (nome, cidade, membros, flags de plano/assinatura/situação comercial) + accordion; **Abrir ficha** ou o nome vão para o detalhe.
 4. `/churches/[id]` ficha read-only (cadastro/contato, plano/Stripe persistido, contagens, eventos, histórico). Sem mutação, impersonation ou rol de Membros.
 5. Nav **Lista de espera** → `/waitlist`: cards (nome, igreja, cidade, data) + accordion. Busca nome/e-mail/igreja, filtro de **situação** (default Pendentes; também Convertidos, Excluídos, Todas), plano `personalizado` ≠ `custom`, sort por data. Ações só em pendentes: **Marcar como convertido** ou **Excluir da lista** (confirmação). Não cria Igreja; exclusão é flag (`discarded`), e-mail permanece UNIQUE. Sem ficha `/waitlist/[id]` nem CSV.
 6. Nav **Saúde** → `/health`: status geral + cards API / Stripe / jobs + tabela dos 5 crons. **Atualizar** (sem polling). Se a rede falhar, a tela preserva a última consulta bem-sucedida.
