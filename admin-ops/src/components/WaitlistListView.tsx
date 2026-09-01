@@ -46,6 +46,7 @@ import {
   OpsEmpty,
   OpsError,
   OpsFilterBar,
+  OpsFilterRow,
   OpsInput,
   OpsListCard,
   OpsListCardAccordion,
@@ -264,68 +265,79 @@ export function WaitlistListView() {
       />
 
       <OpsFilterBar>
-        <form onSubmit={onSearch} className="flex flex-wrap items-end gap-3">
-          <OpsInput
-            label="Busca"
-            type="search"
-            value={qInput}
-            onChange={(event) => setQInput(event.target.value)}
-            maxLength={80}
-            placeholder="Nome, e-mail ou igreja"
-            className="min-w-[14rem] flex-1"
-          />
-          <OpsSelect
-            label="Situação"
-            className="w-full sm:w-44"
-            value={query.status}
-            onChange={(value) =>
-              go({
-                status: value as OpsWaitlistStatusFilter,
-                page: 1,
-              })
-            }
-            options={[
-              { value: "pending", label: "Pendentes" },
-              { value: "converted", label: "Convertidos" },
-              { value: "discarded", label: "Excluídos" },
-              { value: "all", label: "Todas" },
-            ]}
-          />
-          <OpsSelect
-            label="Plano de interesse"
-            className="w-full sm:w-44"
-            value={query.plan ?? ""}
-            onChange={(value) =>
-              go({
-                plan: (value || undefined) as OpsWaitlistPlan | undefined,
-                page: 1,
-              })
-            }
-            options={[
-              { value: "", label: "Todos" },
-              ...OPS_WAITLIST_PLANS.map((plan) => ({
-                value: plan,
-                label: waitlistPlanLabel(plan),
-              })),
-            ]}
-          />
-          <OpsSelect
-            label="Ordenar"
-            className="w-full sm:w-44"
-            value={`${query.sort_by}:${query.sort_order}`}
-            onChange={(value) => {
-              const [, sort_order] = value.split(":") as ["created_at", "asc" | "desc"];
-              go({ sort_by: "created_at", sort_order, page: 1 });
-            }}
-            options={[
-              { value: "created_at:desc", label: "Mais recentes" },
-              { value: "created_at:asc", label: "Mais antigos" },
-            ]}
-          />
-          <OpsButton type="submit" className="w-11 shrink-0 px-0" aria-label="Buscar">
-            <Search className="h-4 w-4" aria-hidden />
-          </OpsButton>
-          {filtered ? <OpsClearFiltersLink href="/waitlist" /> : null}
+        <form onSubmit={onSearch}>
+          <OpsFilterRow>
+            <OpsInput
+              label="Busca"
+              type="search"
+              density="sm"
+              value={qInput}
+              onChange={(event) => setQInput(event.target.value)}
+              maxLength={80}
+              placeholder="Nome, e-mail ou igreja"
+              className="min-w-32 flex-[1.4] basis-0"
+            />
+            <OpsSelect
+              label="Situação"
+              density="sm"
+              className="min-w-24 flex-1 basis-0"
+              value={query.status}
+              onChange={(value) =>
+                go({
+                  status: value as OpsWaitlistStatusFilter,
+                  page: 1,
+                })
+              }
+              options={[
+                { value: "pending", label: "Pendentes" },
+                { value: "converted", label: "Convertidos" },
+                { value: "discarded", label: "Excluídos" },
+                { value: "all", label: "Todas" },
+              ]}
+            />
+            <OpsSelect
+              label="Plano"
+              density="sm"
+              className="min-w-24 flex-1 basis-0"
+              value={query.plan ?? ""}
+              onChange={(value) =>
+                go({
+                  plan: (value || undefined) as OpsWaitlistPlan | undefined,
+                  page: 1,
+                })
+              }
+              options={[
+                { value: "", label: "Todos" },
+                ...OPS_WAITLIST_PLANS.map((plan) => ({
+                  value: plan,
+                  label: waitlistPlanLabel(plan),
+                })),
+              ]}
+            />
+            <OpsSelect
+              label="Ordenar"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
+              value={`${query.sort_by}:${query.sort_order}`}
+              onChange={(value) => {
+                const [, sort_order] = value.split(":") as ["created_at", "asc" | "desc"];
+                go({ sort_by: "created_at", sort_order, page: 1 });
+              }}
+              options={[
+                { value: "created_at:desc", label: "Mais recentes" },
+                { value: "created_at:asc", label: "Mais antigos" },
+              ]}
+            />
+            <OpsButton
+              type="submit"
+              size="sm"
+              className="h-9 w-9 shrink-0 px-0"
+              aria-label="Buscar"
+            >
+              <Search className="h-3.5 w-3.5" aria-hidden />
+            </OpsButton>
+            {filtered ? <OpsClearFiltersLink href="/waitlist" /> : null}
+          </OpsFilterRow>
         </form>
       </OpsFilterBar>
 

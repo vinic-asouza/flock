@@ -33,7 +33,7 @@ export function OpsPanel({
 
 export function OpsPage({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 md:px-6">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 md:px-6">
       {children}
     </div>
   );
@@ -67,7 +67,17 @@ export function OpsPageHeader({
 export function OpsFilterBar({ children }: { children: ReactNode }) {
   return (
     <div className="sticky top-0 z-10 -mx-4 bg-background/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
-      <OpsPanel>{children}</OpsPanel>
+      <OpsPanel padded={false} className="overflow-x-auto" bodyClassName="px-3 py-3">
+        {children}
+      </OpsPanel>
+    </div>
+  );
+}
+
+export function OpsFilterRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex w-full min-w-0 flex-nowrap items-end gap-1.5">
+      {children}
     </div>
   );
 }
@@ -76,7 +86,7 @@ export function OpsClearFiltersLink({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="inline-flex h-11 items-center text-xs text-muted underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="inline-flex h-9 shrink-0 items-center whitespace-nowrap text-[11px] text-muted underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       Limpar filtros
     </Link>

@@ -53,6 +53,7 @@ import {
   OpsEmpty,
   OpsError,
   OpsFilterBar,
+  OpsFilterRow,
   OpsInput,
   OpsListCard,
   OpsListCardAccordion,
@@ -232,103 +233,115 @@ export function ChurchesListView() {
       />
 
       <OpsFilterBar>
-        <form onSubmit={onSearch} className="flex flex-wrap items-end gap-3">
-          <OpsInput
-            label="Busca"
-            type="search"
-            value={qInput}
-            onChange={(event) => setQInput(event.target.value)}
-            maxLength={80}
-            placeholder="Nome ou CNPJ"
-            className="min-w-[14rem] flex-1"
-          />
-          <OpsSelect
-            label="Plano"
-            className="w-full sm:w-44"
-            value={query.plan_type ?? ""}
-            onChange={(value) =>
-              go({
-                plan_type: (value || undefined) as OpsChurchPlanType | undefined,
-                page: 1,
-              })
-            }
-            options={[
-              { value: "", label: "Todos" },
-              ...OPS_CHURCH_PLAN_TYPES.map((plan) => ({
-                value: plan,
-                label: planTypeLabel(plan),
-              })),
-            ]}
-          />
-          <OpsSelect
-            label="Status da assinatura"
-            className="w-full sm:w-52"
-            value={query.subscription_status ?? ""}
-            onChange={(value) =>
-              go({
-                subscription_status: (value || undefined) as
-                  | OpsChurchSubscriptionStatus
-                  | undefined,
-                page: 1,
-              })
-            }
-            options={[
-              { value: "", label: "Todos" },
-              ...OPS_CHURCH_SUBSCRIPTION_STATUSES.map((status) => ({
-                value: status,
-                label: subscriptionStatusLabel(status),
-              })),
-            ]}
-          />
-          <OpsSelect
-            label="Situação comercial"
-            className="w-full sm:w-52"
-            value={
-              typeof query.commercially_active === "boolean"
-                ? String(query.commercially_active)
-                : ""
-            }
-            onChange={(value) => {
-              go({
-                commercially_active:
-                  value === "true"
-                    ? true
-                    : value === "false"
-                      ? false
-                      : undefined,
-                page: 1,
-              });
-            }}
-            options={[
-              { value: "", label: "Todas" },
-              { value: "true", label: "Comercialmente ativas" },
-              { value: "false", label: "Comercialmente inativas" },
-            ]}
-          />
-          <OpsSelect
-            label="Ordenar"
-            className="w-full sm:w-44"
-            value={`${query.sort_by}:${query.sort_order}`}
-            onChange={(value) => {
-              const [sort_by, sort_order] = value.split(":") as [
-                OpsChurchSortField,
-                "asc" | "desc",
-              ];
-              go({ sort_by, sort_order, page: 1 });
-            }}
-            options={[
-              { value: "created_at:desc", label: "Mais recentes" },
-              { value: "created_at:asc", label: "Mais antigas" },
-              { value: "name:asc", label: "Nome A–Z" },
-              { value: "name:desc", label: "Nome Z–A" },
-              { value: "cnpj:asc", label: "CNPJ A–Z" },
-              { value: "cnpj:desc", label: "CNPJ Z–A" },
-            ]}
-          />
-          <OpsButton type="submit" className="w-11 shrink-0 px-0" aria-label="Buscar">
-            <Search className="h-4 w-4" aria-hidden />
-          </OpsButton>
-          {filtered ? <OpsClearFiltersLink href="/churches" /> : null}
+        <form onSubmit={onSearch}>
+          <OpsFilterRow>
+            <OpsInput
+              label="Busca"
+              type="search"
+              density="sm"
+              value={qInput}
+              onChange={(event) => setQInput(event.target.value)}
+              maxLength={80}
+              placeholder="Nome ou CNPJ"
+              className="min-w-32 flex-[1.4] basis-0"
+            />
+            <OpsSelect
+              label="Plano"
+              density="sm"
+              className="min-w-24 flex-1 basis-0"
+              value={query.plan_type ?? ""}
+              onChange={(value) =>
+                go({
+                  plan_type: (value || undefined) as OpsChurchPlanType | undefined,
+                  page: 1,
+                })
+              }
+              options={[
+                { value: "", label: "Todos" },
+                ...OPS_CHURCH_PLAN_TYPES.map((plan) => ({
+                  value: plan,
+                  label: planTypeLabel(plan),
+                })),
+              ]}
+            />
+            <OpsSelect
+              label="Assinatura"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
+              value={query.subscription_status ?? ""}
+              onChange={(value) =>
+                go({
+                  subscription_status: (value || undefined) as
+                    | OpsChurchSubscriptionStatus
+                    | undefined,
+                  page: 1,
+                })
+              }
+              options={[
+                { value: "", label: "Todos" },
+                ...OPS_CHURCH_SUBSCRIPTION_STATUSES.map((status) => ({
+                  value: status,
+                  label: subscriptionStatusLabel(status),
+                })),
+              ]}
+            />
+            <OpsSelect
+              label="Situação"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
+              value={
+                typeof query.commercially_active === "boolean"
+                  ? String(query.commercially_active)
+                  : ""
+              }
+              onChange={(value) => {
+                go({
+                  commercially_active:
+                    value === "true"
+                      ? true
+                      : value === "false"
+                        ? false
+                        : undefined,
+                  page: 1,
+                });
+              }}
+              options={[
+                { value: "", label: "Todas" },
+                { value: "true", label: "Comercialmente ativas" },
+                { value: "false", label: "Comercialmente inativas" },
+              ]}
+            />
+            <OpsSelect
+              label="Ordenar"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
+              value={`${query.sort_by}:${query.sort_order}`}
+              onChange={(value) => {
+                const [sort_by, sort_order] = value.split(":") as [
+                  OpsChurchSortField,
+                  "asc" | "desc",
+                ];
+                go({ sort_by, sort_order, page: 1 });
+              }}
+              options={[
+                { value: "created_at:desc", label: "Mais recentes" },
+                { value: "created_at:asc", label: "Mais antigas" },
+                { value: "name:asc", label: "Nome A–Z" },
+                { value: "name:desc", label: "Nome Z–A" },
+                { value: "cnpj:asc", label: "CNPJ A–Z" },
+                { value: "cnpj:desc", label: "CNPJ Z–A" },
+              ]}
+            />
+            <OpsButton
+              type="submit"
+              size="sm"
+              className="h-9 w-9 shrink-0 px-0"
+              aria-label="Buscar"
+            >
+              <Search className="h-3.5 w-3.5" aria-hidden />
+            </OpsButton>
+            {filtered ? <OpsClearFiltersLink href="/churches" /> : null}
+          </OpsFilterRow>
         </form>
       </OpsFilterBar>
 

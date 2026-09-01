@@ -17,6 +17,7 @@ export {
 export {
   OpsClearFiltersLink,
   OpsFilterBar,
+  OpsFilterRow,
   OpsPage,
   OpsPageHeader,
   OpsPagination,
