@@ -1,7 +1,7 @@
 ---
 type: seguranca
-ultima_atualizacao: 2026-08-26
-versao: "1.0"
+ultima_atualizacao: 2026-09-01
+versao: "1.1"
 auth_provider: Supabase Auth (custom cookie bridge)
 tags: [arquitetura, segurança, auth, OWASP, criptografia]
 ---
@@ -41,7 +41,7 @@ tags: [arquitetura, segurança, auth, OWASP, criptografia]
 2. Backend seta cookies `flock_*`  
 3. Requests subsequentes: cookie (preferido) ou `Authorization: Bearer`  
 4. `authMiddleware` valida via `supabase.auth.getUser(token)` e anexa `req.user` + `req.church`  
-   Rotas `/api/ops/*` autenticadas usam `authUserOnly` + `requirePlatformAdmin` (allowlist, **sem** `attachChurchContext`). GETs de Igrejas são read-only e **não** devolvem PII de Membros (BR-OPS-005/006). `GET /api/ops/waitlist` devolve PII de **lead** (esperado; BR-OPS-008) — **não** criar `GET /api/waitlist`. `GET /api/ops/health` usa a **sessão** do operador — **não** `INTERNAL_BILLING_TOKEN` / `HEALTH_CHECK_TOKEN` / `METRICS_TOKEN` (BR-OPS-007).
+   Rotas `/api/ops/*` autenticadas usam `authUserOnly` + `requirePlatformAdmin` (allowlist, **sem** `attachChurchContext`). GETs de Igrejas são read-only e **não** devolvem PII de Membros (BR-OPS-005/006). `GET /api/ops/waitlist` devolve PII de **lead** (esperado; BR-OPS-008); `PATCH /api/ops/waitlist/:id` só muda situação operacional — **não** criar `GET /api/waitlist`. `GET /api/ops/health` usa a **sessão** do operador — **não** `INTERNAL_BILLING_TOKEN` / `HEALTH_CHECK_TOKEN` / `METRICS_TOKEN` (BR-OPS-007).
 
 ---
 

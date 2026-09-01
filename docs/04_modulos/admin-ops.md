@@ -2,7 +2,7 @@
 type: modulo
 nome: Admin OPS
 status: Em Desenvolvimento
-versao: "0.8"
+versao: "0.9"
 owner: plataforma
 ultima_atualizacao: 2026-09-01
 tags: [admin-ops, plataforma, interno]
@@ -31,7 +31,9 @@ Estado atual: **auth de operador** + **login/shell** + **console read-only de Ig
 ```text
 admin-ops/                                    → Next.js 15, porta 3002, sem @sentry/nextjs
 admin-ops/src/app/                            → `/`, `/login`, `/churches`, `/churches/[id]`, `/waitlist`, `/health`, `robots.ts`
-admin-ops/src/components/                     → OverviewView, ChurchesListView, ChurchDetailView, WaitlistListView, HealthView, AuthGate
+admin-ops/src/components/                     → OpsShell, OverviewView, ChurchesListView, ChurchDetailView, WaitlistListView, HealthView, AuthGate
+admin-ops/src/app/(auth)/                      → login sem chrome do console
+admin-ops/src/app/(console)/                   → rotas autenticadas + sidebar/drawer
 admin-ops/src/services/api.ts                 → Axios `withCredentials` → `/api/ops/*`
 admin-ops/src/context/OpsAuthContext.tsx      → bootstrap `GET /ops/me`
 backend/src/services/platformAdmin.ts         → parser allowlist + regra de acesso
@@ -60,7 +62,7 @@ Allowlist `PLATFORM_ADMIN_EMAILS` + conta **sem** membership de igreja. Guard na
 Fail closed se a allowlist estiver vazia. Cookies de sessão `flock_access_token` / `flock_refresh_token` / `flock_session`; **não** seta `flock_active_church_id` (limpa no login).
 
 Rate limit do login: 10 tentativas / 15 min por IP, skip de sucesso (mesmo patamar do Painel).  
-Rate limit dos GETs de leitura: 60 / 15 min por IP.
+Rate limit dos GETs de leitura **e** do `PATCH /waitlist/:id`: 60 / 15 min por IP.
 
 ---
 
@@ -71,13 +73,13 @@ Rate limit dos GETs de leitura: 60 / 15 min por IP.
 | Rota | Auth | Nota |
 | --- | --- | --- |
 | `/login` | público | RHF+Zod; 401/403 em toast + alerta; consome `POST /ops/login` |
-| `/` | operador (`GET /ops/me`) | Overview comercial (totais + breakdowns). Nav **Overview · Igrejas · Lista de espera · Saúde** |
+| `/` | operador (`GET /ops/me`) | **Visão geral**: totais comerciais + KPI de waitlist (pendentes) e saúde. Nav **Visão geral · Igrejas · Lista de espera · Saúde** |
 | `/churches` | operador | Lista em cards; filtros e paginação na querystring |
 | `/churches/[id]` | operador | Ficha read-only; 404 se UUID inexistente; Voltar reconstrói a query da lista |
 | `/waitlist` | operador | Lista de espera em cards. Filtros na querystring (inclui situação). Ações: converter / excluir (flag). Sem ficha |
 | `/health` | operador | Saúde: banner geral + cards API/Stripe/jobs + tabela dos 5 crons; **Atualizar** (sem polling) |
 
-Header autenticado: marca, nav, e-mail, logout. Desktop-first. Sem Sentry nesta superfície. Overview **não** tem cards de waitlist.
+Shell autenticado: sidebar persistente em `md+` (marca, grupos Operação/Plataforma, e-mail, Sair); em `< md`, barra + drawer (Esc fecha). Login **não** herda esse chrome. Desktop-first. Sem Sentry nesta superfície. A Visão geral **tem** card da Lista de espera (total de **pendentes**) e card de Saúde.
 
 Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?…`. Buckets `none` (**Sem plano** / **Sem assinatura**) **não** viram query (`plan_type=none` é 400 na API). Labels: “Comercialmente ativa/inativa” — nunca badge genérico “Ativo”. Nome ou **Abrir ficha** abrem o detalhe; a query da lista viaja na URL da ficha para o Voltar. Nav **Igrejas** vai para `/churches` sem query (reset).
 
@@ -164,7 +166,7 @@ UI: se **Atualizar** falhar a rede, a tela preserva o último payload e mostra o
 - O shell do Admin OPS **não** reutiliza o layout `(main)` do Painel.
 - Guard de rotas é client-side nesta fundação; autorização efetiva continua na API.
 - Evitar `npm run build` com `next dev` no mesmo pacote (corrupção de `.next`).
-- Exceção localizada a BR-GEN-010 / API-028: só os GETs de Igrejas (overview/lista/ficha); Painel continua filtrando `church_id`. `GET /api/ops/health` **não** é leitura cross-tenant de Igreja. `GET /api/ops/waitlist` também **não** — a tabela não tem `church_id` (BR-OPS-008).
+- Exceção localizada a BR-GEN-010 / API-028: só os GETs de Igrejas (overview/lista/ficha); Painel continua filtrando `church_id`. `GET /api/ops/health` **não** é leitura cross-tenant de Igreja. `GET`/`PATCH /api/ops/waitlist` também **não** — a tabela não tem `church_id` (BR-OPS-008).
 - Nunca criar `GET /api/waitlist` (rota pública). Captação permanece `POST /api/waitlist` ([[04_modulos/aquisicao]]).
 - `GET /api/ops/health` responde **200** autenticado com `status` no JSON — não copiar o 503 de `GET /api/health/stripe`.
 - `church_users` na ficha conta a tabela; owner só em `churches.user_id` não entra no total.
