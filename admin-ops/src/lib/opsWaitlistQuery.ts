@@ -7,14 +7,29 @@ export const OPS_WAITLIST_PLANS = [
 
 export const OPS_WAITLIST_SORT_FIELDS = ["created_at"] as const;
 
+export const OPS_WAITLIST_STATUSES = [
+  "pending",
+  "converted",
+  "discarded",
+] as const;
+
+export const OPS_WAITLIST_STATUS_FILTERS = [
+  ...OPS_WAITLIST_STATUSES,
+  "all",
+] as const;
+
 export type OpsWaitlistPlan = (typeof OPS_WAITLIST_PLANS)[number];
 export type OpsWaitlistSortField = (typeof OPS_WAITLIST_SORT_FIELDS)[number];
+export type OpsWaitlistStatus = (typeof OPS_WAITLIST_STATUSES)[number];
+export type OpsWaitlistStatusFilter =
+  (typeof OPS_WAITLIST_STATUS_FILTERS)[number];
 
 export type OpsWaitlistListQuery = {
   page: number;
   limit: number;
   q?: string;
   plan?: OpsWaitlistPlan;
+  status: OpsWaitlistStatusFilter;
   sort_by: OpsWaitlistSortField;
   sort_order: "asc" | "desc";
 };
@@ -22,6 +37,7 @@ export type OpsWaitlistListQuery = {
 export const DEFAULT_WAITLIST_LIST_QUERY: OpsWaitlistListQuery = {
   page: 1,
   limit: 20,
+  status: "pending",
   sort_by: "created_at",
   sort_order: "desc",
 };
@@ -32,6 +48,10 @@ function isPlan(value: string): value is OpsWaitlistPlan {
 
 function isSortField(value: string): value is OpsWaitlistSortField {
   return (OPS_WAITLIST_SORT_FIELDS as readonly string[]).includes(value);
+}
+
+function isStatusFilter(value: string): value is OpsWaitlistStatusFilter {
+  return (OPS_WAITLIST_STATUS_FILTERS as readonly string[]).includes(value);
 }
 
 function parsePositiveInt(raw: string | null, fallback: number): number {
@@ -46,7 +66,9 @@ function parsePositiveInt(raw: string | null, fallback: number): number {
 }
 
 export function hasActiveWaitlistFilters(query: OpsWaitlistListQuery): boolean {
-  return Boolean(query.q || query.plan);
+  return Boolean(
+    query.q || query.plan || query.status !== DEFAULT_WAITLIST_LIST_QUERY.status
+  );
 }
 
 export function parseWaitlistListSearchParams(
@@ -62,6 +84,7 @@ export function parseWaitlistListSearchParams(
   );
   const q = (params.get("q") ?? "").trim().slice(0, 80);
   const plan = params.get("plan") ?? "";
+  const status = params.get("status") ?? DEFAULT_WAITLIST_LIST_QUERY.status;
   const sortBy = params.get("sort_by") ?? DEFAULT_WAITLIST_LIST_QUERY.sort_by;
   const sortOrder =
     params.get("sort_order") ?? DEFAULT_WAITLIST_LIST_QUERY.sort_order;
@@ -69,6 +92,9 @@ export function parseWaitlistListSearchParams(
   const query: OpsWaitlistListQuery = {
     page,
     limit,
+    status: isStatusFilter(status)
+      ? status
+      : DEFAULT_WAITLIST_LIST_QUERY.status,
     sort_by: isSortField(sortBy) ? sortBy : DEFAULT_WAITLIST_LIST_QUERY.sort_by,
     sort_order: sortOrder === "asc" ? "asc" : "desc",
   };
@@ -99,6 +125,9 @@ export function serializeWaitlistListQuery(
   }
   if (query.plan) {
     params.set("plan", query.plan);
+  }
+  if (query.status !== DEFAULT_WAITLIST_LIST_QUERY.status) {
+    params.set("status", query.status);
   }
   if (query.sort_by !== DEFAULT_WAITLIST_LIST_QUERY.sort_by) {
     params.set("sort_by", query.sort_by);
@@ -137,6 +166,9 @@ export function toWaitlistListApiParams(
   }
   if (query.plan) {
     params.plan = query.plan;
+  }
+  if (query.status !== DEFAULT_WAITLIST_LIST_QUERY.status) {
+    params.status = query.status;
   }
 
   return params;

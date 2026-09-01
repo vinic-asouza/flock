@@ -140,6 +140,20 @@ export function OpsTableSkeleton({ rows = 6 }: { rows?: number }) {
   );
 }
 
+export function OpsCardListSkeleton({ cards = 4 }: { cards?: number }) {
+  return (
+    <div
+      className="flex flex-col gap-3"
+      role="status"
+      aria-label="Carregando lista"
+    >
+      {Array.from({ length: cards }).map((_, index) => (
+        <OpsSkeleton key={index} className="h-28" />
+      ))}
+    </div>
+  );
+}
+
 export function OpsDetailSkeleton() {
   return (
     <div className="flex flex-col gap-4" role="status" aria-label="Carregando ficha">

@@ -56,7 +56,7 @@ tags: [produto, UX, fluxos, jornadas]
 /                 → Overview (totais comerciais + breakdowns)
 /churches         → lista / busca (querystring de filtros)
 /churches/[id]    → ficha read-only (query da lista preservada no Voltar)
-/waitlist         → Lista de espera (leads; querystring; sem ficha)
+/waitlist         → Lista de espera (cards; querystring; converter/excluir)
 /health           → Saúde (API, Stripe, jobs; Atualizar, sem polling)
 ```
 
@@ -224,11 +224,11 @@ Não faz parte de J1–J12 nem do Mintlify. Ator: **Operador da plataforma**. Ap
 2. `/` overview: totais de Igrejas (geral, comercialmente ativas/inativas) + breakdowns por plano e status Stripe.
 3. Recorte do overview ou nav **Igrejas** → `/churches` (busca nome/CNPJ, filtros, paginação). Clique na linha → ficha.
 4. `/churches/[id]` ficha read-only (cadastro/contato, plano/Stripe persistido, contagens, eventos, histórico). Sem mutação, impersonation ou rol de Membros.
-5. Nav **Lista de espera** → `/waitlist`: leads da landing (busca nome/e-mail/igreja, filtro por plano `personalizado` ≠ `custom`, sort por data). Somente leitura; mensagem longa expande na linha. Sem ficha `/waitlist/[id]`, CSV ou conversão em Igreja.
+5. Nav **Lista de espera** → `/waitlist`: cards (nome, igreja, cidade, data) + accordion. Busca nome/e-mail/igreja, filtro de **situação** (default Pendentes; também Convertidos, Excluídos, Todas), plano `personalizado` ≠ `custom`, sort por data. Ações só em pendentes: **Marcar como convertido** ou **Excluir da lista** (confirmação). Não cria Igreja; exclusão é flag (`discarded`), e-mail permanece UNIQUE. Sem ficha `/waitlist/[id]` nem CSV.
 6. Nav **Saúde** → `/health`: status geral + cards API / Stripe / jobs + tabela dos 5 crons. **Atualizar** (sem polling). Se a rede falhar, a tela preserva a última consulta bem-sucedida.
 7. Voltar à lista reconstrói a query; logout no header.
 
-**Desvios:** deslogado em qualquer rota autenticada → `/login`; UUID inexistente → “Igreja não encontrada”; buckets **Sem plano** / **Sem assinatura** não são links; usuário da igreja é recusado no login (403). Lista de espera vazia: “Nenhum lead na Lista de espera.” / “Nenhum lead encontrado para estes filtros.”
+**Desvios:** deslogado em qualquer rota autenticada → `/login`; UUID inexistente → “Igreja não encontrada”; buckets **Sem plano** / **Sem assinatura** não são links; usuário da igreja é recusado no login (403). Lista de espera vazia: “Nenhum lead pendente na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” PATCH em lead já tratado → 409.
 
 ---
 
@@ -273,7 +273,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 | Usuários da equipe | “Nenhum usuário extra…” |
 | Tutoriais busca | “Nenhum tutorial encontrado” |
 | Admin OPS lista | “Nenhuma Igreja encontrada para estes filtros.” / “Nenhuma Igreja cadastrada ainda.” |
-| Admin OPS Lista de espera | “Nenhum lead na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” |
+| Admin OPS Lista de espera | “Nenhum lead pendente na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” |
 | Admin OPS ficha | “Igreja não encontrada”; logs vazios na ficha |
 | Admin OPS saúde | Never-ran: “Ainda não executou”; Atualizar com falha de rede: alerta + último payload |
 | Erros de formulário | Zod/Joi + toast (`react-hot-toast`) |
@@ -303,7 +303,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
 19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), header `fixed`, CTAs touch, waitlist ≥16px, âncoras `/#faq` e `/#waitlist` a partir de `/waitlist`; funil register/login inalterado após redirect.
-20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (overview), `/churches`, `/churches/[id]`, `/waitlist`, `/health`. Auth: `POST /api/ops/login`. Console: `GET /api/ops/overview`, `/churches`, `/churches/:id`, `/waitlist`, `/health`. Não usar o shell do Painel. Sentry continua fora.
+20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (overview), `/churches`, `/churches/[id]`, `/waitlist`, `/health`. Auth: `POST /api/ops/login`. Console: `GET /api/ops/overview`, `/churches`, `/churches/:id`, `/waitlist`, `PATCH /api/ops/waitlist/:id`, `GET /api/ops/health`. Não usar o shell do Painel. Sentry continua fora.
 
 ---
 

@@ -26,6 +26,7 @@ import {
   type OpsChurchPlanType,
   type OpsChurchSubscriptionStatus,
 } from "@/lib/opsChurchQuery";
+import { DEFAULT_WAITLIST_LIST_QUERY } from "@/lib/opsWaitlistQuery";
 import {
   OpsEmpty,
   OpsError,
@@ -120,10 +121,8 @@ export function OverviewView() {
         await Promise.allSettled([
           opsApi.getOverview(),
           opsApi.listWaitlist({
-            page: 1,
+            ...DEFAULT_WAITLIST_LIST_QUERY,
             limit: 1,
-            sort_by: "created_at",
-            sort_order: "desc",
           }),
           opsApi.getHealth(),
         ]);

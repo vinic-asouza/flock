@@ -5,7 +5,7 @@ import type {
   OpsOverview,
 } from "@/types/opsChurches";
 import type { OpsHealthResponse } from "@/types/opsHealth";
-import type { OpsWaitlistListResponse } from "@/types/opsWaitlist";
+import type { OpsWaitlistListItem, OpsWaitlistListResponse } from "@/types/opsWaitlist";
 import type { OpsChurchListQuery } from "@/lib/opsChurchQuery";
 import { toChurchListApiParams } from "@/lib/opsChurchQuery";
 import type { OpsWaitlistListQuery } from "@/lib/opsWaitlistQuery";
@@ -147,6 +147,17 @@ class OpsApiService {
     const response = await this.api.get<OpsWaitlistListResponse>(
       "/ops/waitlist",
       { params: toWaitlistListApiParams(query) }
+    );
+    return response.data;
+  }
+
+  async patchWaitlist(
+    id: string,
+    status: "converted" | "discarded"
+  ): Promise<OpsWaitlistListItem> {
+    const response = await this.api.patch<OpsWaitlistListItem>(
+      `/ops/waitlist/${id}`,
+      { status }
     );
     return response.data;
   }

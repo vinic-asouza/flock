@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { WaitlistListView } from "@/components/WaitlistListView";
-import { OpsPage, OpsTableSkeleton } from "@/components/ui";
+import { OpsCardListSkeleton, OpsPage } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Lista de espera",
@@ -12,7 +12,7 @@ export default function WaitlistPage() {
     <Suspense
       fallback={
         <OpsPage>
-          <OpsTableSkeleton />
+          <OpsCardListSkeleton />
         </OpsPage>
       }
     >

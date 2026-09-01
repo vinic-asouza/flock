@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { opsApi } from "@/services/api";
 import type { OpsChurchListResponse } from "@/types/opsChurches";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
@@ -28,7 +28,7 @@ import { formatCnpj } from "@/lib/opsFormat";
 import {
   OpsBadge,
   OpsButton,
-  OpsButtonLink,
+  OpsClearFiltersLink,
   OpsEmpty,
   OpsError,
   OpsFilterBar,
@@ -141,7 +141,7 @@ export function ChurchesListView() {
       <OpsFilterBar>
         <form
           onSubmit={onSearch}
-          className="grid gap-3 md:grid-cols-2 lg:grid-cols-6"
+          className="flex flex-wrap items-end gap-3"
         >
           <OpsInput
             label="Busca"
@@ -150,55 +150,55 @@ export function ChurchesListView() {
             onChange={(event) => setQInput(event.target.value)}
             maxLength={80}
             placeholder="Nome ou CNPJ"
-            className="lg:col-span-2"
+            className="min-w-[14rem] flex-1"
           />
           <OpsSelect
             label="Plano"
+            className="w-full sm:w-44"
             value={query.plan_type ?? ""}
-            onChange={(event) =>
+            onChange={(value) =>
               go({
-                plan_type: (event.target.value || undefined) as
-                  | OpsChurchPlanType
-                  | undefined,
+                plan_type: (value || undefined) as OpsChurchPlanType | undefined,
                 page: 1,
               })
             }
-          >
-            <option value="">Todos</option>
-            {OPS_CHURCH_PLAN_TYPES.map((plan) => (
-              <option key={plan} value={plan}>
-                {planTypeLabel(plan)}
-              </option>
-            ))}
-          </OpsSelect>
+            options={[
+              { value: "", label: "Todos" },
+              ...OPS_CHURCH_PLAN_TYPES.map((plan) => ({
+                value: plan,
+                label: planTypeLabel(plan),
+              })),
+            ]}
+          />
           <OpsSelect
             label="Status da assinatura"
+            className="w-full sm:w-52"
             value={query.subscription_status ?? ""}
-            onChange={(event) =>
+            onChange={(value) =>
               go({
-                subscription_status: (event.target.value || undefined) as
+                subscription_status: (value || undefined) as
                   | OpsChurchSubscriptionStatus
                   | undefined,
                 page: 1,
               })
             }
-          >
-            <option value="">Todos</option>
-            {OPS_CHURCH_SUBSCRIPTION_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {subscriptionStatusLabel(status)}
-              </option>
-            ))}
-          </OpsSelect>
+            options={[
+              { value: "", label: "Todos" },
+              ...OPS_CHURCH_SUBSCRIPTION_STATUSES.map((status) => ({
+                value: status,
+                label: subscriptionStatusLabel(status),
+              })),
+            ]}
+          />
           <OpsSelect
             label="Situação comercial"
+            className="w-full sm:w-52"
             value={
               typeof query.commercially_active === "boolean"
                 ? String(query.commercially_active)
                 : ""
             }
-            onChange={(event) => {
-              const value = event.target.value;
+            onChange={(value) => {
               go({
                 commercially_active:
                   value === "true"
@@ -209,41 +209,36 @@ export function ChurchesListView() {
                 page: 1,
               });
             }}
-          >
-            <option value="">Todas</option>
-            <option value="true">Comercialmente ativas</option>
-            <option value="false">Comercialmente inativas</option>
-          </OpsSelect>
+            options={[
+              { value: "", label: "Todas" },
+              { value: "true", label: "Comercialmente ativas" },
+              { value: "false", label: "Comercialmente inativas" },
+            ]}
+          />
           <OpsSelect
             label="Ordenar"
+            className="w-full sm:w-44"
             value={`${query.sort_by}:${query.sort_order}`}
-            onChange={(event) => {
-              const [sort_by, sort_order] = event.target.value.split(":") as [
+            onChange={(value) => {
+              const [sort_by, sort_order] = value.split(":") as [
                 OpsChurchSortField,
                 "asc" | "desc",
               ];
               go({ sort_by, sort_order, page: 1 });
             }}
-          >
-            <option value="created_at:desc">Mais recentes</option>
-            <option value="created_at:asc">Mais antigas</option>
-            <option value="name:asc">Nome A–Z</option>
-            <option value="name:desc">Nome Z–A</option>
-            <option value="cnpj:asc">CNPJ A–Z</option>
-            <option value="cnpj:desc">CNPJ Z–A</option>
-          </OpsSelect>
-          <div className="flex items-end gap-2 lg:col-span-6">
-            <OpsButton type="submit">
-              <Search className="h-4 w-4" aria-hidden />
-              Buscar
-            </OpsButton>
-            {filtered ? (
-              <OpsButtonLink href="/churches">
-                <X className="h-4 w-4" aria-hidden />
-                Limpar filtros
-              </OpsButtonLink>
-            ) : null}
-          </div>
+            options={[
+              { value: "created_at:desc", label: "Mais recentes" },
+              { value: "created_at:asc", label: "Mais antigas" },
+              { value: "name:asc", label: "Nome A–Z" },
+              { value: "name:desc", label: "Nome Z–A" },
+              { value: "cnpj:asc", label: "CNPJ A–Z" },
+              { value: "cnpj:desc", label: "CNPJ Z–A" },
+            ]}
+          />
+          <OpsButton type="submit" className="w-11 shrink-0 px-0" aria-label="Buscar">
+            <Search className="h-4 w-4" aria-hidden />
+          </OpsButton>
+          {filtered ? <OpsClearFiltersLink href="/churches" /> : null}
         </form>
       </OpsFilterBar>
 

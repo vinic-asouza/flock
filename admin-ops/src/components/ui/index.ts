@@ -1,6 +1,8 @@
 export { OpsButton, OpsButtonLink } from "./OpsButton";
 export { OpsInput, OpsSelect } from "./OpsField";
+export { OpsConfirmDialog } from "./OpsDialog";
 export {
+  OpsClearFiltersLink,
   OpsFilterBar,
   OpsPage,
   OpsPageHeader,
@@ -13,6 +15,7 @@ export {
 } from "./OpsLayout";
 export {
   OpsBadge,
+  OpsCardListSkeleton,
   OpsDetailSkeleton,
   OpsEmpty,
   OpsError,

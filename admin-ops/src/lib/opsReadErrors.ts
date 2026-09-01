@@ -89,6 +89,25 @@ export function formatOpsReadError(err: unknown): OpsReadErrorView {
   };
 }
 
+export function formatOpsWaitlistMutationError(err: unknown): string {
+  if (!(err instanceof Error)) {
+    return "Não foi possível atualizar o lead. Tente novamente.";
+  }
+
+  const status = getErrorStatus(err);
+  if (status === 409) {
+    return "Este lead já não está pendente.";
+  }
+  if (status === 404) {
+    return "Lead não encontrado.";
+  }
+  if (status === 429) {
+    return "Muitas requisições. Aguarde um momento e tente novamente.";
+  }
+
+  return err.message || "Não foi possível atualizar o lead.";
+}
+
 export function isNotFoundReadError(err: unknown): boolean {
   const status = getErrorStatus(err);
   return status === 404 || status === 400;

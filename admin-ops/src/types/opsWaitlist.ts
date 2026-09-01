@@ -1,3 +1,5 @@
+export type OpsWaitlistStatus = "pending" | "converted" | "discarded";
+
 export type OpsWaitlistListItem = {
   id: string;
   name: string;
@@ -9,6 +11,8 @@ export type OpsWaitlistListItem = {
   plan: string;
   message: string | null;
   created_at: string;
+  status: OpsWaitlistStatus;
+  status_updated_at: string | null;
 };
 
 export type OpsWaitlistPagination = {
@@ -28,6 +32,7 @@ export type OpsWaitlistListResponse = {
   filters: {
     q: string | null;
     plan: string | null;
+    status: string;
   };
   sorting: {
     sort_by: string;

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { OpsButton } from "@/components/ui/OpsButton";
@@ -68,6 +69,17 @@ export function OpsFilterBar({ children }: { children: ReactNode }) {
     <div className="sticky top-0 z-10 -mx-4 bg-background/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
       <OpsPanel>{children}</OpsPanel>
     </div>
+  );
+}
+
+export function OpsClearFiltersLink({ href }: { href: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex h-11 items-center text-xs text-muted underline-offset-2 hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    >
+      Limpar filtros
+    </Link>
   );
 }
 
