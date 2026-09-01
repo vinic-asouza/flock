@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AuthGate } from "@/components/AuthGate";
 import { HealthView } from "@/components/HealthView";
 
 export const metadata: Metadata = {
@@ -7,9 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function HealthPage() {
-  return (
-    <AuthGate requireAuth>
-      <HealthView />
-    </AuthGate>
-  );
+  return <HealthView />;
 }

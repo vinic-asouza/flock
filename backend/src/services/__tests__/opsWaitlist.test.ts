@@ -1,5 +1,5 @@
 import { buildWaitlistSearchOrFilter } from '../../utils/opsWaitlistSearch';
-import { toOpsWaitlistItem } from '../opsWaitlistMappers';
+import { toOpsWaitlistItem, type WaitlistListRow } from '../opsWaitlistMappers';
 
 describe('buildWaitlistSearchOrFilter', () => {
   it('should search name, email and church_name', () => {
@@ -25,7 +25,7 @@ describe('buildWaitlistSearchOrFilter', () => {
 });
 
 describe('toOpsWaitlistItem', () => {
-  const row = {
+  const row: WaitlistListRow & { updated_at: string; secret: string } = {
     id: '11111111-1111-4111-8111-111111111111',
     name: 'Ana Silva',
     email: 'ana@test.com',
@@ -36,6 +36,8 @@ describe('toOpsWaitlistItem', () => {
     plan: '500',
     message: 'Quero falar com comercial',
     created_at: '2026-08-01T00:00:00.000Z',
+    status: 'pending',
+    status_updated_at: null,
     updated_at: '2026-08-02T00:00:00.000Z',
     secret: 'should-not-leak',
   };
@@ -54,9 +56,12 @@ describe('toOpsWaitlistItem', () => {
       plan: row.plan,
       message: row.message,
       created_at: row.created_at,
+      status: 'pending',
+      status_updated_at: null,
     });
     expect(item).not.toHaveProperty('updated_at');
     expect(item).not.toHaveProperty('secret');
+    expect(item).not.toHaveProperty('status_updated_by');
   });
 
   it('should normalize missing message to null', () => {

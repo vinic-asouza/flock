@@ -49,4 +49,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-08-26 — BR-OPS-008 (Lista de espera `GET /api/ops/waitlist`, DEV-72).
+2026-09-01 — BR-OPS-008 (PATCH de situação da waitlist, DEV-95).

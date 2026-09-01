@@ -1,3 +1,5 @@
+export type OpsWaitlistStatus = 'pending' | 'converted' | 'discarded';
+
 export type WaitlistListRow = {
   id: string;
   name: string;
@@ -9,6 +11,8 @@ export type WaitlistListRow = {
   plan: string;
   message: string | null;
   created_at: string;
+  status: OpsWaitlistStatus;
+  status_updated_at: string | null;
 };
 
 export type OpsWaitlistListItem = {
@@ -22,10 +26,12 @@ export type OpsWaitlistListItem = {
   plan: string;
   message: string | null;
   created_at: string;
+  status: OpsWaitlistStatus;
+  status_updated_at: string | null;
 };
 
 export const WAITLIST_LIST_COLUMNS =
-  'id, name, email, phone, church_name, city, state, plan, message, created_at';
+  'id, name, email, phone, church_name, city, state, plan, message, created_at, status, status_updated_at';
 
 export function toOpsWaitlistItem(row: WaitlistListRow): OpsWaitlistListItem {
   return {
@@ -39,5 +45,7 @@ export function toOpsWaitlistItem(row: WaitlistListRow): OpsWaitlistListItem {
     plan: row.plan,
     message: row.message ?? null,
     created_at: row.created_at,
+    status: row.status,
+    status_updated_at: row.status_updated_at ?? null,
   };
 }

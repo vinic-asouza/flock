@@ -18,10 +18,19 @@ export type OpsChurchListItem = {
   id: string;
   name: string;
   cnpj: string;
+  denomination: string | null;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  email_church: string | null;
+  phone_church: string | null;
   plan_type: string | null;
   subscription_status: string | null;
   commercially_active: boolean;
   members_active_count: number;
+  members_inactive_count: number;
+  subscription_start_date: string | null;
+  subscription_end_date: string | null;
   created_at: string;
 };
 
@@ -88,8 +97,16 @@ export type ChurchListRow = {
   id: string;
   name: string;
   cnpj: string;
+  denomination: string | null;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  email_church: string | null;
+  phone_church: string | null;
   plan_type: string | null;
   subscription_status: string | null;
+  subscription_start_date: string | null;
+  subscription_end_date: string | null;
   created_at: string;
 };
 
@@ -172,6 +189,25 @@ export function aggregateOpsOverview(rows: ChurchOverviewRow[]): OpsOverview {
   };
 }
 
+export function countMembersByChurch(
+  rows: MemberCountRow[]
+): Map<string, { active: number; inactive: number }> {
+  const counts = new Map<string, { active: number; inactive: number }>();
+  for (const row of rows) {
+    if (!row.church_id) {
+      continue;
+    }
+    const current = counts.get(row.church_id) ?? { active: 0, inactive: 0 };
+    if (row.active) {
+      current.active += 1;
+    } else {
+      current.inactive += 1;
+    }
+    counts.set(row.church_id, current);
+  }
+  return counts;
+}
+
 export function countActiveMembersByChurch(
   rows: MemberCountRow[]
 ): Map<string, number> {
@@ -224,16 +260,26 @@ export function countChurchUsersByStatus(rows: ChurchUserStatusRow[]): OpsChurch
 
 export function toOpsChurchListItem(
   church: ChurchListRow,
-  membersActiveCount: number
+  membersActiveCount: number,
+  membersInactiveCount: number
 ): OpsChurchListItem {
   return {
     id: church.id,
     name: church.name,
     cnpj: church.cnpj,
+    denomination: church.denomination ?? null,
+    city: church.city ?? null,
+    state: church.state ?? null,
+    address: church.address ?? null,
+    email_church: church.email_church ?? null,
+    phone_church: church.phone_church ?? null,
     plan_type: church.plan_type,
     subscription_status: church.subscription_status,
     commercially_active: isCommerciallyActive(church.subscription_status),
     members_active_count: membersActiveCount,
+    members_inactive_count: membersInactiveCount,
+    subscription_start_date: church.subscription_start_date ?? null,
+    subscription_end_date: church.subscription_end_date ?? null,
     created_at: church.created_at,
   };
 }

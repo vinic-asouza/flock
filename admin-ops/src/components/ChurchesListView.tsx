@@ -1,14 +1,26 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState, type MouseEvent } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowRight,
+  Building2,
+  CalendarDays,
+  CreditCard,
+  Fingerprint,
+  MapPin,
+  Search,
+  Users,
+} from "lucide-react";
 import { opsApi } from "@/services/api";
-import type { OpsChurchListResponse } from "@/types/opsChurches";
+import type { OpsChurchListItem, OpsChurchListResponse } from "@/types/opsChurches";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
 import {
+  commerciallyActiveLabel,
   planTypeLabel,
   subscriptionStatusLabel,
+  subscriptionStatusTone,
 } from "@/lib/opsChurchLabels";
 import {
   OPS_CHURCH_PLAN_TYPES,
@@ -22,10 +34,36 @@ import {
   type OpsChurchSortField,
   type OpsChurchSubscriptionStatus,
 } from "@/lib/opsChurchQuery";
-import { formatCnpj } from "@/lib/opsFormat";
-import { PageFrame, Panel } from "@/components/PageFrame";
-import { CommercialBadge } from "@/components/CommercialBadge";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ConsoleState";
+import {
+  displayValue,
+  formatCityState,
+  formatCnpj,
+  formatDate,
+  formatDateTime,
+} from "@/lib/opsFormat";
+import {
+  OpsBadge,
+  OpsButton,
+  OpsButtonLink,
+  OpsCardListSkeleton,
+  OpsClearFiltersLink,
+  OpsContactField,
+  OpsDetailGrid,
+  OpsDetailItem,
+  OpsEmpty,
+  OpsError,
+  OpsFilterBar,
+  OpsFilterRow,
+  OpsInput,
+  OpsListCard,
+  OpsListCardAccordion,
+  OpsListCardHeader,
+  OpsMetaItem,
+  OpsPage,
+  OpsPageHeader,
+  OpsPagination,
+  OpsSelect,
+} from "@/components/ui";
 
 function hrefFrom(
   current: OpsChurchListQuery,
@@ -34,22 +72,95 @@ function hrefFrom(
   return churchesListHref({ ...current, ...patch });
 }
 
-function onChurchRowClick(
-  event: MouseEvent<HTMLTableRowElement>,
-  href: string,
-  navigate: (href: string) => void
-) {
-  if (event.defaultPrevented || event.button !== 0) {
-    return;
-  }
-  if ((event.target as HTMLElement).closest("a")) {
-    return;
-  }
-  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-    window.open(href, "_blank", "noopener,noreferrer");
-    return;
-  }
-  navigate(href);
+function ChurchCard({
+  church,
+  href,
+}: {
+  church: OpsChurchListItem;
+  href: string;
+}) {
+  const address = [church.address, church.city, church.state]
+    .map((part) => part?.trim())
+    .filter(Boolean)
+    .join(" — ");
+
+  return (
+    <OpsListCard>
+      <OpsListCardHeader>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-sm font-semibold">
+              <Link
+                href={href}
+                className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {church.name}
+              </Link>
+            </h2>
+            <OpsBadge tone={church.commercially_active ? "success" : "neutral"}>
+              {commerciallyActiveLabel(church.commercially_active)}
+            </OpsBadge>
+            <OpsBadge tone="neutral">{planTypeLabel(church.plan_type)}</OpsBadge>
+            <OpsBadge tone={subscriptionStatusTone(church.subscription_status)}>
+              {subscriptionStatusLabel(church.subscription_status)}
+            </OpsBadge>
+          </div>
+          <ul className="mt-1.5 flex flex-col gap-1 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+            <OpsMetaItem icon={MapPin}>
+              {formatCityState(church.city, church.state)}
+            </OpsMetaItem>
+            <OpsMetaItem icon={Users}>
+              {church.members_active_count}{" "}
+              {church.members_active_count === 1 ? "membro ativo" : "membros ativos"}
+            </OpsMetaItem>
+            <OpsMetaItem icon={CalendarDays}>
+              {formatDate(church.created_at)}
+            </OpsMetaItem>
+          </ul>
+        </div>
+        <OpsButtonLink href={href} size="sm" className="shrink-0">
+          Abrir ficha
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+        </OpsButtonLink>
+      </OpsListCardHeader>
+
+      <OpsListCardAccordion>
+        <OpsDetailGrid>
+          <OpsDetailItem icon={Fingerprint} label="CNPJ">
+            <span className="font-mono text-xs">{formatCnpj(church.cnpj)}</span>
+          </OpsDetailItem>
+          <OpsDetailItem icon={Building2} label="Denominação">
+            {displayValue(church.denomination)}
+          </OpsDetailItem>
+          <OpsContactField
+            kind="email"
+            label="E-mail da Igreja"
+            value={church.email_church}
+          />
+          <OpsContactField
+            kind="phone"
+            label="Telefone da Igreja"
+            value={church.phone_church}
+          />
+          <OpsDetailItem icon={MapPin} label="Endereço" wide>
+            {address || "—"}
+          </OpsDetailItem>
+          <OpsDetailItem icon={Users} label="Membros">
+            {church.members_active_count} ativos · {church.members_inactive_count}{" "}
+            inativos
+          </OpsDetailItem>
+          <OpsDetailItem icon={CreditCard} label="Vigência da assinatura">
+            {church.subscription_start_date || church.subscription_end_date
+              ? `${formatDate(church.subscription_start_date)} → ${formatDate(church.subscription_end_date)}`
+              : "—"}
+          </OpsDetailItem>
+          <OpsDetailItem icon={CalendarDays} label="Cadastrada em" wide>
+            {formatDateTime(church.created_at)}
+          </OpsDetailItem>
+        </OpsDetailGrid>
+      </OpsListCardAccordion>
+    </OpsListCard>
+  );
 }
 
 export function ChurchesListView() {
@@ -115,80 +226,75 @@ export function ChurchesListView() {
   const filtered = hasActiveChurchFilters(query);
 
   return (
-    <PageFrame
-      title="Igrejas"
-      description="Busca e filtros sobre as Igrejas da plataforma. Clique em uma linha para abrir a ficha."
-    >
-      <Panel>
-        <form
-          onSubmit={onSearch}
-          className="grid gap-3 md:grid-cols-2 lg:grid-cols-6"
-        >
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary lg:col-span-2">
-            Busca
-            <input
+    <OpsPage>
+      <OpsPageHeader
+        title="Igrejas"
+        description="Busca e filtros sobre as Igrejas da plataforma. Abra a ficha para o histórico completo."
+      />
+
+      <OpsFilterBar>
+        <form onSubmit={onSearch}>
+          <OpsFilterRow>
+            <OpsInput
+              label="Busca"
               type="search"
+              density="sm"
               value={qInput}
               onChange={(event) => setQInput(event.target.value)}
               maxLength={80}
               placeholder="Nome ou CNPJ"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="min-w-32 flex-[1.4] basis-0"
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Plano
-            <select
+            <OpsSelect
+              label="Plano"
+              density="sm"
+              className="min-w-24 flex-1 basis-0"
               value={query.plan_type ?? ""}
-              onChange={(event) =>
+              onChange={(value) =>
                 go({
-                  plan_type: (event.target.value || undefined) as
-                    | OpsChurchPlanType
-                    | undefined,
+                  plan_type: (value || undefined) as OpsChurchPlanType | undefined,
                   page: 1,
                 })
               }
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Todos</option>
-              {OPS_CHURCH_PLAN_TYPES.map((plan) => (
-                <option key={plan} value={plan}>
-                  {planTypeLabel(plan)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Status da assinatura
-            <select
+              options={[
+                { value: "", label: "Todos" },
+                ...OPS_CHURCH_PLAN_TYPES.map((plan) => ({
+                  value: plan,
+                  label: planTypeLabel(plan),
+                })),
+              ]}
+            />
+            <OpsSelect
+              label="Assinatura"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
               value={query.subscription_status ?? ""}
-              onChange={(event) =>
+              onChange={(value) =>
                 go({
-                  subscription_status: (event.target.value || undefined) as
+                  subscription_status: (value || undefined) as
                     | OpsChurchSubscriptionStatus
                     | undefined,
                   page: 1,
                 })
               }
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Todos</option>
-              {OPS_CHURCH_SUBSCRIPTION_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {subscriptionStatusLabel(status)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Situação comercial
-            <select
+              options={[
+                { value: "", label: "Todos" },
+                ...OPS_CHURCH_SUBSCRIPTION_STATUSES.map((status) => ({
+                  value: status,
+                  label: subscriptionStatusLabel(status),
+                })),
+              ]}
+            />
+            <OpsSelect
+              label="Situação"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
               value={
                 typeof query.commercially_active === "boolean"
                   ? String(query.commercially_active)
                   : ""
               }
-              onChange={(event) => {
-                const value = event.target.value;
+              onChange={(value) => {
                 go({
                   commercially_active:
                     value === "true"
@@ -199,150 +305,82 @@ export function ChurchesListView() {
                   page: 1,
                 });
               }}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Todas</option>
-              <option value="true">Comercialmente ativas</option>
-              <option value="false">Comercialmente inativas</option>
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Ordenar
-            <select
+              options={[
+                { value: "", label: "Todas" },
+                { value: "true", label: "Comercialmente ativas" },
+                { value: "false", label: "Comercialmente inativas" },
+              ]}
+            />
+            <OpsSelect
+              label="Ordenar"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
               value={`${query.sort_by}:${query.sort_order}`}
-              onChange={(event) => {
-                const [sort_by, sort_order] = event.target.value.split(":") as [
+              onChange={(value) => {
+                const [sort_by, sort_order] = value.split(":") as [
                   OpsChurchSortField,
                   "asc" | "desc",
                 ];
                 go({ sort_by, sort_order, page: 1 });
               }}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="created_at:desc">Mais recentes</option>
-              <option value="created_at:asc">Mais antigas</option>
-              <option value="name:asc">Nome A–Z</option>
-              <option value="name:desc">Nome Z–A</option>
-              <option value="cnpj:asc">CNPJ A–Z</option>
-              <option value="cnpj:desc">CNPJ Z–A</option>
-            </select>
-          </label>
-          <div className="flex items-end gap-2 lg:col-span-6">
-            <button
+              options={[
+                { value: "created_at:desc", label: "Mais recentes" },
+                { value: "created_at:asc", label: "Mais antigas" },
+                { value: "name:asc", label: "Nome A–Z" },
+                { value: "name:desc", label: "Nome Z–A" },
+                { value: "cnpj:asc", label: "CNPJ A–Z" },
+                { value: "cnpj:desc", label: "CNPJ Z–A" },
+              ]}
+            />
+            <OpsButton
               type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white"
+              size="sm"
+              className="h-9 w-9 shrink-0 px-0"
+              aria-label="Buscar"
             >
-              Buscar
-            </button>
-            {filtered ? (
-              <Link
-                href="/churches"
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
-              >
-                Limpar filtros
-              </Link>
-            ) : null}
-          </div>
+              <Search className="h-3.5 w-3.5" aria-hidden />
+            </OpsButton>
+            {filtered ? <OpsClearFiltersLink href="/churches" /> : null}
+          </OpsFilterRow>
         </form>
-      </Panel>
+      </OpsFilterBar>
 
       {isLoading ? (
-        <LoadingState label="Carregando Igrejas…" />
+        <OpsCardListSkeleton />
       ) : error ? (
-        <ErrorState title={error.title} details={error.details} />
+        <OpsError title={error.title} details={error.details} />
       ) : result && result.data.length === 0 ? (
-        <EmptyState>
+        <OpsEmpty>
           {filtered
             ? "Nenhuma Igreja encontrada para estes filtros."
             : "Nenhuma Igreja cadastrada ainda."}
-        </EmptyState>
+        </OpsEmpty>
       ) : result ? (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Igreja</th>
-                  <th className="px-4 py-3 font-medium">CNPJ</th>
-                  <th className="px-4 py-3 font-medium">Plano</th>
-                  <th className="px-4 py-3 font-medium">Assinatura</th>
-                  <th className="px-4 py-3 font-medium">Situação</th>
-                  <th className="px-4 py-3 font-medium text-right">
-                    Membros ativos
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.data.map((church) => {
-                  const href = churchDetailHref(church.id, query);
-                  return (
-                    <tr
-                      key={church.id}
-                      className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50"
-                      onClick={(event) => onChurchRowClick(event, href, router.push)}
-                    >
-                      <td className="px-4 py-3">
-                        <Link
-                          href={href}
-                          className="font-medium text-primary underline-offset-2 hover:underline"
-                        >
-                          {church.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-foreground">
-                        {formatCnpj(church.cnpj)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {planTypeLabel(church.plan_type)}
-                      </td>
-                      <td className="px-4 py-3">
-                        {subscriptionStatusLabel(church.subscription_status)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <CommercialBadge active={church.commercially_active} />
-                      </td>
-                      <td className="px-4 py-3 text-right tabular-nums">
-                        {church.members_active_count}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-2">
+            {result.data.map((church) => (
+              <ChurchCard
+                key={church.id}
+                church={church}
+                href={churchDetailHref(church.id, query)}
+              />
+            ))}
           </div>
 
-          {pagination && pagination.totalPages > 1 ? (
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <p className="text-muted">
-                Página {pagination.page} de {pagination.totalPages} ·{" "}
-                {pagination.total} Igreja{pagination.total === 1 ? "" : "s"}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={!pagination.hasPrevPage}
-                  onClick={() => go({ page: pagination.page - 1 })}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-                >
-                  Anterior
-                </button>
-                <button
-                  type="button"
-                  disabled={!pagination.hasNextPage}
-                  onClick={() => go({ page: pagination.page + 1 })}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-                >
-                  Próxima
-                </button>
-              </div>
-            </div>
-          ) : pagination ? (
-            <p className="text-sm text-muted">
-              {pagination.total} Igreja{pagination.total === 1 ? "" : "s"}
-            </p>
+          {pagination ? (
+            <OpsPagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              noun={{ one: "Igreja", other: "Igrejas" }}
+              hasPrevPage={pagination.hasPrevPage}
+              hasNextPage={pagination.hasNextPage}
+              onPrev={() => go({ page: pagination.page - 1 })}
+              onNext={() => go({ page: pagination.page + 1 })}
+            />
           ) : null}
         </>
       ) : null}
-    </PageFrame>
+    </OpsPage>
   );
 }

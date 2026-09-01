@@ -10,9 +10,9 @@ import {
   ChurchListRow,
   ChurchOverviewRow,
   ChurchUserStatusRow,
-  countActiveMembersByChurch,
   countChurchUsersByStatus,
   countMembersByActive,
+  countMembersByChurch,
   MemberCountRow,
   OPS_LOG_CAP,
   AuditLogRow,
@@ -22,7 +22,7 @@ import {
 } from './opsChurchMappers';
 
 const CHURCH_LIST_COLUMNS =
-  'id, name, cnpj, plan_type, subscription_status, created_at';
+  'id, name, cnpj, denomination, city, state, address, email_church, phone_church, plan_type, subscription_status, subscription_start_date, subscription_end_date, created_at';
 
 const CHURCH_DETAIL_COLUMNS =
   'id, name, denomination, cnpj, address, city, state, created_at, email_church, phone_church, plan_type, subscription_status, subscription_start_date, subscription_end_date, subscription_updated_at, stripe_customer_id, stripe_subscription_id';
@@ -83,10 +83,13 @@ export async function listOpsChurchesData(query: OpsChurchListQuery) {
 
   const rows = (data ?? []) as ChurchListRow[];
   const ids = rows.map((row) => row.id);
-  const activeByChurch = await fetchActiveMemberCounts(ids);
+  const memberCounts = await fetchMemberCounts(ids);
 
   return {
-    data: rows.map((row) => toOpsChurchListItem(row, activeByChurch.get(row.id) ?? 0)),
+    data: rows.map((row) => {
+      const counts = memberCounts.get(row.id) ?? { active: 0, inactive: 0 };
+      return toOpsChurchListItem(row, counts.active, counts.inactive);
+    }),
     pagination: buildPagination(query.page, query.limit, count ?? 0),
     filters: {
       q: query.q ?? null,
@@ -154,7 +157,9 @@ export async function getOpsChurchDetailData(id: string) {
   });
 }
 
-async function fetchActiveMemberCounts(churchIds: string[]): Promise<Map<string, number>> {
+async function fetchMemberCounts(
+  churchIds: string[]
+): Promise<Map<string, { active: number; inactive: number }>> {
   if (churchIds.length === 0) {
     return new Map();
   }
@@ -168,5 +173,5 @@ async function fetchActiveMemberCounts(churchIds: string[]): Promise<Map<string,
     throw error;
   }
 
-  return countActiveMembersByChurch((data ?? []) as MemberCountRow[]);
+  return countMembersByChurch((data ?? []) as MemberCountRow[]);
 }

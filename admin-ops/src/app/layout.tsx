@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
-import { AppHeader } from "@/components/AppHeader";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -32,12 +31,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <Providers>
-          <div className="min-h-screen flex flex-col">
-            <AppHeader />
-            <main className="flex-1">{children}</main>
-          </div>
-        </Providers>
+        <Providers>{children}</Providers>
         <Toaster position="top-center" />
       </body>
     </html>

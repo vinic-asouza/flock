@@ -1,3 +1,5 @@
+import type { OpsWaitlistStatus } from "@/lib/opsWaitlistQuery";
+
 export function waitlistPlanLabel(value: string | null | undefined): string {
   if (!value) {
     return "—";
@@ -9,4 +11,14 @@ export function waitlistPlanLabel(value: string | null | undefined): string {
     return `Plano ${value}`;
   }
   return value;
+}
+
+export function waitlistStatusLabel(status: OpsWaitlistStatus): string {
+  if (status === "converted") {
+    return "Convertido";
+  }
+  if (status === "discarded") {
+    return "Excluído";
+  }
+  return "Pendente";
 }

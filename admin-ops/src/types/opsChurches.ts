@@ -10,10 +10,19 @@ export type OpsChurchListItem = {
   id: string;
   name: string;
   cnpj: string;
+  denomination: string | null;
+  city: string | null;
+  state: string | null;
+  address: string | null;
+  email_church: string | null;
+  phone_church: string | null;
   plan_type: string | null;
   subscription_status: string | null;
   commercially_active: boolean;
   members_active_count: number;
+  members_inactive_count: number;
+  subscription_start_date: string | null;
+  subscription_end_date: string | null;
   created_at: string;
 };
 

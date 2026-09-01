@@ -204,7 +204,7 @@ pagination: {
 - ✅ `.eq('church_id', req.church!.churchId)` em toda query de domínio da igreja
 - ❌ Confiar só no `id` do path
 - **Exceção (tenant):** GETs `/api/ops/overview|churches|churches/:id` — operador (`requirePlatformAdmin`), sem `attachChurchContext`; mapper whitelist (BR-OPS-005/006, ADR-001)
-- **Waitlist:** `GET /api/ops/waitlist` lê tabela global `waitlist` (sem `church_id`) — não estende ADR-001 (BR-OPS-008)
+- **Waitlist:** `GET /api/ops/waitlist` lê tabela global `waitlist` (sem `church_id`); `PATCH /api/ops/waitlist/:id` só muda `status` operacional — não estende ADR-001 (BR-OPS-008)
 
 ### API-029: Públicos explícitos + rate limit
 > `/api/public/*`, waitlist, checkout público, webhook Stripe.

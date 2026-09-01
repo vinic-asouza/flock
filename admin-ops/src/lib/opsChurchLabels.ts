@@ -45,6 +45,21 @@ export function subscriptionStatusLabel(
   return SUBSCRIPTION_STATUS_LABELS[value] ?? value;
 }
 
+export function subscriptionStatusTone(
+  value: string | null | undefined
+): "success" | "warning" | "danger" | "neutral" {
+  if (value === "active") {
+    return "success";
+  }
+  if (value === "trialing") {
+    return "warning";
+  }
+  if (value === "past_due" || value === "unpaid" || value === "incomplete") {
+    return "danger";
+  }
+  return "neutral";
+}
+
 export function commerciallyActiveLabel(active: boolean): string {
   return active ? "Comercialmente ativa" : "Comercialmente inativa";
 }

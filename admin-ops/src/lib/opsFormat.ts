@@ -45,6 +45,21 @@ export function formatPhone(phone: string | null | undefined): string {
   return phone;
 }
 
+export function formatCityState(
+  city: string | null | undefined,
+  state: string | null | undefined
+): string {
+  const cityLabel = displayValue(city);
+  const stateLabel = state?.trim();
+  if (!stateLabel) {
+    return cityLabel;
+  }
+  if (cityLabel === "—") {
+    return stateLabel;
+  }
+  return `${city?.trim()}/${stateLabel}`;
+}
+
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) {
     return "—";

@@ -8,7 +8,10 @@ import {
   listOpsChurches,
 } from '../controllers/opsChurchesController';
 import { getOpsHealth } from '../controllers/opsHealthController';
-import { listOpsWaitlist } from '../controllers/opsWaitlistController';
+import {
+  listOpsWaitlist,
+  patchOpsWaitlist,
+} from '../controllers/opsWaitlistController';
 import { authUserOnly } from '../middlewares/auth';
 import { requirePlatformAdmin } from '../middlewares/requirePlatformAdmin';
 
@@ -45,5 +48,12 @@ router.get('/churches', opsReadLimiter, authUserOnly, requirePlatformAdmin, list
 router.get('/churches/:id', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsChurch);
 router.get('/health', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsHealth);
 router.get('/waitlist', opsReadLimiter, authUserOnly, requirePlatformAdmin, listOpsWaitlist);
+router.patch(
+  '/waitlist/:id',
+  opsReadLimiter,
+  authUserOnly,
+  requirePlatformAdmin,
+  patchOpsWaitlist
+);
 
 export default router;

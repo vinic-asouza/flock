@@ -4,6 +4,17 @@ export const OPS_WAITLIST_PLANS = ['200', '500', '800', 'personalizado'] as cons
 
 export const OPS_WAITLIST_SORT_FIELDS = ['created_at'] as const;
 
+export const OPS_WAITLIST_STATUSES = [
+  'pending',
+  'converted',
+  'discarded',
+] as const;
+
+export const OPS_WAITLIST_STATUS_FILTERS = [
+  ...OPS_WAITLIST_STATUSES,
+  'all',
+] as const;
+
 export const opsWaitlistListQuerySchema = Joi.object({
   page: Joi.number().integer().min(1).default(1).messages({
     'number.base': 'A página deve ser um número',
@@ -23,6 +34,12 @@ export const opsWaitlistListQuerySchema = Joi.object({
     .messages({
       'any.only': `O plano deve ser um dos seguintes: ${OPS_WAITLIST_PLANS.join(', ')}`,
     }),
+  status: Joi.string()
+    .valid(...OPS_WAITLIST_STATUS_FILTERS)
+    .default('pending')
+    .messages({
+      'any.only': `A situação deve ser uma de: ${OPS_WAITLIST_STATUS_FILTERS.join(', ')}`,
+    }),
   sort_by: Joi.string()
     .valid(...OPS_WAITLIST_SORT_FIELDS)
     .default('created_at')
@@ -34,11 +51,15 @@ export const opsWaitlistListQuerySchema = Joi.object({
   }),
 });
 
+export type OpsWaitlistStatus = (typeof OPS_WAITLIST_STATUSES)[number];
+export type OpsWaitlistStatusFilter = (typeof OPS_WAITLIST_STATUS_FILTERS)[number];
+
 export type OpsWaitlistListQuery = {
   page: number;
   limit: number;
   q?: string;
   plan?: (typeof OPS_WAITLIST_PLANS)[number];
+  status: OpsWaitlistStatusFilter;
   sort_by: (typeof OPS_WAITLIST_SORT_FIELDS)[number];
   sort_order: 'asc' | 'desc';
 };
@@ -48,5 +69,35 @@ export function validateOpsWaitlistListQuery(data: unknown) {
     abortEarly: false,
     stripUnknown: true,
     convert: true,
+  });
+}
+
+export const opsWaitlistPatchSchema = Joi.object({
+  status: Joi.string()
+    .valid('converted', 'discarded')
+    .required()
+    .messages({
+      'any.only': 'A situação deve ser converted ou discarded',
+      'any.required': 'A situação é obrigatória',
+    }),
+});
+
+export const opsWaitlistIdParamsSchema = Joi.object({
+  id: Joi.string().uuid().required().messages({
+    'string.guid': 'O identificador do lead é inválido',
+  }),
+});
+
+export function validateOpsWaitlistPatch(data: unknown) {
+  return opsWaitlistPatchSchema.validate(data, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
+}
+
+export function validateOpsWaitlistIdParams(data: unknown) {
+  return opsWaitlistIdParamsSchema.validate(data, {
+    abortEarly: false,
+    stripUnknown: true,
   });
 }

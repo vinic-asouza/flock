@@ -3,8 +3,8 @@ type: modulo
 nome: aquisicao
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-08-31
-versao: "1.3"
+ultima_atualizacao: 2026-09-01
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
 depende_de: [billing, onboarding]
@@ -45,7 +45,7 @@ Produto: [[01_produto/visao-do-produto]].
 
 - Criar sessão Stripe Checkout (API em [[04_modulos/billing]]; landing **não** chama mais `/create-checkout-session` no botão atual)
 - Criar igreja/user Auth (→ [[04_modulos/onboarding]])
-- CRUD/admin da tabela waitlist (lista autenticada fica no [[04_modulos/admin-ops]]; sem edit/delete/CSV neste módulo nem no ops v1)
+- CRUD/admin da tabela waitlist (lista autenticada e PATCH de situação ficam no [[04_modulos/admin-ops]]; sem hard delete/CSV neste módulo)
 - Login/sessão do produto
 - Cleanup de leads antigos (sem job)
 
@@ -245,7 +245,7 @@ sequenceDiagram
 
 ### Estados
 
-N/A — lead waitlist **não** tem status machine (só insert). Sem lifecycle “contacted/converted” no código.
+N/A neste módulo — captação continua insert-only (`status=pending` no banco). Situação operacional (`pending` / `converted` / `discarded`) é do Admin OPS (BR-OPS-008), não da landing.
 
 ```mermaid
 stateDiagram-v2
@@ -253,7 +253,8 @@ stateDiagram-v2
   Capturado --> [*]
   note right of Capturado
     Sem transições posteriores
-    neste módulo
+    neste módulo (OPS marca
+    converted/discarded)
   end note
 ```
 
@@ -396,7 +397,7 @@ graph LR
 2. Unicidade checada com `.single()` + insert — race possível sob concorrência (UNIQUE DB é a rede de segurança).  
 3. `CheckoutButton` **não** inicia Stripe; nome/ícone sugerem pagamento, mas só redireciona para register — evitar documentar como “cria checkout”.  
 4. Plano waitlist `personalizado` ≠ plan_type billing `custom` — nomenclaturas diferentes.  
-5. Lista read-only no Admin OPS (`GET /api/ops/waitlist`); sem CSV, ficha ou mutação no v1. **Não** criar GET na rota pública `/api/waitlist`.  
+5. Admin OPS lista leads (`GET /api/ops/waitlist`) e marca situação (`PATCH` `converted`/`discarded`); sem CSV nem ficha `/waitlist/[id]`. **Não** criar GET na rota pública `/api/waitlist`.  
 6. IBGE só no client — offline/quebra API deixa estados vazios.  
 7. Templates e-mail em `emailTemplates.ts` (HTML helpers) — manter sync com copy.  
 8. **Mobile / landing:** menu hamburger próprio (não importar drawer do app). Inputs waitlist precisam de `text-base` (≥16px) — regressão comum em iOS Safari.
@@ -407,6 +408,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-01 | 1.4 | Admin OPS: PATCH de situação da waitlist (`converted`/`discarded`); POST público intacto | DEV-95 |
 | 2026-08-31 | 1.3 | Home: 4 seções novas (para quem, visão, relatórios, FAQ); nomes comerciais Grátis/Essencial/Crescimento/Completo; header `fixed`; `id=waitlist` no form. Funil e BR-ACQ inalterados | DEV-90 |
 | 2026-08-26 | 1.2 | Lista autenticada de leads no Admin OPS (`GET /api/ops/waitlist`); POST público intacto | DEV-72 |
 | 2026-08-17 | 1.1 | UX mobile/tablet da landing (`/`, `/waitlist`): header touch, overflow, waitlist 16px, `landingLinks`, toast/safe-area | DEV-36 |

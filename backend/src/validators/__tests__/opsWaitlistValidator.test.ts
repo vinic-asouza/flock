@@ -1,4 +1,7 @@
-import { validateOpsWaitlistListQuery } from '../opsWaitlistValidator';
+import {
+  validateOpsWaitlistListQuery,
+  validateOpsWaitlistPatch,
+} from '../opsWaitlistValidator';
 
 describe('validateOpsWaitlistListQuery', () => {
   it('should apply defaults for an empty query', () => {
@@ -10,6 +13,7 @@ describe('validateOpsWaitlistListQuery', () => {
       limit: 20,
       sort_by: 'created_at',
       sort_order: 'desc',
+      status: 'pending',
     });
     expect(value.q).toBeUndefined();
     expect(value.plan).toBeUndefined();
@@ -51,6 +55,20 @@ describe('validateOpsWaitlistListQuery', () => {
     expect(value.plan).toBe('personalizado');
   });
 
+  it('should accept status all and converted', () => {
+    const all = validateOpsWaitlistListQuery({ status: 'all' });
+    expect(all.error).toBeUndefined();
+    expect(all.value.status).toBe('all');
+    const converted = validateOpsWaitlistListQuery({ status: 'converted' });
+    expect(converted.error).toBeUndefined();
+    expect(converted.value.status).toBe('converted');
+  });
+
+  it('should reject unknown status', () => {
+    const { error } = validateOpsWaitlistListQuery({ status: 'deleted' });
+    expect(error).toBeDefined();
+  });
+
   it('should strip unknown query keys', () => {
     const { error, value } = validateOpsWaitlistListQuery({
       page: 1,
@@ -58,5 +76,17 @@ describe('validateOpsWaitlistListQuery', () => {
     });
     expect(error).toBeUndefined();
     expect(value).not.toHaveProperty('extra');
+  });
+});
+
+describe('validateOpsWaitlistPatch', () => {
+  it('should accept converted and discarded', () => {
+    expect(validateOpsWaitlistPatch({ status: 'converted' }).error).toBeUndefined();
+    expect(validateOpsWaitlistPatch({ status: 'discarded' }).error).toBeUndefined();
+  });
+
+  it('should reject pending and unknown status', () => {
+    expect(validateOpsWaitlistPatch({ status: 'pending' }).error).toBeDefined();
+    expect(validateOpsWaitlistPatch({ status: 'deleted' }).error).toBeDefined();
   });
 });

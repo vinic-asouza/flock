@@ -1,12 +1,28 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  CalendarDays,
+  Check,
+  Church,
+  CreditCard,
+  MapPin,
+  MessageSquareText,
+  Search,
+  Trash2,
+} from "lucide-react";
+import toast from "react-hot-toast";
 import { opsApi } from "@/services/api";
-import type { OpsWaitlistListResponse } from "@/types/opsWaitlist";
-import { formatOpsReadError } from "@/lib/opsReadErrors";
-import { waitlistPlanLabel } from "@/lib/opsWaitlistLabels";
+import type { OpsWaitlistListItem, OpsWaitlistListResponse } from "@/types/opsWaitlist";
+import {
+  formatOpsReadError,
+  formatOpsWaitlistMutationError,
+} from "@/lib/opsReadErrors";
+import {
+  waitlistPlanLabel,
+  waitlistStatusLabel,
+} from "@/lib/opsWaitlistLabels";
 import {
   OPS_WAITLIST_PLANS,
   hasActiveWaitlistFilters,
@@ -14,10 +30,33 @@ import {
   waitlistListHref,
   type OpsWaitlistListQuery,
   type OpsWaitlistPlan,
+  type OpsWaitlistStatus,
+  type OpsWaitlistStatusFilter,
 } from "@/lib/opsWaitlistQuery";
-import { displayValue, formatDateTime, formatPhone } from "@/lib/opsFormat";
-import { PageFrame, Panel } from "@/components/PageFrame";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ConsoleState";
+import { formatCityState, formatDate, formatDateTime } from "@/lib/opsFormat";
+import {
+  OpsBadge,
+  OpsButton,
+  OpsCardListSkeleton,
+  OpsClearFiltersLink,
+  OpsConfirmDialog,
+  OpsContactField,
+  OpsDetailGrid,
+  OpsDetailItem,
+  OpsEmpty,
+  OpsError,
+  OpsFilterBar,
+  OpsFilterRow,
+  OpsInput,
+  OpsListCard,
+  OpsListCardAccordion,
+  OpsListCardHeader,
+  OpsMetaItem,
+  OpsPage,
+  OpsPageHeader,
+  OpsPagination,
+  OpsSelect,
+} from "@/components/ui";
 
 function hrefFrom(
   current: OpsWaitlistListQuery,
@@ -26,22 +65,105 @@ function hrefFrom(
   return waitlistListHref({ ...current, ...patch });
 }
 
-function WaitlistMessage({ message }: { message: string | null }) {
-  const text = message?.trim();
-  if (!text) {
-    return <span className="text-muted">—</span>;
+function statusBadgeTone(
+  status: OpsWaitlistStatus
+): "success" | "warning" | "neutral" {
+  if (status === "converted") {
+    return "success";
   }
+  if (status === "discarded") {
+    return "neutral";
+  }
+  return "warning";
+}
+
+function WaitlistLeadCard({
+  lead,
+  busy,
+  onConvert,
+  onDiscard,
+}: {
+  lead: OpsWaitlistListItem;
+  busy: boolean;
+  onConvert: () => void;
+  onDiscard: () => void;
+}) {
+  const pending = lead.status === "pending";
 
   return (
-    <details className="max-w-xs">
-      <summary
-        className="cursor-pointer truncate text-sm text-primary"
-        title={text}
-      >
-        {text}
-      </summary>
-      <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{text}</p>
-    </details>
+    <OpsListCard>
+      <OpsListCardHeader>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-primary">{lead.name}</h2>
+            <OpsBadge tone={statusBadgeTone(lead.status)}>
+              {waitlistStatusLabel(lead.status)}
+            </OpsBadge>
+          </div>
+          <ul className="mt-1.5 flex flex-col gap-1 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+            <OpsMetaItem icon={Church} title={lead.church_name}>
+              {lead.church_name}
+            </OpsMetaItem>
+            <OpsMetaItem icon={MapPin}>
+              {formatCityState(lead.city, lead.state)}
+            </OpsMetaItem>
+            <OpsMetaItem icon={CalendarDays}>
+              {formatDate(lead.created_at)}
+            </OpsMetaItem>
+          </ul>
+        </div>
+        {pending ? (
+          <div className="flex shrink-0 flex-wrap gap-1.5">
+            <OpsButton
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={busy}
+              aria-label="Marcar como convertido"
+              onClick={onConvert}
+            >
+              <Check className="h-3.5 w-3.5" aria-hidden />
+              Converter
+            </OpsButton>
+            <OpsButton
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:bg-red-50 hover:text-red-700"
+              disabled={busy}
+              aria-label="Excluir da lista"
+              onClick={onDiscard}
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden />
+              Excluir
+            </OpsButton>
+          </div>
+        ) : null}
+      </OpsListCardHeader>
+
+      <OpsListCardAccordion>
+        <OpsDetailGrid>
+          <OpsContactField kind="email" label="E-mail" value={lead.email} />
+          <OpsContactField kind="phone" label="Telefone" value={lead.phone} />
+          <OpsDetailItem icon={CreditCard} label="Plano de interesse">
+            {waitlistPlanLabel(lead.plan)}
+          </OpsDetailItem>
+          <OpsDetailItem icon={CalendarDays} label="Cadastro">
+            {formatDateTime(lead.created_at)}
+          </OpsDetailItem>
+          {lead.status !== "pending" && lead.status_updated_at ? (
+            <OpsDetailItem icon={Check} label="Situação atualizada em" wide>
+              {formatDateTime(lead.status_updated_at)}
+            </OpsDetailItem>
+          ) : null}
+          <OpsDetailItem icon={MessageSquareText} label="Mensagem" wide>
+            <span className="whitespace-pre-wrap">
+              {lead.message?.trim() ? lead.message : "—"}
+            </span>
+          </OpsDetailItem>
+        </OpsDetailGrid>
+      </OpsListCardAccordion>
+    </OpsListCard>
   );
 }
 
@@ -60,6 +182,12 @@ export function WaitlistListView() {
     null
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{
+    lead: OpsWaitlistListItem;
+    nextStatus: "converted" | "discarded";
+  } | null>(null);
 
   useEffect(() => {
     setQInput(query.q ?? "");
@@ -92,7 +220,7 @@ export function WaitlistListView() {
     return () => {
       cancelled = true;
     };
-  }, [searchKey, query]);
+  }, [searchKey, query, reloadKey]);
 
   const go = (patch: Partial<OpsWaitlistListQuery>) => {
     router.push(hrefFrom(query, patch));
@@ -104,179 +232,192 @@ export function WaitlistListView() {
     go({ q: q || undefined, page: 1 });
   };
 
+  const applyStatus = async (
+    lead: OpsWaitlistListItem,
+    nextStatus: "converted" | "discarded"
+  ) => {
+    setBusyId(lead.id);
+    try {
+      await opsApi.patchWaitlist(lead.id, nextStatus);
+      toast.success(
+        nextStatus === "converted"
+          ? `${lead.name} marcado como convertido.`
+          : `${lead.name} excluído da lista.`
+      );
+      setConfirm(null);
+      setReloadKey((value) => value + 1);
+    } catch (err) {
+      toast.error(formatOpsWaitlistMutationError(err));
+      setReloadKey((value) => value + 1);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const pagination = result?.pagination;
   const filtered = hasActiveWaitlistFilters(query);
 
   return (
-    <PageFrame
-      title="Lista de espera"
-      description="Leads captados na landing. Somente leitura — sem editar, apagar ou converter em Igreja."
-    >
-      <Panel>
-        <form
-          onSubmit={onSearch}
-          className="grid gap-3 md:grid-cols-2 lg:grid-cols-4"
-        >
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary lg:col-span-2">
-            Busca
-            <input
+    <OpsPage>
+      <OpsPageHeader
+        title="Lista de espera"
+        description="Leads captados na landing. Marque como convertido ou exclua da lista — isso não cria uma Igreja nem apaga o e-mail do cadastro."
+      />
+
+      <OpsFilterBar>
+        <form onSubmit={onSearch}>
+          <OpsFilterRow>
+            <OpsInput
+              label="Busca"
               type="search"
+              density="sm"
               value={qInput}
               onChange={(event) => setQInput(event.target.value)}
               maxLength={80}
               placeholder="Nome, e-mail ou igreja"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+              className="min-w-32 flex-[1.4] basis-0"
             />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Plano de interesse
-            <select
-              value={query.plan ?? ""}
-              onChange={(event) =>
+            <OpsSelect
+              label="Situação"
+              density="sm"
+              className="min-w-24 flex-1 basis-0"
+              value={query.status}
+              onChange={(value) =>
                 go({
-                  plan: (event.target.value || undefined) as
-                    | OpsWaitlistPlan
-                    | undefined,
+                  status: value as OpsWaitlistStatusFilter,
                   page: 1,
                 })
               }
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Todos</option>
-              {OPS_WAITLIST_PLANS.map((plan) => (
-                <option key={plan} value={plan}>
-                  {waitlistPlanLabel(plan)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Ordenar
-            <select
+              options={[
+                { value: "pending", label: "Pendentes" },
+                { value: "converted", label: "Convertidos" },
+                { value: "discarded", label: "Excluídos" },
+                { value: "all", label: "Todas" },
+              ]}
+            />
+            <OpsSelect
+              label="Plano"
+              density="sm"
+              className="min-w-24 flex-1 basis-0"
+              value={query.plan ?? ""}
+              onChange={(value) =>
+                go({
+                  plan: (value || undefined) as OpsWaitlistPlan | undefined,
+                  page: 1,
+                })
+              }
+              options={[
+                { value: "", label: "Todos" },
+                ...OPS_WAITLIST_PLANS.map((plan) => ({
+                  value: plan,
+                  label: waitlistPlanLabel(plan),
+                })),
+              ]}
+            />
+            <OpsSelect
+              label="Ordenar"
+              density="sm"
+              className="min-w-28 flex-1 basis-0"
               value={`${query.sort_by}:${query.sort_order}`}
-              onChange={(event) => {
-                const [, sort_order] = event.target.value.split(":") as [
-                  string,
-                  "asc" | "desc",
-                ];
+              onChange={(value) => {
+                const [, sort_order] = value.split(":") as ["created_at", "asc" | "desc"];
                 go({ sort_by: "created_at", sort_order, page: 1 });
               }}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="created_at:desc">Mais recentes</option>
-              <option value="created_at:asc">Mais antigos</option>
-            </select>
-          </label>
-          <div className="flex items-end gap-2 lg:col-span-4">
-            <button
+              options={[
+                { value: "created_at:desc", label: "Mais recentes" },
+                { value: "created_at:asc", label: "Mais antigos" },
+              ]}
+            />
+            <OpsButton
               type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white"
+              size="sm"
+              className="h-9 w-9 shrink-0 px-0"
+              aria-label="Buscar"
             >
-              Buscar
-            </button>
-            {filtered ? (
-              <Link
-                href="/waitlist"
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
-              >
-                Limpar filtros
-              </Link>
-            ) : null}
-          </div>
+              <Search className="h-3.5 w-3.5" aria-hidden />
+            </OpsButton>
+            {filtered ? <OpsClearFiltersLink href="/waitlist" /> : null}
+          </OpsFilterRow>
         </form>
-      </Panel>
+      </OpsFilterBar>
 
       {isLoading ? (
-        <LoadingState label="Carregando Lista de espera…" />
+        <OpsCardListSkeleton />
       ) : error ? (
-        <ErrorState title={error.title} details={error.details} />
+        <OpsError title={error.title} details={error.details} />
       ) : result && result.data.length === 0 ? (
-        <EmptyState>
+        <OpsEmpty>
           {filtered
             ? "Nenhum lead encontrado para estes filtros."
-            : "Nenhum lead na Lista de espera."}
-        </EmptyState>
+            : "Nenhum lead pendente na Lista de espera."}
+        </OpsEmpty>
       ) : result ? (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Nome</th>
-                  <th className="px-4 py-3 font-medium">E-mail</th>
-                  <th className="px-4 py-3 font-medium">Telefone</th>
-                  <th className="px-4 py-3 font-medium">Igreja</th>
-                  <th className="px-4 py-3 font-medium">Cidade</th>
-                  <th className="px-4 py-3 font-medium">Plano</th>
-                  <th className="px-4 py-3 font-medium">Cadastro</th>
-                  <th className="px-4 py-3 font-medium">Mensagem</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.data.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="border-b border-gray-100 last:border-0"
-                  >
-                    <td className="px-4 py-3 font-medium text-primary">
-                      {lead.name}
-                    </td>
-                    <td className="px-4 py-3">{lead.email}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatPhone(lead.phone)}
-                    </td>
-                    <td className="px-4 py-3">{lead.church_name}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {displayValue(lead.city)}
-                      {lead.state ? `/${lead.state}` : ""}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {waitlistPlanLabel(lead.plan)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatDateTime(lead.created_at)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <WaitlistMessage message={lead.message} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-2">
+            {result.data.map((lead) => (
+              <WaitlistLeadCard
+                key={lead.id}
+                lead={lead}
+                busy={busyId === lead.id}
+                onConvert={() => setConfirm({ lead, nextStatus: "converted" })}
+                onDiscard={() => setConfirm({ lead, nextStatus: "discarded" })}
+              />
+            ))}
           </div>
 
-          {pagination && pagination.totalPages > 1 ? (
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <p className="text-muted">
-                Página {pagination.page} de {pagination.totalPages} ·{" "}
-                {pagination.total} lead{pagination.total === 1 ? "" : "s"}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={!pagination.hasPrevPage}
-                  onClick={() => go({ page: pagination.page - 1 })}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-                >
-                  Anterior
-                </button>
-                <button
-                  type="button"
-                  disabled={!pagination.hasNextPage}
-                  onClick={() => go({ page: pagination.page + 1 })}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-                >
-                  Próxima
-                </button>
-              </div>
-            </div>
-          ) : pagination ? (
-            <p className="text-sm text-muted">
-              {pagination.total} lead{pagination.total === 1 ? "" : "s"}
-            </p>
+          {pagination ? (
+            <OpsPagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              noun={{ one: "lead", other: "leads" }}
+              hasPrevPage={pagination.hasPrevPage}
+              hasNextPage={pagination.hasNextPage}
+              onPrev={() => go({ page: pagination.page - 1 })}
+              onNext={() => go({ page: pagination.page + 1 })}
+            />
           ) : null}
         </>
       ) : null}
-    </PageFrame>
+
+      <OpsConfirmDialog
+        open={Boolean(confirm)}
+        title={
+          confirm?.nextStatus === "converted"
+            ? "Marcar como convertido?"
+            : "Excluir da lista?"
+        }
+        body={
+          confirm?.nextStatus === "converted" ? (
+            <p>
+              {confirm.lead.name} sai da fila de pendentes. Isso não cria uma Igreja
+              nem inicia cobrança — só registra que o lead foi convertido.
+            </p>
+          ) : (
+            <p>
+              {confirm?.lead.name} deixa de aparecer como pendente. O e-mail continua
+              cadastrado e não pode se inscrever de novo na landing.
+            </p>
+          )
+        }
+        confirmLabel={
+          confirm?.nextStatus === "converted"
+            ? "Marcar como convertido"
+            : "Excluir da lista"
+        }
+        tone={confirm?.nextStatus === "discarded" ? "danger" : "primary"}
+        busy={Boolean(busyId)}
+        onClose={() => {
+          if (!busyId) {
+            setConfirm(null);
+          }
+        }}
+        onConfirm={() => {
+          if (confirm) {
+            void applyStatus(confirm.lead, confirm.nextStatus);
+          }
+        }}
+      />
+    </OpsPage>
   );
 }

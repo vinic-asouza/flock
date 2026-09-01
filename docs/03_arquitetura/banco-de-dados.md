@@ -1,6 +1,6 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-08-31
+ultima_atualizacao: 2026-09-01
 versao: "1.2"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
@@ -223,6 +223,7 @@ erDiagram
     varchar phone
     varchar church_name
     varchar plan
+    varchar status
     timestamptz created_at
   }
 
@@ -631,9 +632,12 @@ erDiagram
 | church_name / city / state | varchar | NOT NULL | — | Igreja interessada |
 | plan | varchar | NOT NULL, CHECK 200/500/800/personalizado | — | Interesse |
 | message | text | NULL | — | Mensagem |
+| status | varchar | NOT NULL, CHECK pending/converted/discarded | `'pending'` | Situação operacional (OPS) |
+| status_updated_at | timestamptz | NULL | — | Última mudança de situação |
+| status_updated_by | uuid | NULL | — | Operador (sem FK) |
 | created_at / updated_at | timestamptz | NULL | `now()` | Auditoria |
 
-**Índices:** UNIQUE email; `created_at DESC`; `plan`.
+**Índices:** UNIQUE email; `created_at DESC`; `plan`; `status`.
 
 ---
 
