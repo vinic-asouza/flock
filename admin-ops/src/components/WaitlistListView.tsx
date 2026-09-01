@@ -16,8 +16,22 @@ import {
   type OpsWaitlistPlan,
 } from "@/lib/opsWaitlistQuery";
 import { displayValue, formatDateTime, formatPhone } from "@/lib/opsFormat";
-import { PageFrame, Panel } from "@/components/PageFrame";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ConsoleState";
+import {
+  OpsButton,
+  OpsEmpty,
+  OpsError,
+  OpsFilterBar,
+  OpsInput,
+  OpsPage,
+  OpsPageHeader,
+  OpsPagination,
+  OpsSelect,
+  OpsTable,
+  OpsTableHead,
+  OpsTableSkeleton,
+  OpsTd,
+  OpsTh,
+} from "@/components/ui";
 
 function hrefFrom(
   current: OpsWaitlistListQuery,
@@ -108,175 +122,142 @@ export function WaitlistListView() {
   const filtered = hasActiveWaitlistFilters(query);
 
   return (
-    <PageFrame
-      title="Lista de espera"
-      description="Leads captados na landing. Somente leitura — sem editar, apagar ou converter em Igreja."
-    >
-      <Panel>
+    <OpsPage>
+      <OpsPageHeader
+        title="Lista de espera"
+        description="Leads captados na landing. Somente leitura — sem editar, apagar ou converter em Igreja."
+      />
+
+      <OpsFilterBar>
         <form
           onSubmit={onSearch}
           className="grid gap-3 md:grid-cols-2 lg:grid-cols-4"
         >
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary lg:col-span-2">
-            Busca
-            <input
-              type="search"
-              value={qInput}
-              onChange={(event) => setQInput(event.target.value)}
-              maxLength={80}
-              placeholder="Nome, e-mail ou igreja"
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Plano de interesse
-            <select
-              value={query.plan ?? ""}
-              onChange={(event) =>
-                go({
-                  plan: (event.target.value || undefined) as
-                    | OpsWaitlistPlan
-                    | undefined,
-                  page: 1,
-                })
-              }
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="">Todos</option>
-              {OPS_WAITLIST_PLANS.map((plan) => (
-                <option key={plan} value={plan}>
-                  {waitlistPlanLabel(plan)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-medium text-primary">
-            Ordenar
-            <select
-              value={`${query.sort_by}:${query.sort_order}`}
-              onChange={(event) => {
-                const [, sort_order] = event.target.value.split(":") as [
-                  string,
-                  "asc" | "desc",
-                ];
-                go({ sort_by: "created_at", sort_order, page: 1 });
-              }}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-            >
-              <option value="created_at:desc">Mais recentes</option>
-              <option value="created_at:asc">Mais antigos</option>
-            </select>
-          </label>
+          <OpsInput
+            label="Busca"
+            type="search"
+            value={qInput}
+            onChange={(event) => setQInput(event.target.value)}
+            maxLength={80}
+            placeholder="Nome, e-mail ou igreja"
+            className="lg:col-span-2"
+          />
+          <OpsSelect
+            label="Plano de interesse"
+            value={query.plan ?? ""}
+            onChange={(event) =>
+              go({
+                plan: (event.target.value || undefined) as
+                  | OpsWaitlistPlan
+                  | undefined,
+                page: 1,
+              })
+            }
+          >
+            <option value="">Todos</option>
+            {OPS_WAITLIST_PLANS.map((plan) => (
+              <option key={plan} value={plan}>
+                {waitlistPlanLabel(plan)}
+              </option>
+            ))}
+          </OpsSelect>
+          <OpsSelect
+            label="Ordenar"
+            value={`${query.sort_by}:${query.sort_order}`}
+            onChange={(event) => {
+              const [, sort_order] = event.target.value.split(":") as [
+                string,
+                "asc" | "desc",
+              ];
+              go({ sort_by: "created_at", sort_order, page: 1 });
+            }}
+          >
+            <option value="created_at:desc">Mais recentes</option>
+            <option value="created_at:asc">Mais antigos</option>
+          </OpsSelect>
           <div className="flex items-end gap-2 lg:col-span-4">
-            <button
-              type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white"
-            >
-              Buscar
-            </button>
+            <OpsButton type="submit">Buscar</OpsButton>
             {filtered ? (
               <Link
                 href="/waitlist"
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
+                className="inline-flex min-h-11 items-center rounded-md border border-gray-300 px-4 text-sm font-medium text-primary hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 Limpar filtros
               </Link>
             ) : null}
           </div>
         </form>
-      </Panel>
+      </OpsFilterBar>
 
       {isLoading ? (
-        <LoadingState label="Carregando Lista de espera…" />
+        <OpsTableSkeleton />
       ) : error ? (
-        <ErrorState title={error.title} details={error.details} />
+        <OpsError title={error.title} details={error.details} />
       ) : result && result.data.length === 0 ? (
-        <EmptyState>
+        <OpsEmpty>
           {filtered
             ? "Nenhum lead encontrado para estes filtros."
             : "Nenhum lead na Lista de espera."}
-        </EmptyState>
+        </OpsEmpty>
       ) : result ? (
         <>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50 text-xs uppercase tracking-wide text-muted">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Nome</th>
-                  <th className="px-4 py-3 font-medium">E-mail</th>
-                  <th className="px-4 py-3 font-medium">Telefone</th>
-                  <th className="px-4 py-3 font-medium">Igreja</th>
-                  <th className="px-4 py-3 font-medium">Cidade</th>
-                  <th className="px-4 py-3 font-medium">Plano</th>
-                  <th className="px-4 py-3 font-medium">Cadastro</th>
-                  <th className="px-4 py-3 font-medium">Mensagem</th>
+          <OpsTable>
+            <OpsTableHead>
+              <tr>
+                <OpsTh>Nome</OpsTh>
+                <OpsTh>E-mail</OpsTh>
+                <OpsTh>Telefone</OpsTh>
+                <OpsTh>Igreja</OpsTh>
+                <OpsTh>Cidade</OpsTh>
+                <OpsTh>Plano</OpsTh>
+                <OpsTh>Cadastro</OpsTh>
+                <OpsTh>Mensagem</OpsTh>
+              </tr>
+            </OpsTableHead>
+            <tbody>
+              {result.data.map((lead) => (
+                <tr
+                  key={lead.id}
+                  className="border-b border-gray-100 last:border-0"
+                >
+                  <OpsTd className="font-medium text-primary">{lead.name}</OpsTd>
+                  <OpsTd>{lead.email}</OpsTd>
+                  <OpsTd className="whitespace-nowrap">
+                    {formatPhone(lead.phone)}
+                  </OpsTd>
+                  <OpsTd>{lead.church_name}</OpsTd>
+                  <OpsTd className="whitespace-nowrap">
+                    {displayValue(lead.city)}
+                    {lead.state ? `/${lead.state}` : ""}
+                  </OpsTd>
+                  <OpsTd className="whitespace-nowrap">
+                    {waitlistPlanLabel(lead.plan)}
+                  </OpsTd>
+                  <OpsTd className="whitespace-nowrap">
+                    {formatDateTime(lead.created_at)}
+                  </OpsTd>
+                  <OpsTd>
+                    <WaitlistMessage message={lead.message} />
+                  </OpsTd>
                 </tr>
-              </thead>
-              <tbody>
-                {result.data.map((lead) => (
-                  <tr
-                    key={lead.id}
-                    className="border-b border-gray-100 last:border-0"
-                  >
-                    <td className="px-4 py-3 font-medium text-primary">
-                      {lead.name}
-                    </td>
-                    <td className="px-4 py-3">{lead.email}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatPhone(lead.phone)}
-                    </td>
-                    <td className="px-4 py-3">{lead.church_name}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {displayValue(lead.city)}
-                      {lead.state ? `/${lead.state}` : ""}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {waitlistPlanLabel(lead.plan)}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatDateTime(lead.created_at)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <WaitlistMessage message={lead.message} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </OpsTable>
 
-          {pagination && pagination.totalPages > 1 ? (
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <p className="text-muted">
-                Página {pagination.page} de {pagination.totalPages} ·{" "}
-                {pagination.total} lead{pagination.total === 1 ? "" : "s"}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={!pagination.hasPrevPage}
-                  onClick={() => go({ page: pagination.page - 1 })}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-                >
-                  Anterior
-                </button>
-                <button
-                  type="button"
-                  disabled={!pagination.hasNextPage}
-                  onClick={() => go({ page: pagination.page + 1 })}
-                  className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-50"
-                >
-                  Próxima
-                </button>
-              </div>
-            </div>
-          ) : pagination ? (
-            <p className="text-sm text-muted">
-              {pagination.total} lead{pagination.total === 1 ? "" : "s"}
-            </p>
+          {pagination ? (
+            <OpsPagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              noun={{ one: "lead", other: "leads" }}
+              hasPrevPage={pagination.hasPrevPage}
+              hasNextPage={pagination.hasNextPage}
+              onPrev={() => go({ page: pagination.page - 1 })}
+              onNext={() => go({ page: pagination.page + 1 })}
+            />
           ) : null}
         </>
       ) : null}
-    </PageFrame>
+    </OpsPage>
   );
 }

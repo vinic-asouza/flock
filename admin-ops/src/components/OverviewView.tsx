@@ -16,8 +16,15 @@ import {
   type OpsChurchPlanType,
   type OpsChurchSubscriptionStatus,
 } from "@/lib/opsChurchQuery";
-import { PageFrame, Panel } from "@/components/PageFrame";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ConsoleState";
+import {
+  OpsEmpty,
+  OpsError,
+  OpsOverviewSkeleton,
+  OpsPage,
+  OpsPageHeader,
+  OpsPanel,
+  OpsStatCard,
+} from "@/components/ui";
 
 function BreakdownList({
   title,
@@ -32,14 +39,14 @@ function BreakdownList({
 
   if (rows.length === 0) {
     return (
-      <Panel title={title}>
-        <EmptyState>Nenhum recorte disponível.</EmptyState>
-      </Panel>
+      <OpsPanel title={title}>
+        <OpsEmpty>Nenhum recorte disponível.</OpsEmpty>
+      </OpsPanel>
     );
   }
 
   return (
-    <Panel title={title}>
+    <OpsPanel title={title}>
       <ul className="divide-y divide-gray-100">
         {rows.map(([key, count]) => {
           const label =
@@ -64,7 +71,7 @@ function BreakdownList({
               {filterable ? (
                 <Link
                   href={href}
-                  className="text-sm text-primary underline-offset-2 hover:underline"
+                  className="text-sm text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {label}
                 </Link>
@@ -78,7 +85,7 @@ function BreakdownList({
           );
         })}
       </ul>
-    </Panel>
+    </OpsPanel>
   );
 }
 
@@ -119,54 +126,37 @@ export function OverviewView() {
   }, []);
 
   return (
-    <PageFrame
-      title="Overview"
-      description="Totais comerciais das Igrejas (clientes SaaS). Somente leitura — não é o Painel da Igreja."
-    >
+    <OpsPage>
+      <OpsPageHeader
+        title="Visão geral"
+        description="Totais comerciais das Igrejas (clientes SaaS). Somente leitura."
+      />
       {isLoading ? (
-        <LoadingState label="Carregando overview…" />
+        <OpsOverviewSkeleton />
       ) : error ? (
-        <ErrorState title={error.title} details={error.details} />
+        <OpsError title={error.title} details={error.details} />
       ) : overview ? (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <Link
+            <OpsStatCard
               href="/churches"
-              className="rounded-lg border border-gray-200 bg-white p-5 hover:border-primary/30"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">
-                Igrejas
-              </p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-primary">
-                {overview.total}
-              </p>
-            </Link>
-            <Link
+              label="Igrejas"
+              value={overview.total}
+            />
+            <OpsStatCard
               href={churchesListHref({ commercially_active: true })}
-              className="rounded-lg border border-gray-200 bg-white p-5 hover:border-primary/30"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">
-                Comercialmente ativas
-              </p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-primary">
-                {overview.commercially_active}
-              </p>
-            </Link>
-            <Link
+              label="Comercialmente ativas"
+              value={overview.commercially_active}
+            />
+            <OpsStatCard
               href={churchesListHref({ commercially_active: false })}
-              className="rounded-lg border border-gray-200 bg-white p-5 hover:border-primary/30"
-            >
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">
-                Comercialmente inativas
-              </p>
-              <p className="mt-2 text-3xl font-semibold tabular-nums text-primary">
-                {overview.commercially_inactive}
-              </p>
-            </Link>
+              label="Comercialmente inativas"
+              value={overview.commercially_inactive}
+            />
           </div>
 
           {overview.total === 0 ? (
-            <EmptyState>Nenhuma Igreja cadastrada ainda.</EmptyState>
+            <OpsEmpty>Nenhuma Igreja cadastrada ainda.</OpsEmpty>
           ) : (
             <div className="grid gap-4 lg:grid-cols-2">
               <BreakdownList
@@ -183,6 +173,6 @@ export function OverviewView() {
           )}
         </>
       ) : null}
-    </PageFrame>
+    </OpsPage>
   );
 }

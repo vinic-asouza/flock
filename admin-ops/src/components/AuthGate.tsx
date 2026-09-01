@@ -3,16 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOpsAuth } from "@/context/OpsAuthContext";
-
-function LoadingScreen({ label }: { label: string }) {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center px-6">
-      <p className="text-sm text-muted" role="status">
-        {label}
-      </p>
-    </div>
-  );
-}
+import { OpsShellSkeleton } from "@/components/ui";
 
 export function AuthGate({
   requireAuth,
@@ -37,15 +28,25 @@ export function AuthGate({
   }, [isLoading, user, requireAuth, router]);
 
   if (isLoading) {
-    return <LoadingScreen label="Verificando sessão…" />;
+    return requireAuth ? (
+      <OpsShellSkeleton />
+    ) : (
+      <p className="sr-only" role="status">
+        Verificando sessão…
+      </p>
+    );
   }
 
   if (requireAuth && !user) {
-    return <LoadingScreen label="Redirecionando para o login…" />;
+    return <OpsShellSkeleton />;
   }
 
   if (!requireAuth && user) {
-    return <LoadingScreen label="Redirecionando…" />;
+    return (
+      <p className="sr-only" role="status">
+        Redirecionando…
+      </p>
+    );
   }
 
   return <>{children}</>;

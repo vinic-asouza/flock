@@ -19,9 +19,15 @@ import {
   parseChurchListSearchParams,
 } from "@/lib/opsChurchQuery";
 import { displayValue, formatCnpj, formatDate, formatDateTime } from "@/lib/opsFormat";
-import { PageFrame, Panel } from "@/components/PageFrame";
-import { CommercialBadge } from "@/components/CommercialBadge";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ConsoleState";
+import {
+  OpsBadge,
+  OpsDetailSkeleton,
+  OpsEmpty,
+  OpsError,
+  OpsPage,
+  OpsPageHeader,
+  OpsPanel,
+} from "@/components/ui";
 
 function DefinitionItem({
   label,
@@ -40,13 +46,13 @@ function DefinitionItem({
   );
 }
 
-function BackToListLink({ href }: { href: string }) {
+function BackToChurchesLink({ href }: { href: string }) {
   return (
     <Link
       href={href}
-      className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-primary"
+      className="inline-flex min-h-11 items-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-primary hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      Voltar à lista
+      Voltar para Igrejas
     </Link>
   );
 }
@@ -115,34 +121,37 @@ export function ChurchDetailView() {
 
   if (isLoading) {
     return (
-      <PageFrame title="Ficha da Igreja">
-        <LoadingState label="Carregando ficha…" />
-      </PageFrame>
+      <OpsPage>
+        <OpsPageHeader title="Ficha da Igreja" />
+        <OpsDetailSkeleton />
+      </OpsPage>
     );
   }
 
   if (notFound) {
     return (
-      <PageFrame
-        title="Igreja não encontrada"
-        actions={<BackToListLink href={listHref} />}
-      >
-        <ErrorState
+      <OpsPage>
+        <OpsPageHeader
+          title="Igreja não encontrada"
+          actions={<BackToChurchesLink href={listHref} />}
+        />
+        <OpsError
           title={error?.title || "Igreja não encontrada"}
           details={error?.details}
         />
-      </PageFrame>
+      </OpsPage>
     );
   }
 
   if (error || !church) {
     return (
-      <PageFrame title="Ficha da Igreja">
-        <ErrorState
+      <OpsPage>
+        <OpsPageHeader title="Ficha da Igreja" />
+        <OpsError
           title={error?.title || "Não foi possível carregar a ficha."}
           details={error?.details}
         />
-      </PageFrame>
+      </OpsPage>
     );
   }
 
@@ -152,13 +161,34 @@ export function ChurchDetailView() {
     .join(" — ");
 
   return (
-    <PageFrame
-      title={church.name}
-      description="Ficha somente leitura para suporte. Sem rol de Membros e sem ações de mutação."
-      actions={<BackToListLink href={listHref} />}
-    >
+    <OpsPage>
+      <OpsPageHeader
+        eyebrow={
+          <p className="mb-1 text-sm text-muted">
+            <Link
+              href={listHref}
+              className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Igrejas
+            </Link>
+            <span aria-hidden> / </span>
+            <span>{church.name}</span>
+          </p>
+        }
+        title={
+          <span className="inline-flex flex-wrap items-center gap-3">
+            {church.name}
+            <OpsBadge tone={church.commercially_active ? "success" : "neutral"}>
+              {commerciallyActiveLabel(church.commercially_active)}
+            </OpsBadge>
+          </span>
+        }
+        description="Ficha somente leitura para suporte. Sem rol de Membros e sem ações de mutação."
+        actions={<BackToChurchesLink href={listHref} />}
+      />
+
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Cadastro e contato">
+        <OpsPanel title="Cadastro e contato">
           <dl className="grid gap-4 sm:grid-cols-2">
             <DefinitionItem label="Nome" value={church.name} />
             <DefinitionItem
@@ -185,9 +215,9 @@ export function ChurchDetailView() {
               />
             </div>
           </dl>
-        </Panel>
+        </OpsPanel>
 
-        <Panel title="Plano e assinatura">
+        <OpsPanel title="Plano e assinatura">
           <dl className="grid gap-4 sm:grid-cols-2">
             <DefinitionItem
               label="Plano"
@@ -200,7 +230,13 @@ export function ChurchDetailView() {
             <div className="sm:col-span-2">
               <DefinitionItem
                 label="Situação comercial"
-                value={<CommercialBadge active={church.commercially_active} />}
+                value={
+                  <OpsBadge
+                    tone={church.commercially_active ? "success" : "neutral"}
+                  >
+                    {commerciallyActiveLabel(church.commercially_active)}
+                  </OpsBadge>
+                }
               />
             </div>
             <DefinitionItem
@@ -232,10 +268,10 @@ export function ChurchDetailView() {
               }
             />
           </dl>
-        </Panel>
+        </OpsPanel>
       </div>
 
-      <Panel title="Contagens">
+      <OpsPanel title="Contagens">
         <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <DefinitionItem
             label="Membros ativos"
@@ -259,12 +295,12 @@ export function ChurchDetailView() {
           {commerciallyActiveLabel(church.commercially_active)} não se refere a
           Membro ativo.
         </p>
-      </Panel>
+      </OpsPanel>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Eventos de assinatura">
+        <OpsPanel title="Eventos de assinatura">
           {church.subscription_events.length === 0 ? (
-            <EmptyState>Nenhum evento de assinatura recente.</EmptyState>
+            <OpsEmpty>Nenhum evento de assinatura recente.</OpsEmpty>
           ) : (
             <ul className="divide-y divide-gray-100">
               {church.subscription_events.map((event) => (
@@ -288,11 +324,11 @@ export function ChurchDetailView() {
               ))}
             </ul>
           )}
-        </Panel>
+        </OpsPanel>
 
-        <Panel title="Histórico de atividades">
+        <OpsPanel title="Histórico de atividades">
           {church.audit_logs.length === 0 ? (
-            <EmptyState>Nenhum item recente no histórico.</EmptyState>
+            <OpsEmpty>Nenhum item recente no histórico.</OpsEmpty>
           ) : (
             <ul className="divide-y divide-gray-100">
               {church.audit_logs.map((log) => (
@@ -312,8 +348,8 @@ export function ChurchDetailView() {
               ))}
             </ul>
           )}
-        </Panel>
+        </OpsPanel>
       </div>
-    </PageFrame>
+    </OpsPage>
   );
 }
