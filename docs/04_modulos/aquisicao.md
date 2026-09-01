@@ -45,7 +45,7 @@ Produto: [[01_produto/visao-do-produto]].
 
 - Criar sessão Stripe Checkout (API em [[04_modulos/billing]]; landing **não** chama mais `/create-checkout-session` no botão atual)
 - Criar igreja/user Auth (→ [[04_modulos/onboarding]])
-- CRUD/admin da tabela waitlist (lista autenticada fica no [[04_modulos/admin-ops]]; sem edit/delete/CSV neste módulo nem no ops v1)
+- CRUD/admin da tabela waitlist (lista autenticada e PATCH de situação ficam no [[04_modulos/admin-ops]]; sem hard delete/CSV neste módulo)
 - Login/sessão do produto
 - Cleanup de leads antigos (sem job)
 
@@ -245,7 +245,7 @@ sequenceDiagram
 
 ### Estados
 
-N/A — lead waitlist **não** tem status machine (só insert). Sem lifecycle “contacted/converted” no código.
+N/A neste módulo — captação continua insert-only (`status=pending` no banco). Situação operacional (`pending` / `converted` / `discarded`) é do Admin OPS (BR-OPS-008), não da landing.
 
 ```mermaid
 stateDiagram-v2
@@ -253,7 +253,8 @@ stateDiagram-v2
   Capturado --> [*]
   note right of Capturado
     Sem transições posteriores
-    neste módulo
+    neste módulo (OPS marca
+    converted/discarded)
   end note
 ```
 

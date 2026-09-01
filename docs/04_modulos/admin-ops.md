@@ -2,9 +2,9 @@
 type: modulo
 nome: Admin OPS
 status: Em Desenvolvimento
-versao: "0.7"
+versao: "0.8"
 owner: plataforma
-ultima_atualizacao: 2026-08-26
+ultima_atualizacao: 2026-09-01
 tags: [admin-ops, plataforma, interno]
 dependencias: [auth]
 ---
@@ -20,7 +20,7 @@ dependencias: [auth]
 
 **Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary `/api/ops` (auth de operador + leitura de Igrejas + Lista de espera + saúde agregada).
 
-Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`, `GET /api/ops/waitlist`) + **saúde agregada** (`/health`, `GET /api/ops/health`) no app (`:3002`).
+Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`, `GET`/`PATCH /api/ops/waitlist`) + **saúde agregada** (`/health`, `GET /api/ops/health`) no app (`:3002`).
 
 **Fora:** Mintlify (usuário da igreja não usa isto). Sentry (DEV-70). Deploy Railway (pedido explícito). Tabela `platform_admins`. npm workspaces. Stripe live. Mutação de tenant.
 
@@ -42,7 +42,7 @@ backend/src/controllers/opsWaitlistController.ts
 backend/src/controllers/opsHealthController.ts
 backend/src/services/opsChurches.ts           → queries supabaseAdmin
 backend/src/services/opsChurchMappers.ts      → DTOs whitelist
-backend/src/services/opsWaitlist.ts           → lista `waitlist` (tabela global, sem `church_id`)
+backend/src/services/opsWaitlist.ts           → lista + PATCH de situação `waitlist`
 backend/src/services/opsWaitlistMappers.ts    → DTO whitelist (sem `updated_at`)
 backend/src/services/opsHealth.ts              → composição GET /ops/health
 backend/src/services/stripeHealth.ts          → snapshot Stripe compartilhado
@@ -74,7 +74,7 @@ Rate limit dos GETs de leitura: 60 / 15 min por IP.
 | `/` | operador (`GET /ops/me`) | Overview comercial (totais + breakdowns). Nav **Overview · Igrejas · Lista de espera · Saúde** |
 | `/churches` | operador | Lista/busca; filtros e paginação na querystring |
 | `/churches/[id]` | operador | Ficha read-only; 404 se UUID inexistente; Voltar reconstrói a query da lista |
-| `/waitlist` | operador | Lista de espera (leads da landing). Busca/filtro/sort na querystring. Sem ficha, sem mutação |
+| `/waitlist` | operador | Lista de espera em cards. Filtros na querystring (inclui situação). Ações: converter / excluir (flag). Sem ficha |
 | `/health` | operador | Saúde: banner geral + cards API/Stripe/jobs + tabela dos 5 crons; **Atualizar** (sem polling) |
 
 Header autenticado: marca, nav, e-mail, logout. Desktop-first. Sem Sentry nesta superfície. Overview **não** tem cards de waitlist.
@@ -91,7 +91,8 @@ Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?
 | GET | `/api/ops/overview` | `requirePlatformAdmin` + RL 60/15min | Totais comerciais das Igrejas |
 | GET | `/api/ops/churches` | idem | Lista paginada + busca |
 | GET | `/api/ops/churches/:id` | idem | Ficha read-only; 404 se UUID inexistente |
-| GET | `/api/ops/waitlist` | idem | Lista paginada de leads. GET-only. **Não** existe `GET /api/waitlist` |
+| GET | `/api/ops/waitlist` | idem | Lista paginada de leads. Default `status=pending`. **Não** existe `GET /api/waitlist` |
+| PATCH | `/api/ops/waitlist/:id` | idem | Situação operacional `converted` \| `discarded`; só a partir de `pending`. Não cria Igreja |
 | GET | `/api/ops/health` | idem | Saúde agregada (API, Stripe, jobs). HTTP **200** autenticado mesmo se o JSON for `degraded`/`error` |
 
 Erros: `{ error, details }` em PT. Validação Joi da query/params → 400. Anônimo → 401. Não-operador → 403.
@@ -118,13 +119,17 @@ Envelope `{ data, pagination, filters, sorting }` no padrão members. Item: `id`
 
 #### `GET /api/ops/waitlist`
 
-Query: `page` (≥1, default 1), `limit` (1–100, default 20), `q` (nome / e-mail / `church_name`, máx. 80), `plan` (`200\|500\|800\|personalizado` — **não** `custom` nem `plan_type`), `sort_by` (`created_at` only), `sort_order` (`asc\|desc`, default `desc`).
+Query: `page` (≥1, default 1), `limit` (1–100, default 20), `q` (nome / e-mail / `church_name`, máx. 80), `plan` (`200\|500\|800\|personalizado` — **não** `custom` nem `plan_type`), `status` (`pending\|converted\|discarded\|all`, default **`pending`**), `sort_by` (`created_at` only), `sort_order` (`asc\|desc`, default `desc`).
 
-Envelope `{ data, pagination, filters, sorting }`. Item whitelist: `id`, `name`, `email`, `phone`, `church_name`, `city`, `state`, `plan`, `message` (`string \| null`), `created_at`. Sem `updated_at`. Select explícito — nunca `*`.
+Envelope `{ data, pagination, filters, sorting }`. `filters.status` ecoa o filtro aplicado. Item whitelist: `id`, `name`, `email`, `phone`, `church_name`, `city`, `state`, `plan`, `message` (`string \| null`), `created_at`, `status`, `status_updated_at` (`string \| null`). Sem `updated_at` nem `status_updated_by`. Select explícito — nunca `*`.
 
 `waitlist` é tabela global de aquisição (sem `church_id`). **Não** estende ADR-001 / BR-GEN-010. PII de lead é o payload (BR-OPS-008); BR-OPS-006 continua valendo só para Membros de Igreja.
 
-UI: empty “Nenhum lead na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” Mensagem longa: truncate + `<details>`. Plano na UI: **Personalizado**.
+UI: cards (nome, igreja, cidade, data) + accordion. Default da tela e do card da Visão geral: **pendentes**. Empty: “Nenhum lead pendente na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” Plano na UI: **Personalizado**. Situação: Pendente / Convertido / Excluído.
+
+#### `PATCH /api/ops/waitlist/:id`
+
+Body: `{ "status": "converted" | "discarded" }`. Auth igual ao GET. 400 body/id inválido; 404 lead inexistente; 409 se o lead não estiver `pending`. Resposta: o item whitelist atualizado. **Não** cria Igreja, **não** dispara e-mail, **não** apaga a linha (flag `discarded`; e-mail UNIQUE permanece).
 
 #### `GET /api/ops/churches/:id`
 
