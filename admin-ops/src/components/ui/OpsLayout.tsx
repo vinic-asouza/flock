@@ -173,16 +173,16 @@ export function OpsPagination({
   onNext: () => void;
 }) {
   const label = `${total} ${total === 1 ? noun.one : noun.other}`;
+  const pages = Math.max(totalPages, 1);
+  const summary = `Página ${page} de ${pages} · ${label}`;
 
   if (totalPages <= 1) {
-    return <p className="text-sm text-muted">{label}</p>;
+    return <p className="text-sm text-muted">{summary}</p>;
   }
 
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <p className="text-muted">
-        Página {page} de {totalPages} · {label}
-      </p>
+      <p className="text-muted">{summary}</p>
       <div className="flex gap-2">
         <OpsButton
           type="button"
