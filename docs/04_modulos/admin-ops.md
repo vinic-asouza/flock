@@ -72,14 +72,14 @@ Rate limit dos GETs de leitura: 60 / 15 min por IP.
 | --- | --- | --- |
 | `/login` | público | RHF+Zod; 401/403 em toast + alerta; consome `POST /ops/login` |
 | `/` | operador (`GET /ops/me`) | Overview comercial (totais + breakdowns). Nav **Overview · Igrejas · Lista de espera · Saúde** |
-| `/churches` | operador | Lista/busca; filtros e paginação na querystring |
+| `/churches` | operador | Lista em cards; filtros e paginação na querystring |
 | `/churches/[id]` | operador | Ficha read-only; 404 se UUID inexistente; Voltar reconstrói a query da lista |
 | `/waitlist` | operador | Lista de espera em cards. Filtros na querystring (inclui situação). Ações: converter / excluir (flag). Sem ficha |
 | `/health` | operador | Saúde: banner geral + cards API/Stripe/jobs + tabela dos 5 crons; **Atualizar** (sem polling) |
 
 Header autenticado: marca, nav, e-mail, logout. Desktop-first. Sem Sentry nesta superfície. Overview **não** tem cards de waitlist.
 
-Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?…`. Buckets `none` (**Sem plano** / **Sem assinatura**) **não** viram query (`plan_type=none` é 400 na API). Labels: “Comercialmente ativa/inativa” — nunca badge genérico “Ativo”. Clique na linha da lista abre a ficha; a query da lista viaja na URL da ficha para o Voltar. Nav **Igrejas** vai para `/churches` sem query (reset).
+Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?…`. Buckets `none` (**Sem plano** / **Sem assinatura**) **não** viram query (`plan_type=none` é 400 na API). Labels: “Comercialmente ativa/inativa” — nunca badge genérico “Ativo”. Nome ou **Abrir ficha** abrem o detalhe; a query da lista viaja na URL da ficha para o Voltar. Nav **Igrejas** vai para `/churches` sem query (reset).
 
 ### API (`/api/ops`)
 
@@ -115,7 +115,9 @@ Erros: `{ error, details }` em PT. Validação Joi da query/params → 400. Anô
 
 Query: `page` (≥1, default 1), `limit` (1–100, default 20), `q` (nome e/ou CNPJ, máx. 80), `plan_type` (`100\|200\|500\|800\|custom`), `subscription_status` (allowlist Stripe), `commercially_active` (`true\|false`), `sort_by` (`created_at\|name\|cnpj`, default `created_at`), `sort_order` (`asc\|desc`, default `desc`).
 
-Envelope `{ data, pagination, filters, sorting }` no padrão members. Item: `id`, `name`, `cnpj`, `plan_type`, `subscription_status`, `commercially_active`, `members_active_count`, `created_at`. Sem endereço na lista.
+Envelope `{ data, pagination, filters, sorting }` no padrão members. Item: `id`, `name`, `cnpj`, `denomination`, `city`, `state`, `address`, `email_church`, `phone_church`, `plan_type`, `subscription_status`, `commercially_active`, `members_active_count`, `members_inactive_count`, `subscription_start_date`, `subscription_end_date`, `created_at`. Sem rol de Membros, sem IDs Stripe na lista. Contato é da Igreja (BR-OPS-006).
+
+UI: cards compactos (nome + flags de situação comercial / plano / assinatura) + accordion. E-mail abre `mailto:`; telefone abre WhatsApp. Ficha continua em `/churches/[id]`.
 
 #### `GET /api/ops/waitlist`
 
@@ -125,7 +127,7 @@ Envelope `{ data, pagination, filters, sorting }`. `filters.status` ecoa o filtr
 
 `waitlist` é tabela global de aquisição (sem `church_id`). **Não** estende ADR-001 / BR-GEN-010. PII de lead é o payload (BR-OPS-008); BR-OPS-006 continua valendo só para Membros de Igreja.
 
-UI: cards (nome, igreja, cidade, data) + accordion. Default da tela e do card da Visão geral: **pendentes**. Empty: “Nenhum lead pendente na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” Plano na UI: **Personalizado**. Situação: Pendente / Convertido / Excluído.
+UI: cards compactos (nome, igreja, cidade, data) + accordion. Default da tela e do card da Visão geral: **pendentes**. E-mail abre `mailto:`; telefone abre WhatsApp. Empty: “Nenhum lead pendente na Lista de espera.” / “Nenhum lead encontrado para estes filtros.” Plano na UI: **Personalizado**. Situação: Pendente / Convertido / Excluído.
 
 #### `PATCH /api/ops/waitlist/:id`
 

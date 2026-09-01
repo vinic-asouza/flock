@@ -5,6 +5,7 @@ import {
   countActiveMembersByChurch,
   countChurchUsersByStatus,
   countMembersByActive,
+  countMembersByChurch,
   toOpsAuditLog,
   toOpsChurchDetail,
   toOpsChurchListItem,
@@ -74,6 +75,16 @@ describe('member and church_user counts', () => {
     expect(counts.get('b')).toBe(2);
   });
 
+  it('should split active and inactive members per church', () => {
+    const counts = countMembersByChurch([
+      { church_id: 'a', active: true },
+      { church_id: 'a', active: false },
+      { church_id: 'b', active: true },
+    ]);
+    expect(counts.get('a')).toEqual({ active: 1, inactive: 1 });
+    expect(counts.get('b')).toEqual({ active: 1, inactive: 0 });
+  });
+
   it('should split members into active and inactive', () => {
     expect(
       countMembersByActive([
@@ -115,12 +126,16 @@ describe('ops church mappers', () => {
     members: [{ name: 'João Silva', email: 'joao@hidden.test' }],
   };
 
-  it('should map list items without member arrays', () => {
-    const item = toOpsChurchListItem(church, 12);
+  it('should map list items without member arrays or stripe ids', () => {
+    const item = toOpsChurchListItem(church, 12, 3);
     expect(item.commercially_active).toBe(true);
     expect(item.members_active_count).toBe(12);
+    expect(item.members_inactive_count).toBe(3);
+    expect(item.city).toBe('Marília');
+    expect(item.email_church).toBe('contato@igreja.test');
     expect(item).not.toHaveProperty('members');
-    expect(item).not.toHaveProperty('address');
+    expect(item).not.toHaveProperty('stripe_customer_id');
+    expect(item).not.toHaveProperty('user_id');
     expect(JSON.stringify(item)).not.toContain('João');
   });
 
