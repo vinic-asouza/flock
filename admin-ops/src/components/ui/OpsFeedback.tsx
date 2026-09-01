@@ -1,27 +1,45 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Inbox, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 export function OpsStatCard({
   href,
   label,
   value,
+  hint,
+  icon: Icon,
+  valueClassName,
 }: {
   href: string;
   label: string;
-  value: number;
+  value: ReactNode;
+  hint?: string;
+  icon?: LucideIcon;
+  valueClassName?: string;
 }) {
   return (
     <Link
       href={href}
       className="rounded-lg border border-gray-200 bg-white p-5 hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <p className="text-xs font-medium uppercase tracking-wide text-muted">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-semibold tabular-nums text-primary">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted">
+          {label}
+        </p>
+        {Icon ? (
+          <Icon className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+        ) : null}
+      </div>
+      <div
+        className={cn(
+          "mt-2 text-3xl font-semibold tabular-nums text-primary",
+          valueClassName
+        )}
+      >
         {value}
-      </p>
+      </div>
+      {hint ? <p className="mt-2 text-xs text-muted">{hint}</p> : null}
     </Link>
   );
 }
@@ -43,7 +61,7 @@ export function OpsBadge({
   return (
     <span
       className={cn(
-        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
         tones[tone]
       )}
     >
@@ -54,8 +72,9 @@ export function OpsBadge({
 
 export function OpsEmpty({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-gray-200 bg-white px-5 py-8">
-      <p className="text-sm text-muted">{children}</p>
+    <div className="flex flex-col items-center rounded-lg border border-dashed border-gray-200 bg-white px-5 py-8 text-center">
+      <Inbox className="h-5 w-5 text-muted" aria-hidden />
+      <p className="mt-2 text-sm text-muted">{children}</p>
     </div>
   );
 }
@@ -94,6 +113,10 @@ export function OpsOverviewSkeleton() {
         <OpsSkeleton className="h-24" />
         <OpsSkeleton className="h-24" />
         <OpsSkeleton className="h-24" />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <OpsSkeleton className="h-28" />
+        <OpsSkeleton className="h-28" />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <OpsSkeleton className="h-48" />

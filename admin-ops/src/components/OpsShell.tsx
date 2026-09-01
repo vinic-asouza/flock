@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import { LogOut, Menu } from "lucide-react";
 import { useOpsAuth } from "@/context/OpsAuthContext";
 import {
   OPS_BRAND,
@@ -11,6 +12,7 @@ import {
   isOpsNavCurrent,
   type OpsNavItem,
 } from "@/lib/opsNav";
+import { OPS_NAV_ICONS } from "@/lib/opsNavIcons";
 import { cn } from "@/lib/cn";
 import { OpsButton } from "@/components/ui";
 
@@ -24,18 +26,20 @@ function NavLink({
   onNavigate?: () => void;
 }) {
   const current = isOpsNavCurrent(pathname, item);
+  const Icon = OPS_NAV_ICONS[item.icon];
   return (
     <Link
       href={item.href}
       aria-current={current ? "page" : undefined}
       onClick={onNavigate}
       className={cn(
-        "block rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
+        "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
         current
           ? "bg-white/15 text-white"
           : "text-white/80 hover:bg-white/10 hover:text-white"
       )}
     >
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
       {item.label}
     </Link>
   );
@@ -114,6 +118,7 @@ function SidebarChrome({
             disabled={isLoggingOut}
             className="mt-2 w-full text-white hover:bg-white/10 hover:text-white"
           >
+            <LogOut className="h-4 w-4" aria-hidden />
             {isLoggingOut ? "Saindo…" : "Sair"}
           </OpsButton>
         </div>
@@ -143,7 +148,7 @@ export function OpsShell({ children }: { children: ReactNode }) {
             onClick={() => setMobileOpen(true)}
             className="min-h-11 px-3 text-white hover:bg-white/10 hover:text-white"
           >
-            Menu
+            <Menu className="h-5 w-5" aria-hidden />
           </OpsButton>
           <p className="text-sm font-semibold">{OPS_BRAND}</p>
         </header>

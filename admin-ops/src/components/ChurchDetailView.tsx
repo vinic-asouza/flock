@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { opsApi } from "@/services/api";
 import type { OpsChurchDetail } from "@/types/opsChurches";
 import {
@@ -21,6 +22,7 @@ import {
 import { displayValue, formatCnpj, formatDate, formatDateTime } from "@/lib/opsFormat";
 import {
   OpsBadge,
+  OpsButtonLink,
   OpsDetailSkeleton,
   OpsEmpty,
   OpsError,
@@ -48,12 +50,10 @@ function DefinitionItem({
 
 function BackToChurchesLink({ href }: { href: string }) {
   return (
-    <Link
-      href={href}
-      className="inline-flex min-h-11 items-center rounded-md border border-gray-300 bg-white px-4 text-sm font-medium text-primary hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-    >
+    <OpsButtonLink href={href}>
+      <ArrowLeft className="h-4 w-4" aria-hidden />
       Voltar para Igrejas
-    </Link>
+    </OpsButtonLink>
   );
 }
 
@@ -298,7 +298,10 @@ export function ChurchDetailView() {
       </OpsPanel>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <OpsPanel title="Eventos de assinatura">
+        <OpsPanel
+          title="Eventos de assinatura"
+          bodyClassName="max-h-80 overflow-y-auto p-5"
+        >
           {church.subscription_events.length === 0 ? (
             <OpsEmpty>Nenhum evento de assinatura recente.</OpsEmpty>
           ) : (
@@ -326,7 +329,10 @@ export function ChurchDetailView() {
           )}
         </OpsPanel>
 
-        <OpsPanel title="Histórico de atividades">
+        <OpsPanel
+          title="Histórico de atividades"
+          bodyClassName="max-h-80 overflow-y-auto p-5"
+        >
           {church.audit_logs.length === 0 ? (
             <OpsEmpty>Nenhum item recente no histórico.</OpsEmpty>
           ) : (

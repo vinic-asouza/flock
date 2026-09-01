@@ -1,11 +1,13 @@
 export const OPS_BRAND = "Flock Admin OPS";
 
 export type OpsNavMatch = "exact" | "prefix";
+export type OpsNavIcon = "overview" | "churches" | "waitlist" | "health";
 
 export interface OpsNavItem {
   href: string;
   label: string;
   match: OpsNavMatch;
+  icon: OpsNavIcon;
 }
 
 export interface OpsNavGroup {
@@ -19,15 +21,20 @@ export const OPS_NAV_GROUPS: OpsNavGroup[] = [
     id: "operation",
     label: "Operação",
     items: [
-      { href: "/", label: "Visão geral", match: "exact" },
-      { href: "/churches", label: "Igrejas", match: "prefix" },
-      { href: "/waitlist", label: "Lista de espera", match: "exact" },
+      { href: "/", label: "Visão geral", match: "exact", icon: "overview" },
+      { href: "/churches", label: "Igrejas", match: "prefix", icon: "churches" },
+      {
+        href: "/waitlist",
+        label: "Lista de espera",
+        match: "exact",
+        icon: "waitlist",
+      },
     ],
   },
   {
     id: "platform",
     label: "Plataforma",
-    items: [{ href: "/health", label: "Saúde", match: "exact" }],
+    items: [{ href: "/health", label: "Saúde", match: "exact", icon: "health" }],
   },
 ];
 

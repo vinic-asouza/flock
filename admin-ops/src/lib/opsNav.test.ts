@@ -35,6 +35,7 @@ describe("ops nav", () => {
   it("should mark churches detail as current for the Igrejas item", () => {
     const churches = OPS_NAV_ITEMS.find((item) => item.href === "/churches");
     assert.ok(churches);
+    assert.equal(churches.icon, "churches");
     assert.equal(isOpsNavCurrent("/churches", churches), true);
     assert.equal(
       isOpsNavCurrent("/churches/abc", churches),

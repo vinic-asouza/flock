@@ -1,8 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, Search, X } from "lucide-react";
 import { opsApi } from "@/services/api";
 import type { OpsWaitlistListResponse } from "@/types/opsWaitlist";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
@@ -18,6 +18,7 @@ import {
 import { displayValue, formatDateTime, formatPhone } from "@/lib/opsFormat";
 import {
   OpsButton,
+  OpsButtonLink,
   OpsEmpty,
   OpsError,
   OpsFilterBar,
@@ -47,12 +48,13 @@ function WaitlistMessage({ message }: { message: string | null }) {
   }
 
   return (
-    <details className="max-w-xs">
+    <details className="group max-w-[14rem]">
       <summary
-        className="cursor-pointer truncate text-sm text-primary"
+        className="flex cursor-pointer list-none items-center gap-1 text-sm text-primary [&::-webkit-details-marker]:hidden"
         title={text}
       >
-        {text}
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-90" aria-hidden />
+        <span className="truncate">{text}</span>
       </summary>
       <p className="mt-1 whitespace-pre-wrap text-sm text-foreground">{text}</p>
     </details>
@@ -176,14 +178,15 @@ export function WaitlistListView() {
             <option value="created_at:asc">Mais antigos</option>
           </OpsSelect>
           <div className="flex items-end gap-2 lg:col-span-4">
-            <OpsButton type="submit">Buscar</OpsButton>
+            <OpsButton type="submit">
+              <Search className="h-4 w-4" aria-hidden />
+              Buscar
+            </OpsButton>
             {filtered ? (
-              <Link
-                href="/waitlist"
-                className="inline-flex min-h-11 items-center rounded-md border border-gray-300 px-4 text-sm font-medium text-primary hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
+              <OpsButtonLink href="/waitlist">
+                <X className="h-4 w-4" aria-hidden />
                 Limpar filtros
-              </Link>
+              </OpsButtonLink>
             ) : null}
           </div>
         </form>
@@ -206,12 +209,12 @@ export function WaitlistListView() {
               <tr>
                 <OpsTh>Nome</OpsTh>
                 <OpsTh>E-mail</OpsTh>
-                <OpsTh>Telefone</OpsTh>
+                <OpsTh fit>Telefone</OpsTh>
                 <OpsTh>Igreja</OpsTh>
-                <OpsTh>Cidade</OpsTh>
-                <OpsTh>Plano</OpsTh>
-                <OpsTh>Cadastro</OpsTh>
-                <OpsTh>Mensagem</OpsTh>
+                <OpsTh fit>Cidade</OpsTh>
+                <OpsTh fit>Plano</OpsTh>
+                <OpsTh fit>Cadastro</OpsTh>
+                <OpsTh fit>Mensagem</OpsTh>
               </tr>
             </OpsTableHead>
             <tbody>
@@ -220,23 +223,23 @@ export function WaitlistListView() {
                   key={lead.id}
                   className="border-b border-gray-100 last:border-0"
                 >
-                  <OpsTd className="font-medium text-primary">{lead.name}</OpsTd>
-                  <OpsTd>{lead.email}</OpsTd>
-                  <OpsTd className="whitespace-nowrap">
-                    {formatPhone(lead.phone)}
+                  <OpsTd className="max-w-[12rem] truncate font-medium text-primary" title={lead.name}>
+                    {lead.name}
                   </OpsTd>
-                  <OpsTd>{lead.church_name}</OpsTd>
-                  <OpsTd className="whitespace-nowrap">
+                  <OpsTd className="max-w-[14rem] truncate" title={lead.email}>
+                    {lead.email}
+                  </OpsTd>
+                  <OpsTd fit>{formatPhone(lead.phone)}</OpsTd>
+                  <OpsTd className="max-w-[12rem] truncate" title={lead.church_name}>
+                    {lead.church_name}
+                  </OpsTd>
+                  <OpsTd fit>
                     {displayValue(lead.city)}
                     {lead.state ? `/${lead.state}` : ""}
                   </OpsTd>
-                  <OpsTd className="whitespace-nowrap">
-                    {waitlistPlanLabel(lead.plan)}
-                  </OpsTd>
-                  <OpsTd className="whitespace-nowrap">
-                    {formatDateTime(lead.created_at)}
-                  </OpsTd>
-                  <OpsTd>
+                  <OpsTd fit>{waitlistPlanLabel(lead.plan)}</OpsTd>
+                  <OpsTd fit>{formatDateTime(lead.created_at)}</OpsTd>
+                  <OpsTd fit>
                     <WaitlistMessage message={lead.message} />
                   </OpsTd>
                 </tr>

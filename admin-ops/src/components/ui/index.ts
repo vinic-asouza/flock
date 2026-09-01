@@ -1,4 +1,4 @@
-export { OpsButton } from "./OpsButton";
+export { OpsButton, OpsButtonLink } from "./OpsButton";
 export { OpsInput, OpsSelect } from "./OpsField";
 export {
   OpsFilterBar,

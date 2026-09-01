@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { Activity, Cog, RefreshCw, Server, Webhook, type LucideIcon } from "lucide-react";
 import { opsApi } from "@/services/api";
 import type { OpsHealthResponse, OpsHealthStatus } from "@/types/opsHealth";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
@@ -48,16 +49,21 @@ function healthTone(
 function HealthCard({
   title,
   status,
+  icon: Icon,
   children,
 }: {
   title: string;
   status: OpsHealthStatus;
+  icon: LucideIcon;
   children?: ReactNode;
 }) {
   return (
     <section className="rounded-lg border border-gray-200 bg-white p-5">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="text-sm font-semibold text-primary">{title}</h2>
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-muted" aria-hidden />
+          <h2 className="text-sm font-semibold text-primary">{title}</h2>
+        </div>
         <OpsBadge tone={healthTone(status)}>
           {healthStatusLabel(status)}
         </OpsBadge>
@@ -104,6 +110,10 @@ export function HealthView() {
             onClick={() => void load()}
             disabled={isLoading}
           >
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading && health ? "animate-spin" : ""}`}
+              aria-hidden
+            />
             {isLoading && health ? "Atualizando…" : "Atualizar"}
           </OpsButton>
         }
@@ -127,6 +137,7 @@ export function HealthView() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
+                    <Activity className="h-4 w-4 text-primary" aria-hidden />
                     <p className="text-sm font-semibold text-primary">
                       Status geral
                     </p>
@@ -141,12 +152,12 @@ export function HealthView() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <HealthCard title="API" status={health.api.status}>
+                <HealthCard title="API" status={health.api.status} icon={Server}>
                   <p className="text-muted">
                     Processo da API respondeu a esta consulta.
                   </p>
                 </HealthCard>
-                <HealthCard title="Stripe" status={health.stripe.status}>
+                <HealthCard title="Stripe" status={health.stripe.status} icon={Webhook}>
                   <p>
                     Configurado:{" "}
                     <span className="font-medium">
@@ -169,6 +180,7 @@ export function HealthView() {
                 <HealthCard
                   title="Jobs de billing"
                   status={health.billing_jobs.status}
+                  icon={Cog}
                 >
                   <p className="text-muted">
                     Última execução de cada cron conhecido.
@@ -176,15 +188,15 @@ export function HealthView() {
                 </HealthCard>
               </div>
 
-              <OpsPanel title="Jobs de billing">
-                <OpsTable>
+              <OpsPanel title="Jobs de billing" padded={false}>
+                <OpsTable embedded>
                   <OpsTableHead>
                     <tr>
                       <OpsTh>Job</OpsTh>
-                      <OpsTh>Status</OpsTh>
-                      <OpsTh>Início</OpsTh>
-                      <OpsTh>Duração</OpsTh>
-                      <OpsTh>Linhas</OpsTh>
+                      <OpsTh fit>Status</OpsTh>
+                      <OpsTh fit>Início</OpsTh>
+                      <OpsTh fit>Duração</OpsTh>
+                      <OpsTh fit>Linhas</OpsTh>
                       <OpsTh>Erro</OpsTh>
                     </tr>
                   </OpsTableHead>
@@ -194,27 +206,32 @@ export function HealthView() {
                         key={job.job_name}
                         className="border-b border-gray-50 last:border-0"
                       >
-                        <OpsTd>
+                        <OpsTd className="max-w-[16rem]">
                           <p className="font-medium text-foreground">
                             {jobNameLabel(job.job_name)}
                           </p>
-                          <p className="text-xs text-muted">{job.job_name}</p>
+                          <p className="truncate text-xs text-muted" title={job.job_name}>
+                            {job.job_name}
+                          </p>
                         </OpsTd>
-                        <OpsTd className="whitespace-nowrap">
+                        <OpsTd fit>
                           {jobLastStatusLabel(job.last_status)}
                         </OpsTd>
-                        <OpsTd className="whitespace-nowrap">
+                        <OpsTd fit>
                           {formatDateTime(job.started_at)}
                         </OpsTd>
-                        <OpsTd className="whitespace-nowrap">
+                        <OpsTd fit>
                           {formatDurationMs(job.duration_ms)}
                         </OpsTd>
-                        <OpsTd className="tabular-nums">
+                        <OpsTd fit className="tabular-nums">
                           {job.rows_affected === null
                             ? "—"
                             : job.rows_affected.toLocaleString("pt-BR")}
                         </OpsTd>
-                        <OpsTd className="max-w-xs break-words text-muted">
+                        <OpsTd
+                          className="max-w-[14rem] truncate text-muted"
+                          title={job.error_message || undefined}
+                        >
                           {job.error_message || "—"}
                         </OpsTd>
                       </tr>

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { opsApi } from "@/services/api";
 import type { OpsChurchListResponse } from "@/types/opsChurches";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
@@ -27,6 +28,7 @@ import { formatCnpj } from "@/lib/opsFormat";
 import {
   OpsBadge,
   OpsButton,
+  OpsButtonLink,
   OpsEmpty,
   OpsError,
   OpsFilterBar,
@@ -231,14 +233,15 @@ export function ChurchesListView() {
             <option value="cnpj:desc">CNPJ Z–A</option>
           </OpsSelect>
           <div className="flex items-end gap-2 lg:col-span-6">
-            <OpsButton type="submit">Buscar</OpsButton>
+            <OpsButton type="submit">
+              <Search className="h-4 w-4" aria-hidden />
+              Buscar
+            </OpsButton>
             {filtered ? (
-              <Link
-                href="/churches"
-                className="inline-flex min-h-11 items-center rounded-md border border-gray-300 px-4 text-sm font-medium text-primary hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
+              <OpsButtonLink href="/churches">
+                <X className="h-4 w-4" aria-hidden />
                 Limpar filtros
-              </Link>
+              </OpsButtonLink>
             ) : null}
           </div>
         </form>
@@ -260,11 +263,13 @@ export function ChurchesListView() {
             <OpsTableHead>
               <tr>
                 <OpsTh>Igreja</OpsTh>
-                <OpsTh>CNPJ</OpsTh>
-                <OpsTh>Plano</OpsTh>
-                <OpsTh>Assinatura</OpsTh>
-                <OpsTh>Situação</OpsTh>
-                <OpsTh className="text-right">Membros ativos</OpsTh>
+                <OpsTh fit>CNPJ</OpsTh>
+                <OpsTh fit>Plano</OpsTh>
+                <OpsTh fit>Assinatura</OpsTh>
+                <OpsTh fit>Situação</OpsTh>
+                <OpsTh fit className="text-right">
+                  Membros ativos
+                </OpsTh>
               </tr>
             </OpsTableHead>
             <tbody>
@@ -278,29 +283,29 @@ export function ChurchesListView() {
                       onChurchRowClick(event, href, router.push)
                     }
                   >
-                    <OpsTd>
+                    <OpsTd className="max-w-[18rem]" title={church.name}>
                       <Link
                         href={href}
-                        className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="block truncate font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         {church.name}
                       </Link>
                     </OpsTd>
-                    <OpsTd className="font-mono text-xs text-foreground">
+                    <OpsTd fit className="font-mono text-xs text-foreground">
                       {formatCnpj(church.cnpj)}
                     </OpsTd>
-                    <OpsTd>{planTypeLabel(church.plan_type)}</OpsTd>
-                    <OpsTd>
+                    <OpsTd fit>{planTypeLabel(church.plan_type)}</OpsTd>
+                    <OpsTd fit>
                       {subscriptionStatusLabel(church.subscription_status)}
                     </OpsTd>
-                    <OpsTd>
+                    <OpsTd fit>
                       <OpsBadge
                         tone={church.commercially_active ? "success" : "neutral"}
                       >
                         {commerciallyActiveLabel(church.commercially_active)}
                       </OpsBadge>
                     </OpsTd>
-                    <OpsTd className="text-right tabular-nums">
+                    <OpsTd fit className="text-right tabular-nums">
                       {church.members_active_count}
                     </OpsTd>
                   </tr>

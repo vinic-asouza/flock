@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { LogIn } from "lucide-react";
 import { useOpsAuth } from "@/context/OpsAuthContext";
 import { formatOpsAuthError } from "@/lib/opsAuthErrors";
 import { OPS_BRAND } from "@/lib/opsNav";
@@ -89,6 +90,7 @@ export function LoginForm() {
           />
 
           <OpsButton type="submit" disabled={isSubmitting}>
+            <LogIn className="h-4 w-4" aria-hidden />
             {isSubmitting ? "Entrando…" : "Entrar"}
           </OpsButton>
         </form>

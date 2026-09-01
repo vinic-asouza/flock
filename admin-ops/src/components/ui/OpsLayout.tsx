@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { OpsButton } from "@/components/ui/OpsButton";
 
@@ -6,19 +7,25 @@ export function OpsPanel({
   title,
   children,
   className,
+  bodyClassName,
+  padded = true,
 }: {
   title?: string;
   children: ReactNode;
   className?: string;
+  bodyClassName?: string;
+  padded?: boolean;
 }) {
   return (
-    <section className={cn("rounded-lg border border-gray-200 bg-white", className)}>
+    <section
+      className={cn("overflow-hidden rounded-lg border border-gray-200 bg-white", className)}
+    >
       {title ? (
         <h2 className="border-b border-gray-100 px-5 py-3 text-sm font-semibold text-primary">
           {title}
         </h2>
       ) : null}
-      <div className="p-5">{children}</div>
+      <div className={cn(padded && "p-5", bodyClassName)}>{children}</div>
     </section>
   );
 }
@@ -64,10 +71,21 @@ export function OpsFilterBar({ children }: { children: ReactNode }) {
   );
 }
 
-export function OpsTable({ children }: { children: ReactNode }) {
+export function OpsTable({
+  children,
+  embedded = false,
+}: {
+  children: ReactNode;
+  embedded?: boolean;
+}) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-      <table className="min-w-full text-left text-sm">{children}</table>
+    <div
+      className={cn(
+        "overflow-x-auto",
+        embedded ? "" : "rounded-lg border border-gray-200 bg-white"
+      )}
+    >
+      <table className="w-full table-auto text-left text-sm">{children}</table>
     </div>
   );
 }
@@ -83,23 +101,44 @@ export function OpsTableHead({ children }: { children: ReactNode }) {
 export function OpsTh({
   children,
   className,
+  fit,
 }: {
   children: ReactNode;
   className?: string;
+  fit?: boolean;
 }) {
   return (
-    <th className={cn("px-4 py-3 font-medium", className)}>{children}</th>
+    <th
+      className={cn(
+        "px-4 py-3 font-medium whitespace-nowrap",
+        fit && "w-px",
+        className
+      )}
+    >
+      {children}
+    </th>
   );
 }
 
 export function OpsTd({
   children,
   className,
+  fit,
+  title,
 }: {
   children: ReactNode;
   className?: string;
+  fit?: boolean;
+  title?: string;
 }) {
-  return <td className={cn("px-4 py-3", className)}>{children}</td>;
+  return (
+    <td
+      title={title}
+      className={cn("px-4 py-3 align-middle", fit && "w-px whitespace-nowrap", className)}
+    >
+      {children}
+    </td>
+  );
 }
 
 export function OpsPagination({
@@ -139,6 +178,7 @@ export function OpsPagination({
           disabled={!hasPrevPage}
           onClick={onPrev}
         >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
           Anterior
         </OpsButton>
         <OpsButton
@@ -148,6 +188,7 @@ export function OpsPagination({
           onClick={onNext}
         >
           Próxima
+          <ChevronRight className="h-4 w-4" aria-hidden />
         </OpsButton>
       </div>
     </div>
