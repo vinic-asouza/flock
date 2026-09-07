@@ -1,39 +1,29 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://flockapp.com.br';
+const DEFAULT_SITE_URL = 'https://flockapp.com.br';
+
+export function normalizeSiteUrl(raw: string): string {
+  return raw.replace(/\/+$/, '');
+}
+
+export function buildSitemapEntries(baseUrl: string): MetadataRoute.Sitemap {
+  const origin = normalizeSiteUrl(baseUrl);
 
   return [
     {
-      url: baseUrl,
-      lastModified: new Date(),
+      url: origin,
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
-      url: `${baseUrl}/waitlist`,
-      lastModified: new Date(),
+      url: `${origin}/waitlist`,
       changeFrequency: 'monthly',
       priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/#features`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#demo`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/#pricing`,
-      lastModified: new Date(),
-      changeFrequency: 'monthly',
-      priority: 0.8,
     },
   ];
 }
 
+export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL;
+  return buildSitemapEntries(baseUrl);
+}
