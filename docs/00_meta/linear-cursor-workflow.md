@@ -1,8 +1,8 @@
 ---
 type: meta-workflow
 titulo: Linear + Cursor Development Workflow
-ultima_atualizacao: 2026-08-31
-versao: "1.8"
+ultima_atualizacao: 2026-09-10
+versao: "1.9"
 tags: [meta, linear, cursor, workflow, agentes]
 ---
 
@@ -877,7 +877,7 @@ Abrir PR **não** é merge e **não** é deploy. Não autoriza mudar a etapa Lin
 
 ### Quando abrir e quando só atualizar
 
-- **Abrir** o PR (`gh pr create`) ao final da atuação dos Engineers em `In Progress`, depois de commit + push. **Um PR por Issue.**
+- **Abrir** o PR (`gh pr create` com `--base` conforme §15.7) ao final da atuação dos Engineers em `In Progress`, depois de commit + push. **Um PR por Issue.**
 - **Atualizar** = `git push` na mesma branch. Não criar segundo PR.
 - “Voltar ajustes” (Engineers de novo em `In Progress`): commit + push no PR existente; abrir só se ainda não houver PR (desvio).
 - Technical Writer, se commitar em `Document`: **push no PR já aberto**. Não abrir PR novo nesta etapa.
@@ -895,7 +895,23 @@ Abrir PR **não** é merge e **não** é deploy. Não autoriza mudar a etapa Lin
 
 ### Em `Done`
 
-O PR já está aberto e atualizado. O Gate §15.3 pergunta só o **merge**.
+O PR já está aberto e atualizado. O Gate §15.3 pergunta só o **merge** (na base correta: `main` ou `major-v1` — §15.7).
+
+---
+
+## 15.7 Release tracks / base do PR (MVP vs v1)
+
+Milestone Linear define a **base** da feature branch e do PR. Padrão prescritivo: [[05_padroes/padroes-de-git]] GIT-025.
+
+| Milestone / vínculo | Base da feature | Base do PR (`gh pr create --base`) | Done da issue |
+| --- | --- | --- | --- |
+| `MVP` (e demais ≠ `v1`) | `main` | `main` | merge em `main` |
+| `v1` ou filha de DEV-108 | `major-v1` | `major-v1` (**nunca** `main`) | merge em `major-v1` (não é produção) |
+| Épica DEV-108 | — | cutover `major-v1` → `main` | só com liberação explícita de release |
+
+Ao **iniciar** uma Issue do milestone `v1` (ou filha de DEV-108): atualizar/rebasear `major-v1` com `main` antes de criar a feature branch, para não divergir durante o MVP.
+
+Done em `major-v1` **não** autoriza deploy. Cutover para produção = Done da épica DEV-108 + PR `major-v1` → `main` liberado pelo fundador.
 
 ---
 

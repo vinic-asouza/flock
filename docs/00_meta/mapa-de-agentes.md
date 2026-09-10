@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-08-31
-versao: "1.7"
+ultima_atualizacao: 2026-09-10
+versao: "1.8"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -124,13 +124,15 @@ Detalhe: workflow §15.5.
 
 Abrir o PR em `In Progress` (um por Issue). Depois só **push** na mesma branch.
 
+**Base do PR:** milestone `MVP` (e demais ≠ `v1`) → `--base main`; milestone `v1` ou filha de DEV-108 → `--base major-v1` (nunca `main`). Ao iniciar Issue v1, atualizar `major-v1` com `main` antes da feature. Done em `major-v1` ≠ produção; cutover só via épica DEV-108.
+
 Não abrir o primeiro PR em `Review`, `Document` ou `Done` — a automação GitHub do Linear regressa para `In Progress`.
 
 Depois de push/`gh pr create`: reler a Issue; restaurar o status da etapa se tiver mudado.
 
 Em `Done`: só merge com “sim” no chat.
 
-Detalhe: workflow §15.6.
+Detalhe: workflow §15.6 e §15.7.
 
 ---
 
