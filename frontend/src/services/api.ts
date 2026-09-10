@@ -1255,6 +1255,123 @@ class ApiService {
     const response = await this.api.delete(`/integration-links/${id}`);
     return response.data;
   }
+
+  // ========== Ensino (Teaching) ==========
+
+  async listTeachingPrograms(params?: { congregation_id?: string }) {
+    const query = new URLSearchParams();
+    if (params?.congregation_id) query.append('congregation_id', params.congregation_id);
+    const url = `/teaching/programs${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
+  async createTeachingProgram(data: {
+    name: string;
+    description?: string | null;
+    congregation_id?: string | null;
+  }) {
+    const response = await this.api.post('/teaching/programs', data);
+    return response.data;
+  }
+
+  async updateTeachingProgram(
+    id: string,
+    data: Partial<{ name: string; description: string | null; congregation_id: string | null }>
+  ) {
+    const response = await this.api.patch(`/teaching/programs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteTeachingProgram(id: string) {
+    const response = await this.api.delete(`/teaching/programs/${id}`);
+    return response.data;
+  }
+
+  async listTeachingClasses(params?: {
+    congregation_id?: string;
+    program_id?: string;
+    status?: string;
+  }) {
+    const query = new URLSearchParams();
+    if (params?.congregation_id) query.append('congregation_id', params.congregation_id);
+    if (params?.program_id) query.append('program_id', params.program_id);
+    if (params?.status) query.append('status', params.status);
+    const url = `/teaching/classes${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
+  async getTeachingClass(id: string) {
+    const response = await this.api.get(`/teaching/classes/${id}`);
+    return response.data;
+  }
+
+  async createTeachingClass(data: Record<string, unknown>) {
+    const response = await this.api.post('/teaching/classes', data);
+    return response.data;
+  }
+
+  async updateTeachingClass(id: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/teaching/classes/${id}`, data);
+    return response.data;
+  }
+
+  async deleteTeachingClass(id: string) {
+    const response = await this.api.delete(`/teaching/classes/${id}`);
+    return response.data;
+  }
+
+  async listTeachingEnrollments(classId: string) {
+    const response = await this.api.get(`/teaching/classes/${classId}/enrollments`);
+    return response.data;
+  }
+
+  async createTeachingEnrollment(classId: string, data: Record<string, unknown>) {
+    const response = await this.api.post(`/teaching/classes/${classId}/enrollments`, data);
+    return response.data;
+  }
+
+  async resolveTeachingEnrollment(
+    enrollmentId: string,
+    data: { action: 'link_member'; member_id: string } | { action: 'keep_guest' }
+  ) {
+    const response = await this.api.patch(`/teaching/enrollments/${enrollmentId}/resolve`, data);
+    return response.data;
+  }
+
+  async deleteTeachingEnrollment(enrollmentId: string) {
+    const response = await this.api.delete(`/teaching/enrollments/${enrollmentId}`);
+    return response.data;
+  }
+
+  async getTeachingPublicLink(classId: string) {
+    const response = await this.api.get(`/teaching/classes/${classId}/public-link`);
+    return response.data;
+  }
+
+  async createTeachingPublicLink(classId: string, data: Record<string, unknown> = {}) {
+    const response = await this.api.post(`/teaching/classes/${classId}/public-link`, data);
+    return response.data;
+  }
+
+  async updateTeachingPublicLink(classId: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/teaching/classes/${classId}/public-link`, data);
+    return response.data;
+  }
+
+  async validateTeachingPublicLink(token: string) {
+    const response = await this.api.get(`/public/teaching/${token}`);
+    return response.data;
+  }
+
+  async enrollViaTeachingPublicLink(
+    token: string,
+    data: { full_name: string; whatsapp: string; birth_date: string; email?: string }
+  ) {
+    const response = await this.api.post(`/public/teaching/${token}`, data);
+    return response.data;
+  }
 }
 
 // Instância singleton
