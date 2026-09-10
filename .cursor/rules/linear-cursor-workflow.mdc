@@ -33,6 +33,7 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 8. **Status vs GitHub (workflow §15.6 / §11.1):** abrir o **primeiro** PR da Issue em `In Progress` (um por Issue; depois só push). Não abrir o primeiro PR em `Review`, `Document` ou `Done`. Em `save_issue`, omitir `state` (exceto restaurar o status da etapa ou concluir para `Done`); nunca usar tipo genérico `started`. Se a automação Git/PR regressar o status, restaurar o **nome exato** da etapa imediatamente (`In Progress` / `Review` / `Document` / `Done`).
 9. **Commit por passo (workflow §15.4):** cada atuação que alterar código ou `docs/` permanentes gera **um commit** ao final daquele papel (BE, FE, correção pós-review, Technical Writer), seguido de **push**.
 10. **Gate de merge ao `Done` (workflow §15.3):** o PR já deve estar aberto. Ao autorizar `Done`, perguntar se deseja **mergear**. Só mergear com “sim” inequívoco. Sem PR: informar o desvio; não abrir PR em `Done` salvo pedido explícito + restaurar `Done`.
+11. **Release tracks (workflow §15.7 / GIT-025):** milestone `v1` (ou filha de DEV-108) → feature e PR com base `major-v1` (nunca `main`); milestone MVP (e demais ≠ `v1`) → base `main`. Done em `major-v1` ≠ produção. Cutover `major-v1` → `main` só via épica DEV-108 com liberação explícita. Ao iniciar Issue v1, atualizar `major-v1` com `main` antes da feature branch.
 
 O nome do status de review no Linear é **`Review`** (não “In Review”).
 

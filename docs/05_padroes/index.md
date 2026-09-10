@@ -17,6 +17,6 @@ Arquitetura descritiva: [[03_arquitetura/visao-geral]].
 | [[05_padroes/padroes-de-api]] | Rotas, Joi, respostas, erros, auth HTTP | API-001…035 |
 | [[05_padroes/padroes-de-banco-de-dados]] | Schema, migrations Supabase, índices, acesso | DB-001…038 |
 | [[05_padroes/padroes-de-testes]] | Estratégia Jest (adoção), anti-patterns | TEST-001…022 |
-| [[05_padroes/padroes-de-git]] | Branches, Conventional Commits, PRs | GIT-001…024 |
+| [[05_padroes/padroes-de-git]] | Branches, Conventional Commits, PRs | GIT-001…025 |
 
 > Path da KB: `docs/05_padroes/`. Workflow: [[00_meta/linear-cursor-workflow]].
