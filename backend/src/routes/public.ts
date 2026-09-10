@@ -5,8 +5,13 @@ import {
   listPublicRegistrationGroups,
 } from '../controllers/publicRegistrationController';
 import { validateIntegrationLink, createIntegrationMemberViaPublicLink } from '../controllers/publicIntegrationController';
+import {
+  getPublicTeachingLink,
+  createPublicTeachingEnrollment,
+} from '../controllers/publicTeachingController';
 import publicRegistrationAuth from '../middlewares/publicRegistrationAuth';
 import publicIntegrationAuth from '../middlewares/publicIntegrationAuth';
+import publicTeachingAuth from '../middlewares/publicTeachingAuth';
 import { publicPostLimiter } from '../middlewares/publicPostLimiter';
 
 const router = Router();
@@ -17,5 +22,8 @@ router.post('/registration/:token', publicPostLimiter, publicRegistrationAuth, c
 
 router.get('/integration/:token', publicIntegrationAuth, validateIntegrationLink);
 router.post('/integration/:token', publicPostLimiter, publicIntegrationAuth, createIntegrationMemberViaPublicLink);
+
+router.get('/teaching/:token', publicTeachingAuth, getPublicTeachingLink);
+router.post('/teaching/:token', publicPostLimiter, publicTeachingAuth, createPublicTeachingEnrollment);
 
 export default router;
