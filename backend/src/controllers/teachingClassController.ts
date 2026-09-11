@@ -23,6 +23,22 @@ function emptyToNull(value: unknown): string | null {
   return String(value);
 }
 
+const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+const ALLOWED_CLASS_SORT_FIELDS = ['start_date', 'created_at', 'name'] as const;
+
+function toDateOnly(value: unknown): string | null {
+  if (value === undefined || value === null || value === '') return null;
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : null;
+}
+
+function parseListIsoDate(raw: unknown): { ok: true; value: string | null } | { ok: false } {
+  if (raw === undefined || raw === null || raw === '') return { ok: true, value: null };
+  const value = String(raw);
+  if (!ISO_DATE_ONLY.test(value)) return { ok: false };
+  return { ok: true, value };
+}
+
 async function validateTeachers(
   teacherIds: string[],
   responsibleId: string,
@@ -148,6 +164,34 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
     const program_id = (req.query.program_id as string) || '';
     const status = (req.query.status as string) || '';
     const search = (req.query.search as string) || '';
+    const start_date_from = parseListIsoDate(req.query.start_date_from);
+    const start_date_to = parseListIsoDate(req.query.start_date_to);
+    if (!start_date_from.ok || !start_date_to.ok) {
+      return res.status(400).json({
+        error: 'Filtro inválido',
+        details: 'As datas de início devem estar no formato YYYY-MM-DD',
+      });
+    }
+    if (
+      start_date_from.value &&
+      start_date_to.value &&
+      start_date_to.value < start_date_from.value
+    ) {
+      return res.status(400).json({
+        error: 'Filtro inválido',
+        details: 'A data final do filtro deve ser igual ou posterior à data inicial',
+      });
+    }
+
+    const sort_by_raw = (req.query.sort_by as string) || 'start_date';
+    const sort_by = ALLOWED_CLASS_SORT_FIELDS.includes(
+      sort_by_raw as (typeof ALLOWED_CLASS_SORT_FIELDS)[number]
+    )
+      ? sort_by_raw
+      : 'start_date';
+    const defaultOrder = sort_by === 'name' ? 'asc' : 'desc';
+    const sort_order_raw = (req.query.sort_order as string) || defaultOrder;
+    const sort_order = sort_order_raw === 'asc' ? 'asc' : 'desc';
 
     const scoped = resolveScopedCongregationFilter(req.church!, congregation_id, {
       includeNullAsChurchWide: false,
@@ -175,8 +219,16 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
     if (search.trim()) {
       query = query.ilike('name', `%${search.trim()}%`);
     }
+    if (start_date_from.value) {
+      query = query.gte('start_date', start_date_from.value);
+    }
+    if (start_date_to.value) {
+      query = query.lte('start_date', start_date_to.value);
+    }
 
-    query = query.order('name', { ascending: true });
+    query = query
+      .order(sort_by, { ascending: sort_order === 'asc' })
+      .order('id', { ascending: true });
 
     const { data: classes, error } = await query;
     if (error) {
@@ -383,6 +435,8 @@ export const createTeachingClass = async (req: AuthRequest, res: Response) => {
           name: value.name.trim(),
           location: emptyToNull(value.location),
           schedule: emptyToNull(value.schedule),
+          start_date: value.start_date,
+          end_date: emptyToNull(value.end_date),
           status: value.status || 'draft',
           responsible_id: value.responsible_id,
         },
@@ -535,8 +589,21 @@ export const updateTeachingClass = async (req: AuthRequest, res: Response) => {
     if (value.name !== undefined) updates.name = value.name.trim();
     if (value.location !== undefined) updates.location = emptyToNull(value.location);
     if (value.schedule !== undefined) updates.schedule = emptyToNull(value.schedule);
+    if (value.start_date !== undefined) updates.start_date = value.start_date;
+    if (value.end_date !== undefined) updates.end_date = emptyToNull(value.end_date);
     if (value.status !== undefined) updates.status = value.status;
     if (value.responsible_id !== undefined) updates.responsible_id = value.responsible_id;
+
+    const nextStartDate =
+      value.start_date !== undefined ? value.start_date : toDateOnly(existing.start_date);
+    const nextEndDate =
+      value.end_date !== undefined ? emptyToNull(value.end_date) : toDateOnly(existing.end_date);
+    if (nextStartDate && nextEndDate && nextEndDate < nextStartDate) {
+      return res.status(400).json({
+        error: 'Período inválido',
+        details: 'A data de término deve ser igual ou posterior à data de início',
+      });
+    }
 
     // Se o responsável mudou, garantir que não esteja na lista de professores
     if (value.responsible_id && value.responsible_id !== existing.responsible_id) {

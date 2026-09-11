@@ -10,6 +10,24 @@ export const teachingClassStatuses = [
 
 export type TeachingClassStatusValue = (typeof teachingClassStatuses)[number];
 
+const isoDateOnly = Joi.string()
+  .pattern(/^\d{4}-\d{2}-\d{2}$/)
+  .messages({
+    'string.pattern.base': 'A data deve estar no formato YYYY-MM-DD',
+  });
+
+function assertClassPeriod(
+  value: { start_date?: string | null; end_date?: string | null },
+  helpers: Joi.CustomHelpers
+) {
+  const start = value.start_date || '';
+  const end = value.end_date || '';
+  if (start && end && end < start) {
+    return helpers.error('any.custom');
+  }
+  return value;
+}
+
 export const createTeachingProgramSchema = Joi.object({
   name: Joi.string().trim().min(2).max(100).required().messages({
     'string.empty': 'O nome do programa é obrigatório',
@@ -56,6 +74,11 @@ export const createTeachingClassSchema = Joi.object({
   }),
   location: Joi.string().allow('', null).optional().max(255),
   schedule: Joi.string().allow('', null).optional().max(500),
+  start_date: isoDateOnly.required().messages({
+    'any.required': 'A data de início é obrigatória',
+    'string.empty': 'A data de início é obrigatória',
+  }),
+  end_date: isoDateOnly.allow('', null).optional(),
   status: Joi.string()
     .valid(...teachingClassStatuses)
     .optional()
@@ -71,7 +94,11 @@ export const createTeachingClassSchema = Joi.object({
     .items(Joi.string().uuid().messages({ 'string.guid': 'Cada professor deve ser um UUID válido' }))
     .optional()
     .default([]),
-});
+})
+  .custom(assertClassPeriod)
+  .messages({
+    'any.custom': 'A data de término deve ser igual ou posterior à data de início',
+  });
 
 export const updateTeachingClassSchema = Joi.object({
   program_id: Joi.string().uuid().optional().messages({
@@ -87,6 +114,8 @@ export const updateTeachingClassSchema = Joi.object({
   }),
   location: Joi.string().allow('', null).optional().max(255),
   schedule: Joi.string().allow('', null).optional().max(500),
+  start_date: isoDateOnly.optional(),
+  end_date: isoDateOnly.allow('', null).optional(),
   status: Joi.string()
     .valid(...teachingClassStatuses)
     .optional()
@@ -99,7 +128,12 @@ export const updateTeachingClassSchema = Joi.object({
   teacher_ids: Joi.array()
     .items(Joi.string().uuid().messages({ 'string.guid': 'Cada professor deve ser um UUID válido' }))
     .optional(),
-}).min(1);
+})
+  .min(1)
+  .custom(assertClassPeriod)
+  .messages({
+    'any.custom': 'A data de término deve ser igual ou posterior à data de início',
+  });
 
 export const replaceTeachingTeachersSchema = Joi.object({
   teacher_ids: Joi.array()

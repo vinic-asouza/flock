@@ -359,6 +359,8 @@ export interface TeachingClass {
   name: string;
   location?: string | null;
   schedule?: string | null;
+  start_date: string;
+  end_date?: string | null;
   status: TeachingClassStatus;
   responsible_id: string;
   created_at: Date;
