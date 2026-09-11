@@ -15,6 +15,7 @@ import type {
   TeachingProgram,
 } from '@/types';
 import { STATUS_OPTIONS } from './constants';
+import { toDateInputValue } from './dates';
 import { joinTeachingSchedule, splitTeachingSchedule } from './schedule';
 
 export function ProgramFormModal({
@@ -168,6 +169,8 @@ export function ClassFormModal({
   const [location, setLocation] = useState('');
   const [scheduleDay, setScheduleDay] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<TeachingClassStatus>('draft');
   const [responsibleId, setResponsibleId] = useState('');
   const [responsibleLabel, setResponsibleLabel] = useState('');
@@ -213,6 +216,8 @@ export function ClassFormModal({
     const split = splitTeachingSchedule(teachingClass?.schedule);
     setScheduleDay(split.day);
     setScheduleTime(split.time);
+    setStartDate(toDateInputValue(teachingClass?.start_date));
+    setEndDate(toDateInputValue(teachingClass?.end_date));
     setStatus(teachingClass?.status || 'draft');
 
     const nextResponsibleId =
@@ -360,6 +365,14 @@ export function ClassFormModal({
   };
 
   const handleSave = async () => {
+    if (!startDate) {
+      toast.error('Informe a data de início da turma');
+      return;
+    }
+    if (endDate && endDate < startDate) {
+      toast.error('A data de término deve ser igual ou posterior à data de início');
+      return;
+    }
     try {
       setSaving(true);
       const payload = {
@@ -368,6 +381,8 @@ export function ClassFormModal({
         name,
         location: location || null,
         schedule: joinTeachingSchedule(scheduleDay, scheduleTime),
+        start_date: startDate,
+        end_date: endDate || null,
         status,
         responsible_id: responsibleId,
         teacher_ids: teacherIds.filter((id) => id !== responsibleId),
@@ -397,7 +412,14 @@ export function ClassFormModal({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={saving || !programId || !congregationId || !responsibleId || name.trim().length < 2}
+            disabled={
+              saving ||
+              !programId ||
+              !congregationId ||
+              !responsibleId ||
+              !startDate ||
+              name.trim().length < 2
+            }
             className="min-h-11"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Salvar'}
@@ -474,6 +496,21 @@ export function ClassFormModal({
             value={scheduleTime}
             onChange={(e) => setScheduleTime(e.target.value)}
             className="text-base"
+          />
+          <Input
+            label="Data de início"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="text-base min-h-11"
+          />
+          <Input
+            label="Data de término"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="text-base min-h-11"
+            helperText="Opcional. Deve ser igual ou posterior ao início."
           />
           <div className="sm:col-span-2">
             <Select

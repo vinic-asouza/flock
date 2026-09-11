@@ -1297,11 +1297,21 @@ class ApiService {
     congregation_id?: string;
     program_id?: string;
     status?: string;
+    search?: string;
+    start_date_from?: string;
+    start_date_to?: string;
+    sort_by?: string;
+    sort_order?: string;
   }) {
     const query = new URLSearchParams();
     if (params?.congregation_id) query.append('congregation_id', params.congregation_id);
     if (params?.program_id) query.append('program_id', params.program_id);
     if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+    if (params?.start_date_from) query.append('start_date_from', params.start_date_from);
+    if (params?.start_date_to) query.append('start_date_to', params.start_date_to);
+    if (params?.sort_by) query.append('sort_by', params.sort_by);
+    if (params?.sort_order) query.append('sort_order', params.sort_order);
     const url = `/teaching/classes${query.toString() ? `?${query}` : ''}`;
     const response = await this.api.get(url);
     return response.data;

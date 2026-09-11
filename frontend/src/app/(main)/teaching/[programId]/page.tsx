@@ -4,11 +4,19 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Clock, Loader2, Pencil, Plus, School, User } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Clock, Loader2, Pencil, Plus, School, User } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ClassFormModal, ProgramFormModal } from '@/components/teaching/TeachingModals';
+import {
+  TeachingClassFiltersBar,
+  DEFAULT_CLASS_FILTERS,
+  hasActiveClassFilters,
+  parseClassSort,
+  type TeachingClassListFilters,
+} from '@/components/teaching/TeachingClassFiltersBar';
 import { CongregationBadge, StatusBadge, TeachingEmptyState } from '@/components/teaching/TeachingUi';
+import { formatClassPeriod } from '@/components/teaching/dates';
 import { READER_TOOLTIP } from '@/components/teaching/constants';
 import {
   TeachingViewSelector,
@@ -34,6 +42,13 @@ function TeachingProgramContent() {
   const [programModalOpen, setProgramModalOpen] = useState(false);
   const [classModalOpen, setClassModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<TeachingClass | null>(null);
+  const [filters, setFilters] = useState<TeachingClassListFilters>(DEFAULT_CLASS_FILTERS);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(filters.search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
 
   const programLockedCongregation = program?.congregation_id || null;
   const showViewSelector = Boolean(program) && !programLockedCongregation;
@@ -56,9 +71,31 @@ function TeachingProgramContent() {
         }))
       );
 
-      const classParams: { program_id: string; congregation_id?: string } = {
+      const { sort_by, sort_order } = parseClassSort(filters.sort);
+      const dateRangeValid =
+        !filters.startDateFrom ||
+        !filters.startDateTo ||
+        filters.startDateTo >= filters.startDateFrom;
+      const classParams: {
+        program_id: string;
+        congregation_id?: string;
+        status?: string;
+        search?: string;
+        start_date_from?: string;
+        start_date_to?: string;
+        sort_by?: string;
+        sort_order?: string;
+      } = {
         program_id: programId,
+        sort_by,
+        sort_order,
       };
+      if (filters.status) classParams.status = filters.status;
+      if (debouncedSearch) classParams.search = debouncedSearch;
+      if (dateRangeValid) {
+        if (filters.startDateFrom) classParams.start_date_from = filters.startDateFrom;
+        if (filters.startDateTo) classParams.start_date_to = filters.startDateTo;
+      }
       if (!programData.congregation_id) {
         if (view === 'congregation' && !congregationId) {
           setClasses([]);
@@ -78,12 +115,22 @@ function TeachingProgramContent() {
     } finally {
       setLoading(false);
     }
-  }, [congregationId, programId, view]);
+  }, [
+    congregationId,
+    debouncedSearch,
+    filters.sort,
+    filters.startDateFrom,
+    filters.startDateTo,
+    filters.status,
+    programId,
+    view,
+  ]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
+  const filtersActive = hasActiveClassFilters({ ...filters, search: debouncedSearch });
   const programList = useMemo(() => (program ? [program] : []), [program]);
   const programOptions = useMemo(
     () => (program ? [{ value: program.id, label: program.name }] : []),
@@ -163,6 +210,13 @@ function TeachingProgramContent() {
 
       {showViewSelector ? <TeachingViewSelector /> : null}
 
+      {program && !waitingForCongregation ? (
+        <TeachingClassFiltersBar
+          filters={filters}
+          onChange={(changes) => setFilters((prev) => ({ ...prev, ...changes }))}
+        />
+      ) : null}
+
       {loading ? (
         <div className="flex items-center justify-center py-16 text-gray-500">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
@@ -172,9 +226,13 @@ function TeachingProgramContent() {
         <TeachingEmptyState text="Selecione uma congregação para ver as turmas desta visão." />
       ) : classes.length === 0 ? (
         <TeachingEmptyState
-          text="Nenhuma turma neste programa ainda. Crie a primeira para gerenciar inscritos e gerar o link público."
+          text={
+            filtersActive
+              ? 'Nenhuma turma corresponde aos filtros.'
+              : 'Nenhuma turma neste programa ainda. Crie a primeira para gerenciar inscritos e gerar o link público.'
+          }
           action={
-            !readOnly ? (
+            !readOnly && !filtersActive ? (
               <Button onClick={openCreateClass} className="min-h-11">
                 <Plus className="h-4 w-4 mr-2" />
                 Criar turma
@@ -184,7 +242,9 @@ function TeachingProgramContent() {
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {classes.map((item) => (
+          {classes.map((item) => {
+            const period = formatClassPeriod(item.start_date, item.end_date);
+            return (
             <Link
               key={item.id}
               href={`/teaching/${programId}/${item.id}${queryString}`}
@@ -203,6 +263,12 @@ function TeachingProgramContent() {
                 <StatusBadge status={item.status} />
               </div>
               <div className="mt-3 space-y-1.5 pl-12 text-sm text-gray-500">
+                {period ? (
+                  <div className="flex items-center gap-1.5">
+                    <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="truncate">{period}</span>
+                  </div>
+                ) : null}
                 {item.schedule ? (
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -215,7 +281,8 @@ function TeachingProgramContent() {
                 </div>
               </div>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

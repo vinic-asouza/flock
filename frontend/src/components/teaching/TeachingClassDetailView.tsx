@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import {
+  CalendarDays,
   Check,
   Church,
   Clock,
@@ -29,8 +30,9 @@ import { Pagination } from '@/components/common/Pagination';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import apiService, { formatApiError } from '@/services/api';
 import type { TeachingClass, TeachingEnrollment, TeachingPublicLink } from '@/types';
-import { formatPhone, maskPhoneInput } from '@/utils';
+import { formatDate, formatPhone, maskPhoneInput } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { formatClassPeriod } from './dates';
 
 const ENROLLMENTS_PER_PAGE = 8;
 
@@ -274,6 +276,32 @@ export function TeachingClassDetailView({
                 Horário
               </dt>
               <dd className="text-sm text-gray-900">{classDetails.schedule || '—'}</dd>
+            </div>
+            <div>
+              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                <CalendarDays className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                Período
+              </dt>
+              <dd className="text-sm text-gray-900">
+                {classDetails.start_date ? (
+                  <>
+                    {formatClassPeriod(classDetails.start_date, classDetails.end_date)}
+                    {!classDetails.end_date ? (
+                      <span className="text-gray-500"> · sem término</span>
+                    ) : null}
+                  </>
+                ) : (
+                  '—'
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                Criada em
+              </dt>
+              <dd className="text-sm text-gray-900">
+                {formatDate(classDetails.created_at) || '—'}
+              </dd>
             </div>
           </dl>
         </Card>
