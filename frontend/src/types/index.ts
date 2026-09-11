@@ -410,6 +410,16 @@ export interface TeachingEnrollment {
     congregation?: { id: string; name: string; abbreviation?: string | null } | null;
     signals?: { N: boolean; W: boolean; D: boolean };
   }>;
+  member?: {
+    id: string;
+    name: string;
+    congregation_id?: string | null;
+    whatsapp?: string | null;
+    whatsapp_masked?: string | null;
+    age?: number | null;
+    birth?: string | null;
+    congregations?: { id: string; name: string; abbreviation?: string | null } | null;
+  } | null;
   created_at: string;
 }
 

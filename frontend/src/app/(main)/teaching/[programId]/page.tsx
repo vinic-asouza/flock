@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Loader2, Pencil, Plus, Users } from 'lucide-react';
+import { ArrowLeft, Loader2, Pencil, Plus, School, Users } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import {
@@ -197,16 +197,23 @@ function TeachingProgramContent() {
               onClick={() => setDetailClass(item)}
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="font-medium text-gray-900">{item.name}</div>
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
+                    <School className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 truncate">{item.name}</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {item.congregations
+                        ? getCongregationDisplayName(item.congregations)
+                        : 'Congregação'}
+                      {item.schedule ? ` · ${item.schedule}` : ''}
+                    </div>
+                  </div>
+                </div>
                 <StatusBadge status={item.status} />
               </div>
-              <div className="text-sm text-gray-500 mt-1">
-                {item.congregations
-                  ? getCongregationDisplayName(item.congregations)
-                  : 'Congregação'}
-                {item.schedule ? ` · ${item.schedule}` : ''}
-              </div>
-              <div className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+              <div className="text-sm text-gray-500 mt-3 flex items-center gap-1 pl-12">
                 <Users className="h-3.5 w-3.5" />
                 {item.responsible?.name || 'Sem responsável'}
               </div>

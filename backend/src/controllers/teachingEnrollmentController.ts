@@ -57,7 +57,11 @@ async function loadClassForChurch(classId: string, churchId: string) {
 }
 
 function serializeEnrollment(row: any) {
-  const masked = maskWhatsApp(row.whatsapp);
+  const rawWhatsapp =
+    row.kind === 'member'
+      ? row.members?.whatsapp || row.members?.phone || row.whatsapp || null
+      : row.whatsapp || null;
+  const masked = maskWhatsApp(rawWhatsapp);
   return {
     id: row.id,
     church_id: row.church_id,
@@ -70,6 +74,7 @@ function serializeEnrollment(row: any) {
     created_at: row.created_at,
     updated_at: row.updated_at,
     display_name: row.members?.name || row.full_name || null,
+    whatsapp: rawWhatsapp,
     whatsapp_masked: masked,
     age: calcAge(row.birth_date || row.members?.birth),
     member: row.members
@@ -77,6 +82,7 @@ function serializeEnrollment(row: any) {
           id: row.members.id,
           name: row.members.name,
           congregation_id: row.members.congregation_id,
+          whatsapp: row.members.whatsapp || row.members.phone || null,
           whatsapp_masked: maskWhatsApp(row.members.whatsapp || row.members.phone),
           age: calcAge(row.members.birth),
           birth: toBirthDateString(row.members.birth),
