@@ -29,7 +29,7 @@ import type {
   TeachingProgram,
   TeachingPublicLink,
 } from '@/types';
-import { formatPhone } from '@/utils';
+import { formatPhone, maskPhoneInput } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 import { STATUS_OPTIONS } from './constants';
 import { StatusBadge } from './TeachingUi';
@@ -853,8 +853,11 @@ export function ClassDetailModal({
                     <Input
                       label="WhatsApp"
                       value={guestWhatsapp}
-                      onChange={(e) => setGuestWhatsapp(e.target.value)}
+                      onChange={(e) => setGuestWhatsapp(maskPhoneInput(e.target.value))}
                       className="text-base"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      placeholder="(11) 99999-9999"
                     />
                     <Input
                       label="Nascimento"
@@ -873,7 +876,7 @@ export function ClassDetailModal({
                           await apiService.createTeachingEnrollment(teachingClass.id, {
                             type: 'guest',
                             full_name: guestName,
-                            whatsapp: guestWhatsapp,
+                            whatsapp: guestWhatsapp.replace(/\D/g, ''),
                             birth_date: guestBirth,
                           });
                           setGuestName('');
@@ -885,7 +888,11 @@ export function ClassDetailModal({
                           toast.error(formatApiError(err));
                         }
                       }}
-                      disabled={guestName.trim().length < 2 || !guestWhatsapp || !guestBirth}
+                      disabled={
+                        guestName.trim().length < 2 ||
+                        guestWhatsapp.replace(/\D/g, '').length < 10 ||
+                        !guestBirth
+                      }
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Adicionar convidado

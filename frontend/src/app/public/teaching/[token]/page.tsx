@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FlockLogo } from '@/components/ui/FlockLogo';
 import apiService, { formatApiError } from '@/services/api';
+import { maskPhoneInput } from '@/utils';
 
 type LinkInfo = {
   church_name: string;
@@ -67,7 +68,7 @@ export default function PublicTeachingPage() {
       setError(null);
       const result = await apiService.enrollViaTeachingPublicLink(token, {
         full_name: fullName,
-        whatsapp,
+        whatsapp: whatsapp.replace(/\D/g, ''),
         birth_date: birthDate,
         email: email || undefined,
       });
@@ -160,9 +161,12 @@ export default function PublicTeachingPage() {
             <Input
               label="WhatsApp"
               value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
+              onChange={(e) => setWhatsapp(maskPhoneInput(e.target.value))}
               required
               className="text-base"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(11) 99999-9999"
             />
             <Input
               label="Data de nascimento"
