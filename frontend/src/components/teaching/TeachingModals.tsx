@@ -573,6 +573,7 @@ export function ClassDetailModal({
   const [guestName, setGuestName] = useState('');
   const [guestWhatsapp, setGuestWhatsapp] = useState('');
   const [guestBirth, setGuestBirth] = useState('');
+  const [addMode, setAddMode] = useState<'member' | 'guest'>('member');
   const [enrollmentsPage, setEnrollmentsPage] = useState(1);
   const { options: memberOptionsData, setSearch } = useMemberOptions({
     congregationId: teachingClass.congregation_id,
@@ -785,91 +786,113 @@ export function ClassDetailModal({
                 <UserPlus className="h-4 w-4 text-gray-400" />
                 Adicionar inscrito
               </h3>
-              <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                <Select
-                  label="Membro"
-                  value={memberId}
-                  onChange={(value) => {
-                    setMemberId(value);
-                    const match = memberOptionsData.find((m) => m.id === value);
-                    setMemberLabel(match?.name || '');
-                  }}
-                  options={memberSelectOptions}
-                  searchable
-                  onSearchChange={setSearch}
-                  placeholder="Digite para buscar…"
-                />
-                <Button
-                  className="min-h-11 self-end"
-                  onClick={async () => {
-                    try {
-                      await apiService.createTeachingEnrollment(teachingClass.id, {
-                        type: 'member',
-                        member_id: memberId,
-                      });
-                      setMemberId('');
-                      setMemberLabel('');
-                      toast.success('Membro inscrito');
-                      await load();
-                      await onChanged();
-                    } catch (err) {
-                      toast.error(formatApiError(err));
-                    }
-                  }}
-                  disabled={!memberId}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Vincular
-                </Button>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                <Input
-                  label="Convidado — nome"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="text-base"
-                />
-                <Input
-                  label="WhatsApp"
-                  value={guestWhatsapp}
-                  onChange={(e) => setGuestWhatsapp(e.target.value)}
-                  className="text-base"
-                />
-                <Input
-                  label="Nascimento"
-                  type="date"
-                  value={guestBirth}
-                  onChange={(e) => setGuestBirth(e.target.value)}
-                  className="text-base"
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  variant="secondary"
-                  className="min-h-11"
-                  onClick={async () => {
-                    try {
-                      await apiService.createTeachingEnrollment(teachingClass.id, {
-                        type: 'guest',
-                        full_name: guestName,
-                        whatsapp: guestWhatsapp,
-                        birth_date: guestBirth,
-                      });
-                      setGuestName('');
-                      setGuestWhatsapp('');
-                      setGuestBirth('');
-                      toast.success('Convidado inscrito');
-                      await load();
-                    } catch (err) {
-                      toast.error(formatApiError(err));
-                    }
-                  }}
-                  disabled={guestName.trim().length < 2 || !guestWhatsapp || !guestBirth}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Adicionar convidado
-                </Button>
-              </div>
+              <Select
+                label="Tipo"
+                value={addMode}
+                onChange={(value) => {
+                  setAddMode(value as 'member' | 'guest');
+                  setMemberId('');
+                  setMemberLabel('');
+                  setGuestName('');
+                  setGuestWhatsapp('');
+                  setGuestBirth('');
+                  setSearch('');
+                }}
+                options={[
+                  { value: 'member', label: 'Membro' },
+                  { value: 'guest', label: 'Convidado' },
+                ]}
+              />
+              {addMode === 'member' ? (
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <Select
+                    label="Membro"
+                    value={memberId}
+                    onChange={(value) => {
+                      setMemberId(value);
+                      const match = memberOptionsData.find((m) => m.id === value);
+                      setMemberLabel(match?.name || '');
+                    }}
+                    options={memberSelectOptions}
+                    searchable
+                    onSearchChange={setSearch}
+                    placeholder="Digite para buscar…"
+                  />
+                  <Button
+                    className="min-h-11 self-end"
+                    onClick={async () => {
+                      try {
+                        await apiService.createTeachingEnrollment(teachingClass.id, {
+                          type: 'member',
+                          member_id: memberId,
+                        });
+                        setMemberId('');
+                        setMemberLabel('');
+                        toast.success('Membro inscrito');
+                        await load();
+                        await onChanged();
+                      } catch (err) {
+                        toast.error(formatApiError(err));
+                      }
+                    }}
+                    disabled={!memberId}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Vincular
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+                    <Input
+                      label="Nome"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="text-base"
+                    />
+                    <Input
+                      label="WhatsApp"
+                      value={guestWhatsapp}
+                      onChange={(e) => setGuestWhatsapp(e.target.value)}
+                      className="text-base"
+                    />
+                    <Input
+                      label="Nascimento"
+                      type="date"
+                      value={guestBirth}
+                      onChange={(e) => setGuestBirth(e.target.value)}
+                      className="text-base"
+                    />
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="secondary"
+                      className="min-h-11"
+                      onClick={async () => {
+                        try {
+                          await apiService.createTeachingEnrollment(teachingClass.id, {
+                            type: 'guest',
+                            full_name: guestName,
+                            whatsapp: guestWhatsapp,
+                            birth_date: guestBirth,
+                          });
+                          setGuestName('');
+                          setGuestWhatsapp('');
+                          setGuestBirth('');
+                          toast.success('Convidado inscrito');
+                          await load();
+                        } catch (err) {
+                          toast.error(formatApiError(err));
+                        }
+                      }}
+                      disabled={guestName.trim().length < 2 || !guestWhatsapp || !guestBirth}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Adicionar convidado
+                    </Button>
+                  </div>
+                </>
+              )}
             </section>
           ) : null}
 
