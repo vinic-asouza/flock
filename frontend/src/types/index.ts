@@ -420,6 +420,9 @@ export interface TeachingEnrollment {
     id: string;
     name: string;
     age?: number | null;
+    birth?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
     whatsapp_masked?: string;
     congregation?: { id: string; name: string; abbreviation?: string | null } | null;
     signals?: { N: boolean; W: boolean; D: boolean };

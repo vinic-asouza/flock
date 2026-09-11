@@ -67,7 +67,13 @@ function EnrollmentKindBadge({ kind }: { kind: TeachingEnrollment['kind'] }) {
   );
 }
 
-function EnrollmentWhatsAppLink({ whatsapp }: { whatsapp?: string | null }) {
+function EnrollmentWhatsAppLink({
+  whatsapp,
+  compact = false,
+}: {
+  whatsapp?: string | null;
+  compact?: boolean;
+}) {
   if (!whatsapp) return null;
   const digits = whatsapp.replace(/\D/g, '');
   if (!digits) return null;
@@ -76,12 +82,137 @@ function EnrollmentWhatsAppLink({ whatsapp }: { whatsapp?: string | null }) {
       href={`https://wa.me/${digits}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-green-600 transition-colors leading-tight min-h-11 sm:min-h-0"
+      className={`inline-flex items-center gap-1 text-xs text-gray-600 hover:text-green-600 transition-colors leading-tight ${
+        compact ? '' : 'min-h-11 sm:min-h-0'
+      }`}
       onClick={(e) => e.stopPropagation()}
     >
       <MessageCircle className="h-3.5 w-3.5 shrink-0" />
       {formatPhone(whatsapp)}
     </a>
+  );
+}
+
+function QueueContactLine({
+  whatsapp,
+  email,
+  birth,
+  age,
+  congregation,
+}: {
+  whatsapp?: string | null;
+  email?: string | null;
+  birth?: string | null;
+  age?: number | null;
+  congregation?: { id: string; name: string; abbreviation?: string | null } | null;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-gray-600">
+      <EnrollmentWhatsAppLink whatsapp={whatsapp} compact />
+      {email ? <span className="truncate">{email}</span> : null}
+      <span>nasc. {formatBirthDate(birth)}</span>
+      <span>{age ?? '—'} anos</span>
+      {congregation ? <span>{getCongregationDisplayName(congregation)}</span> : null}
+    </div>
+  );
+}
+
+function QueueReviewCard({
+  item,
+  readOnly,
+  onLinkMember,
+  onKeepGuest,
+}: {
+  item: TeachingEnrollment;
+  readOnly: boolean;
+  onLinkMember: (candidateId: string) => Promise<void>;
+  onKeepGuest: () => Promise<void>;
+}) {
+  const candidates =
+    item.queue_candidates ||
+    (item as { candidates?: TeachingEnrollment['queue_candidates'] }).candidates ||
+    [];
+  const [selectedId, setSelectedId] = useState(candidates[0]?.id || '');
+  const selected = candidates.find((candidate) => candidate.id === selectedId) || candidates[0];
+
+  return (
+    <Card className="space-y-2 border-amber-200 bg-amber-50/50">
+      <div className="flex flex-wrap items-center gap-2">
+        <EnrollmentKindBadge kind="possible_member" />
+        <div className="font-medium text-sm text-gray-900">
+          {item.display_name || item.full_name}
+        </div>
+      </div>
+      <QueueContactLine
+        whatsapp={item.whatsapp}
+        email={item.email}
+        birth={item.birth_date}
+        age={item.age}
+      />
+      {candidates.length === 0 ? (
+        <p className="text-xs text-gray-500">Nenhum candidato no rol para vincular.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {candidates.map((candidate) => {
+            const isSelected = selected?.id === candidate.id;
+            return (
+              <div
+                key={candidate.id}
+                role={candidates.length > 1 ? 'button' : undefined}
+                tabIndex={candidates.length > 1 ? 0 : undefined}
+                onClick={
+                  candidates.length > 1 ? () => setSelectedId(candidate.id) : undefined
+                }
+                onKeyDown={
+                  candidates.length > 1
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedId(candidate.id);
+                        }
+                      }
+                    : undefined
+                }
+                className={`rounded-md px-0 py-0.5 ${
+                  candidates.length > 1
+                    ? `cursor-pointer ${isSelected ? 'ring-1 ring-inset ring-primary/25 bg-white/70 px-2 py-1' : ''}`
+                    : ''
+                }`}
+              >
+                <div className="font-medium text-sm text-gray-900">{candidate.name}</div>
+                <QueueContactLine
+                  whatsapp={candidate.whatsapp || candidate.whatsapp_masked}
+                  email={candidate.email}
+                  birth={candidate.birth}
+                  age={candidate.age}
+                  congregation={candidate.congregation}
+                />
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <MatchSignal ok={Boolean(candidate.signals?.N)} label="Nome" />
+                  <MatchSignal ok={Boolean(candidate.signals?.W)} label="WhatsApp" />
+                  <MatchSignal ok={Boolean(candidate.signals?.D)} label="Nascimento" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {!readOnly ? (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {selected ? (
+            <Button
+              className="min-h-11"
+              onClick={() => onLinkMember(selected.id)}
+            >
+              Vincular membro
+            </Button>
+          ) : null}
+          <Button variant="secondary" className="min-h-11" onClick={onKeepGuest}>
+            Manter Convidado
+          </Button>
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
@@ -587,90 +718,36 @@ export function TeachingClassDetailView({
                     {queue.length} possível{queue.length === 1 ? ' membro' : ' membros'}
                   </span>
                 </div>
-                {queue.map((item) => {
-                  const candidates =
-                    item.queue_candidates ||
-                    (item as { candidates?: TeachingEnrollment['queue_candidates'] }).candidates ||
-                    [];
-                  return (
-                    <Card key={item.id} className="space-y-3 border-amber-200 bg-amber-50/50">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <EnrollmentKindBadge kind="possible_member" />
-                        <div className="font-medium text-gray-900">
-                          {item.display_name || item.full_name}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        Digitado: {item.whatsapp_masked || item.whatsapp || '—'} · nasc.{' '}
-                        {formatBirthDate(item.birth_date)} · {item.age ?? '—'} anos
-                      </p>
-                      {candidates.length === 0 ? (
-                        <p className="text-sm text-gray-500">Nenhum candidato no rol para vincular.</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {candidates.map((candidate) => (
-                            <div
-                              key={candidate.id}
-                              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white bg-white p-3"
-                            >
-                              <div className="min-w-0 space-y-2">
-                                <div className="font-medium text-sm text-gray-900">{candidate.name}</div>
-                                <p className="text-sm text-gray-500">
-                                  {candidate.whatsapp_masked ||
-                                    (candidate as { whatsapp?: string }).whatsapp}{' '}
-                                  · {candidate.age ?? '—'} anos
-                                </p>
-                                <div className="flex flex-wrap gap-1.5">
-                                  <MatchSignal ok={Boolean(candidate.signals?.N)} label="Nome" />
-                                  <MatchSignal ok={Boolean(candidate.signals?.W)} label="WhatsApp" />
-                                  <MatchSignal ok={Boolean(candidate.signals?.D)} label="Nascimento" />
-                                </div>
-                              </div>
-                              {!readOnly ? (
-                                <Button
-                                  className="min-h-11"
-                                  onClick={async () => {
-                                    try {
-                                      await apiService.resolveTeachingEnrollment(item.id, {
-                                        action: 'link_member',
-                                        member_id: candidate.id,
-                                      });
-                                      toast.success('Vinculado ao membro');
-                                      await load();
-                                    } catch (err) {
-                                      toast.error(formatApiError(err));
-                                    }
-                                  }}
-                                >
-                                  Vincular
-                                </Button>
-                              ) : null}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {!readOnly ? (
-                        <Button
-                          variant="secondary"
-                          className="min-h-11"
-                          onClick={async () => {
-                            try {
-                              await apiService.resolveTeachingEnrollment(item.id, {
-                                action: 'keep_guest',
-                              });
-                              toast.success('Mantido como convidado');
-                              await load();
-                            } catch (err) {
-                              toast.error(formatApiError(err));
-                            }
-                          }}
-                        >
-                          Manter convidado
-                        </Button>
-                      ) : null}
-                    </Card>
-                  );
-                })}
+                {queue.map((item) => (
+                  <QueueReviewCard
+                    key={item.id}
+                    item={item}
+                    readOnly={readOnly}
+                    onLinkMember={async (candidateId) => {
+                      try {
+                        await apiService.resolveTeachingEnrollment(item.id, {
+                          action: 'link_member',
+                          member_id: candidateId,
+                        });
+                        toast.success('Vinculado ao membro');
+                        await load();
+                      } catch (err) {
+                        toast.error(formatApiError(err));
+                      }
+                    }}
+                    onKeepGuest={async () => {
+                      try {
+                        await apiService.resolveTeachingEnrollment(item.id, {
+                          action: 'keep_guest',
+                        });
+                        toast.success('Mantido como convidado');
+                        await load();
+                      } catch (err) {
+                        toast.error(formatApiError(err));
+                      }
+                    }}
+                  />
+                ))}
               </section>
             ) : null}
 
