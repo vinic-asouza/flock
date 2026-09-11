@@ -11,7 +11,7 @@ import { assertCongregationAccess } from '../utils/congregationScope';
 import { error as logError } from '../utils/logger';
 
 function buildTeachingPublicUrl(token: string) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+  const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3001').replace(/\/+$/, '');
   return `${frontendUrl}/public/teaching/${token}`;
 }
 

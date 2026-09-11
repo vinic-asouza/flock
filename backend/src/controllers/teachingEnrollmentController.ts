@@ -8,6 +8,7 @@ import {
 import { logAudit } from '../utils/auditLogger';
 import { assertCongregationAccess } from '../utils/congregationScope';
 import { error as logError } from '../utils/logger';
+import { buildPagination, parsePageLimit } from '../utils/pagination';
 import {
   normalizeWhatsAppDigits,
   whatsappLast4National,
@@ -182,10 +183,10 @@ export const listTeachingEnrollments = async (req: AuthRequest, res: Response) =
       return res.status(access.status).json(access.body);
     }
 
-    const { data: enrollments, error } = await supabase
-      .from('teaching_enrollments')
-      .select(
-        `
+    const { page, limit, offset } = parsePageLimit(req.query);
+    const search = String(req.query.search || '').trim();
+
+    const enrollmentSelect = `
         *,
         members (
           id,
@@ -200,11 +201,39 @@ export const listTeachingEnrollments = async (req: AuthRequest, res: Response) =
             abbreviation
           )
         )
-      `
-      )
+      `;
+
+    const { data: queueRows, error: queueError } = await supabase
+      .from('teaching_enrollments')
+      .select(enrollmentSelect)
       .eq('class_id', classId)
       .eq('church_id', churchId)
+      .eq('kind', 'possible_member')
       .order('created_at', { ascending: false });
+
+    if (queueError) {
+      return res.status(400).json({
+        error: 'Erro ao buscar matrículas',
+        details: queueError.message,
+      });
+    }
+
+    let othersQuery = supabase
+      .from('teaching_enrollments')
+      .select(enrollmentSelect, { count: 'exact' })
+      .eq('class_id', classId)
+      .eq('church_id', churchId)
+      .neq('kind', 'possible_member');
+
+    if (search) {
+      othersQuery = othersQuery.or(
+        `full_name.ilike.%${search}%,whatsapp.ilike.%${search}%,email.ilike.%${search}%`
+      );
+    }
+
+    const { data: otherRows, error, count } = await othersQuery
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       return res.status(400).json({
@@ -213,23 +242,18 @@ export const listTeachingEnrollments = async (req: AuthRequest, res: Response) =
       });
     }
 
-    const result = [];
-    for (const enrollment of enrollments || []) {
-      if (enrollment.kind === 'possible_member') {
-        result.push(await enrichPossibleMemberCandidates(enrollment, churchId));
-      } else {
-        result.push(serializeEnrollment(enrollment));
-      }
+    const queue = [];
+    for (const enrollment of queueRows || []) {
+      queue.push(await enrichPossibleMemberCandidates(enrollment, churchId));
     }
 
-    // Possíveis membros primeiro
-    result.sort((a: any, b: any) => {
-      if (a.kind === 'possible_member' && b.kind !== 'possible_member') return -1;
-      if (b.kind === 'possible_member' && a.kind !== 'possible_member') return 1;
-      return 0;
-    });
+    const data = (otherRows || []).map((enrollment) => serializeEnrollment(enrollment));
 
-    return res.json(result);
+    return res.json({
+      data,
+      queue,
+      pagination: buildPagination(page, limit, count || 0),
+    });
   } catch (err) {
     logError('Erro ao listar matrículas de ensino:', err);
     return res.status(500).json({

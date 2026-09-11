@@ -108,28 +108,48 @@ export const createPublicTeachingEnrollment = async (
       return res.status(403).json(UNAVAILABLE);
     }
 
-    const { data: members, error: membersError } = await supabase
-      .from('members')
-      .select('id, name, whatsapp, phone, birth')
-      .eq('church_id', churchId)
-      .eq('active', true);
+    const matchInput = {
+      fullName: value.full_name,
+      whatsapp: value.whatsapp,
+      birthDate: value.birth_date,
+    };
+    const memberSelect = 'id, name, whatsapp, phone, birth';
 
-    if (membersError) {
-      logError('Erro ao buscar membros para match de ensino:', membersError);
+    const { data: birthMatches, error: birthError } = await supabase
+      .from('members')
+      .select(memberSelect)
+      .eq('church_id', churchId)
+      .eq('active', true)
+      .eq('birth', value.birth_date);
+
+    if (birthError) {
+      logError('Erro ao buscar membros para match de ensino:', birthError);
       return res.status(500).json({
         error: 'Erro interno do servidor',
         details: 'Não foi possível processar a inscrição no momento',
       });
     }
 
-    const match = matchEnrollment(
-      {
-        fullName: value.full_name,
-        whatsapp: value.whatsapp,
-        birthDate: value.birth_date,
-      },
-      members || []
-    );
+    let match = matchEnrollment(matchInput, birthMatches || []);
+
+    if (match.kind !== 'member') {
+      const { data: otherMembers, error: membersError } = await supabase
+        .from('members')
+        .select(memberSelect)
+        .eq('church_id', churchId)
+        .eq('active', true)
+        .or(`birth.is.null,birth.neq.${value.birth_date}`);
+
+      if (membersError) {
+        logError('Erro ao buscar membros para match de ensino:', membersError);
+        return res.status(500).json({
+          error: 'Erro interno do servidor',
+          details: 'Não foi possível processar a inscrição no momento',
+        });
+      }
+
+      match = matchEnrollment(matchInput, [...(birthMatches || []), ...(otherMembers || [])]);
+    }
 
     const enrollmentPayload: Record<string, unknown> = {
       church_id: churchId,

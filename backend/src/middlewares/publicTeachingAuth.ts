@@ -12,8 +12,8 @@ const publicTeachingAuth = async (
 
     if (!token) {
       return res.status(400).json({
-        error: 'Token não fornecido',
-        details: 'O token do link de inscrição é obrigatório',
+        error: 'Esta inscrição não está disponível.',
+        details: 'Esta inscrição não está disponível.',
       });
     }
 
@@ -25,21 +25,21 @@ const publicTeachingAuth = async (
 
     if (linkError || !teachingLink) {
       return res.status(404).json({
-        error: 'Link inválido',
+        error: 'Esta inscrição não está disponível.',
         details: 'Esta inscrição não está disponível.',
       });
     }
 
     if (!teachingLink.is_active) {
       return res.status(403).json({
-        error: 'Link desativado',
+        error: 'Esta inscrição não está disponível.',
         details: 'Esta inscrição não está disponível.',
       });
     }
 
     if (new Date(teachingLink.expires_at) <= new Date()) {
       return res.status(403).json({
-        error: 'Link expirado',
+        error: 'Esta inscrição não está disponível.',
         details: 'Esta inscrição não está disponível.',
       });
     }
@@ -50,7 +50,7 @@ const publicTeachingAuth = async (
       teachingLink.current_uses >= teachingLink.max_uses
     ) {
       return res.status(403).json({
-        error: 'Limite de usos atingido',
+        error: 'Esta inscrição não está disponível.',
         details: 'Esta inscrição não está disponível.',
       });
     }
@@ -63,7 +63,7 @@ const publicTeachingAuth = async (
 
     if (churchError || !church) {
       return res.status(404).json({
-        error: 'Igreja não encontrada',
+        error: 'Esta inscrição não está disponível.',
         details: 'Esta inscrição não está disponível.',
       });
     }

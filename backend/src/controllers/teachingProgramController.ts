@@ -75,7 +75,40 @@ export const listTeachingPrograms = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    return res.json(data || []);
+    const programs = data || [];
+    const counts: Record<string, number> = {};
+    if (programs.length > 0) {
+      let classQuery = supabase
+        .from('teaching_classes')
+        .select('program_id')
+        .eq('church_id', churchId)
+        .in(
+          'program_id',
+          programs.map((program) => program.id)
+        );
+
+      if (scoped.mode === 'single') {
+        classQuery = classQuery.eq('congregation_id', scoped.congregationId);
+      } else if (scoped.mode === 'in') {
+        classQuery = classQuery.in('congregation_id', scoped.congregationIds);
+      }
+
+      const { data: classRows, error: classCountError } = await classQuery;
+      if (classCountError) {
+        logError('Erro ao contar turmas dos programas:', classCountError);
+      } else {
+        for (const row of classRows || []) {
+          counts[row.program_id] = (counts[row.program_id] || 0) + 1;
+        }
+      }
+    }
+
+    return res.json(
+      programs.map((program) => ({
+        ...program,
+        class_count: counts[program.id] || 0,
+      }))
+    );
   } catch (err) {
     logError('Erro ao listar programas de ensino:', err);
     return res.status(500).json({
@@ -272,6 +305,33 @@ export const updateTeachingProgram = async (req: AuthRequest, res: Response) => 
           return res.status(access.status).json(access.body);
         }
       }
+
+      if (congregationId && congregationId !== existing.congregation_id) {
+        const { data: conflicting, error: conflictError } = await supabase
+          .from('teaching_classes')
+          .select('id')
+          .eq('program_id', id)
+          .eq('church_id', churchId)
+          .neq('congregation_id', congregationId)
+          .limit(1);
+
+        if (conflictError) {
+          logError('Erro ao validar escopo do programa:', conflictError);
+          return res.status(500).json({
+            error: 'Erro ao atualizar programa',
+            details: 'Não foi possível validar as turmas do programa',
+          });
+        }
+
+        if (conflicting && conflicting.length > 0) {
+          return res.status(400).json({
+            error: 'Escopo inconsistente',
+            details:
+              'Não é possível restringir o programa a esta congregação enquanto existirem turmas em outra congregação.',
+          });
+        }
+      }
+
       updates.congregation_id = congregationId;
     }
 

@@ -17,6 +17,7 @@ import {
   validateResponsibleAndCongregation,
 } from '../utils/groupValidations';
 import { error as logError } from '../utils/logger';
+import { buildPagination, parsePageLimit } from '../utils/pagination';
 
 function emptyToNull(value: unknown): string | null {
   if (value === undefined || value === null || value === '') return null;
@@ -183,6 +184,7 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const { page, limit, offset } = parsePageLimit(req.query);
     const sort_by_raw = (req.query.sort_by as string) || 'start_date';
     const sort_by = ALLOWED_CLASS_SORT_FIELDS.includes(
       sort_by_raw as (typeof ALLOWED_CLASS_SORT_FIELDS)[number]
@@ -205,7 +207,7 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
 
     let query = supabase
       .from('teaching_classes')
-      .select(classSelect)
+      .select(classSelect, { count: 'exact' })
       .eq('church_id', churchId);
 
     query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
@@ -228,9 +230,10 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
 
     query = query
       .order(sort_by, { ascending: sort_order === 'asc' })
-      .order('id', { ascending: true });
+      .order('id', { ascending: true })
+      .range(offset, offset + limit - 1);
 
-    const { data: classes, error } = await query;
+    const { data: classes, error, count } = await query;
     if (error) {
       return res.status(400).json({
         error: 'Erro ao buscar turmas',
@@ -238,8 +241,11 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const total = count || 0;
+    const pagination = buildPagination(page, limit, total);
+
     if (!classes || classes.length === 0) {
-      return res.json([]);
+      return res.json({ data: [], pagination });
     }
 
     const classIds = classes.map((c: any) => c.id);
@@ -275,7 +281,7 @@ export const listTeachingClasses = async (req: AuthRequest, res: Response) => {
       };
     });
 
-    return res.json(result);
+    return res.json({ data: result, pagination });
   } catch (err) {
     logError('Erro ao listar turmas de ensino:', err);
     return res.status(500).json({
