@@ -842,63 +842,58 @@ export function ClassDetailModal({
                   </Button>
                 </div>
               ) : (
-                <>
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                    <Input
-                      label="Nome"
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      className="text-base"
-                    />
-                    <Input
-                      label="WhatsApp"
-                      value={guestWhatsapp}
-                      onChange={(e) => setGuestWhatsapp(maskPhoneInput(e.target.value))}
-                      className="text-base"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="(11) 99999-9999"
-                    />
-                    <Input
-                      label="Nascimento"
-                      type="date"
-                      value={guestBirth}
-                      onChange={(e) => setGuestBirth(e.target.value)}
-                      className="text-base"
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button
-                      variant="secondary"
-                      className="min-h-11"
-                      onClick={async () => {
-                        try {
-                          await apiService.createTeachingEnrollment(teachingClass.id, {
-                            type: 'guest',
-                            full_name: guestName,
-                            whatsapp: guestWhatsapp.replace(/\D/g, ''),
-                            birth_date: guestBirth,
-                          });
-                          setGuestName('');
-                          setGuestWhatsapp('');
-                          setGuestBirth('');
-                          toast.success('Convidado inscrito');
-                          await load();
-                        } catch (err) {
-                          toast.error(formatApiError(err));
-                        }
-                      }}
-                      disabled={
-                        guestName.trim().length < 2 ||
-                        guestWhatsapp.replace(/\D/g, '').length < 10 ||
-                        !guestBirth
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,0.9fr)_auto] sm:items-end">
+                  <Input
+                    label="Nome"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    className="text-base"
+                  />
+                  <Input
+                    label="WhatsApp"
+                    value={guestWhatsapp}
+                    onChange={(e) => setGuestWhatsapp(maskPhoneInput(e.target.value))}
+                    className="text-base"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(11) 99999-9999"
+                  />
+                  <Input
+                    label="Nascimento"
+                    type="date"
+                    value={guestBirth}
+                    onChange={(e) => setGuestBirth(e.target.value)}
+                    className="text-base"
+                  />
+                  <Button
+                    variant="secondary"
+                    className="min-h-11 w-full sm:w-auto"
+                    onClick={async () => {
+                      try {
+                        await apiService.createTeachingEnrollment(teachingClass.id, {
+                          type: 'guest',
+                          full_name: guestName,
+                          whatsapp: guestWhatsapp.replace(/\D/g, ''),
+                          birth_date: guestBirth,
+                        });
+                        setGuestName('');
+                        setGuestWhatsapp('');
+                        setGuestBirth('');
+                        toast.success('Convidado inscrito');
+                        await load();
+                      } catch (err) {
+                        toast.error(formatApiError(err));
                       }
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Adicionar convidado
-                    </Button>
-                  </div>
-                </>
+                    }}
+                    disabled={
+                      guestName.trim().length < 2 ||
+                      guestWhatsapp.replace(/\D/g, '').length < 10 ||
+                      !guestBirth
+                    }
+                  >
+                    Adicionar
+                  </Button>
+                </div>
               )}
             </section>
           ) : null}
