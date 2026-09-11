@@ -176,7 +176,7 @@ function TeachingProgramContent() {
         <p className="text-sm text-gray-500 py-8">Selecione uma congregação para continuar.</p>
       ) : classes.length === 0 ? (
         <TeachingEmptyState
-          text="Nenhuma turma neste programa ainda. Crie a primeira para matricular alunos e gerar o link público."
+          text="Nenhuma turma neste programa ainda. Crie a primeira para gerenciar inscritos e gerar o link público."
           action={
             !readOnly ? (
               <Button onClick={openCreateClass} className="min-h-11">
