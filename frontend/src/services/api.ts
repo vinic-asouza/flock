@@ -1266,6 +1266,11 @@ class ApiService {
     return response.data;
   }
 
+  async getTeachingProgram(id: string) {
+    const response = await this.api.get(`/teaching/programs/${id}`);
+    return response.data;
+  }
+
   async createTeachingProgram(data: {
     name: string;
     description?: string | null;
