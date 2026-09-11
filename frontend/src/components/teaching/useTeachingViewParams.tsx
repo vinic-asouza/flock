@@ -15,9 +15,9 @@ export function useTeachingViewParams() {
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
-    if (view === 'congregation' && congregationId) {
+    if (view === 'congregation') {
       params.set('view', 'congregation');
-      params.set('congregationId', congregationId);
+      if (congregationId) params.set('congregationId', congregationId);
     } else {
       params.set('view', 'all');
     }
@@ -27,9 +27,9 @@ export function useTeachingViewParams() {
 
   const setView = (nextView: ViewMode, nextId?: string) => {
     const params = new URLSearchParams();
-    if (nextView === 'congregation' && nextId) {
+    if (nextView === 'congregation') {
       params.set('view', 'congregation');
-      params.set('congregationId', nextId);
+      if (nextId) params.set('congregationId', nextId);
     } else {
       params.set('view', 'all');
     }

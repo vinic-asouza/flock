@@ -1,7 +1,9 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { Building2, Church } from 'lucide-react';
 import type { TeachingClassStatus } from '@/types';
+import { getCongregationDisplayName } from '@/utils/congregation';
 import { STATUS_LABELS } from './constants';
 
 export function TeachingEmptyState({
@@ -33,6 +35,31 @@ export function StatusBadge({ status }: { status: TeachingClassStatus }) {
       className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${STATUS_BADGE_STYLES[status]}`}
     >
       {STATUS_LABELS[status]}
+    </span>
+  );
+}
+
+export function CongregationBadge({
+  congregation,
+  allCongregations = false,
+}: {
+  congregation?: { name?: string | null; abbreviation?: string | null } | null;
+  allCongregations?: boolean;
+}) {
+  if (allCongregations) {
+    return (
+      <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+        <Building2 size={12} className="shrink-0 text-slate-600" aria-hidden />
+        <span className="truncate">Todas as congregações</span>
+      </span>
+    );
+  }
+
+  const label = getCongregationDisplayName(congregation) || 'Congregação';
+  return (
+    <span className="inline-flex max-w-full items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+      <Church size={12} className="shrink-0 text-gray-600" aria-hidden />
+      <span className="truncate">{label}</span>
     </span>
   );
 }

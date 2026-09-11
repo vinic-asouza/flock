@@ -4,11 +4,11 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Loader2, Pencil, Plus, School, Users } from 'lucide-react';
+import { ArrowLeft, Clock, Loader2, Pencil, Plus, School, User } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ClassFormModal, ProgramFormModal } from '@/components/teaching/TeachingModals';
-import { StatusBadge, TeachingEmptyState } from '@/components/teaching/TeachingUi';
+import { CongregationBadge, StatusBadge, TeachingEmptyState } from '@/components/teaching/TeachingUi';
 import { READER_TOOLTIP } from '@/components/teaching/constants';
 import {
   TeachingViewSelector,
@@ -169,7 +169,7 @@ function TeachingProgramContent() {
           Carregando…
         </div>
       ) : waitingForCongregation && !programLockedCongregation ? (
-        <p className="text-sm text-gray-500 py-8">Selecione uma congregação para continuar.</p>
+        <TeachingEmptyState text="Selecione uma congregação para ver as turmas desta visão." />
       ) : classes.length === 0 ? (
         <TeachingEmptyState
           text="Nenhuma turma neste programa ainda. Crie a primeira para gerenciar inscritos e gerar o link público."
@@ -188,28 +188,31 @@ function TeachingProgramContent() {
             <Link
               key={item.id}
               href={`/teaching/${programId}/${item.id}${queryString}`}
-              className="text-left rounded-xl border border-gray-200 bg-white p-4 hover:border-primary/40 transition block"
+              className="block rounded-xl border border-gray-200 bg-white p-4 text-left transition hover:border-primary/40 hover:shadow-sm"
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-start gap-3 min-w-0">
+                <div className="flex min-w-0 items-start gap-3">
                   <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/5 text-primary">
                     <School className="h-4 w-4" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{item.name}</div>
-                    <div className="text-sm text-gray-500 mt-1">
-                      {item.congregations
-                        ? getCongregationDisplayName(item.congregations)
-                        : 'Congregação'}
-                      {item.schedule ? ` · ${item.schedule}` : ''}
-                    </div>
+                  <div className="min-w-0 space-y-2">
+                    <div className="truncate font-medium text-gray-900">{item.name}</div>
+                    <CongregationBadge congregation={item.congregations} />
                   </div>
                 </div>
                 <StatusBadge status={item.status} />
               </div>
-              <div className="text-sm text-gray-500 mt-3 flex items-center gap-1 pl-12">
-                <Users className="h-3.5 w-3.5" />
-                {item.responsible?.name || 'Sem responsável'}
+              <div className="mt-3 space-y-1.5 pl-12 text-sm text-gray-500">
+                {item.schedule ? (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="truncate">{item.schedule}</span>
+                  </div>
+                ) : null}
+                <div className="flex items-center gap-1.5">
+                  <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">{item.responsible?.name || 'Sem responsável'}</span>
+                </div>
               </div>
             </Link>
           ))}
