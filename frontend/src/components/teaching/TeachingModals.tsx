@@ -74,7 +74,7 @@ function EnrollmentWhatsAppLink({
       href={`https://wa.me/${digits}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1.5 text-sm text-gray-600 hover:text-green-600 transition-colors min-h-11"
+      className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-green-600 transition-colors leading-tight"
       onClick={(e) => e.stopPropagation()}
     >
       <MessageCircle className="h-3.5 w-3.5 shrink-0" />
