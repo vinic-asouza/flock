@@ -358,12 +358,24 @@ export type TeachingClassStatus =
 
 export type TeachingEnrollmentKind = 'member' | 'guest' | 'possible_member';
 
+export interface TeachingPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  nextPage: number | null;
+  prevPage: number | null;
+}
+
 export interface TeachingProgram {
   id: string;
   church_id: string;
   name: string;
   description?: string | null;
   congregation_id?: string | null;
+  class_count?: number;
   created_at: string;
   updated_at: string;
   congregations?: { id: string; name: string; abbreviation?: string | null } | null;

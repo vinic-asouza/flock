@@ -43,9 +43,9 @@ export default function PublicTeachingPage() {
         setError(null);
       }
       return response;
-    } catch (err) {
+    } catch {
       setIsValid(false);
-      setError(formatApiError(err) || 'Esta inscrição não está disponível.');
+      setError('Esta inscrição não está disponível.');
       return null;
     }
   }, [token]);

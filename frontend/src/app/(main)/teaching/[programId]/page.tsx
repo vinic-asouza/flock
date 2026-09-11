@@ -24,7 +24,7 @@ import {
 } from '@/components/teaching/useTeachingViewParams';
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
-import type { TeachingClass, TeachingProgram } from '@/types';
+import type { TeachingClass, TeachingPagination, TeachingProgram } from '@/types';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 function TeachingProgramContent() {
@@ -38,6 +38,9 @@ function TeachingProgramContent() {
   const [loading, setLoading] = useState(true);
   const [program, setProgram] = useState<TeachingProgram | null>(null);
   const [classes, setClasses] = useState<TeachingClass[]>([]);
+  const [classesPage, setClassesPage] = useState(1);
+  const [classesPagination, setClassesPagination] = useState<TeachingPagination | null>(null);
+  const [loadingMoreClasses, setLoadingMoreClasses] = useState(false);
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [programModalOpen, setProgramModalOpen] = useState(false);
   const [classModalOpen, setClassModalOpen] = useState(false);
@@ -70,10 +73,14 @@ function TeachingProgramContent() {
       start_date_to?: string;
       sort_by?: string;
       sort_order?: string;
+      page: number;
+      limit: number;
     } = {
       program_id: programId,
       sort_by,
       sort_order,
+      page: 1,
+      limit: 50,
     };
     if (filters.status) classParams.status = filters.status;
     if (debouncedSearch) classParams.search = debouncedSearch;
@@ -146,17 +153,22 @@ function TeachingProgramContent() {
     if (!program) return;
     if (!program.congregation_id && view === 'congregation' && !congregationId) {
       setClasses([]);
+      setClassesPagination(null);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        const classesData = await apiService.listTeachingClasses(classListParams);
-        if (!cancelled) setClasses(classesData);
+        const response = await apiService.listTeachingClasses({ ...classListParams, page: 1 });
+        if (cancelled) return;
+        setClasses(response.data || []);
+        setClassesPagination(response.pagination || null);
+        setClassesPage(1);
       } catch (err) {
         if (cancelled) return;
         toast.error(formatApiError(err));
         setClasses([]);
+        setClassesPagination(null);
       }
     })();
     return () => {
@@ -173,6 +185,25 @@ function TeachingProgramContent() {
       toast.error(formatApiError(err));
     }
   }, [programId]);
+
+  const loadMoreClasses = useCallback(async () => {
+    if (!program || !classesPagination?.hasNextPage || loadingMoreClasses) return;
+    const nextPage = classesPage + 1;
+    try {
+      setLoadingMoreClasses(true);
+      const response = await apiService.listTeachingClasses({
+        ...classListParams,
+        page: nextPage,
+      });
+      setClasses((prev) => [...prev, ...(response.data || [])]);
+      setClassesPagination(response.pagination || null);
+      setClassesPage(nextPage);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setLoadingMoreClasses(false);
+    }
+  }, [classListParams, classesPage, classesPagination, loadingMoreClasses, program]);
 
   const filtersActive = hasActiveClassFilters({ ...filters, search: debouncedSearch });
   const programList = useMemo(() => (program ? [program] : []), [program]);
@@ -329,6 +360,20 @@ function TeachingProgramContent() {
           })}
         </div>
       )}
+
+      {classesPagination?.hasNextPage ? (
+        <div className="flex justify-center">
+          <Button
+            variant="secondary"
+            className="min-h-11"
+            onClick={loadMoreClasses}
+            disabled={loadingMoreClasses}
+          >
+            {loadingMoreClasses ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Carregar mais turmas
+          </Button>
+        </div>
+      ) : null}
 
       {program ? (
         <ProgramFormModal

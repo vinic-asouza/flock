@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { ChevronRight, Loader2, Plus, BookOpen, Users } from 'lucide-react';
@@ -15,7 +15,7 @@ import {
 } from '@/components/teaching/useTeachingViewParams';
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
-import type { TeachingClass, TeachingProgram } from '@/types';
+import type { TeachingProgram } from '@/types';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 function TeachingHubContent() {
@@ -25,7 +25,6 @@ function TeachingHubContent() {
 
   const [loading, setLoading] = useState(true);
   const [programs, setPrograms] = useState<TeachingProgram[]>([]);
-  const [classes, setClasses] = useState<TeachingClass[]>([]);
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [programModalOpen, setProgramModalOpen] = useState(false);
 
@@ -34,23 +33,25 @@ function TeachingHubContent() {
   const loadData = useCallback(async () => {
     if (waitingForCongregation) {
       setPrograms([]);
-      setClasses([]);
       setLoading(false);
       return;
     }
+    setLoading(true);
+    const params =
+      view === 'congregation' && congregationId
+        ? { congregation_id: congregationId }
+        : undefined;
+
     try {
-      setLoading(true);
-      const params =
-        view === 'congregation' && congregationId
-          ? { congregation_id: congregationId }
-          : undefined;
-      const [programsData, classesData, congregationsData] = await Promise.all([
-        apiService.listTeachingPrograms(params),
-        apiService.listTeachingClasses(params),
-        apiService.listCongregations(),
-      ]);
+      const programsData = await apiService.listTeachingPrograms(params);
       setPrograms(programsData);
-      setClasses(classesData);
+    } catch (err) {
+      toast.error(formatApiError(err));
+      setPrograms([]);
+    }
+
+    try {
+      const congregationsData = await apiService.listCongregations();
       setCongregations(
         congregationsData.map((c: { id: string; name: string; abbreviation?: string | null }) => ({
           value: c.id,
@@ -67,14 +68,6 @@ function TeachingHubContent() {
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  const classCountByProgram = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const item of classes) {
-      counts[item.program_id] = (counts[item.program_id] || 0) + 1;
-    }
-    return counts;
-  }, [classes]);
 
   const openCreateProgram = () => setProgramModalOpen(true);
 
@@ -121,7 +114,7 @@ function TeachingHubContent() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {programs.map((program) => {
-            const count = classCountByProgram[program.id] || 0;
+            const count = program.class_count || 0;
             return (
               <Link
                 key={program.id}

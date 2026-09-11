@@ -172,8 +172,8 @@ export function TeachingClassDetailView({
   const load = useCallback(async () => {
     try {
       setLoading(true);
-      const [enrollmentsData, linkData, classData] = await Promise.all([
-        apiService.listTeachingEnrollments(teachingClass.id),
+      const [enrollmentsResponse, linkData, classData] = await Promise.all([
+        apiService.listTeachingEnrollments(teachingClass.id, { page: 1, limit: 100 }),
         apiService.getTeachingPublicLink(teachingClass.id).catch((err: unknown) => {
           const status = (err as { response?: { status?: number } })?.response?.status;
           if (status === 404) return null;
@@ -181,7 +181,22 @@ export function TeachingClassDetailView({
         }),
         apiService.getTeachingClass(teachingClass.id),
       ]);
-      setEnrollments(enrollmentsData);
+      const listed = [
+        ...(enrollmentsResponse.queue || []),
+        ...(enrollmentsResponse.data || []),
+      ];
+      let pagination = enrollmentsResponse.pagination;
+      let page = 1;
+      while (pagination?.hasNextPage && page < (pagination.totalPages || page)) {
+        page += 1;
+        const next = await apiService.listTeachingEnrollments(teachingClass.id, {
+          page,
+          limit: 100,
+        });
+        listed.push(...(next.data || []));
+        pagination = next.pagination;
+      }
+      setEnrollments(listed);
       setLink(linkData);
       setClassDetails(classData);
       onDetailsChange?.(classData);

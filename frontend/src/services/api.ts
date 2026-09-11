@@ -1302,6 +1302,8 @@ class ApiService {
     start_date_to?: string;
     sort_by?: string;
     sort_order?: string;
+    page?: number;
+    limit?: number;
   }) {
     const query = new URLSearchParams();
     if (params?.congregation_id) query.append('congregation_id', params.congregation_id);
@@ -1312,6 +1314,8 @@ class ApiService {
     if (params?.start_date_to) query.append('start_date_to', params.start_date_to);
     if (params?.sort_by) query.append('sort_by', params.sort_by);
     if (params?.sort_order) query.append('sort_order', params.sort_order);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
     const url = `/teaching/classes${query.toString() ? `?${query}` : ''}`;
     const response = await this.api.get(url);
     return response.data;
@@ -1337,8 +1341,16 @@ class ApiService {
     return response.data;
   }
 
-  async listTeachingEnrollments(classId: string) {
-    const response = await this.api.get(`/teaching/classes/${classId}/enrollments`);
+  async listTeachingEnrollments(
+    classId: string,
+    params?: { page?: number; limit?: number; search?: string }
+  ) {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    const url = `/teaching/classes/${classId}/enrollments${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
     return response.data;
   }
 
