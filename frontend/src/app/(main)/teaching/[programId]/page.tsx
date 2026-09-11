@@ -55,66 +55,36 @@ function TeachingProgramContent() {
   const waitingForCongregation =
     showViewSelector && view === 'congregation' && !congregationId;
 
-  const loadData = useCallback(async () => {
-    if (!programId) return;
-    try {
-      setLoading(true);
-      const [programData, congregationsData] = await Promise.all([
-        apiService.getTeachingProgram(programId),
-        apiService.listCongregations(),
-      ]);
-      setProgram(programData);
-      setCongregations(
-        congregationsData.map((c: { id: string; name: string; abbreviation?: string | null }) => ({
-          value: c.id,
-          label: getCongregationDisplayName(c),
-        }))
-      );
-
-      const { sort_by, sort_order } = parseClassSort(filters.sort);
-      const dateRangeValid =
-        !filters.startDateFrom ||
-        !filters.startDateTo ||
-        filters.startDateTo >= filters.startDateFrom;
-      const classParams: {
-        program_id: string;
-        congregation_id?: string;
-        status?: string;
-        search?: string;
-        start_date_from?: string;
-        start_date_to?: string;
-        sort_by?: string;
-        sort_order?: string;
-      } = {
-        program_id: programId,
-        sort_by,
-        sort_order,
-      };
-      if (filters.status) classParams.status = filters.status;
-      if (debouncedSearch) classParams.search = debouncedSearch;
-      if (dateRangeValid) {
-        if (filters.startDateFrom) classParams.start_date_from = filters.startDateFrom;
-        if (filters.startDateTo) classParams.start_date_to = filters.startDateTo;
-      }
-      if (!programData.congregation_id) {
-        if (view === 'congregation' && !congregationId) {
-          setClasses([]);
-          return;
-        }
-        if (view === 'congregation' && congregationId) {
-          classParams.congregation_id = congregationId;
-        }
-      }
-
-      const classesData = await apiService.listTeachingClasses(classParams);
-      setClasses(classesData);
-    } catch (err) {
-      toast.error(formatApiError(err));
-      setProgram(null);
-      setClasses([]);
-    } finally {
-      setLoading(false);
+  const classListParams = useMemo(() => {
+    const { sort_by, sort_order } = parseClassSort(filters.sort);
+    const dateRangeValid =
+      !filters.startDateFrom ||
+      !filters.startDateTo ||
+      filters.startDateTo >= filters.startDateFrom;
+    const classParams: {
+      program_id: string;
+      congregation_id?: string;
+      status?: string;
+      search?: string;
+      start_date_from?: string;
+      start_date_to?: string;
+      sort_by?: string;
+      sort_order?: string;
+    } = {
+      program_id: programId,
+      sort_by,
+      sort_order,
+    };
+    if (filters.status) classParams.status = filters.status;
+    if (debouncedSearch) classParams.search = debouncedSearch;
+    if (dateRangeValid) {
+      if (filters.startDateFrom) classParams.start_date_from = filters.startDateFrom;
+      if (filters.startDateTo) classParams.start_date_to = filters.startDateTo;
     }
+    if (program && !program.congregation_id && view === 'congregation' && congregationId) {
+      classParams.congregation_id = congregationId;
+    }
+    return classParams;
   }, [
     congregationId,
     debouncedSearch,
@@ -122,13 +92,87 @@ function TeachingProgramContent() {
     filters.startDateFrom,
     filters.startDateTo,
     filters.status,
+    program,
     programId,
     view,
   ]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (!programId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const programData = await apiService.getTeachingProgram(programId);
+        if (cancelled) return;
+        setProgram(programData);
+      } catch (err) {
+        if (cancelled) return;
+        toast.error(formatApiError(err));
+        setProgram(null);
+        setClasses([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [programId]);
+
+  useEffect(() => {
+    if (!programId) return;
+    let cancelled = false;
+    apiService
+      .listCongregations()
+      .then((congregationsData) => {
+        if (cancelled) return;
+        setCongregations(
+          congregationsData.map((c: { id: string; name: string; abbreviation?: string | null }) => ({
+            value: c.id,
+            label: getCongregationDisplayName(c),
+          }))
+        );
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(formatApiError(err));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [programId]);
+
+  useEffect(() => {
+    if (!program) return;
+    if (!program.congregation_id && view === 'congregation' && !congregationId) {
+      setClasses([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const classesData = await apiService.listTeachingClasses(classListParams);
+        if (!cancelled) setClasses(classesData);
+      } catch (err) {
+        if (cancelled) return;
+        toast.error(formatApiError(err));
+        setClasses([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [classListParams, congregationId, program, view]);
+
+  const reloadProgram = useCallback(async () => {
+    if (!programId) return;
+    try {
+      const programData = await apiService.getTeachingProgram(programId);
+      setProgram(programData);
+    } catch (err) {
+      toast.error(formatApiError(err));
+    }
+  }, [programId]);
 
   const filtersActive = hasActiveClassFilters({ ...filters, search: debouncedSearch });
   const programList = useMemo(() => (program ? [program] : []), [program]);
@@ -292,7 +336,7 @@ function TeachingProgramContent() {
           onClose={() => setProgramModalOpen(false)}
           program={program}
           congregations={congregations}
-          onSaved={loadData}
+          onSaved={reloadProgram}
           onDeleted={() => router.push(`/teaching${queryString}`)}
         />
       ) : null}
@@ -307,7 +351,7 @@ function TeachingProgramContent() {
           congregations={congregations}
           defaultCongregationId={program.congregation_id || congregationId}
           lockedProgramId={program.id}
-          onSaved={loadData}
+          onSaved={reloadProgram}
         />
       ) : null}
 
