@@ -252,8 +252,8 @@ function TeachingProgramContent() {
           teachingClass={detailClass}
           readOnly={readOnly}
           onClose={() => setDetailClass(null)}
-          onEdit={() => {
-            setEditingClass(detailClass);
+          onEdit={(cls) => {
+            setEditingClass(cls);
             setDetailClass(null);
             setClassModalOpen(true);
           }}

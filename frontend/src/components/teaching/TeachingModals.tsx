@@ -292,13 +292,17 @@ export function ClassFormModal({
       id: string;
       name: string;
     }>;
+    const idsFromTeachers = fromTeachers.map((t) => t.id);
+    const idsFromApi = teachingClass?.teacher_ids || [];
     const nextTeacherIds =
-      fromTeachers.length > 0
-        ? fromTeachers.map((t) => t.id)
-        : teachingClass?.teacher_ids || [];
+      idsFromTeachers.length > 0 || idsFromApi.length > 0
+        ? [...new Set([...idsFromTeachers, ...idsFromApi])]
+        : [];
     setTeacherIds(nextTeacherIds);
     setTeacherLabels(
-      Object.fromEntries(fromTeachers.map((t) => [t.id, t.name]))
+      Object.fromEntries(
+        fromTeachers.filter((t) => t.name?.trim()).map((t) => [t.id, t.name])
+      )
     );
     setTeacherPick('');
     setSearch('');
@@ -323,21 +327,54 @@ export function ClassFormModal({
     if (match) setResponsibleLabel(match.name);
   }, [memberOptionsData, responsibleId]);
 
+  // Resolve nomes de professores ausentes (hidratação só com IDs ou join sem name).
+  const teacherLabelsRef = useRef(teacherLabels);
+  teacherLabelsRef.current = teacherLabels;
+
   useEffect(() => {
-    if (teacherIds.length === 0) return;
+    if (!open || teacherIds.length === 0) return;
+
     setTeacherLabels((prev) => {
-      const next = { ...prev };
       let changed = false;
+      const next = { ...prev };
       for (const id of teacherIds) {
+        if (next[id]?.trim()) continue;
         const match = memberOptionsData.find((m) => m.id === id);
-        if (match && next[id] !== match.name) {
+        if (match?.name) {
           next[id] = match.name;
           changed = true;
         }
       }
       return changed ? next : prev;
     });
-  }, [memberOptionsData, teacherIds]);
+
+    const missingIds = teacherIds.filter((id) => {
+      if (teacherLabelsRef.current[id]?.trim()) return false;
+      return !memberOptionsData.some((m) => m.id === id && m.name);
+    });
+    if (missingIds.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      const resolved: Record<string, string> = {};
+      await Promise.all(
+        missingIds.map(async (id) => {
+          try {
+            const member = await apiService.getMember(id);
+            if (member?.name) resolved[id] = member.name;
+          } catch {
+            // mantém fallback visual
+          }
+        })
+      );
+      if (cancelled || Object.keys(resolved).length === 0) return;
+      setTeacherLabels((prev) => ({ ...prev, ...resolved }));
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, teacherIds, memberOptionsData]);
 
   const responsibleOptions = useMemo(() => {
     const base = memberOptionsData
@@ -374,10 +411,18 @@ export function ClassFormModal({
       setTeacherPick('');
       return;
     }
-    const match = memberOptionsData.find((m) => m.id === id);
+    const fromMembers = memberOptionsData.find((m) => m.id === id);
+    const fromPick = teacherPickOptions.find((o) => o.value === id);
+    const label = fromMembers?.name || fromPick?.label || '';
     setTeacherIds((prev) => [...prev, id]);
-    if (match) {
-      setTeacherLabels((prev) => ({ ...prev, [id]: match.name }));
+    if (label) {
+      setTeacherLabels((prev) => ({ ...prev, [id]: label }));
+    } else {
+      void apiService.getMember(id).then((member) => {
+        if (member?.name) {
+          setTeacherLabels((prev) => ({ ...prev, [id]: member.name }));
+        }
+      });
     }
     setTeacherPick('');
   };
@@ -543,7 +588,7 @@ export function ClassFormModal({
                   });
                 }}
               >
-                {teacherLabels[id] || id} ×
+                {teacherLabels[id]?.trim() || 'Professor'} ×
               </button>
             ))}
           </div>
@@ -563,7 +608,7 @@ export function ClassDetailModal({
   teachingClass: TeachingClass;
   readOnly: boolean;
   onClose: () => void;
-  onEdit: () => void;
+  onEdit: (cls: TeachingClass) => void;
   onChanged: () => Promise<void>;
 }) {
   const [classDetails, setClassDetails] = useState(teachingClass);
@@ -643,7 +688,7 @@ export function ClassDetailModal({
         <div className="flex flex-wrap gap-2 justify-between w-full p-4 sm:p-6">
           {!readOnly ? (
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={onEdit} className="min-h-11">
+              <Button variant="secondary" onClick={() => onEdit(classDetails)} className="min-h-11">
                 Editar
               </Button>
               <Button
