@@ -93,6 +93,19 @@ function serializeEnrollment(row: any) {
   };
 }
 
+async function enrolledMemberIdsForClass(classId: string, churchId: string) {
+  const { data } = await supabase
+    .from('teaching_enrollments')
+    .select('member_id')
+    .eq('class_id', classId)
+    .eq('church_id', churchId)
+    .not('member_id', 'is', null);
+
+  return new Set(
+    (data || []).map((row: { member_id?: string | null }) => row.member_id).filter(Boolean)
+  );
+}
+
 async function enrichPossibleMemberCandidates(enrollment: any, churchId: string) {
   const meta = enrollment.match_meta || {};
   const candidateIds: string[] = Array.isArray(meta.candidates)
@@ -108,6 +121,8 @@ async function enrichPossibleMemberCandidates(enrollment: any, churchId: string)
       queue_candidates: [],
     };
   }
+
+  const enrolledIds = await enrolledMemberIdsForClass(enrollment.class_id, churchId);
 
   const { data: members } = await supabase
     .from('members')
@@ -150,6 +165,7 @@ async function enrichPossibleMemberCandidates(enrollment: any, churchId: string)
         whatsapp_masked: maskWhatsApp(rawWhatsapp),
         congregation_id: member.congregation_id,
         congregation: member.congregations || null,
+        already_enrolled: enrolledIds.has(member.id),
         signals: signalById.get(id) || { N: false, W: false, D: false },
       };
     })
@@ -471,9 +487,30 @@ export const resolveTeachingEnrollment = async (req: AuthRequest, res: Response)
         .maybeSingle();
 
       if (duplicate) {
-        return res.status(400).json({
-          error: 'Matrícula duplicada',
-          details: 'Este membro já está matriculado nesta turma',
+        const { error: deleteError } = await supabase
+          .from('teaching_enrollments')
+          .delete()
+          .eq('id', id)
+          .eq('church_id', churchId);
+
+        if (deleteError) {
+          return res.status(400).json({
+            error: 'Matrícula duplicada',
+            details: 'Este membro já está matriculado nesta turma',
+          });
+        }
+
+        await logAudit(req, {
+          entity: 'teaching_enrollment',
+          entityId: id,
+          action: 'delete',
+          changesBefore: enrollment,
+        });
+
+        return res.json({
+          already_enrolled: true,
+          id,
+          member_id: member.id,
         });
       }
 

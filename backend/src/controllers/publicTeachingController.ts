@@ -194,6 +194,34 @@ export const createPublicTeachingEnrollment = async (
       }
     }
 
+    // Match fraco cujos candidatos já estão na turma: não reabre fila
+    if (match.kind === 'possible_member') {
+      const candidateIds = (match.candidates || []).map((c) => c.id).filter(Boolean);
+      if (candidateIds.length > 0) {
+        const { data: alreadyInClass } = await supabase
+          .from('teaching_enrollments')
+          .select('member_id')
+          .eq('class_id', teachingLink.class_id)
+          .in('member_id', candidateIds);
+
+        const enrolled = new Set((alreadyInClass || []).map((row) => row.member_id));
+        const allCandidatesEnrolled = candidateIds.every((id) => enrolled.has(id));
+
+        if (allCandidatesEnrolled) {
+          await supabase
+            .from('teaching_public_links')
+            .update({ current_uses: teachingLink.current_uses + 1 })
+            .eq('id', teachingLink.id);
+
+          return res.status(200).json({
+            outcome: 'submitted',
+            church_name: ctx.churchName,
+            class_name: ctx.class.name,
+          });
+        }
+      }
+    }
+
     const { error: insertError } = await supabase
       .from('teaching_enrollments')
       .insert([enrollmentPayload]);
