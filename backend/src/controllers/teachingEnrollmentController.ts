@@ -118,6 +118,7 @@ async function enrichPossibleMemberCandidates(enrollment: any, churchId: string)
       birth,
       whatsapp,
       phone,
+      email,
       congregation_id,
       congregations (
         id,
@@ -138,12 +139,15 @@ async function enrichPossibleMemberCandidates(enrollment: any, churchId: string)
     .map((id) => {
       const member = byId.get(id);
       if (!member) return null;
+      const rawWhatsapp = member.whatsapp || member.phone || null;
       return {
         id: member.id,
         name: member.name,
         age: calcAge(member.birth),
         birth: toBirthDateString(member.birth),
-        whatsapp_masked: maskWhatsApp(member.whatsapp || member.phone),
+        email: member.email || null,
+        whatsapp: rawWhatsapp,
+        whatsapp_masked: maskWhatsApp(rawWhatsapp),
         congregation_id: member.congregation_id,
         congregation: member.congregations || null,
         signals: signalById.get(id) || { N: false, W: false, D: false },
