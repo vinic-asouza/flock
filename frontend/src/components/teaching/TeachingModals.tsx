@@ -716,8 +716,21 @@ export function ClassDetailModal({
           </section>
 
           <section className="space-y-2">
-            <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
-              <Link2 className="h-4 w-4 text-gray-400" /> Link público
+            <h3 className="text-sm font-medium text-gray-900 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-gray-400" /> Link público
+              </span>
+              {link ? (
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                    link.is_active
+                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+                      : 'bg-gray-100 text-gray-600 ring-gray-500/20'
+                  }`}
+                >
+                  {link.is_active ? 'Ativo' : 'Inativo'}
+                </span>
+              ) : null}
             </h3>
             {link ? (
               <div className="flex items-end gap-2">
