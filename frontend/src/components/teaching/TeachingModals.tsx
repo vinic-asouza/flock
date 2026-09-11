@@ -822,7 +822,7 @@ export function ClassDetailModal({
                   Vincular
                 </Button>
               </div>
-              <div className="grid gap-2 sm:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
                 <Input
                   label="Convidado — nome"
                   value={guestName}
