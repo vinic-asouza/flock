@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
+  Check,
   Clock,
   Copy,
   Link2,
   Loader2,
   MapPin,
   MessageCircle,
+  Power,
   Trash2,
   User,
   UserPlus,
@@ -567,6 +569,7 @@ export function ClassDetailModal({
   const [classDetails, setClassDetails] = useState(teachingClass);
   const [enrollments, setEnrollments] = useState<TeachingEnrollment[]>([]);
   const [link, setLink] = useState<TeachingPublicLink | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState('');
   const [memberLabel, setMemberLabel] = useState('');
@@ -717,40 +720,55 @@ export function ClassDetailModal({
               <Link2 className="h-4 w-4 text-gray-400" /> Link público
             </h3>
             {link ? (
-              <div className="flex flex-col gap-2">
-                <Input value={link.url} readOnly className="text-base" />
-                <div className="flex flex-wrap gap-2">
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <Input value={link.url} readOnly className="text-base" />
+                </div>
+                <Button
+                  variant="secondary"
+                  className="min-h-11 min-w-11 shrink-0 px-0"
+                  aria-label={linkCopied ? 'Link copiado' : 'Copiar link'}
+                  title={linkCopied ? 'Link copiado' : 'Copiar link'}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(link.url);
+                      setLinkCopied(true);
+                      toast.success('Link copiado');
+                      window.setTimeout(() => setLinkCopied(false), 2000);
+                    } catch {
+                      toast.error('Não foi possível copiar o link');
+                    }
+                  }}
+                >
+                  {linkCopied ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+                {!readOnly ? (
                   <Button
                     variant="secondary"
-                    className="min-h-11"
+                    className="min-h-11 min-w-11 shrink-0 px-0"
+                    aria-label={link.is_active ? 'Desativar link' : 'Ativar link'}
+                    title={link.is_active ? 'Desativar link' : 'Ativar link'}
                     onClick={async () => {
-                      await navigator.clipboard.writeText(link.url);
-                      toast.success('Link copiado');
+                      try {
+                        const updated = await apiService.updateTeachingPublicLink(teachingClass.id, {
+                          is_active: !link.is_active,
+                        });
+                        setLink(updated);
+                        toast.success(updated.is_active ? 'Link ativado' : 'Link desativado');
+                      } catch (err) {
+                        toast.error(formatApiError(err));
+                      }
                     }}
                   >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copiar
+                    <Power
+                      className={`h-4 w-4 ${link.is_active ? 'text-emerald-600' : 'text-gray-400'}`}
+                    />
                   </Button>
-                  {!readOnly ? (
-                    <Button
-                      variant="secondary"
-                      className="min-h-11"
-                      onClick={async () => {
-                        try {
-                          const updated = await apiService.updateTeachingPublicLink(teachingClass.id, {
-                            is_active: !link.is_active,
-                          });
-                          setLink(updated);
-                          toast.success(updated.is_active ? 'Link ativado' : 'Link desativado');
-                        } catch (err) {
-                          toast.error(formatApiError(err));
-                        }
-                      }}
-                    >
-                      {link.is_active ? 'Desativar' : 'Ativar'}
-                    </Button>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
             ) : !readOnly ? (
               <Button
