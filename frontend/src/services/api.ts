@@ -1409,6 +1409,12 @@ export default apiService;
  * Formata um erro da API exibindo tanto a mensagem principal quanto os detalhes de validação (Joi).
  * Use nos catch dos modais e páginas para garantir feedback completo ao usuário.
  */
+export function getApiErrorStatus(err: unknown): number | undefined {
+  if (!err || typeof err !== 'object') return undefined;
+  const e = err as { status?: number; response?: { status?: number } };
+  return e.status ?? e.response?.status;
+}
+
 export function formatApiError(err: unknown): string {
   if (!(err instanceof Error)) {
     return 'Ocorreu um erro inesperado.';

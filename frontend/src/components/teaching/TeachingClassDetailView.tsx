@@ -28,7 +28,7 @@ import { Card } from '@/components/ui/Card';
 import { Alert } from '@/components/ui/Alert';
 import { Pagination } from '@/components/common/Pagination';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
-import apiService, { formatApiError } from '@/services/api';
+import apiService, { formatApiError, getApiErrorStatus } from '@/services/api';
 import type { TeachingClass, TeachingEnrollment, TeachingPublicLink } from '@/types';
 import { formatDate, formatPhone, maskPhoneInput } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
@@ -175,9 +175,9 @@ export function TeachingClassDetailView({
       const [enrollmentsResponse, linkData, classData] = await Promise.all([
         apiService.listTeachingEnrollments(teachingClass.id, { page: 1, limit: 100 }),
         apiService.getTeachingPublicLink(teachingClass.id).catch((err: unknown) => {
-          const status = (err as { response?: { status?: number } })?.response?.status;
-          if (status === 404) return null;
-          throw err;
+          if (getApiErrorStatus(err) === 404) return null;
+          toast.error(formatApiError(err));
+          return null;
         }),
         apiService.getTeachingClass(teachingClass.id),
       ]);
