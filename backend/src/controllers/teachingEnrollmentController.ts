@@ -9,6 +9,8 @@ import { logAudit } from '../utils/auditLogger';
 import { assertCongregationAccess } from '../utils/congregationScope';
 import { error as logError } from '../utils/logger';
 import { buildPagination, parsePageLimit } from '../utils/pagination';
+import { buildIlikeContainsOrFilter } from '../utils/postgrestFilter';
+import { decideLinkMemberResolve } from '../services/teachingEnrollmentPolicy';
 import {
   normalizeWhatsAppDigits,
   whatsappLast4National,
@@ -204,7 +206,10 @@ export const listTeachingEnrollments = async (req: AuthRequest, res: Response) =
     }
 
     const { page, limit, offset } = parsePageLimit(req.query);
-    const search = String(req.query.search || '').trim();
+    const searchFilter = buildIlikeContainsOrFilter(
+      ['full_name', 'whatsapp', 'email'],
+      String(req.query.search || '')
+    );
 
     const enrollmentSelect = `
         *,
@@ -245,10 +250,8 @@ export const listTeachingEnrollments = async (req: AuthRequest, res: Response) =
       .eq('church_id', churchId)
       .neq('kind', 'possible_member');
 
-    if (search) {
-      othersQuery = othersQuery.or(
-        `full_name.ilike.%${search}%,whatsapp.ilike.%${search}%,email.ilike.%${search}%`
-      );
+    if (searchFilter) {
+      othersQuery = othersQuery.or(searchFilter);
     }
 
     const { data: otherRows, error, count } = await othersQuery
@@ -486,7 +489,7 @@ export const resolveTeachingEnrollment = async (req: AuthRequest, res: Response)
         .neq('id', enrollment.id)
         .maybeSingle();
 
-      if (duplicate) {
+      if (decideLinkMemberResolve(Boolean(duplicate)) === 'dismiss_already_enrolled') {
         const { error: deleteError } = await supabase
           .from('teaching_enrollments')
           .delete()

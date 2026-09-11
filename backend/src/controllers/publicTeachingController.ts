@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '../services/supabase';
 import { PublicTeachingRequest } from '../types';
 import { publicTeachingEnrollSchema } from '../validators/teachingValidator';
 import { matchEnrollment } from '../services/teachingMatchService';
+import { shouldSkipPossibleMemberQueue } from '../services/teachingEnrollmentPolicy';
 import { error as logError } from '../utils/logger';
 
 const UNAVAILABLE = {
@@ -204,10 +205,13 @@ export const createPublicTeachingEnrollment = async (
           .eq('class_id', teachingLink.class_id)
           .in('member_id', candidateIds);
 
-        const enrolled = new Set((alreadyInClass || []).map((row) => row.member_id));
-        const allCandidatesEnrolled = candidateIds.every((id) => enrolled.has(id));
-
-        if (allCandidatesEnrolled) {
+        if (
+          shouldSkipPossibleMemberQueue({
+            kind: match.kind,
+            candidateIds,
+            enrolledMemberIds: (alreadyInClass || []).map((row) => row.member_id),
+          })
+        ) {
           await supabase
             .from('teaching_public_links')
             .update({ current_uses: teachingLink.current_uses + 1 })

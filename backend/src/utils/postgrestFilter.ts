@@ -17,3 +17,17 @@ export function toIlikeContains(raw: string): string | null {
   }
   return `%${escapeIlikePattern(sanitized)}%`;
 }
+
+function quotePostgrestValue(value: string): string {
+  return `"${value.replace(/"/g, '')}"`;
+}
+
+/** `col.ilike."%term%",col2.ilike."%term%"` — null when the term is unusable. */
+export function buildIlikeContainsOrFilter(columns: string[], raw: string): string | null {
+  const pattern = toIlikeContains(raw);
+  if (!pattern || columns.length === 0) {
+    return null;
+  }
+  const quoted = quotePostgrestValue(pattern);
+  return columns.map((column) => `${column}.ilike.${quoted}`).join(',');
+}
