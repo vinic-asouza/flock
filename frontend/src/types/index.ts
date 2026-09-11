@@ -425,6 +425,7 @@ export interface TeachingEnrollment {
     whatsapp?: string | null;
     whatsapp_masked?: string;
     congregation?: { id: string; name: string; abbreviation?: string | null } | null;
+    already_enrolled?: boolean;
     signals?: { N: boolean; W: boolean; D: boolean };
   }>;
   member?: {

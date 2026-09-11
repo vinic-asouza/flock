@@ -122,11 +122,13 @@ function QueueReviewCard({
   readOnly,
   onLinkMember,
   onKeepGuest,
+  onDismissQueue,
 }: {
   item: TeachingEnrollment;
   readOnly: boolean;
   onLinkMember: (candidateId: string) => Promise<void>;
   onKeepGuest: () => Promise<void>;
+  onDismissQueue: () => Promise<void>;
 }) {
   const candidates =
     item.queue_candidates ||
@@ -134,6 +136,7 @@ function QueueReviewCard({
     [];
   const [selectedId, setSelectedId] = useState(candidates[0]?.id || '');
   const selected = candidates.find((candidate) => candidate.id === selectedId) || candidates[0];
+  const selectedAlreadyEnrolled = Boolean(selected?.already_enrolled);
 
   return (
     <Card className="space-y-2 border-amber-200 bg-amber-50/50">
@@ -179,7 +182,14 @@ function QueueReviewCard({
                     : ''
                 }`}
               >
-                <div className="font-medium text-sm text-gray-900">{candidate.name}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="font-medium text-sm text-gray-900">{candidate.name}</div>
+                  {candidate.already_enrolled ? (
+                    <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">
+                      Já na turma
+                    </span>
+                  ) : null}
+                </div>
                 <QueueContactLine
                   whatsapp={candidate.whatsapp || candidate.whatsapp_masked}
                   email={candidate.email}
@@ -197,13 +207,20 @@ function QueueReviewCard({
           })}
         </div>
       )}
+      {selectedAlreadyEnrolled ? (
+        <p className="text-xs text-amber-900">
+          Este membro já está inscrito. Remova a inscrição da fila ou mantenha como
+          convidado se for outra pessoa.
+        </p>
+      ) : null}
       {!readOnly ? (
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          {selected ? (
-            <Button
-              className="min-h-11"
-              onClick={() => onLinkMember(selected.id)}
-            >
+          {selectedAlreadyEnrolled ? (
+            <Button className="min-h-11" onClick={onDismissQueue}>
+              Remover da fila
+            </Button>
+          ) : selected ? (
+            <Button className="min-h-11" onClick={() => onLinkMember(selected.id)}>
               Vincular membro
             </Button>
           ) : null}
@@ -725,11 +742,24 @@ export function TeachingClassDetailView({
                     readOnly={readOnly}
                     onLinkMember={async (candidateId) => {
                       try {
-                        await apiService.resolveTeachingEnrollment(item.id, {
+                        const result = await apiService.resolveTeachingEnrollment(item.id, {
                           action: 'link_member',
                           member_id: candidateId,
                         });
-                        toast.success('Vinculado ao membro');
+                        toast.success(
+                          result?.already_enrolled
+                            ? 'Este membro já estava na turma. A inscrição da fila foi encerrada.'
+                            : 'Vinculado ao membro'
+                        );
+                        await load();
+                      } catch (err) {
+                        toast.error(formatApiError(err));
+                      }
+                    }}
+                    onDismissQueue={async () => {
+                      try {
+                        await apiService.deleteTeachingEnrollment(item.id);
+                        toast.success('Inscrição removida da fila');
                         await load();
                       } catch (err) {
                         toast.error(formatApiError(err));
