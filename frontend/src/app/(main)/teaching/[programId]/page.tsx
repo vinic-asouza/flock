@@ -89,6 +89,7 @@ function TeachingProgramContent() {
     loadData();
   }, [loadData]);
 
+  const programList = useMemo(() => (program ? [program] : []), [program]);
   const programOptions = useMemo(
     () => (program ? [{ value: program.id, label: program.name }] : []),
     [program]
@@ -230,7 +231,7 @@ function TeachingProgramContent() {
           open={classModalOpen}
           onClose={() => setClassModalOpen(false)}
           teachingClass={editingClass}
-          programs={[program]}
+          programs={programList}
           programOptions={programOptions}
           congregations={congregations}
           defaultCongregationId={program.congregation_id || congregationId}

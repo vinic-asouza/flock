@@ -385,6 +385,7 @@ export interface TeachingClass {
   program?: { id: string; name: string; congregation_id?: string | null } | null;
   responsible?: { id: string; name: string } | null;
   teachers?: Array<{ id: string; name: string } | null>;
+  teacher_ids?: string[];
 }
 
 export interface TeachingEnrollment {

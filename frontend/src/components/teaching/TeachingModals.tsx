@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Copy, Link2, Loader2, Trash2, UserPlus } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
@@ -174,9 +174,12 @@ export function ClassFormModal({
   const [scheduleTime, setScheduleTime] = useState('');
   const [status, setStatus] = useState<TeachingClassStatus>('draft');
   const [responsibleId, setResponsibleId] = useState('');
+  const [responsibleLabel, setResponsibleLabel] = useState('');
   const [teacherIds, setTeacherIds] = useState<string[]>([]);
+  const [teacherLabels, setTeacherLabels] = useState<Record<string, string>>({});
   const [teacherPick, setTeacherPick] = useState('');
   const [saving, setSaving] = useState(false);
+  const initializedForOpen = useRef(false);
 
   const selectedProgram = programs.find((p) => p.id === programId);
   const lockedCongregation = selectedProgram?.congregation_id || null;
@@ -184,13 +187,20 @@ export function ClassFormModal({
     programOptions.find((p) => p.value === (lockedProgramId || programId))?.label ||
     selectedProgram?.name;
 
-  const { options: memberOptions, setSearch } = useMemberOptions({
+  const { options: memberOptionsData, setSearch } = useMemberOptions({
     congregationId: congregationId || null,
     enabled: open && Boolean(congregationId),
   });
 
+  // Só hidrata o form ao abrir / trocar a turma — evita reset ao re-render do pai.
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      initializedForOpen.current = false;
+      return;
+    }
+    if (initializedForOpen.current) return;
+    initializedForOpen.current = true;
+
     const initialProgramId =
       teachingClass?.program_id || lockedProgramId || programOptions[0]?.value || '';
     setProgramId(initialProgramId);
@@ -208,9 +218,26 @@ export function ClassFormModal({
     setScheduleDay(split.day);
     setScheduleTime(split.time);
     setStatus(teachingClass?.status || 'draft');
-    setResponsibleId(teachingClass?.responsible_id || teachingClass?.responsible?.id || '');
-    setTeacherIds((teachingClass?.teachers || []).filter(Boolean).map((t) => t!.id));
+
+    const nextResponsibleId =
+      teachingClass?.responsible_id || teachingClass?.responsible?.id || '';
+    setResponsibleId(nextResponsibleId);
+    setResponsibleLabel(teachingClass?.responsible?.name || '');
+
+    const fromTeachers = (teachingClass?.teachers || []).filter(Boolean) as Array<{
+      id: string;
+      name: string;
+    }>;
+    const nextTeacherIds =
+      fromTeachers.length > 0
+        ? fromTeachers.map((t) => t.id)
+        : teachingClass?.teacher_ids || [];
+    setTeacherIds(nextTeacherIds);
+    setTeacherLabels(
+      Object.fromEntries(fromTeachers.map((t) => [t.id, t.name]))
+    );
     setTeacherPick('');
+    setSearch('');
   }, [
     open,
     teachingClass,
@@ -219,11 +246,77 @@ export function ClassFormModal({
     defaultCongregationId,
     lockedProgramId,
     programs,
+    setSearch,
   ]);
 
   useEffect(() => {
     if (lockedCongregation) setCongregationId(lockedCongregation);
   }, [lockedCongregation]);
+
+  useEffect(() => {
+    if (!responsibleId) return;
+    const match = memberOptionsData.find((m) => m.id === responsibleId);
+    if (match) setResponsibleLabel(match.name);
+  }, [memberOptionsData, responsibleId]);
+
+  useEffect(() => {
+    if (teacherIds.length === 0) return;
+    setTeacherLabels((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      for (const id of teacherIds) {
+        const match = memberOptionsData.find((m) => m.id === id);
+        if (match && next[id] !== match.name) {
+          next[id] = match.name;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [memberOptionsData, teacherIds]);
+
+  const responsibleOptions = useMemo(() => {
+    const base = memberOptionsData
+      .filter((m) => !teacherIds.includes(m.id))
+      .map((m) => ({ value: m.id, label: m.name }));
+    if (responsibleId && !base.some((o) => o.value === responsibleId)) {
+      base.unshift({
+        value: responsibleId,
+        label: responsibleLabel || 'Responsável selecionado',
+      });
+    }
+    return base;
+  }, [memberOptionsData, responsibleId, responsibleLabel, teacherIds]);
+
+  const teacherPickOptions = useMemo(() => {
+    return memberOptionsData
+      .filter((m) => m.id !== responsibleId && !teacherIds.includes(m.id))
+      .map((m) => ({ value: m.id, label: m.name }));
+  }, [memberOptionsData, responsibleId, teacherIds]);
+
+  const handleResponsibleChange = (value: string) => {
+    setResponsibleId(value);
+    const match = memberOptionsData.find((m) => m.id === value);
+    if (match) setResponsibleLabel(match.name);
+    else if (!value) setResponsibleLabel('');
+    // Se o novo responsável estava como professor, remove da lista
+    if (value) {
+      setTeacherIds((prev) => prev.filter((id) => id !== value));
+    }
+  };
+
+  const handleAddTeacher = (id: string) => {
+    if (!id || id === responsibleId || teacherIds.includes(id)) {
+      setTeacherPick('');
+      return;
+    }
+    const match = memberOptionsData.find((m) => m.id === id);
+    setTeacherIds((prev) => [...prev, id]);
+    if (match) {
+      setTeacherLabels((prev) => ({ ...prev, [id]: match.name }));
+    }
+    setTeacherPick('');
+  };
 
   const handleSave = async () => {
     try {
@@ -297,7 +390,10 @@ export function ClassFormModal({
             onChange={(v) => {
               setCongregationId(v);
               setResponsibleId('');
+              setResponsibleLabel('');
               setTeacherIds([]);
+              setTeacherLabels({});
+              setSearch('');
             }}
             options={congregations}
             searchable
@@ -342,10 +438,12 @@ export function ClassFormModal({
             <Select
               label="Responsável"
               value={responsibleId}
-              onChange={setResponsibleId}
-              options={memberOptions.map((m) => ({ value: m.id, label: m.name }))}
+              onChange={handleResponsibleChange}
+              options={responsibleOptions}
               searchable
               onSearchChange={setSearch}
+              placeholder={congregationId ? 'Digite para buscar…' : 'Selecione a congregação primeiro'}
+              disabled={!congregationId}
             />
           </div>
         </div>
@@ -353,32 +451,37 @@ export function ClassFormModal({
           <Select
             label="Adicionar professor"
             value={teacherPick}
-            onChange={(id) => {
-              if (!id || id === responsibleId || teacherIds.includes(id)) return;
-              setTeacherIds((prev) => [...prev, id]);
-              setTeacherPick('');
-            }}
-            options={memberOptions
-              .filter((m) => m.id !== responsibleId && !teacherIds.includes(m.id))
-              .map((m) => ({ value: m.id, label: m.name }))}
+            onChange={handleAddTeacher}
+            options={teacherPickOptions}
             searchable
             onSearchChange={setSearch}
-            placeholder="Selecione um membro"
+            placeholder={
+              !congregationId
+                ? 'Selecione a congregação primeiro'
+                : !responsibleId
+                  ? 'Selecione o responsável primeiro'
+                  : 'Digite para buscar…'
+            }
+            disabled={!congregationId || !responsibleId}
           />
           <div className="flex flex-wrap gap-2">
-            {teacherIds.map((id) => {
-              const member = memberOptions.find((m) => m.id === id);
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className="rounded-full bg-slate-100 px-3 py-1 text-sm min-h-11"
-                  onClick={() => setTeacherIds((prev) => prev.filter((x) => x !== id))}
-                >
-                  {member?.name || id} ×
-                </button>
-              );
-            })}
+            {teacherIds.map((id) => (
+              <button
+                key={id}
+                type="button"
+                className="rounded-full bg-slate-100 px-3 py-1 text-sm min-h-11"
+                onClick={() => {
+                  setTeacherIds((prev) => prev.filter((x) => x !== id));
+                  setTeacherLabels((prev) => {
+                    const next = { ...prev };
+                    delete next[id];
+                    return next;
+                  });
+                }}
+              >
+                {teacherLabels[id] || id} ×
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -404,13 +507,22 @@ export function ClassDetailModal({
   const [link, setLink] = useState<TeachingPublicLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState('');
+  const [memberLabel, setMemberLabel] = useState('');
   const [guestName, setGuestName] = useState('');
   const [guestWhatsapp, setGuestWhatsapp] = useState('');
   const [guestBirth, setGuestBirth] = useState('');
-  const { options: memberOptions, setSearch } = useMemberOptions({
+  const { options: memberOptionsData, setSearch } = useMemberOptions({
     congregationId: teachingClass.congregation_id,
     enabled: !readOnly,
   });
+
+  const memberSelectOptions = useMemo(() => {
+    const base = memberOptionsData.map((m) => ({ value: m.id, label: m.name }));
+    if (memberId && !base.some((o) => o.value === memberId)) {
+      base.unshift({ value: memberId, label: memberLabel || 'Membro selecionado' });
+    }
+    return base;
+  }, [memberOptionsData, memberId, memberLabel]);
 
   const load = useCallback(async () => {
     try {
@@ -591,10 +703,15 @@ export function ClassDetailModal({
                 <Select
                   label="Membro"
                   value={memberId}
-                  onChange={setMemberId}
-                  options={memberOptions.map((m) => ({ value: m.id, label: m.name }))}
+                  onChange={(value) => {
+                    setMemberId(value);
+                    const match = memberOptionsData.find((m) => m.id === value);
+                    setMemberLabel(match?.name || '');
+                  }}
+                  options={memberSelectOptions}
                   searchable
                   onSearchChange={setSearch}
+                  placeholder="Digite para buscar…"
                 />
                 <Button
                   className="min-h-11 self-end"
@@ -605,6 +722,7 @@ export function ClassDetailModal({
                         member_id: memberId,
                       });
                       setMemberId('');
+                      setMemberLabel('');
                       toast.success('Membro inscrito');
                       await load();
                       await onChanged();
