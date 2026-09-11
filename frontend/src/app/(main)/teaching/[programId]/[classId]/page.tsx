@@ -5,11 +5,11 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Loader2, Pencil, Trash2 } from 'lucide-react';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { ClassFormModal } from '@/components/teaching/TeachingModals';
 import { TeachingClassDetailView } from '@/components/teaching/TeachingClassDetailView';
-import { TeachingEmptyState } from '@/components/teaching/TeachingUi';
+import { StatusBadge, TeachingEmptyState } from '@/components/teaching/TeachingUi';
 import { READER_TOOLTIP } from '@/components/teaching/constants';
 import { useTeachingViewParams } from '@/components/teaching/useTeachingViewParams';
 import { useAuth } from '@/context/AuthContext';
@@ -31,6 +31,8 @@ function TeachingClassContent() {
   const [program, setProgram] = useState<TeachingProgram | null>(null);
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const backHref = `/teaching/${programId}${queryString}`;
@@ -125,47 +127,45 @@ function TeachingClassContent() {
         Turmas do programa
       </Link>
 
-      <PageHeader
-        title={teachingClass?.name || 'Turma'}
-        subtitle={loading ? 'Carregando…' : subtitle || undefined}
-        actions={
-          <div className="flex flex-wrap gap-2">
-            {!readOnly && teachingClass ? (
-              <>
-                <Button
-                  variant="secondary"
-                  className="min-h-11"
-                  onClick={() => setEditOpen(true)}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-                <Button
-                  variant="danger"
-                  className="min-h-11"
-                  onClick={async () => {
-                    if (!window.confirm('Excluir esta turma e suas matrículas?')) return;
-                    try {
-                      await apiService.deleteTeachingClass(teachingClass.id);
-                      toast.success('Turma excluída');
-                      router.push(backHref);
-                    } catch (err) {
-                      toast.error(formatApiError(err));
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
-                </Button>
-              </>
-            ) : readOnly ? (
-              <span title={READER_TOOLTIP} className="text-sm text-gray-500">
-                Somente leitura
-              </span>
-            ) : null}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">
+              {teachingClass?.name || 'Turma'}
+            </h1>
+            {teachingClass ? <StatusBadge status={teachingClass.status} /> : null}
           </div>
-        }
-      />
+          <p className="text-sm text-gray-600 mt-1">
+            {loading ? 'Carregando…' : subtitle || ' '}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0">
+          {!readOnly && teachingClass ? (
+            <>
+              <Button
+                variant="secondary"
+                className="min-h-11"
+                onClick={() => setEditOpen(true)}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              <Button
+                variant="ghost"
+                className="min-h-11 text-red-600 hover:text-red-700"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            </>
+          ) : readOnly ? (
+            <span title={READER_TOOLTIP} className="text-sm text-gray-500">
+              Somente leitura
+            </span>
+          ) : null}
+        </div>
+      </div>
 
       {loading || !teachingClass ? (
         <div className="flex items-center justify-center py-16 text-gray-500">
@@ -197,6 +197,29 @@ function TeachingClassContent() {
           }}
         />
       ) : null}
+
+      <ConfirmDeleteModal
+        isOpen={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Excluir turma"
+        itemName={teachingClass?.name}
+        message="Esta ação remove a turma e todas as matrículas. Não é possível desfazer."
+        isLoading={deleting}
+        onConfirm={async () => {
+          if (!teachingClass) return;
+          try {
+            setDeleting(true);
+            await apiService.deleteTeachingClass(teachingClass.id);
+            toast.success('Turma excluída');
+            setDeleteOpen(false);
+            router.push(backHref);
+          } catch (err) {
+            toast.error(formatApiError(err));
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 }
