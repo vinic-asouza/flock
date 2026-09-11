@@ -634,6 +634,7 @@ export function ClassDetailModal({
       onClose={onClose}
       title={classDetails.name}
       size="3xl"
+      scrollBody={false}
       footer={
         <div className="flex flex-wrap gap-2 justify-between w-full p-4 sm:p-6">
           {!readOnly ? (
@@ -668,9 +669,9 @@ export function ClassDetailModal({
         </div>
       }
     >
-      <div className="flex h-[min(72dvh,760px)] min-h-0 flex-col overflow-hidden md:flex-row">
-        {/* Coluna esquerda fixa ao rolar a direita */}
-        <aside className="w-full shrink-0 space-y-5 overflow-y-auto border-b border-gray-200 p-4 sm:p-6 md:w-[34%] md:border-b-0 md:border-r md:border-gray-200">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden md:flex-row">
+        {/* Coluna esquerda — fixa (sem scroll) */}
+        <aside className="w-full shrink-0 space-y-5 border-b border-gray-200 p-4 sm:p-6 md:w-[34%] md:overflow-hidden md:border-b-0 md:border-r md:border-gray-200">
           <div className="flex flex-wrap gap-2 items-center">
             <StatusBadge status={classDetails.status} />
             <span className="text-sm text-gray-500">
