@@ -670,9 +670,9 @@ export function ClassDetailModal({
         </div>
       }
     >
-      <div className="flex h-full min-h-0 flex-col overflow-hidden md:flex-row">
-        {/* Coluna esquerda — posição fixa; rola só o próprio conteúdo se passar da altura */}
-        <aside className="w-full shrink-0 space-y-5 overflow-y-auto border-b border-gray-200 p-4 sm:p-6 md:w-[34%] md:max-h-full md:border-b-0 md:border-r md:border-gray-200">
+      <div className="flex h-[min(80dvh,720px)] max-h-full min-h-0 flex-col overflow-hidden md:flex-row">
+        {/* Coluna esquerda — fica no lugar; scroll próprio só se o conteúdo dela passar da altura */}
+        <aside className="w-full shrink-0 space-y-5 overflow-y-auto border-b border-gray-200 p-4 sm:p-6 md:w-[34%] md:border-b-0 md:border-r md:border-gray-200">
           <div className="flex flex-wrap gap-2 items-center">
             <StatusBadge status={classDetails.status} />
             <span className="text-sm text-gray-500">
@@ -778,8 +778,9 @@ export function ClassDetailModal({
           </section>
         </aside>
 
-        {/* Coluna direita — inscritos (scroll) */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto p-4 sm:p-6 space-y-5">
+        {/* Coluna direita — única área que rola a lista de inscritos */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
           {!readOnly ? (
             <section className="space-y-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3 sm:p-4">
               <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
@@ -1071,6 +1072,7 @@ export function ClassDetailModal({
               </section>
             </>
           )}
+          </div>
         </div>
       </div>
     </Modal>

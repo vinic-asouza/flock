@@ -174,7 +174,7 @@ export function Modal({
         <div
           className={clsx(
             'flex-1 min-h-0 overflow-x-hidden overscroll-contain [&_input]:scroll-mb-24 [&_select]:scroll-mb-24 [&_textarea]:scroll-mb-24',
-            scrollBody ? 'overflow-y-auto' : 'overflow-hidden',
+            scrollBody ? 'overflow-y-auto' : 'overflow-hidden flex flex-col',
             contentClassName
           )}
         >
