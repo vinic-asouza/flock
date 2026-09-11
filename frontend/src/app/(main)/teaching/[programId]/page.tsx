@@ -7,11 +7,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Loader2, Pencil, Plus, School, Users } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import {
-  ClassDetailModal,
-  ClassFormModal,
-  ProgramFormModal,
-} from '@/components/teaching/TeachingModals';
+import { ClassFormModal, ProgramFormModal } from '@/components/teaching/TeachingModals';
 import { StatusBadge, TeachingEmptyState } from '@/components/teaching/TeachingUi';
 import { READER_TOOLTIP } from '@/components/teaching/constants';
 import {
@@ -37,7 +33,6 @@ function TeachingProgramContent() {
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [programModalOpen, setProgramModalOpen] = useState(false);
   const [classModalOpen, setClassModalOpen] = useState(false);
-  const [detailClass, setDetailClass] = useState<TeachingClass | null>(null);
   const [editingClass, setEditingClass] = useState<TeachingClass | null>(null);
 
   const programLockedCongregation = program?.congregation_id || null;
@@ -190,11 +185,10 @@ function TeachingProgramContent() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {classes.map((item) => (
-            <button
+            <Link
               key={item.id}
-              type="button"
-              className="text-left rounded-xl border border-gray-200 bg-white p-4 hover:border-primary/40 transition"
-              onClick={() => setDetailClass(item)}
+              href={`/teaching/${programId}/${item.id}${queryString}`}
+              className="text-left rounded-xl border border-gray-200 bg-white p-4 hover:border-primary/40 transition block"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-start gap-3 min-w-0">
@@ -217,7 +211,7 @@ function TeachingProgramContent() {
                 <Users className="h-3.5 w-3.5" />
                 {item.responsible?.name || 'Sem responsável'}
               </div>
-            </button>
+            </Link>
           ))}
         </div>
       )}
@@ -247,27 +241,6 @@ function TeachingProgramContent() {
         />
       ) : null}
 
-      {detailClass ? (
-        <ClassDetailModal
-          teachingClass={detailClass}
-          readOnly={readOnly}
-          onClose={() => setDetailClass(null)}
-          onEdit={(cls) => {
-            setEditingClass(cls);
-            setDetailClass(null);
-            setClassModalOpen(true);
-          }}
-          onChanged={async () => {
-            await loadData();
-            try {
-              const refreshed = await apiService.getTeachingClass(detailClass.id);
-              setDetailClass(refreshed);
-            } catch {
-              setDetailClass(null);
-            }
-          }}
-        />
-      ) : null}
     </div>
   );
 }
