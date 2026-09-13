@@ -329,4 +329,95 @@ export interface CreateParticipantData {
   guest_email?: string;
   guest_phone?: string;
   guest_whatsapp?: string;
+}
+
+// Tipos para Ensino (Teaching)
+export type TeachingClassStatus =
+  | 'draft'
+  | 'open'
+  | 'in_progress'
+  | 'closed'
+  | 'archived';
+
+export type TeachingEnrollmentKind = 'member' | 'guest' | 'possible_member';
+
+export interface TeachingProgram {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string | null;
+  congregation_id?: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface TeachingClass {
+  id: string;
+  church_id: string;
+  program_id: string;
+  congregation_id: string;
+  name: string;
+  location?: string | null;
+  schedule?: string | null;
+  start_date: string;
+  end_date?: string | null;
+  status: TeachingClassStatus;
+  responsible_id: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface TeachingClassTeacher {
+  class_id: string;
+  member_id: string;
+  created_at: Date;
+}
+
+export interface TeachingEnrollmentMatchSignals {
+  N: boolean;
+  W: boolean;
+  D: boolean;
+}
+
+export interface TeachingEnrollmentMatchMeta {
+  signals?: TeachingEnrollmentMatchSignals;
+  candidates?: Array<{
+    id: string;
+    signals: TeachingEnrollmentMatchSignals;
+  }>;
+}
+
+export interface TeachingEnrollment {
+  id: string;
+  church_id: string;
+  class_id: string;
+  kind: TeachingEnrollmentKind;
+  member_id?: string | null;
+  full_name?: string | null;
+  whatsapp?: string | null;
+  birth_date?: string | null;
+  email?: string | null;
+  match_meta?: TeachingEnrollmentMatchMeta | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface TeachingPublicLink {
+  id: string;
+  church_id: string;
+  class_id: string;
+  token: string;
+  expires_at: Date | string;
+  max_uses?: number | null;
+  current_uses: number;
+  is_active: boolean;
+  created_by?: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface PublicTeachingRequest extends Request {
+  teachingLink?: TeachingPublicLink;
+  churchId?: string;
+  churchName?: string;
 } 

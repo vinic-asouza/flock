@@ -1,9 +1,9 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-08-31
-versao: "1.10"
+ultima_atualizacao: 2026-09-13
+versao: "1.11"
 tags: [produto, domínio, vocabulário, referência]
-total_termos: 76
+total_termos: 82
 ---
 
 # Glossário do Domínio — Flock
@@ -38,7 +38,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Unidade local dentro da igreja (ex.: campus, ponto, filial). Não é o tenant.  
 - **Atributos-chave:** `name` (nome completo), `abbreviation` (nome popular curto, opcional), endereço, `leader`, `phone`, `is_primary`  
 - **Relacionamentos:** pertence a 1 igreja; membros e eventos referenciam-na  
-- **Usado em:** Membros, Integração, Grupos, Calendário, Relatórios  
+- **Usado em:** Membros, Integração, Grupos, Ensino, Calendário, Relatórios
 - **UI:** “Congregações”; em selects/chips/flags a UI prefere `abbreviation` quando existir  
 - **Nota:** cada igreja tem exatamente uma **congregação principal** (`is_primary = true`), criada no registro com o nome da igreja (sem abreviação). Não existe mais o conceito implícito “Sede” (`congregation_id` null / sentinel `sede`).
 
@@ -50,8 +50,8 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 **Membro** *(código: `Member`, `members`)*  
 > Pessoa no **rol oficial** da igreja. **Não** possui login no Flock por ser membro.  
 - **Atributos-chave:** `name`, `birth`, `gender`, `active`, `congregation_id`, recebimento (`admission`, `admission_date`, `baptism_date`)  
-- **Relacionamentos:** igreja; opcional congregação; N grupos (`member_groups`); pode ser mentor de integrantes  
-- **Usado em:** Membros, Relatórios, Grupos, Calendário, limite de plano  
+- **Relacionamentos:** igreja; opcional congregação; N grupos (`member_groups`); pode ser mentor de integrantes; pode ser responsável/professor/aluno em Ensino  
+- **Usado em:** Membros, Relatórios, Grupos, Ensino, Calendário, limite de plano  
 - **UI:** “Membros” · soft delete / `active` · ficha: bloco **Vínculo na igreja** (não é o questionário pastoral)
 
 **Integrante** *(código: `IntegrationMember`, `integration_members`)*  
@@ -76,7 +76,43 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Atributos-chave:** `type` (`GroupType`), `name`, `responsible_id`, `status`, `congregation_id`  
 - **Relacionamentos:** igreja; opcional congregação; membros via `member_groups`  
 - **Usado em:** Grupos, Membros, Relatórios  
-- **Nota:** substitui o antigo conceito de “cargos” isolados documentado em FEATURES v1 legado
+- **Nota:** substitui o antigo conceito de “cargos” isolados documentado em FEATURES v1 legado. **Não** confundir o tipo `Classe` com **Turma** do módulo Ensino.
+
+**Ensino** *(módulo; código: `teaching_*`)*  
+> Módulo do Painel para ciclos formativos (EBD, cursos, estudos). Menu **Ensino** → `/teaching`.  
+- **Usado em:** Programas, Turmas, matrículas, link público  
+- **UI:** “Ensino”
+
+**Programa** *(código: `TeachingProgram`, `teaching_programs`)*  
+> Catálogo formativo (ex.: “EBD 2026”) — nome livre + descrição opcional; escopo de **uma congregação** ou **todas**.  
+- **Relacionamentos:** igreja; N turmas  
+- **Usado em:** Ensino  
+- **UI:** “Programa”
+
+**Turma** *(código: `TeachingClass`, `teaching_classes`)*  
+> Edição/ciclo letivo que recebe matrícula (local, horário, datas, responsável, professores, status). Sempre pertence a um Programa e tem congregação.  
+- **Status:** `draft` / `open` / `in_progress` / `closed` / `archived` (UI: Rascunho, Aberta, Em andamento, Encerrada, Arquivada)  
+- **Usado em:** Ensino  
+- **UI:** “Turma” · **não** confundir com GroupType **Classe**
+
+**Aluno** *(matrícula; código: `TeachingEnrollment`, `teaching_enrollments`)*  
+> Matrícula na turma — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login.  
+- **Kinds:** `member` | `guest` | `possible_member`  
+- **Usado em:** Ensino  
+- **UI:** seção da turma costuma listar como **Inscritos**; badges Membro / Convidado / Possível membro
+
+**Possível membro** *(código: `kind = possible_member`)*  
+> Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+).  
+- **Usado em:** Ensino (fila no detalhe da turma)  
+- **UI:** “Possível membro”
+
+**Responsável (turma)** *(código: `teaching_classes.responsible_id`)*  
+> Um membro obrigatório responsável pela turma.  
+- **UI:** “Responsável”
+
+**Professor (turma)** *(código: `teaching_class_teachers`)*  
+> Membro adicional (0..N), distinto do responsável. Sem login próprio de professor.  
+- **UI:** “Professores”
 
 **Usuário da igreja** *(código: vínculo `ChurchUser` / `church_users`)*  
 > Conta Auth (`auth.users`) com papel na igreja. É quem **faz login**.  
@@ -97,7 +133,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **UI Painel:** “Plano 100/200/…” (Configurações → Plano; inalterado nesta Issue) 
 
 **Assinatura** *(código: campos Stripe em `churches` + `pending_subscriptions`)*  
-> Contrato de cobrança da igreja junto ao Stripe (status, datas, customer/subscription IDs).  
+> Contrato de cobrança da igreja junto ao Stripe (status, datas, customer/subscription IDs).
 - **Usado em:** checkout, portal, webhooks, jobs de expiração/downgrade
 
 **Item de calendário** *(código: `CalendarItem`, `calendar_items`)*  
@@ -218,6 +254,7 @@ Programação · Evento · Encontro · Reunião
 | **Importar membros** | CSV validate → import | Carga em lote com validação prévia |
 | **Autocadastrar** | link `PublicRegistrationLink` | Visitante vira Membro |
 | **Autointegrar** | link `PublicIntegrationLink` | Visitante vira Integrante |
+| **Inscrever (Ensino)** | link `teaching_public_links` | Visitante gera matrícula na turma (membro/convidado/fila) |
 | **Ativar/desativar membro** | `PATCH …/status` | Alterna `active` sem full update |
 | **Excluir membro** | soft delete | Remove do uso ativo sem apagar histórico de negócio de imediato |
 | **Convidar usuário** | `church_users` + e-mail | Dá login + role na igreja |
@@ -272,6 +309,8 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | Service role (Supabase) | Acesso backend que bypassa RLS — segurança de tenant é na aplicação |
 | Plan type `100`…`800` | Identificador do plano (= teto de membros no nome) |
 | Guest (calendário) | Participante externo sem cadastro de Membro |
+| Guest / Convidado (Ensino) | Matrícula `kind=guest` — fora do rol e da cota |
+| Match N/W/D | Nome / WhatsApp (4 dígitos) / nascimento — vínculo automático só N+W+D único |
 | Painel | Home `/` do app da igreja — dashboard de relatórios (não é o Admin OPS) |
 | Admin OPS | App interno `admin-ops/` — operação da plataforma, não da igreja |
 | Integração (módulo) | Funil de pré-membros — **não** é integração de API/sistema |
@@ -294,27 +333,29 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | “Ativo” sem contexto | **Membro ativo** ou **cliente comercialmente ativo** | `members.active` ≠ `subscription_status` Stripe |
 | “Member” na UI em inglês | **Membro** | UI é em português |
 | “Workspace/Team” | **Igreja** / **Usuários da igreja** | Vocabulário do produto não usa workspace |
+| “Classe” (Grupo) como turma de EBD | **Turma** (Ensino) | GroupType `Classe` = estrutura; Turma = ciclo letivo |
+| Chamar aluno de “usuário” ou “membro” sem vínculo | **Aluno** / badge **Convidado** ou **Possível membro** | Só `kind=member` é vínculo ao rol |
 
 ---
 
 ## 🔤 Índice Alfabético
 
-- **A:** Admin OPS, Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
+- **A:** Admin OPS, Aluno (matrícula Ensino), Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
 - **B:** Batismo (tipo de admissão), Billing (ver Assinatura)  
 - **C:** Calendário (item), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
-- **E:** Editor, Em progresso (`em_progresso`), Evento (tipo calendário), Encontro  
+- **E:** Editor, Em progresso (`em_progresso`), Ensino, Evento (tipo calendário), Encontro  
 - **F:** Ficha de pré-cadastro  
-- **G:** Grupo, Guest/Convidado (calendário)  
-- **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros  
-- **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração  
-- **M:** Membro, Mentor, Membership, Ministério (tipo de grupo)  
+- **G:** Grupo, Guest/Convidado (calendário), Guest/Convidado (Ensino)  
+- **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros, Inscritos (UI Ensino)  
+- **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração, Link público de turma  
+- **M:** Membro, Mentor, Membership, Match N/W/D, Ministério (tipo de grupo)  
 - **O:** Operador da plataforma, Owner (`dono`)  
-- **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Programação  
+- **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Possível membro, Professor (turma), Programa (Ensino), Programação  
 - **Q:** Questionário eclesiástico  
-- **R:** Recebimento (tipo/data), Reader, Recorrência, Reunião  
+- **R:** Recebimento (tipo/data), Reader, Recorrência, Responsável (turma), Reunião  
 - **S:** Soft delete, Subscription status, Sincronizar assinatura  
-- **T:** Tenant, Tipo de grupo, Trialing  
+- **T:** Tenant, Tipo de grupo, Trialing, Turma (Ensino)  
 - **U:** Usuário da igreja, União Estável  
 - **W:** Waitlist, Webhook (Stripe)
 
@@ -322,7 +363,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## Contagem e arquivos analisados
 
-**Total de termos documentados:** 76 _(frontmatter `total_termos`)_.
+**Total de termos documentados:** 82 _(frontmatter `total_termos`)_.
 
 **Arquivos analisados:**
 

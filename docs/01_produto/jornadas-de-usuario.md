@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-09-01
-versao: "1.21"
+ultima_atualizacao: 2026-09-13
+versao: "1.22"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -32,12 +32,16 @@ tags: [produto, UX, fluxos, jornadas]
 │   ├── /groups
 │   ├── /congregations
 │   ├── /calendar
+│   ├── /teaching
+│   │   ├── /teaching/[programId]
+│   │   └── /teaching/[programId]/[classId]
 │   ├── /settings?tab=…
 │   │   ├── church | payment | account | users | logs
 │   ├── /settings/subscription → redirect → /settings?tab=payment
 │   └── /tutorials
 ├── /public/register/[token]   → Autocadastro de membro (sem login)
 ├── /public/integration/[token]
+├── /public/teaching/[token]   → Inscrição pública na turma
 ├── /subscription/success
 └── /subscription/cancel
 ```
@@ -77,7 +81,7 @@ Não usa o layout `(main)` do Painel. Sentry ainda não.
 
 ## 🧭 Arquitetura de Informação
 
-**Nav principal (shell autenticado):** Painel → Membros → Integração → Grupos → Congregações → Calendário → _(separador)_ → Configurações → Tutoriais.  
+**Nav principal (shell autenticado):** Painel → Membros → Integração → Grupos → Congregações → Calendário → Ensino → _(separador)_ → Configurações → Tutoriais.  
 Fonte única: `NAV_ITEMS` (`frontend/src/components/main/navItems.ts`), consumida por Sidebar e drawer mobile.
 
 **Desktop (≥ `md` / 768px):** Sidebar fixa à esquerda.
@@ -216,9 +220,18 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 2. Abrir guia → steps textuais → CTA para rota alvo  
 3. Reader vê aviso se o guia exige `editor`
 
+### J13 — Ensino (programas, turmas e inscrição pública)
+
+1. Editor+ (ou reader em leitura) abre `/teaching` — seletor de congregação (some com 1 unidade)
+2. Cria Programa e Turma (modais / fluxos do hub); equipe = responsável + N professores
+3. No detalhe `/teaching/[programId]/[classId]`: adiciona inscritos (membro ou convidado), gera link público, resolve fila **Possível membro**
+4. Visitante abre `/public/teaching/[token]` → form único → success **confirmada** (vínculo auto) ou **enviada** (fila/convidado), sem revelar match
+
+**Mobile:** hub e detalhe operáveis em ~375px (cards, sheet/`Modal`, CTAs touch); form público full-bleed brand como register/integration.
+
 ### J-OPS — Console Admin OPS (interno)
 
-Não faz parte de J1–J12 nem do Mintlify. Ator: **Operador da plataforma**. App `admin-ops/` `:3002`.
+Não faz parte de J1–J13 nem do Mintlify. Ator: **Operador da plataforma**. App `admin-ops/` `:3002`.
 
 1. `/login` → `POST /api/ops/login` (allowlist; conta **sem** igreja).
 2. `/` **Visão geral**: totais de Igrejas (geral, comercialmente ativas/inativas), card da Lista de espera (pendentes), card de Saúde + breakdowns por plano e status Stripe.
@@ -303,7 +316,8 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
 19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), header `fixed`, CTAs touch, waitlist ≥16px, âncoras `/#faq` e `/#waitlist` a partir de `/waitlist`; funil register/login inalterado após redirect.
-20. **Admin OPS** não entra nas jornadas J1–J12 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (Visão geral), `/churches`, `/churches/[id]`, `/waitlist`, `/health`. Auth: `POST /api/ops/login`. Console: `GET /api/ops/overview`, `/churches`, `/churches/:id`, `/waitlist`, `PATCH /api/ops/waitlist/:id`, `GET /api/ops/health`. Não usar o shell do Painel. Sentry continua fora.
+20. **Admin OPS** não entra nas jornadas J1–J13 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (Visão geral), `/churches`, `/churches/[id]`, `/waitlist`, `/health`. Auth: `POST /api/ops/login`. Console: `GET /api/ops/overview`, `/churches`, `/churches/:id`, `/waitlist`, `PATCH /api/ops/waitlist/:id`, `GET /api/ops/health`. Não usar o shell do Painel. Sentry continua fora.
+21. Módulo **Ensino** (J13): hub `/teaching`, detalhe de turma, fila de possível membro e `/public/teaching/[token]` operáveis em ~375px — sem confundir Turma com GroupType Classe; convidado fora da cota.
 
 ---
 

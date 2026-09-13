@@ -24,6 +24,7 @@ import registrationLinksRoutes from './routes/registrationLinks';
 import integrationLinksRoutes from './routes/integrationLinks';
 import plansRoutes from './routes/plans';
 import groupsRoutes from './routes/groups';
+import teachingRoutes from './routes/teaching';
 import calendarRoutes from './routes/calendar';
 import calendarParticipantsRoutes from './routes/calendarParticipants';
 import churchUsersRoutes from './routes/churchUsers';
@@ -135,6 +136,7 @@ app.use('/api/registration-links', registrationLinksRoutes);
 app.use('/api/integration-links', integrationLinksRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/groups', groupsRoutes);
+app.use('/api/teaching', teachingRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/church-users', churchUsersRoutes);
 // Antes do catch-all `/api`: calendarParticipants aplica authMiddleware em

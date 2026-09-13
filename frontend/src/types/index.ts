@@ -347,3 +347,109 @@ export interface GroupSorting {
   sort_by: 'name' | 'type' | 'created_at' | 'updated_at' | 'status';
   sort_order: 'asc' | 'desc';
 }
+
+// Tipos para Ensino (Teaching)
+export type TeachingClassStatus =
+  | 'draft'
+  | 'open'
+  | 'in_progress'
+  | 'closed'
+  | 'archived';
+
+export type TeachingEnrollmentKind = 'member' | 'guest' | 'possible_member';
+
+export interface TeachingPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+  nextPage: number | null;
+  prevPage: number | null;
+}
+
+export interface TeachingProgram {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string | null;
+  congregation_id?: string | null;
+  class_count?: number;
+  created_at: string;
+  updated_at: string;
+  congregations?: { id: string; name: string; abbreviation?: string | null } | null;
+}
+
+export interface TeachingClass {
+  id: string;
+  church_id: string;
+  program_id: string;
+  congregation_id: string;
+  name: string;
+  location?: string | null;
+  schedule?: string | null;
+  start_date: string;
+  end_date?: string | null;
+  status: TeachingClassStatus;
+  responsible_id: string;
+  created_at: string;
+  updated_at: string;
+  congregations?: { id: string; name: string; abbreviation?: string | null } | null;
+  program?: { id: string; name: string; congregation_id?: string | null } | null;
+  responsible?: { id: string; name: string } | null;
+  teachers?: Array<{ id: string; name: string } | null>;
+  teacher_ids?: string[];
+}
+
+export interface TeachingEnrollment {
+  id: string;
+  church_id: string;
+  class_id: string;
+  kind: TeachingEnrollmentKind;
+  member_id?: string | null;
+  full_name?: string | null;
+  whatsapp?: string | null;
+  birth_date?: string | null;
+  email?: string | null;
+  display_name?: string;
+  whatsapp_masked?: string;
+  age?: number | null;
+  signals?: { N: boolean; W: boolean; D: boolean };
+  queue_candidates?: Array<{
+    id: string;
+    name: string;
+    age?: number | null;
+    birth?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
+    whatsapp_masked?: string;
+    congregation?: { id: string; name: string; abbreviation?: string | null } | null;
+    already_enrolled?: boolean;
+    signals?: { N: boolean; W: boolean; D: boolean };
+  }>;
+  member?: {
+    id: string;
+    name: string;
+    congregation_id?: string | null;
+    whatsapp?: string | null;
+    whatsapp_masked?: string | null;
+    age?: number | null;
+    birth?: string | null;
+    congregations?: { id: string; name: string; abbreviation?: string | null } | null;
+  } | null;
+  created_at: string;
+}
+
+export interface TeachingPublicLink {
+  id: string;
+  class_id: string;
+  token: string;
+  url: string;
+  expires_at: string;
+  max_uses?: number | null;
+  current_uses: number;
+  is_active: boolean;
+  enrollment_allowed?: boolean;
+  class_status?: TeachingClassStatus;
+}

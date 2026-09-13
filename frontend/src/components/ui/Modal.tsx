@@ -11,10 +11,13 @@ interface ModalProps {
   description?: React.ReactNode;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
+  /** Quando false, o body não rola — o filho controla o scroll (ex.: layout 2 colunas). */
+  scrollBody?: boolean;
+  contentClassName?: string;
 }
 
 export function Modal({
@@ -28,6 +31,8 @@ export function Modal({
   showCloseButton = true,
   closeOnOverlayClick = true,
   closeOnEscape = true,
+  scrollBody = true,
+  contentClassName,
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -118,6 +123,8 @@ export function Modal({
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
+    '2xl': 'max-w-6xl',
+    '3xl': 'max-w-7xl',
   };
 
   return (
@@ -164,7 +171,13 @@ export function Modal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain [&_input]:scroll-mb-24 [&_select]:scroll-mb-24 [&_textarea]:scroll-mb-24">
+        <div
+          className={clsx(
+            'flex-1 min-h-0 overflow-x-hidden overscroll-contain [&_input]:scroll-mb-24 [&_select]:scroll-mb-24 [&_textarea]:scroll-mb-24',
+            scrollBody ? 'overflow-y-auto' : 'overflow-hidden flex flex-col',
+            contentClassName
+          )}
+        >
           {children}
         </div>
 
