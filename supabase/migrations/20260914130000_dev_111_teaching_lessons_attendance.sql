@@ -134,13 +134,13 @@ DO $$
 DECLARE
   constraint_name text;
 BEGIN
-  SELECT constraint.conname INTO constraint_name
-  FROM pg_constraint constraint
+  SELECT c.conname INTO constraint_name
+  FROM pg_constraint c
   JOIN pg_attribute attribute
-    ON attribute.attrelid = constraint.conrelid
-    AND attribute.attnum = ANY (constraint.conkey)
-  WHERE constraint.conrelid = 'public.audit_logs'::regclass
-    AND constraint.contype = 'c'
+    ON attribute.attrelid = c.conrelid
+    AND attribute.attnum = ANY (c.conkey)
+  WHERE c.conrelid = 'public.audit_logs'::regclass
+    AND c.contype = 'c'
     AND attribute.attname = 'entity'
   LIMIT 1;
   IF constraint_name IS NOT NULL THEN

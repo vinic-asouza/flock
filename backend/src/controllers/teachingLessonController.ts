@@ -140,7 +140,7 @@ export const listTeachingLessons = async (req: AuthRequest, res: Response) => {
 
     const { data, error } = await supabase
       .from('teaching_lessons')
-      .select('*, teaching_lesson_series(id, recurrence_type, starts_on, ends_on)')
+      .select('*, teaching_lesson_series(*)')
       .eq('church_id', churchId)
       .eq('class_id', classId)
       .gte('lesson_date', from)
