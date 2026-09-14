@@ -176,7 +176,6 @@ function TeachingClassContent() {
         <TeachingClassDetailView
           teachingClass={teachingClass}
           readOnly={readOnly}
-          onDetailsChange={setTeachingClass}
         />
       )}
 

@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-09-13
-versao: "1.22"
+ultima_atualizacao: 2026-09-14
+versao: "1.23"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -224,10 +224,10 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 
 1. Editor+ (ou reader em leitura) abre `/teaching` — seletor de congregação (some com 1 unidade)
 2. Cria Programa e Turma (modais / fluxos do hub); equipe = responsável + N professores
-3. No detalhe `/teaching/[programId]/[classId]`: adiciona inscritos (membro ou convidado), gera link público, resolve fila **Possível membro**
+3. No detalhe `/teaching/[programId]/[classId]`: coluna lateral (Sobre / Equipe / Link) + abas **Inscritos** (default), **Aulas**, **Materiais**, **Certificados** (`?tab=`; inválido → Inscritos). Matrículas, fila **Possível membro** e ações de inscrito ficam em **Inscritos**; as outras abas são placeholders até as features filhas
 4. Visitante abre `/public/teaching/[token]` → form único → success **confirmada** (vínculo auto) ou **enviada** (fila/convidado), sem revelar match
 
-**Mobile:** hub e detalhe operáveis em ~375px (cards, sheet/`Modal`, CTAs touch); form público full-bleed brand como register/integration.
+**Mobile:** hub e detalhe operáveis em ~375px (cards, sheet/`Modal`, CTAs touch, nav de abas com overflow-x); form público full-bleed brand como register/integration.
 
 ### J-OPS — Console Admin OPS (interno)
 
@@ -317,7 +317,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).
 19. Módulo **Aquisição** (J1/J2 + waitlist): landing pública `/` e `/waitlist` operáveis em ~375px — hamburger próprio (não drawer do app), header `fixed`, CTAs touch, waitlist ≥16px, âncoras `/#faq` e `/#waitlist` a partir de `/waitlist`; funil register/login inalterado após redirect.
 20. **Admin OPS** não entra nas jornadas J1–J13 nem no Mintlify. App interno `admin-ops/` (`:3002`): `/login`, `/` (Visão geral), `/churches`, `/churches/[id]`, `/waitlist`, `/health`. Auth: `POST /api/ops/login`. Console: `GET /api/ops/overview`, `/churches`, `/churches/:id`, `/waitlist`, `PATCH /api/ops/waitlist/:id`, `GET /api/ops/health`. Não usar o shell do Painel. Sentry continua fora.
-21. Módulo **Ensino** (J13): hub `/teaching`, detalhe de turma, fila de possível membro e `/public/teaching/[token]` operáveis em ~375px — sem confundir Turma com GroupType Classe; convidado fora da cota.
+21. Módulo **Ensino** (J13): hub `/teaching`, detalhe de turma com abas (Inscritos / Aulas / Materiais / Certificados + `?tab=`), fila de possível membro e `/public/teaching/[token]` operáveis em ~375px — sem confundir Turma com GroupType Classe; convidado fora da cota.
 
 ---
 

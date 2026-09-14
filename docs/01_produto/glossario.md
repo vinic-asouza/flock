@@ -1,7 +1,7 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-09-13
-versao: "1.11"
+ultima_atualizacao: 2026-09-14
+versao: "1.12"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 82
 ---
@@ -99,7 +99,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Matrícula na turma — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login.  
 - **Kinds:** `member` | `guest` | `possible_member`  
 - **Usado em:** Ensino  
-- **UI:** seção da turma costuma listar como **Inscritos**; badges Membro / Convidado / Possível membro
+- **UI:** aba **Inscritos** no detalhe da turma; badges Membro / Convidado / Possível membro
 
 **Possível membro** *(código: `kind = possible_member`)*  
 > Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+).  

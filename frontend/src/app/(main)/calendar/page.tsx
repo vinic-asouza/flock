@@ -359,16 +359,33 @@ export default function CalendarPage() {
       <div className="mb-6">
         <Tabs
           tabs={[
-            { id: 'calendar', label: 'Calendário', icon: <CalendarIcon size={18} /> },
-            { id: 'list', label: 'Listas', icon: <List size={18} /> }
+            {
+              id: 'calendar',
+              label: 'Calendário',
+              icon: <CalendarIcon size={18} />,
+              panelId: 'calendar-panel',
+            },
+            {
+              id: 'list',
+              label: 'Listas',
+              icon: <List size={18} />,
+              panelId: 'list-panel',
+            },
           ]}
           activeTab={activeTab}
           onTabChange={(tabId) => setActiveTab(tabId as 'calendar' | 'list')}
+          ariaLabel="Visualização do calendário"
         />
       </div>
 
       {/* Conteúdo baseado na tab ativa */}
-      <div>
+      <div
+        id={`${activeTab}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${activeTab}-tab`}
+        tabIndex={0}
+        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
         {loading ? (
           <div className="flex justify-center items-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
