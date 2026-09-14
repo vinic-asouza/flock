@@ -3,7 +3,7 @@ import { logError } from './logger';
 import { AuthRequest } from '../types';
 
 interface AuditLogData {
-  entity: 'member' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'member_group' | 'calendar_item' | 'account' | 'church' | 'teaching_program' | 'teaching_class' | 'teaching_class_teachers' | 'teaching_enrollment' | 'teaching_public_link';
+  entity: 'member' | 'congregation' | 'integration_member' | 'public_registration_link' | 'public_integration_link' | 'group' | 'member_group' | 'calendar_item' | 'account' | 'church' | 'teaching_program' | 'teaching_class' | 'teaching_class_teachers' | 'teaching_enrollment' | 'teaching_public_link' | 'teaching_lesson' | 'teaching_lesson_series' | 'teaching_lesson_attendance';
   entityId: string | null;
   action: 'create' | 'update' | 'delete' | 'convert' | 'import' | 'export' | 'deactivate';
   changesBefore?: any;

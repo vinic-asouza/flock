@@ -27,6 +27,16 @@ import {
   createTeachingPublicLink,
   patchTeachingPublicLink,
 } from '../controllers/teachingPublicLinkController';
+import {
+  createTeachingLesson,
+  createTeachingLessonSeries,
+  deleteTeachingLesson,
+  getTeachingLessonAttendance,
+  listTeachingLessons,
+  previewTeachingLessonSeries,
+  saveTeachingLessonAttendance,
+  updateTeachingLesson,
+} from '../controllers/teachingLessonController';
 
 const router = Router();
 
@@ -47,6 +57,24 @@ router.post('/classes', requireRole('editor'), createTeachingClass);
 router.patch('/classes/:id', requireRole('editor'), updateTeachingClass);
 router.delete('/classes/:id', requireRole('editor'), deleteTeachingClass);
 router.put('/classes/:id/teachers', requireRole('editor'), replaceTeachingClassTeachers);
+
+// Aulas, séries e chamada
+router.get('/classes/:id/lessons', listTeachingLessons);
+router.post('/classes/:id/lessons', requireRole('editor'), createTeachingLesson);
+router.post(
+  '/classes/:id/lesson-series/preview',
+  requireRole('editor'),
+  previewTeachingLessonSeries
+);
+router.post('/classes/:id/lesson-series', requireRole('editor'), createTeachingLessonSeries);
+router.patch('/lessons/:lessonId', requireRole('editor'), updateTeachingLesson);
+router.delete('/lessons/:lessonId', requireRole('editor'), deleteTeachingLesson);
+router.get('/lessons/:lessonId/attendance', getTeachingLessonAttendance);
+router.put(
+  '/lessons/:lessonId/attendance',
+  requireRole('editor'),
+  saveTeachingLessonAttendance
+);
 
 // Matrículas
 router.get('/classes/:id/enrollments', listTeachingEnrollments);
