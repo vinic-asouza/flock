@@ -24,6 +24,7 @@ import { formatDate } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 import { formatClassPeriod } from './dates';
 import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
+import { TeachingLessonsTab } from './TeachingLessonsTab';
 import { TeachingEmptyState } from './TeachingUi';
 import {
   type TeachingClassTab,
@@ -41,8 +42,7 @@ const CLASS_TABS: Array<{
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
 ];
 
-const PLACEHOLDER_COPY: Record<Exclude<TeachingClassTab, 'inscritos'>, string> = {
-  aulas: 'O cronograma e a presença desta turma serão gerenciados aqui.',
+const PLACEHOLDER_COPY: Record<Exclude<TeachingClassTab, 'inscritos' | 'aulas'>, string> = {
   materiais: 'Links e anotações da turma serão gerenciados aqui.',
   certificados:
     'A emissão de certificados estará disponível após o encerramento da turma.',
@@ -87,6 +87,7 @@ export function TeachingClassDetailView({
 }) {
   const [link, setLink] = useState<TeachingPublicLink | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [lessonsDirty, setLessonsDirty] = useState(false);
   const { activeTab, setActiveTab } = useTeachingClassTab();
   const teachers = (teachingClass.teachers || []).filter(Boolean) as Array<{
     id: string;
@@ -321,7 +322,21 @@ export function TeachingClassDetailView({
         <Tabs
           tabs={CLASS_TABS}
           activeTab={activeTab}
-          onTabChange={(tabId) => setActiveTab(tabId as TeachingClassTab)}
+          onTabChange={(tabId) => {
+            const nextTab = tabId as TeachingClassTab;
+            if (
+              activeTab === 'aulas' &&
+              nextTab !== 'aulas' &&
+              lessonsDirty &&
+              !window.confirm(
+                'Há alterações de presença não salvas. Deseja descartá-las?'
+              )
+            ) {
+              return;
+            }
+            if (nextTab !== 'aulas') setLessonsDirty(false);
+            setActiveTab(nextTab);
+          }}
           ariaLabel="Conteúdo da turma"
         />
 
@@ -336,6 +351,12 @@ export function TeachingClassDetailView({
             <TeachingEnrollmentsTab
               teachingClass={teachingClass}
               readOnly={readOnly}
+            />
+          ) : activeTab === 'aulas' ? (
+            <TeachingLessonsTab
+              teachingClass={teachingClass}
+              readOnly={readOnly}
+              onDirtyChange={setLessonsDirty}
             />
           ) : (
             <TeachingEmptyState text={PLACEHOLDER_COPY[activeTab]} />

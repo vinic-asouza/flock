@@ -21,7 +21,14 @@ import {
   GroupPayload,
   GroupWithMembers,
   ChurchUserListItem,
-  ChurchUserRole
+  ChurchUserRole,
+  TeachingAttendanceChange,
+  TeachingAttendanceResponse,
+  TeachingLesson,
+  TeachingLessonPayload,
+  TeachingLessonRecurrencePayload,
+  TeachingLessonScope,
+  TeachingLessonSeriesPreview,
 } from '@/types';
 import {
   CalendarItem,
@@ -1369,6 +1376,103 @@ class ApiService {
 
   async deleteTeachingEnrollment(enrollmentId: string) {
     const response = await this.api.delete(`/teaching/enrollments/${enrollmentId}`);
+    return response.data;
+  }
+
+  async listTeachingLessons(classId: string, params: { from: string; to: string }) {
+    const query = new URLSearchParams({ from: params.from, to: params.to });
+    const response = await this.api.get<{ data: TeachingLesson[]; period: typeof params }>(
+      `/teaching/classes/${classId}/lessons?${query}`
+    );
+    return response.data;
+  }
+
+  async createTeachingLesson(classId: string, data: TeachingLessonPayload) {
+    const response = await this.api.post<TeachingLesson>(
+      `/teaching/classes/${classId}/lessons`,
+      data
+    );
+    return response.data;
+  }
+
+  async previewTeachingLessonSeries(
+    classId: string,
+    data: TeachingLessonRecurrencePayload
+  ) {
+    const response = await this.api.post<TeachingLessonSeriesPreview>(
+      `/teaching/classes/${classId}/lesson-series/preview`,
+      data
+    );
+    return response.data;
+  }
+
+  async createTeachingLessonSeries(
+    classId: string,
+    data: TeachingLessonRecurrencePayload
+  ) {
+    const response = await this.api.post<{
+      series: Record<string, unknown>;
+      occurrence_count: number;
+      skipped_months: string[];
+    }>(`/teaching/classes/${classId}/lesson-series`, data);
+    return response.data;
+  }
+
+  async updateTeachingLesson(
+    lessonId: string,
+    data: {
+      scope: TeachingLessonScope;
+      title?: string;
+      description?: string | null;
+      lesson_date?: string;
+      start_time?: string;
+      recurrence?: Omit<TeachingLessonRecurrencePayload, 'title' | 'description' | 'start_time'>;
+    }
+  ) {
+    const response = await this.api.patch(`/teaching/lessons/${lessonId}`, data);
+    return response.data;
+  }
+
+  async deleteTeachingLesson(
+    lessonId: string,
+    params: {
+      scope: TeachingLessonScope;
+      confirm_attendance_deletion?: boolean;
+    }
+  ) {
+    const query = new URLSearchParams({ scope: params.scope });
+    if (params.confirm_attendance_deletion) {
+      query.set('confirm_attendance_deletion', 'true');
+    }
+    await this.api.delete(`/teaching/lessons/${lessonId}?${query}`);
+  }
+
+  async getTeachingLessonAttendance(
+    lessonId: string,
+    params: { page?: number; limit?: number; search?: string }
+  ) {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.search) query.set('search', params.search);
+    const response = await this.api.get<TeachingAttendanceResponse>(
+      `/teaching/lessons/${lessonId}/attendance?${query}`
+    );
+    return response.data;
+  }
+
+  async saveTeachingLessonAttendance(
+    lessonId: string,
+    data: {
+      changes: TeachingAttendanceChange[];
+      mark_unregistered_present: boolean;
+      overwrite_absent: boolean;
+    }
+  ) {
+    const response = await this.api.put<{
+      lesson_id: string;
+      affected_count: number;
+    }>(`/teaching/lessons/${lessonId}/attendance`, data);
     return response.data;
   }
 
