@@ -7,6 +7,7 @@ import {
   format,
   isSameMonth,
   isToday,
+  parseISO,
   subMonths,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -75,8 +76,7 @@ function LessonButton({
       }`}
     >
       <span className={`block truncate font-medium text-gray-900 ${compact ? 'text-xs' : 'text-sm'}`}>
-        {formatLessonTime(lesson.start_time)} {compact ? '' : '· '}
-        {lesson.title}
+        {compact ? lesson.title : `${formatLessonTime(lesson.start_time)} · ${lesson.title}`}
       </span>
       {!compact ? (
         <span className="mt-1 block text-xs text-gray-500">
@@ -212,6 +212,14 @@ export function TeachingLessonsTab({
   const range = useMemo(() => getVisibleMonthRange(month), [month]);
   const calendarDays = useMemo(() => getVisibleMonthDays(month), [month]);
   const lessonsByDate = useMemo(() => groupLessonsByDate(lessons), [lessons]);
+  const monthLessons = useMemo(
+    () =>
+      lessons.filter((lesson) => {
+        const lessonDate = parseISO(lesson.lesson_date);
+        return isSameMonth(lessonDate, month);
+      }),
+    [lessons, month]
+  );
   const selectedLesson = lessons.find((lesson) => lesson.id === selectedId) || null;
 
   useEffect(() => {
@@ -509,14 +517,14 @@ export function TeachingLessonsTab({
                 })}
               </div>
             </div>
-          ) : lessons.length === 0 ? (
+          ) : monthLessons.length === 0 ? (
             <TeachingEmptyState
               text="Nenhuma aula neste período."
               action={!readOnly ? <Button onClick={() => openCreate()}>Criar primeira aula</Button> : undefined}
             />
           ) : (
             <ol className="space-y-3">
-              {lessons.map((lesson) => (
+              {monthLessons.map((lesson) => (
                 <li key={lesson.id}>
                   <p className="mb-1 text-xs font-medium capitalize text-gray-500">
                     {formatLessonDate(lesson.lesson_date)}
@@ -531,7 +539,7 @@ export function TeachingLessonsTab({
             </ol>
           )}
 
-          {!loading && !error && lessons.length === 0 && mode === 'calendar' ? (
+          {!loading && !error && monthLessons.length === 0 && mode === 'calendar' ? (
             <p className="text-center text-sm text-gray-500">Nenhuma aula neste período.</p>
           ) : null}
         </Card>
