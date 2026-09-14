@@ -7,6 +7,7 @@ import {
   BookOpen,
   UserCog,
   Calendar,
+  GraduationCap,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Grupos', href: '/groups', icon: UserCog },
   { label: 'Congregações', href: '/congregations', icon: Layers },
   { label: 'Calendário', href: '/calendar', icon: Calendar },
+  { label: 'Ensino', href: '/teaching', icon: GraduationCap },
   { label: 'Configurações', href: '/settings', icon: Settings, sectionStart: true },
   { label: 'Tutoriais', href: '/tutorials', icon: BookOpen },
 ];

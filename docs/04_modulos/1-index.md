@@ -1,7 +1,7 @@
 ---
 type: modulos-index
-ultima_atualizacao: 2026-08-26
-total_modulos: 13
+ultima_atualizacao: 2026-09-13
+total_modulos: 14
 tags: [módulos, índice]
 ---
 
@@ -20,7 +20,7 @@ O Flock **não** usa NestJS modules nem pasta `domain/`. A modularização é **
 - **Frontend app:** rotas em `frontend/src/app/(main|auth|public|subscription)/`
 - **Landing:** aquisição (`landing/`)
 - **Admin OPS:** operação da plataforma (`admin-ops/`, local `:3002`)
-- **KB de regras:** particionada em **12** módulos de igreja em `02_regras-de-negocio/regras-por-modulo/` + Admin OPS (`BR-OPS-*`)
+- **KB de regras:** particionada em **13** módulos de igreja em `02_regras-de-negocio/regras-por-modulo/` + Admin OPS (`BR-OPS-*`)
 
 Este catálogo alinha o recorte de módulos para documentação técnica em `04_modulos/[nome].md`. Utilitários (`middlewares/`, `utils/`, `jobs/` transversais) **não** são módulos de negócio.
 
@@ -36,6 +36,7 @@ graph TD
   INT[Integração]
   CON[Congregações]
   GRP[Grupos]
+  ENS[Ensino]
   CAL[Calendário]
   REL[Relatórios]
   CFG[Igreja / Config]
@@ -66,6 +67,11 @@ graph TD
   GRP --> CFG
   GRP --> CON
   GRP --> MEM
+
+  ENS --> AUTH
+  ENS --> CFG
+  ENS --> CON
+  ENS --> MEM
 
   CAL --> AUTH
   CAL --> CFG
@@ -101,15 +107,16 @@ graph TD
 | **integracao** | Pré-membros, conversão, links públicos de integração | Alta | Ativo | auth, igreja-config, membros, congregacoes | ~14 |
 | **congregacoes** | Unidades locais (CRUD + batch) | Baixa | Ativo | auth, igreja-config | ~6 |
 | **grupos** | Ministérios/células e vínculos membro↔grupo | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
+| **ensino** | Programas, turmas, matrículas, match e link público | Alta | Ativo | auth, igreja-config, congregacoes, membros | ~16 |
 | **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo | auth, igreja-config, congregacoes, grupos, membros | ~11 |
 | **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~13 |
 | **igreja-config** | Igreja, conta do usuário, equipe (`church_users`), audit logs | Alta | Ativo | auth | ~16 |
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |
 | **aquisicao** | Landing, waitlist, entrada de leads/checkout público | Baixa | Ativo | billing | ~5 |
 | **tutoriais** | Guias in-app (conteúdo front) | Baixa | Ativo | auth | ~1 |
-| **admin-ops** | Centro operacional interno (`admin-ops/` :3002 + `/api/ops` auth + UI/GETs de Igrejas + saúde) | Média | Em Desenvolvimento | auth | 7 |
+| **admin-ops** | Centro operacional interno (`admin-ops/` :3002 + `/api/ops` auth + UI/GETs de Igrejas + Lista de espera + saúde) | Média | Em Desenvolvimento | auth | 8 |
 
-**Total:** **13** módulos · ~**124** operações HTTP de domínio da igreja + **7** `/api/ops`.
+**Total:** **14** módulos · ~**140** operações HTTP de domínio da igreja + **8** `/api/ops`.
 
 ---
 
@@ -118,7 +125,7 @@ graph TD
 - Cada módulo terá arquivo `docs/04_modulos/[nome].md` (nomes = slugs da tabela).
 - Fluxos, contratos e operações do módulo ficam **no próprio** `04_modulos/[nome].md`.
 - Regras de negócio numeradas permanecem em [[02_regras-de-negocio/regras-por-modulo/index]].
-- Nomes de pasta/arquivo alinhados aos slugs de regras: `auth`, `onboarding`, `membros`, `integracao`, `congregacoes`, `grupos`, `calendario`, `relatorios`, `igreja-config`, `billing`, `aquisicao`, `tutoriais`, `admin-ops`.
+- Nomes de pasta/arquivo alinhados aos slugs de regras: `auth`, `onboarding`, `membros`, `integracao`, `congregacoes`, `grupos`, `ensino`, `calendario`, `relatorios`, `igreja-config`, `billing`, `aquisicao`, `tutoriais`, `admin-ops`.
 
 ---
 
@@ -130,6 +137,7 @@ graph TD
 - [[04_modulos/integracao]] — Pipeline de integração
 - [[04_modulos/congregacoes]] — Congregações
 - [[04_modulos/grupos]] — Grupos e ministérios
+- [[04_modulos/ensino]] — Ensino (programas e turmas)
 - [[04_modulos/calendario]] — Calendário e participantes
 - [[04_modulos/relatorios]] — Relatórios e exportações
 - [[04_modulos/igreja-config]] — Igreja, conta e equipe

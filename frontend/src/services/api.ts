@@ -21,7 +21,14 @@ import {
   GroupPayload,
   GroupWithMembers,
   ChurchUserListItem,
-  ChurchUserRole
+  ChurchUserRole,
+  TeachingAttendanceChange,
+  TeachingAttendanceResponse,
+  TeachingLesson,
+  TeachingLessonPayload,
+  TeachingLessonRecurrencePayload,
+  TeachingLessonScope,
+  TeachingLessonSeriesPreview,
 } from '@/types';
 import {
   CalendarItem,
@@ -1255,6 +1262,247 @@ class ApiService {
     const response = await this.api.delete(`/integration-links/${id}`);
     return response.data;
   }
+
+  // ========== Ensino (Teaching) ==========
+
+  async listTeachingPrograms(params?: { congregation_id?: string }) {
+    const query = new URLSearchParams();
+    if (params?.congregation_id) query.append('congregation_id', params.congregation_id);
+    const url = `/teaching/programs${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
+  async getTeachingProgram(id: string) {
+    const response = await this.api.get(`/teaching/programs/${id}`);
+    return response.data;
+  }
+
+  async createTeachingProgram(data: {
+    name: string;
+    description?: string | null;
+    congregation_id?: string | null;
+  }) {
+    const response = await this.api.post('/teaching/programs', data);
+    return response.data;
+  }
+
+  async updateTeachingProgram(
+    id: string,
+    data: Partial<{ name: string; description: string | null; congregation_id: string | null }>
+  ) {
+    const response = await this.api.patch(`/teaching/programs/${id}`, data);
+    return response.data;
+  }
+
+  async deleteTeachingProgram(id: string) {
+    const response = await this.api.delete(`/teaching/programs/${id}`);
+    return response.data;
+  }
+
+  async listTeachingClasses(params?: {
+    congregation_id?: string;
+    program_id?: string;
+    status?: string;
+    search?: string;
+    start_date_from?: string;
+    start_date_to?: string;
+    sort_by?: string;
+    sort_order?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const query = new URLSearchParams();
+    if (params?.congregation_id) query.append('congregation_id', params.congregation_id);
+    if (params?.program_id) query.append('program_id', params.program_id);
+    if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+    if (params?.start_date_from) query.append('start_date_from', params.start_date_from);
+    if (params?.start_date_to) query.append('start_date_to', params.start_date_to);
+    if (params?.sort_by) query.append('sort_by', params.sort_by);
+    if (params?.sort_order) query.append('sort_order', params.sort_order);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    const url = `/teaching/classes${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
+  async getTeachingClass(id: string) {
+    const response = await this.api.get(`/teaching/classes/${id}`);
+    return response.data;
+  }
+
+  async createTeachingClass(data: Record<string, unknown>) {
+    const response = await this.api.post('/teaching/classes', data);
+    return response.data;
+  }
+
+  async updateTeachingClass(id: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/teaching/classes/${id}`, data);
+    return response.data;
+  }
+
+  async deleteTeachingClass(id: string) {
+    const response = await this.api.delete(`/teaching/classes/${id}`);
+    return response.data;
+  }
+
+  async listTeachingEnrollments(
+    classId: string,
+    params?: { page?: number; limit?: number; search?: string }
+  ) {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    const url = `/teaching/classes/${classId}/enrollments${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data;
+  }
+
+  async createTeachingEnrollment(classId: string, data: Record<string, unknown>) {
+    const response = await this.api.post(`/teaching/classes/${classId}/enrollments`, data);
+    return response.data;
+  }
+
+  async resolveTeachingEnrollment(
+    enrollmentId: string,
+    data: { action: 'link_member'; member_id: string } | { action: 'keep_guest' }
+  ) {
+    const response = await this.api.patch(`/teaching/enrollments/${enrollmentId}/resolve`, data);
+    return response.data;
+  }
+
+  async deleteTeachingEnrollment(enrollmentId: string) {
+    const response = await this.api.delete(`/teaching/enrollments/${enrollmentId}`);
+    return response.data;
+  }
+
+  async listTeachingLessons(classId: string, params: { from: string; to: string }) {
+    const query = new URLSearchParams({ from: params.from, to: params.to });
+    const response = await this.api.get<{ data: TeachingLesson[]; period: typeof params }>(
+      `/teaching/classes/${classId}/lessons?${query}`
+    );
+    return response.data;
+  }
+
+  async createTeachingLesson(classId: string, data: TeachingLessonPayload) {
+    const response = await this.api.post<TeachingLesson>(
+      `/teaching/classes/${classId}/lessons`,
+      data
+    );
+    return response.data;
+  }
+
+  async previewTeachingLessonSeries(
+    classId: string,
+    data: TeachingLessonRecurrencePayload
+  ) {
+    const response = await this.api.post<TeachingLessonSeriesPreview>(
+      `/teaching/classes/${classId}/lesson-series/preview`,
+      data
+    );
+    return response.data;
+  }
+
+  async createTeachingLessonSeries(
+    classId: string,
+    data: TeachingLessonRecurrencePayload
+  ) {
+    const response = await this.api.post<{
+      series: Record<string, unknown>;
+      occurrence_count: number;
+      skipped_months: string[];
+    }>(`/teaching/classes/${classId}/lesson-series`, data);
+    return response.data;
+  }
+
+  async updateTeachingLesson(
+    lessonId: string,
+    data: {
+      scope: TeachingLessonScope;
+      title?: string;
+      description?: string | null;
+      lesson_date?: string;
+      start_time?: string;
+      recurrence?: Omit<TeachingLessonRecurrencePayload, 'title' | 'description' | 'start_time'>;
+    }
+  ) {
+    const response = await this.api.patch(`/teaching/lessons/${lessonId}`, data);
+    return response.data;
+  }
+
+  async deleteTeachingLesson(
+    lessonId: string,
+    params: {
+      scope: TeachingLessonScope;
+      confirm_attendance_deletion?: boolean;
+    }
+  ) {
+    const query = new URLSearchParams({ scope: params.scope });
+    if (params.confirm_attendance_deletion) {
+      query.set('confirm_attendance_deletion', 'true');
+    }
+    await this.api.delete(`/teaching/lessons/${lessonId}?${query}`);
+  }
+
+  async getTeachingLessonAttendance(
+    lessonId: string,
+    params: { page?: number; limit?: number; search?: string }
+  ) {
+    const query = new URLSearchParams();
+    if (params.page) query.set('page', String(params.page));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.search) query.set('search', params.search);
+    const response = await this.api.get<TeachingAttendanceResponse>(
+      `/teaching/lessons/${lessonId}/attendance?${query}`
+    );
+    return response.data;
+  }
+
+  async saveTeachingLessonAttendance(
+    lessonId: string,
+    data: {
+      changes: TeachingAttendanceChange[];
+      mark_unregistered_present: boolean;
+      overwrite_absent: boolean;
+    }
+  ) {
+    const response = await this.api.put<{
+      lesson_id: string;
+      affected_count: number;
+    }>(`/teaching/lessons/${lessonId}/attendance`, data);
+    return response.data;
+  }
+
+  async getTeachingPublicLink(classId: string) {
+    const response = await this.api.get(`/teaching/classes/${classId}/public-link`);
+    return response.data;
+  }
+
+  async createTeachingPublicLink(classId: string, data: Record<string, unknown> = {}) {
+    const response = await this.api.post(`/teaching/classes/${classId}/public-link`, data);
+    return response.data;
+  }
+
+  async updateTeachingPublicLink(classId: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/teaching/classes/${classId}/public-link`, data);
+    return response.data;
+  }
+
+  async validateTeachingPublicLink(token: string) {
+    const response = await this.api.get(`/public/teaching/${token}`);
+    return response.data;
+  }
+
+  async enrollViaTeachingPublicLink(
+    token: string,
+    data: { full_name: string; whatsapp: string; birth_date: string; email?: string }
+  ) {
+    const response = await this.api.post(`/public/teaching/${token}`, data);
+    return response.data;
+  }
 }
 
 // Instância singleton
@@ -1265,6 +1513,12 @@ export default apiService;
  * Formata um erro da API exibindo tanto a mensagem principal quanto os detalhes de validação (Joi).
  * Use nos catch dos modais e páginas para garantir feedback completo ao usuário.
  */
+export function getApiErrorStatus(err: unknown): number | undefined {
+  if (!err || typeof err !== 'object') return undefined;
+  const e = err as { status?: number; response?: { status?: number } };
+  return e.status ?? e.response?.status;
+}
+
 export function formatApiError(err: unknown): string {
   if (!(err instanceof Error)) {
     return 'Ocorreu um erro inesperado.';

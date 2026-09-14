@@ -9,7 +9,7 @@ import { assertCongregationAccess } from '../utils/congregationScope';
 /**
  * Gera um token único e seguro para o link de registro
  */
-const generateSecureToken = (): string => {
+export const generateSecureToken = (): string => {
   // Gera um token de 32 bytes (256 bits) em base64
   // Remove caracteres especiais e deixa apenas alfanuméricos
   return randomBytes(32)

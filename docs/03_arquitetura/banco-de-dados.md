@@ -1,7 +1,7 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-09-01
-versao: "1.2"
+ultima_atualizacao: 2026-09-13
+versao: "1.3"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
 tags: [arquitetura, banco-de-dados, schema, ERD]
@@ -9,8 +9,8 @@ tags: [arquitetura, banco-de-dados, schema, ERD]
 
 # Banco de Dados — Flock
 
-> Fonte da verdade: schema **live** do projeto Supabase `flock-app-01` (`lzsybtvywrhwsxtsywbw`), inspecionado via MCP em 2026-07-13; colunas do questionário eclesiástico conferidas em 2026-08-31 (DEV-91).  
-> Dump local de referência (pode estar atrasado): `backend/bd-structure.sql`.  
+> Fonte da verdade: schema **live** do projeto Supabase `flock-app-01` (`lzsybtvywrhwsxtsywbw`), inspecionado via MCP; Ensino (`teaching_*`) conferido em 2026-09-13 (DEV-99).  
+> Dump local de referência (parcial — seção Ensino atualizada; pode estar incompleto para o restante): `backend/bd-structure.sql`.  
 > Visão de sistema: [[03_arquitetura/visao-geral]].
 
 ---
@@ -25,7 +25,7 @@ tags: [arquitetura, banco-de-dados, schema, ERD]
 | ORM | **Nenhum** — acesso via `@supabase/supabase-js` (^2.38.0) |
 | Cliente backend | `supabaseAdmin` / `db` com **service_role** (bypassa RLS) |
 | Cliente auth | `supabase` anon key — apenas `supabase.auth.*` |
-| Schema de domínio | `public` (17 tabelas) + `auth.users` (Supabase Auth) |
+| Schema de domínio | `public` (inclui `teaching_*`) + `auth.users` (Supabase Auth) |
 | Estratégia de IDs | **UUID**; default `gen_random_uuid()` ou `extensions.uuid_generate_v4()` |
 | Nomenclatura | Tabelas/colunas em **snake_case** (inglês); enums misturam PT/EN |
 | Soft delete | **Não há `deleted_at`**. Flags: `members.active`, links `is_active`, grupos `status` (bool), calendário `status` text. Muitos recursos usam **DELETE físico**. |
@@ -427,6 +427,95 @@ erDiagram
 
 ---
 
+#### teaching_programs
+> Catálogo formativo (EBD, cursos, etc.).
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| name | text | NOT NULL, len 2–100 | — | Nome |
+| description | text | NULL | — | Descrição |
+| congregation_id | uuid | NULL, FK RESTRICT | — | null = todas as congregações |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** `church_id`, `(church_id, name)`.
+
+---
+
+#### teaching_classes
+> Turma (ciclo letivo) — sempre com congregação e responsável.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| program_id | uuid | NOT NULL, FK CASCADE → teaching_programs | — | Programa |
+| congregation_id | uuid | NOT NULL, FK RESTRICT | — | Local da turma |
+| name | text | NOT NULL, len 2–100 | — | Nome |
+| location / schedule | text | NULL | — | Local / horário |
+| status | text | NOT NULL, CHECK draft/open/in_progress/closed/archived | `draft` | Status |
+| responsible_id | uuid | NOT NULL, FK → members RESTRICT | — | Responsável |
+| start_date | date | NOT NULL | — | Início |
+| end_date | date | NULL, CHECK ≥ start_date | — | Fim opcional |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** `church_id`, `program_id`, `congregation_id`, `(church_id, status)`, `(church_id, start_date)`.
+
+---
+
+#### teaching_class_teachers
+> N professores por turma (além do responsável).
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| class_id | uuid | PK parcial, FK CASCADE | — | Turma |
+| member_id | uuid | PK parcial, FK CASCADE | — | Professor |
+| created_at | timestamptz | NOT NULL | `now()` | Vínculo |
+
+**PK:** `(class_id, member_id)`.
+
+---
+
+#### teaching_enrollments
+> Matrícula: membro, convidado ou possível membro.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| class_id | uuid | NOT NULL, FK CASCADE | — | Turma |
+| kind | text | NOT NULL, CHECK member/guest/possible_member | — | Tipo |
+| member_id | uuid | NULL, FK SET NULL; UNIQUE parcial com class | — | Obrigatório se member |
+| full_name / whatsapp / birth_date | text/date | NULL* | — | Obrigatórios se guest/possible_member |
+| email | text | NULL | — | Fora do match |
+| match_meta | jsonb | NULL | — | Sinais/candidatos (interno) |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** `class_id`, `(church_id, kind)`, UNIQUE parcial `(class_id, member_id) WHERE member_id IS NOT NULL`.
+
+---
+
+#### teaching_public_links
+> Link de inscrição pública — **um** por turma.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| class_id | uuid | NOT NULL, UNIQUE, FK CASCADE | — | Turma |
+| token | text | NOT NULL, UNIQUE | — | Token na URL |
+| expires_at | timestamptz | NOT NULL | — | Validade |
+| max_uses | int | NULL, CHECK > 0 | — | Teto opcional |
+| current_uses | int | NOT NULL | `0` | Contador |
+| is_active | boolean | NOT NULL | `true` | Ativo |
+| created_by | uuid | NULL, FK auth.users SET NULL | — | Autor |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** UNIQUE `class_id`, UNIQUE `token`, `church_id`, `token`.
+
+---
+
 #### member_groups
 > N:N membro ↔ grupo.
 
@@ -683,6 +772,8 @@ erDiagram
 | Member gender | Masculino, Feminino | `members.gender` |
 | Member marital | Solteiro, Casado, Divorciado, Viúvo, Outro, União Estável | `members.marital_status` |
 | Group type | Ministério, Departamento, Equipe, Time, Comissão, Célula, … | `groups.type` |
+| Teaching class status | draft, open, in_progress, closed, archived | `teaching_classes.status` |
+| Teaching enrollment kind | member, guest, possible_member | `teaching_enrollments.kind` |
 | Calendar type/status/recurrence | ver dicionário | `calendar_items` |
 | Audit entity/action | member, role, … / create, update, delete, convert, import, export, deactivate | `audit_logs` |
 | Webhook outcome | processing, success, released, failed | `processed_webhook_events` |
@@ -811,6 +902,7 @@ Não há colunas com senha/hash no schema `public` (auth via Supabase). Sem colu
 - `stripe_customer_id` / payloads completos de webhook para roles baixas  
 - Tokens de links além do fluxo que os consome  
 - Diff completo de `audit_logs` para roles reader  
+- `match_meta` / candidatos do rol / PII de membros em `/api/public/teaching/*`  
 
 ---
 

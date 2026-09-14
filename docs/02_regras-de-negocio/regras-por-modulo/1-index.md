@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-08-31
-versao: "1.5"
-total_modulos: 13
-total_regras: 155
+ultima_atualizacao: 2026-09-13
+versao: "1.7"
+total_modulos: 14
+total_regras: 168
 tags: [regras, índice, módulos]
 ---
 
@@ -19,10 +19,11 @@ tags: [regras, índice, módulos]
 | Autenticação e Sessão | [[02_regras-de-negocio/regras-por-modulo/auth]] | AUTH | 14 | Login, sessão, senha, confirmação |
 | Admin OPS | [[02_regras-de-negocio/regras-por-modulo/admin-ops]] | OPS | 8 | Allowlist + leitura GET de Igrejas + Lista de espera + saúde agregada |
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
-| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 18 | Rol oficial, import, autocadastro |
-| Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 16 | Pré-membros e conversão |
-| Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
+| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 16 | Rol oficial, import, autocadastro |
+| Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
+| Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
+| Ensino | [[02_regras-de-negocio/regras-por-modulo/ensino]] | ENS | 18 | Programas, turmas, matrículas, match, link público |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
 | Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 15 | Igreja, conta, equipe, audit |
@@ -30,23 +31,23 @@ tags: [regras, índice, módulos]
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 13 módulos · **155 regras**
+**Total:** 14 módulos · **168 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
 | Prioridade | Módulos |
 | --- | --- |
 | Crítica | auth, membros, billing, onboarding |
-| Alta | integracao, igreja-config, congregacoes |
+| Alta | integracao, igreja-config, congregacoes, ensino |
 | Média | grupos, calendario, relatorios |
 | Baixa / acquis. | aquisicao, tutoriais, admin-ops |
 
 ## Convenções de ID
 
-`BR-[SIGLA]-[NNN]` — exemplos: `BR-AUTH-001`, `BR-MEM-010`, `BR-BILL-008`.
+`BR-[SIGLA]-[NNN]` — exemplos: `BR-AUTH-001`, `BR-MEM-010`, `BR-ENS-010`, `BR-BILL-008`.
 
 Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-09-01 — BR-OPS-008 (PATCH de situação da waitlist, DEV-95).
+2026-09-13 — BR-ENS-001…018 (módulo Ensino, DEV-99).
