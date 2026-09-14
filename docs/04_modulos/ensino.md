@@ -3,8 +3,8 @@ type: modulo
 nome: ensino
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-09-13
-versao: "1.0"
+ultima_atualizacao: 2026-09-14
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, ensino, teaching]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -77,7 +77,7 @@ frontend/src/
 │   ├── [programId]/page.tsx
 │   └── [programId]/[classId]/page.tsx
 ├── app/public/teaching/[token]/page.tsx
-└── components/teaching/            → UI, filtros, detalhe, modais
+└── components/teaching/            → UI, filtros, detalhe (abas), inscritos, modais
 
 Testes: `teachingMatchService.test.ts`, `teachingEnrollmentPolicy.test.ts`, `teachingValidator.test.ts`
 Schema: Supabase live + espelho parcial em `backend/bd-structure.sql` (seção Ensino)
@@ -198,11 +198,11 @@ flowchart LR
 | --- | --- |
 | `/teaching` | Hub (programas / turmas + seletor congregação) |
 | `/teaching/[programId]` | Contexto do programa |
-| `/teaching/[programId]/[classId]` | Detalhe da turma (equipe, link, **Inscritos**, fila) |
+| `/teaching/[programId]/[classId]` | Detalhe da turma: aside (Sobre / Equipe / Link) + abas **Inscritos**, **Aulas**, **Materiais**, **Certificados** (`?tab=`) |
 | `/public/teaching/[token]` | Form público brand full-bleed |
 
 Nav: label **Ensino**, ícone `GraduationCap`, entre Calendário e Configurações.  
-UI lista de matrículas: seção **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário).
+UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Aulas/Materiais/Certificados são placeholders até as Issues filhas (DEV-111 / DEV-112 / DEV-110).
 
 ---
 
