@@ -220,11 +220,11 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 2. Abrir guia → steps textuais → CTA para rota alvo  
 3. Reader vê aviso se o guia exige `editor`
 
-### J13 — Ensino (programas, turmas e inscrição pública)
+### J13 — Ensino (programas, turmas, aulas e inscrição pública)
 
 1. Editor+ (ou reader em leitura) abre `/teaching` — seletor de congregação (some com 1 unidade)
 2. Cria Programa e Turma (modais / fluxos do hub); equipe = responsável + N professores
-3. No detalhe `/teaching/[programId]/[classId]`: coluna lateral (Sobre / Equipe / Link) + abas **Inscritos** (default), **Aulas**, **Materiais**, **Certificados** (`?tab=`; inválido → Inscritos). Matrículas, fila **Possível membro** e ações de inscrito ficam em **Inscritos**; as outras abas são placeholders até as features filhas
+3. No detalhe `/teaching/[programId]/[classId]`: coluna lateral (Sobre / Equipe / Link) + abas **Inscritos** (default), **Aulas**, **Materiais**, **Certificados** (`?tab=`; inválido → Inscritos). Matrículas e fila ficam em **Inscritos**. Em **Aulas**: calendário/lista mensal, criar avulsa ou série, editar/excluir `single|following`, detalhe e **Chamada** (`?lessonId=`). Materiais/Certificados ainda placeholders.
 4. Visitante abre `/public/teaching/[token]` → form único → success **confirmada** (vínculo auto) ou **enviada** (fila/convidado), sem revelar match
 
 **Mobile:** hub e detalhe operáveis em ~375px (cards, sheet/`Modal`, CTAs touch, nav de abas com overflow-x); form público full-bleed brand como register/integration.

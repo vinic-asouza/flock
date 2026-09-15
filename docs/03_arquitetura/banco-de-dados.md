@@ -1,7 +1,7 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-09-13
-versao: "1.3"
+ultima_atualizacao: 2026-09-15
+versao: "1.4"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
 tags: [arquitetura, banco-de-dados, schema, ERD]
@@ -9,7 +9,7 @@ tags: [arquitetura, banco-de-dados, schema, ERD]
 
 # Banco de Dados — Flock
 
-> Fonte da verdade: schema **live** do projeto Supabase `flock-app-01` (`lzsybtvywrhwsxtsywbw`), inspecionado via MCP; Ensino (`teaching_*`) conferido em 2026-09-13 (DEV-99).  
+> Fonte da verdade: schema **live** do projeto Supabase `flock-app-01` (`lzsybtvywrhwsxtsywbw`), inspecionado via MCP; Ensino (`teaching_*` + aulas/presença) conferido em 2026-09-15 (DEV-111).  
 > Dump local de referência (parcial — seção Ensino atualizada; pode estar incompleto para o restante): `backend/bd-structure.sql`.  
 > Visão de sistema: [[03_arquitetura/visao-geral]].
 
@@ -490,9 +490,64 @@ erDiagram
 | full_name / whatsapp / birth_date | text/date | NULL* | — | Obrigatórios se guest/possible_member |
 | email | text | NULL | — | Fora do match |
 | match_meta | jsonb | NULL | — | Sinais/candidatos (interno) |
+| attendance_eligible_from | date | NULL* | — | Início inclusivo da chamada (obrigatório se member/guest) |
+| removed_at | timestamptz | NULL | — | Soft-remove; histórico de presença anterior permanece |
+| display_name_snapshot | text | NULL | — | Nome na chamada após remoção |
 | created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
 
-**Índices:** `class_id`, `(church_id, kind)`, UNIQUE parcial `(class_id, member_id) WHERE member_id IS NOT NULL`.
+**Índices:** `class_id`, `(church_id, kind)`, `(church_id, class_id, removed_at, attendance_eligible_from)`, UNIQUE parcial `(class_id, member_id) WHERE member_id IS NOT NULL AND removed_at IS NULL`.
+
+---
+
+#### teaching_lesson_series
+> Regra de recorrência materializada da turma.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id / class_id | uuid | NOT NULL, FK CASCADE | — | Tenant + turma |
+| recurrence_type | text | NOT NULL | — | weekly \| monthly \| interval_days |
+| starts_on / ends_on | date | NOT NULL | — | Intervalo da série |
+| weekdays / day_of_month / interval_days | — | conforme tipo | — | Parâmetros da regra |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+---
+
+#### teaching_lessons
+> Ocorrência de aula (avulsa ou da série).
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id / class_id | uuid | NOT NULL, FK CASCADE | — | Tenant + turma |
+| series_id | uuid | NULL, FK CASCADE | — | null se avulsa |
+| occurrence_key | text | NULL | — | Chave estável na série (em geral a data) |
+| lesson_date | date | NOT NULL | — | Data do encontro |
+| start_time | time | NOT NULL | — | Horário |
+| title | text | NOT NULL | — | Título |
+| description | text | NULL | — | Opcional |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices / UNIQUE:** `(class_id, lesson_date, start_time)`; `(series_id, occurrence_key)` quando recorrente.
+
+---
+
+#### teaching_lesson_attendance
+> Presença por aula × matrícula.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| lesson_id | uuid | NOT NULL, FK CASCADE | — | Aula |
+| enrollment_id | uuid | NOT NULL, FK CASCADE | — | Matrícula |
+| status | text | NOT NULL | `unregistered` | unregistered \| present \| absent |
+| marked_at / marked_by | timestamptz / uuid | NULL | — | Última marcação |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**UNIQUE:** `(lesson_id, enrollment_id)`.
+
+**RPCs (service_role):** create/update/delete lesson series scope; `save_teaching_lesson_attendance`; `delete_teaching_lessons_scope` limpa série órfã.
 
 ---
 
@@ -774,6 +829,8 @@ erDiagram
 | Group type | Ministério, Departamento, Equipe, Time, Comissão, Célula, … | `groups.type` |
 | Teaching class status | draft, open, in_progress, closed, archived | `teaching_classes.status` |
 | Teaching enrollment kind | member, guest, possible_member | `teaching_enrollments.kind` |
+| Teaching lesson recurrence | weekly, monthly, interval_days | `teaching_lesson_series.recurrence_type` |
+| Teaching attendance status | unregistered, present, absent | `teaching_lesson_attendance.status` |
 | Calendar type/status/recurrence | ver dicionário | `calendar_items` |
 | Audit entity/action | member, role, … / create, update, delete, convert, import, export, deactivate | `audit_logs` |
 | Webhook outcome | processing, success, released, failed | `processed_webhook_events` |
