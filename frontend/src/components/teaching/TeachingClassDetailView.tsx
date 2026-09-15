@@ -25,6 +25,7 @@ import { getCongregationDisplayName } from '@/utils/congregation';
 import { formatClassPeriod } from './dates';
 import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
 import { TeachingLessonsTab } from './TeachingLessonsTab';
+import { TeachingCertificatesTab } from './TeachingCertificatesTab';
 import { TeachingEmptyState } from './TeachingUi';
 import {
   type TeachingClassTab,
@@ -42,10 +43,8 @@ const CLASS_TABS: Array<{
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
 ];
 
-const PLACEHOLDER_COPY: Record<Exclude<TeachingClassTab, 'inscritos' | 'aulas'>, string> = {
+const PLACEHOLDER_COPY: Record<'materiais', string> = {
   materiais: 'Links e anotações da turma serão gerenciados aqui.',
-  certificados:
-    'A emissão de certificados estará disponível após o encerramento da turma.',
 };
 
 function PersonChip({ name }: { name: string }) {
@@ -88,6 +87,7 @@ export function TeachingClassDetailView({
   const [link, setLink] = useState<TeachingPublicLink | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [lessonsDirty, setLessonsDirty] = useState(false);
+  const [certificatesDirty, setCertificatesDirty] = useState(false);
   const { activeTab, setActiveTab } = useTeachingClassTab();
   const teachers = (teachingClass.teachers || []).filter(Boolean) as Array<{
     id: string;
@@ -334,7 +334,18 @@ export function TeachingClassDetailView({
             ) {
               return;
             }
+            if (
+              activeTab === 'certificados' &&
+              nextTab !== 'certificados' &&
+              certificatesDirty &&
+              !window.confirm(
+                'A configuração desta emissão será descartada. Deseja continuar?'
+              )
+            ) {
+              return;
+            }
             if (nextTab !== 'aulas') setLessonsDirty(false);
+            if (nextTab !== 'certificados') setCertificatesDirty(false);
             setActiveTab(nextTab);
           }}
           ariaLabel="Conteúdo da turma"
@@ -358,8 +369,14 @@ export function TeachingClassDetailView({
               readOnly={readOnly}
               onDirtyChange={setLessonsDirty}
             />
+          ) : activeTab === 'certificados' ? (
+            <TeachingCertificatesTab
+              teachingClass={teachingClass}
+              readOnly={readOnly}
+              onDirtyChange={setCertificatesDirty}
+            />
           ) : (
-            <TeachingEmptyState text={PLACEHOLDER_COPY[activeTab]} />
+            <TeachingEmptyState text={PLACEHOLDER_COPY.materiais} />
           )}
         </section>
       </div>

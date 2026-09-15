@@ -1491,6 +1491,37 @@ class ApiService {
     return response.data;
   }
 
+  async exportTeachingCertificates(
+    classId: string,
+    payload: {
+      enrollmentIds: string[];
+      primaryColor: string;
+      secondaryColor: string;
+      churchLogo: File;
+      extraLogos?: File[];
+    }
+  ): Promise<{ blob: Blob; filename: string }> {
+    const form = new FormData();
+    form.append('enrollmentIds', JSON.stringify(payload.enrollmentIds));
+    form.append('primaryColor', payload.primaryColor);
+    form.append('secondaryColor', payload.secondaryColor);
+    form.append('churchLogo', payload.churchLogo);
+    (payload.extraLogos || []).forEach((file) => {
+      form.append('extraLogos', file);
+    });
+
+    const response = await this.api.post(`/teaching/classes/${classId}/certificates/export`, form, {
+      responseType: 'blob',
+    });
+
+    const filename =
+      getFilenameFromContentDisposition(
+        response.headers['content-disposition'] as string | undefined
+      ) ?? `certificados-${classId}.pdf`;
+
+    return { blob: response.data, filename };
+  }
+
   async validateTeachingPublicLink(token: string) {
     const response = await this.api.get(`/public/teaching/${token}`);
     return response.data;
