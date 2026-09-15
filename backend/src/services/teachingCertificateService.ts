@@ -36,7 +36,7 @@ export function parseEnrollmentIds(raw: unknown): string[] {
   return [...new Set(text.split(/[,;\s]+/).map((v) => v.trim()).filter(Boolean))];
 }
 
-export type DetectedImageMime = 'image/png' | 'image/jpeg' | 'image/webp';
+export type DetectedImageMime = 'image/png' | 'image/jpeg';
 
 export function detectImageMime(buffer: Buffer): DetectedImageMime | null {
   if (buffer.length < 12) return null;
@@ -46,11 +46,7 @@ export function detectImageMime(buffer: Buffer): DetectedImageMime | null {
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return 'image/jpeg';
   }
-  const riff = buffer.toString('ascii', 0, 4);
-  const webp = buffer.toString('ascii', 8, 12);
-  if (riff === 'RIFF' && webp === 'WEBP') {
-    return 'image/webp';
-  }
+  // WebP (RIFF....WEBP) e demais formatos não são suportados pelo PDFKit neste fluxo
   return null;
 }
 
@@ -66,7 +62,7 @@ export function validateLogoBuffer(
   }
   const mime = detectImageMime(buffer);
   if (!mime) {
-    return { ok: false, message: `${label} deve ser PNG, JPEG ou WebP válido` };
+    return { ok: false, message: `${label} deve ser PNG ou JPEG válido` };
   }
   return { ok: true, mime };
 }

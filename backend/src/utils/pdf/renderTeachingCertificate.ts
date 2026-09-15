@@ -28,12 +28,20 @@ function drawFittedImage(
   x: number,
   y: number,
   maxW: number,
-  maxH: number
+  maxH: number,
+  options?: { required?: boolean; label?: string }
 ) {
   try {
     doc.image(buffer, x, y, { fit: [maxW, maxH], align: 'center', valign: 'center' });
-  } catch {
-    // ignore invalid embedded image for a single slot
+  } catch (err) {
+    if (options?.required) {
+      throw new Error(
+        options.label
+          ? `${options.label} não pôde ser embutido no PDF (use PNG ou JPEG)`
+          : 'Imagem obrigatória não pôde ser embutida no PDF (use PNG ou JPEG)'
+      );
+    }
+    // Logos adicionais: omitir slot se o embed falhar
   }
 }
 
@@ -74,7 +82,10 @@ function drawCertificatePage(
   const logoMaxW = 120;
   const centerX = pageW / 2;
 
-  drawFittedImage(doc, input.churchLogo, centerX - logoMaxW / 2, logoY, logoMaxW, logoMaxH);
+  drawFittedImage(doc, input.churchLogo, centerX - logoMaxW / 2, logoY, logoMaxW, logoMaxH, {
+    required: true,
+    label: 'Logo da Igreja',
+  });
 
   const extras = (input.extraLogos || []).slice(0, 2);
   if (extras[0]) {

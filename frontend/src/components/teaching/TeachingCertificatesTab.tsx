@@ -14,7 +14,8 @@ import { TeachingEmptyState } from './TeachingUi';
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 const MAX_EXTRA = 2;
 const MAX_SELECT = 50;
-const ACCEPT_IMAGES = 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp';
+const ENROLLMENTS_PAGE_SIZE = 100;
+const ACCEPT_IMAGES = 'image/png,image/jpeg,.png,.jpg,.jpeg';
 
 function KindBadge({ kind }: { kind: TeachingEnrollmentKind }) {
   const styles =
@@ -121,12 +122,26 @@ export function TeachingCertificatesTab({
     if (!isClosed) return;
     setLoading(true);
     try {
-      const res = await apiService.listTeachingEnrollments(teachingClass.id, {
+      const first = await apiService.listTeachingEnrollments(teachingClass.id, {
         page: 1,
-        limit: 100,
+        limit: ENROLLMENTS_PAGE_SIZE,
       });
-      setEligible((res.data || []) as TeachingEnrollment[]);
-      setQueue((res.queue || []) as TeachingEnrollment[]);
+      const rows = [...((first.data || []) as TeachingEnrollment[])];
+      let pagination = first.pagination;
+      let page = 1;
+
+      while (pagination?.hasNextPage && page < (pagination.totalPages || page)) {
+        page += 1;
+        const next = await apiService.listTeachingEnrollments(teachingClass.id, {
+          page,
+          limit: ENROLLMENTS_PAGE_SIZE,
+        });
+        rows.push(...((next.data || []) as TeachingEnrollment[]));
+        pagination = next.pagination;
+      }
+
+      setEligible(rows);
+      setQueue((first.queue || []) as TeachingEnrollment[]);
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -171,6 +186,10 @@ export function TeachingCertificatesTab({
     }
     if (file.size > 2 * 1024 * 1024) {
       toast.error('Cada logo deve ter no máximo 2 MB');
+      return;
+    }
+    if (!/^image\/(png|jpeg)$/i.test(file.type) && !/\.(png|jpe?g)$/i.test(file.name)) {
+      toast.error('Use PNG ou JPEG');
       return;
     }
     setter({ file, previewUrl: URL.createObjectURL(file) });
@@ -293,7 +312,9 @@ export function TeachingCertificatesTab({
                 alt="Prévia do logo da igreja"
                 className="h-16 w-auto object-contain"
               />
-            ) : null}
+            ) : (
+              <p className="text-xs text-gray-500">PNG ou JPEG, até 2 MB.</p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -341,6 +362,13 @@ export function TeachingCertificatesTab({
                       if (!file) return;
                       if (file.size > 2 * 1024 * 1024) {
                         toast.error('Cada logo deve ter no máximo 2 MB');
+                        return;
+                      }
+                      if (
+                        !/^image\/(png|jpeg)$/i.test(file.type) &&
+                        !/\.(png|jpe?g)$/i.test(file.name)
+                      ) {
+                        toast.error('Use PNG ou JPEG');
                         return;
                       }
                       setExtraLogos((prev) => [

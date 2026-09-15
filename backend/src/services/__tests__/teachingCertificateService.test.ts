@@ -39,6 +39,19 @@ describe('teachingCertificateService', () => {
       expect(validateLogoBuffer(undefined, 'Logo').ok).toBe(false);
       expect(validateLogoBuffer(Buffer.from('hello-world!!'), 'Logo').ok).toBe(false);
     });
+
+    it('rejects WebP (unsupported by PDFKit embed)', () => {
+      const webp = Buffer.alloc(12);
+      webp.write('RIFF', 0);
+      webp.writeUInt32LE(4, 4);
+      webp.write('WEBP', 8);
+      expect(detectImageMime(webp)).toBeNull();
+      const result = validateLogoBuffer(webp, 'Logo da Igreja');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.message).toMatch(/PNG ou JPEG/);
+      }
+    });
   });
 
   describe('resolveCertificateStudents', () => {
@@ -46,6 +59,7 @@ describe('teachingCertificateService', () => {
       { id: '1', kind: 'member', display_name: 'Ana', removed_at: null },
       { id: '2', kind: 'guest', display_name: 'Bruno', removed_at: null },
       { id: '3', kind: 'possible_member', display_name: 'Carla', removed_at: null },
+      { id: '4', kind: 'member', display_name: 'Diana', removed_at: '2026-09-01T00:00:00.000Z' },
     ];
 
     it('accepts member and guest in request order', () => {
@@ -59,6 +73,14 @@ describe('teachingCertificateService', () => {
     it('rejects possible_member', () => {
       const result = resolveCertificateStudents(['3'], rows);
       expect(result.ok).toBe(false);
+    });
+
+    it('rejects removed enrollments', () => {
+      const result = resolveCertificateStudents(['4'], rows);
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.message).toMatch(/removida/i);
+      }
     });
 
     it('rejects unknown ids and empty selection', () => {

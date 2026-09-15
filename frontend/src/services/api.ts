@@ -1512,6 +1512,7 @@ class ApiService {
 
     const response = await this.api.post(`/teaching/classes/${classId}/certificates/export`, form, {
       responseType: 'blob',
+      timeout: 60000,
     });
 
     const filename =

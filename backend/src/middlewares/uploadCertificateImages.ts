@@ -1,8 +1,9 @@
 import multer from 'multer';
 import { Request } from 'express';
 
-const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
-const ALLOWED_EXT = /\.(png|jpe?g|webp)$/i;
+/** PDFKit embute PNG/JPEG de forma confiável; WebP não é suportado. */
+const ALLOWED_MIME = new Set(['image/png', 'image/jpeg']);
+const ALLOWED_EXT = /\.(png|jpe?g)$/i;
 
 const fileFilter = (
   _req: Request,
@@ -11,11 +12,11 @@ const fileFilter = (
 ) => {
   const mimeOk = ALLOWED_MIME.has(file.mimetype);
   const extOk = ALLOWED_EXT.test(file.originalname || '');
-  if (mimeOk || extOk) {
+  if (mimeOk && extOk) {
     cb(null, true);
     return;
   }
-  cb(new Error('Apenas imagens PNG, JPEG ou WebP são permitidas'));
+  cb(new Error('Apenas imagens PNG ou JPEG são permitidas'));
 };
 
 /** Uploads efêmeros de logos para emissão de certificados (memória). */
