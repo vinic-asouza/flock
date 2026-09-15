@@ -283,6 +283,12 @@ export function TeachingLessonFormModal({
               type="date"
               value={lessonDate}
               onChange={(event) => setLessonDate(event.target.value)}
+              disabled={Boolean(lesson?.series_id) && scope === 'single'}
+              helperText={
+                lesson?.series_id && scope === 'single'
+                  ? 'Em aulas recorrentes, a data desta ocorrência não pode ser alterada com “Somente esta aula”.'
+                  : undefined
+              }
             />
           )}
           <Input

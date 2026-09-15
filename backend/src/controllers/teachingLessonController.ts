@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { supabaseAdmin as supabase } from '../services/supabase';
+import { attendanceRemovedAtOrFilter } from '../services/teachingAttendanceEligibility';
 import {
   TeachingRecurrenceError,
   expandTeachingRecurrence,
@@ -381,6 +382,18 @@ export const updateTeachingLesson = async (req: AuthRequest, res: Response) => {
     if (!checkAccess(req, classRow?.congregation_id, res)) return;
 
     if (value.scope === 'single') {
+      if (
+        value.lesson_date !== undefined &&
+        lesson.series_id &&
+        value.lesson_date !== lesson.lesson_date
+      ) {
+        return res.status(400).json({
+          error: 'Data não alterável',
+          details:
+            'Em aulas recorrentes, a data desta ocorrência não pode ser alterada com “Somente esta aula”. Use “Esta e as próximas” ou edite título, horário e descrição.',
+        });
+      }
+
       const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (value.title !== undefined) updates.title = value.title.trim();
       if (value.description !== undefined) updates.description = emptyToNull(value.description);
@@ -599,7 +612,7 @@ export const getTeachingLessonAttendance = async (req: AuthRequest, res: Respons
       .eq('class_id', lesson.class_id)
       .in('kind', ['member', 'guest'])
       .lte('attendance_eligible_from', lesson.lesson_date)
-      .or(`removed_at.is.null,removed_at.gt.${lesson.lesson_date}T23:59:59.999Z`);
+      .or(attendanceRemovedAtOrFilter(lesson.lesson_date));
     const search = buildIlikeContainsOrFilter(
       ['display_name_snapshot'],
       String(req.query.search || '')
@@ -648,7 +661,7 @@ export const getTeachingLessonAttendance = async (req: AuthRequest, res: Respons
       .eq('class_id', lesson.class_id)
       .in('kind', ['member', 'guest'])
       .lte('attendance_eligible_from', lesson.lesson_date)
-      .or(`removed_at.is.null,removed_at.gt.${lesson.lesson_date}T23:59:59.999Z`);
+      .or(attendanceRemovedAtOrFilter(lesson.lesson_date));
     if (eligibleCountError) {
       return res.status(400).json({
         error: 'Erro ao resumir chamada',

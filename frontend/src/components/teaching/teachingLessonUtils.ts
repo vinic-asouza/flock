@@ -24,7 +24,7 @@ export const WEEKDAY_OPTIONS = [
 ] as const;
 
 export const ATTENDANCE_LABELS: Record<TeachingAttendanceStatus, string> = {
-  unregistered: 'Não registrado',
+  unregistered: 'Não registrada',
   present: 'Presente',
   absent: 'Ausente',
 };

@@ -135,7 +135,7 @@ export function TeachingLessonAttendance({
         overwrite_absent: overwriteAbsent,
       });
       setBulkConfirmOpen(false);
-      toast.success(overwriteAbsent ? 'Todos foram marcados como presentes' : 'Não registrados foram marcados como presentes');
+      toast.success(overwriteAbsent ? 'Todos foram marcados como presentes' : 'Não registradas foram marcadas como presentes');
       await loadAttendance();
     } catch (err) {
       setError(formatApiError(err));
@@ -181,7 +181,7 @@ export function TeachingLessonAttendance({
           ['Total', summary.total],
           ['Presentes', summary.present],
           ['Ausentes', summary.absent],
-          ['Não registrados', summary.unregistered],
+          ['Não registradas', summary.unregistered],
         ] as const).map(([label, value]) => (
           <div key={label} className="rounded-lg border border-gray-200 bg-gray-50 p-2 text-center">
             <div className="text-lg font-semibold text-gray-900">{value}</div>

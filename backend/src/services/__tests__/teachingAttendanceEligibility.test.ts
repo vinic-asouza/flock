@@ -1,4 +1,21 @@
-import { isTeachingEnrollmentEligible } from '../teachingAttendanceEligibility';
+import {
+  attendanceRemovedAtOrFilter,
+  isTeachingEnrollmentEligible,
+} from '../teachingAttendanceEligibility';
+
+describe('attendanceRemovedAtOrFilter', () => {
+  it('excludes removals on the lesson day by requiring removed_at on the next day', () => {
+    expect(attendanceRemovedAtOrFilter('2026-09-14')).toBe(
+      'removed_at.is.null,removed_at.gte.2026-09-15T00:00:00.000Z'
+    );
+  });
+
+  it('rolls over month boundaries', () => {
+    expect(attendanceRemovedAtOrFilter('2026-09-30')).toBe(
+      'removed_at.is.null,removed_at.gte.2026-10-01T00:00:00.000Z'
+    );
+  });
+});
 
 describe('isTeachingEnrollmentEligible', () => {
   it('accepts effective enrollments inside their lifecycle', () => {
