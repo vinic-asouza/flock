@@ -27,6 +27,12 @@ import {
   createTeachingPublicLink,
   patchTeachingPublicLink,
 } from '../controllers/teachingPublicLinkController';
+import {
+  listTeachingMaterials,
+  createTeachingMaterial,
+  updateTeachingMaterial,
+  deleteTeachingMaterial,
+} from '../controllers/teachingMaterialController';
 
 const router = Router();
 
@@ -58,5 +64,11 @@ router.delete('/enrollments/:id', requireRole('editor'), deleteTeachingEnrollmen
 router.get('/classes/:id/public-link', getTeachingPublicLink);
 router.post('/classes/:id/public-link', requireRole('editor'), createTeachingPublicLink);
 router.patch('/classes/:id/public-link', requireRole('editor'), patchTeachingPublicLink);
+
+// Materiais da turma
+router.get('/classes/:id/materials', listTeachingMaterials);
+router.post('/classes/:id/materials', requireRole('editor'), createTeachingMaterial);
+router.patch('/materials/:materialId', requireRole('editor'), updateTeachingMaterial);
+router.delete('/materials/:materialId', requireRole('editor'), deleteTeachingMaterial);
 
 export default router;
