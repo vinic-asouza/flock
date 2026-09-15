@@ -24,6 +24,7 @@ import { formatDate } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 import { formatClassPeriod } from './dates';
 import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
+import { TeachingMaterialsTab } from './TeachingMaterialsTab';
 import { TeachingEmptyState } from './TeachingUi';
 import {
   type TeachingClassTab,
@@ -41,9 +42,8 @@ const CLASS_TABS: Array<{
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
 ];
 
-const PLACEHOLDER_COPY: Record<Exclude<TeachingClassTab, 'inscritos'>, string> = {
+const PLACEHOLDER_COPY: Record<'aulas' | 'certificados', string> = {
   aulas: 'O cronograma e a presença desta turma serão gerenciados aqui.',
-  materiais: 'Links e anotações da turma serão gerenciados aqui.',
   certificados:
     'A emissão de certificados estará disponível após o encerramento da turma.',
 };
@@ -334,6 +334,11 @@ export function TeachingClassDetailView({
         >
           {activeTab === 'inscritos' ? (
             <TeachingEnrollmentsTab
+              teachingClass={teachingClass}
+              readOnly={readOnly}
+            />
+          ) : activeTab === 'materiais' ? (
+            <TeachingMaterialsTab
               teachingClass={teachingClass}
               readOnly={readOnly}
             />

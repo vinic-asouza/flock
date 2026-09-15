@@ -453,3 +453,17 @@ export interface TeachingPublicLink {
   enrollment_allowed?: boolean;
   class_status?: TeachingClassStatus;
 }
+
+export type TeachingMaterialType = 'link' | 'note';
+
+export interface TeachingMaterial {
+  id: string;
+  church_id: string;
+  class_id: string;
+  type: TeachingMaterialType;
+  title: string;
+  url?: string | null;
+  content?: string | null;
+  created_at: string;
+  updated_at: string;
+}
