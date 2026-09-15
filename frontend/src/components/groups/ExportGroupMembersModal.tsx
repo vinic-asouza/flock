@@ -14,8 +14,8 @@ export function ExportGroupMembersModal(props: ExportGroupMembersModalProps) {
   return (
     <ExportMemberFieldsModal
       {...props}
-      title="Exportar lista de membros do grupo"
-      description="Selecione os campos dos membros que deseja incluir no PDF. O documento incluirá também o nome do grupo, tipo, congregação e dados do responsável."
+      title="Exportar lista de membros do ministério"
+      description="Selecione os campos dos membros que deseja incluir no PDF. O documento incluirá também o nome do ministério, congregação e dados do responsável."
     />
   );
 }

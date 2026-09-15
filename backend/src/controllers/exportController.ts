@@ -704,7 +704,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
 
     if (groupsError) {
       return res.status(500).json({
-        error: 'Erro ao buscar grupos',
+        error: 'Erro ao buscar ministérios',
         details: groupsError.message,
       });
     }
@@ -727,7 +727,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
 
       if (membershipError) {
         return res.status(500).json({
-          error: 'Erro ao contar membros dos grupos',
+          error: 'Erro ao contar membros dos ministérios',
           details: membershipError.message,
         });
       }
@@ -766,7 +766,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
     console.error('Erro ao exportar PDF de grupos:', error);
     if (!res.headersSent) {
       res.status(500).json({
-        error: 'Erro ao exportar lista de grupos',
+        error: 'Erro ao exportar lista de ministérios',
         details: error instanceof Error ? error.message : 'Erro desconhecido',
       });
     }
@@ -901,7 +901,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     if (!groupId || !fields || !Array.isArray(fields) || fields.length === 0) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: 'É necessário informar o ID do grupo e selecionar pelo menos um campo para exportar'
+        details: 'É necessário informar o ID do ministério e selecionar pelo menos um campo para exportar'
       });
     }
 
@@ -928,8 +928,8 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 
     if (groupError || !group) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -948,7 +948,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     if (memberIds.length === 0) {
       return res.status(404).json({
         error: 'Nenhum membro encontrado',
-        details: 'Este grupo não possui membros para exportar',
+        details: 'Este ministério não possui membros para exportar',
       });
     }
 
@@ -965,7 +965,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 
     if (membersError) {
       return res.status(500).json({
-        error: 'Erro ao buscar membros do grupo',
+        error: 'Erro ao buscar membros do ministério',
         details: membersError.message
       });
     }
@@ -974,7 +974,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     if (members.length === 0) {
       return res.status(404).json({
         error: 'Nenhum membro encontrado',
-        details: 'Este grupo não possui membros para exportar',
+        details: 'Este ministério não possui membros para exportar',
       });
     }
 
@@ -1014,7 +1014,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     console.error('Erro ao exportar PDF do grupo:', error);
     if (!res.headersSent) {
       res.status(500).json({
-        error: 'Erro ao exportar lista do grupo',
+        error: 'Erro ao exportar lista do ministério',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
       });
     }

@@ -314,11 +314,11 @@ export default function MinistriesPage() {
         </Modal>
       )}
 
-      <Modal isOpen={deleteModalOpen} onClose={() => { setDeleteModalOpen(false); setSelectedGroupId(''); setSelectedGroupName(''); }} title="Excluir Ministério" size="md" closeOnOverlayClick={!isSubmitting} closeOnEscape={!isSubmitting} footer={<div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6"><Button variant="secondary" onClick={() => { setDeleteModalOpen(false); setSelectedGroupId(''); setSelectedGroupName(''); }} disabled={isSubmitting} className="min-h-11 w-full sm:w-auto">Cancelar</Button><Button variant="danger" onClick={handleDeleteGroup} isLoading={isSubmitting} className="min-h-11 w-full sm:w-auto"><Trash2 size={16} className="mr-2 shrink-0" />Excluir</Button></div>}>
+      <Modal isOpen={deleteModalOpen} onClose={() => { setDeleteModalOpen(false); setSelectedGroupId(''); setSelectedGroupName(''); }} title="Excluir Ministério" size="md" closeOnOverlayClick={!isSubmitting} closeOnEscape={!isSubmitting} footer={<div className="flex flex-col-reverse gap-2 p-4 sm:flex-row sm:justify-end sm:gap-3 sm:p-6"><Button variant="secondary" onClick={() => { setDeleteModalOpen(false); setSelectedGroupId(''); setSelectedGroupName(''); }} disabled={isSubmitting} className="min-h-11 w-full sm:w-auto">Cancelar</Button><Button variant="danger" onClick={handleDeleteGroup} isLoading={isSubmitting} className="min-h-11 w-full sm:w-auto"><Trash2 size={16} className="mr-2 shrink-0" />Excluir ministério</Button></div>}>
         <div className="p-4 sm:p-6">
           <p className="break-words text-gray-700">
             Tem certeza que deseja excluir o ministério <strong>{selectedGroupName}</strong>?
-            Esta ação não poderá ser desfeita.
+            Os membros deixarão de estar vinculados a este ministério. Esta ação não pode ser desfeita.
           </p>
         </div>
       </Modal>

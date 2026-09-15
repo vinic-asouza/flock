@@ -1045,7 +1045,7 @@ class ApiService {
     });
     const filename = getFilenameFromContentDisposition(
       response.headers['content-disposition'] as string | undefined
-    ) ?? `grupo-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+    ) ?? `ministerio-membros-${new Date().toISOString().split('T')[0]}.pdf`;
     return { blob: response.data, filename };
   }
 
