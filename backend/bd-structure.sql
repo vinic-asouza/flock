@@ -1,7 +1,7 @@
 -- Flock — snapshot parcial de referência (módulo Ensino)
 -- Fonte de verdade: schema live no Supabase (projeto flock-app-01).
 -- Este arquivo NÃO é o dump completo do banco; espelha apenas teaching_*.
--- Atualizado: 2026-09-13 (DEV-99)
+-- Atualizado: 2026-09-14 (DEV-111)
 
 -- ---------------------------------------------------------------------------
 -- teaching_programs
@@ -90,6 +90,10 @@ CREATE TABLE IF NOT EXISTS public.teaching_enrollments (
   birth_date date,
   email text,
   match_meta jsonb,
+  attendance_eligible_from date,
+  removed_at timestamptz,
+  removed_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  display_name_snapshot text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT teaching_enrollments_kind_check CHECK (
@@ -103,6 +107,17 @@ CREATE TABLE IF NOT EXISTS public.teaching_enrollments (
       AND (whatsapp IS NOT NULL)
       AND (birth_date IS NOT NULL)
     )
+  ),
+  CONSTRAINT teaching_enrollments_attendance_lifecycle_check CHECK (
+    (
+      (kind = 'possible_member'::text)
+      AND (attendance_eligible_from IS NULL)
+      AND (removed_at IS NULL)
+    )
+    OR (
+      (kind = ANY (ARRAY['member'::text, 'guest'::text]))
+      AND (attendance_eligible_from IS NOT NULL)
+    )
   )
 );
 
@@ -110,9 +125,123 @@ CREATE INDEX IF NOT EXISTS teaching_enrollments_class_id_idx
   ON public.teaching_enrollments (class_id);
 CREATE INDEX IF NOT EXISTS teaching_enrollments_church_kind_idx
   ON public.teaching_enrollments (church_id, kind);
-CREATE UNIQUE INDEX IF NOT EXISTS teaching_enrollments_class_member_uidx
+CREATE UNIQUE INDEX IF NOT EXISTS teaching_enrollments_class_member_active_uidx
   ON public.teaching_enrollments (class_id, member_id)
-  WHERE (member_id IS NOT NULL);
+  WHERE ((member_id IS NOT NULL) AND (removed_at IS NULL));
+CREATE INDEX IF NOT EXISTS idx_teaching_enrollments_class_lifecycle
+  ON public.teaching_enrollments (
+    church_id,
+    class_id,
+    removed_at,
+    attendance_eligible_from
+  );
+
+-- ---------------------------------------------------------------------------
+-- teaching_lesson_series
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.teaching_lesson_series (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  church_id uuid NOT NULL REFERENCES public.churches(id) ON DELETE CASCADE,
+  class_id uuid NOT NULL REFERENCES public.teaching_classes(id) ON DELETE CASCADE,
+  title text NOT NULL,
+  description text,
+  start_time time NOT NULL,
+  starts_on date NOT NULL,
+  ends_on date NOT NULL,
+  recurrence_type text NOT NULL,
+  weekdays smallint[],
+  day_of_month smallint,
+  interval_days smallint,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT teaching_lesson_series_title_len CHECK (
+    char_length(BTRIM(title)) BETWEEN 2 AND 150
+  ),
+  CONSTRAINT teaching_lesson_series_period_check CHECK (ends_on >= starts_on),
+  CONSTRAINT teaching_lesson_series_rule_check CHECK (
+    (
+      recurrence_type = 'weekly'
+      AND cardinality(weekdays) BETWEEN 1 AND 7
+      AND weekdays <@ ARRAY[0,1,2,3,4,5,6]::smallint[]
+      AND day_of_month IS NULL
+      AND interval_days IS NULL
+    )
+    OR (
+      recurrence_type = 'monthly'
+      AND weekdays IS NULL
+      AND day_of_month BETWEEN 1 AND 31
+      AND interval_days IS NULL
+    )
+    OR (
+      recurrence_type = 'interval_days'
+      AND weekdays IS NULL
+      AND day_of_month IS NULL
+      AND interval_days BETWEEN 1 AND 366
+    )
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_teaching_lesson_series_church_class
+  ON public.teaching_lesson_series (church_id, class_id);
+
+-- ---------------------------------------------------------------------------
+-- teaching_lessons
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.teaching_lessons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  church_id uuid NOT NULL REFERENCES public.churches(id) ON DELETE CASCADE,
+  class_id uuid NOT NULL REFERENCES public.teaching_classes(id) ON DELETE CASCADE,
+  series_id uuid REFERENCES public.teaching_lesson_series(id) ON DELETE SET NULL,
+  lesson_date date NOT NULL,
+  start_time time NOT NULL,
+  title text NOT NULL,
+  description text,
+  occurrence_key text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT teaching_lessons_title_len CHECK (
+    char_length(BTRIM(title)) BETWEEN 2 AND 150
+  ),
+  CONSTRAINT teaching_lessons_occurrence_key_check CHECK (
+    (series_id IS NULL AND occurrence_key IS NULL)
+    OR (series_id IS NOT NULL AND occurrence_key IS NOT NULL)
+  )
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS teaching_lessons_series_occurrence_uidx
+  ON public.teaching_lessons (series_id, occurrence_key)
+  WHERE series_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS teaching_lessons_class_schedule_uidx
+  ON public.teaching_lessons (class_id, lesson_date, start_time);
+CREATE INDEX IF NOT EXISTS idx_teaching_lessons_church_class_date
+  ON public.teaching_lessons (church_id, class_id, lesson_date, start_time, id);
+
+-- ---------------------------------------------------------------------------
+-- teaching_lesson_attendance
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.teaching_lesson_attendance (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  church_id uuid NOT NULL REFERENCES public.churches(id) ON DELETE CASCADE,
+  lesson_id uuid NOT NULL REFERENCES public.teaching_lessons(id) ON DELETE CASCADE,
+  enrollment_id uuid NOT NULL REFERENCES public.teaching_enrollments(id) ON DELETE RESTRICT,
+  status text NOT NULL,
+  recorded_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT teaching_lesson_attendance_status_check CHECK (
+    status IN ('present', 'absent')
+  ),
+  CONSTRAINT teaching_lesson_attendance_lesson_enrollment_key UNIQUE (
+    lesson_id,
+    enrollment_id
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_teaching_lesson_attendance_church_lesson
+  ON public.teaching_lesson_attendance (church_id, lesson_id, status);
+CREATE INDEX IF NOT EXISTS idx_teaching_lesson_attendance_enrollment
+  ON public.teaching_lesson_attendance (enrollment_id);
 
 -- ---------------------------------------------------------------------------
 -- teaching_public_links

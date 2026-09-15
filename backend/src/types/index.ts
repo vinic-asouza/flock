@@ -398,8 +398,58 @@ export interface TeachingEnrollment {
   birth_date?: string | null;
   email?: string | null;
   match_meta?: TeachingEnrollmentMatchMeta | null;
+  attendance_eligible_from?: string | null;
+  removed_at?: Date | string | null;
+  removed_by?: string | null;
+  display_name_snapshot: string;
   created_at: Date;
   updated_at: Date;
+}
+
+export type TeachingRecurrenceType = 'weekly' | 'monthly' | 'interval_days';
+export type TeachingLessonAttendanceStatus = 'present' | 'absent';
+
+export interface TeachingLessonSeries {
+  id: string;
+  church_id: string;
+  class_id: string;
+  title: string;
+  description?: string | null;
+  start_time: string;
+  starts_on: string;
+  ends_on: string;
+  recurrence_type: TeachingRecurrenceType;
+  weekdays?: number[] | null;
+  day_of_month?: number | null;
+  interval_days?: number | null;
+  created_by?: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface TeachingLesson {
+  id: string;
+  church_id: string;
+  class_id: string;
+  series_id?: string | null;
+  lesson_date: string;
+  start_time: string;
+  title: string;
+  description?: string | null;
+  occurrence_key?: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface TeachingLessonAttendance {
+  id: string;
+  church_id: string;
+  lesson_id: string;
+  enrollment_id: string;
+  status: TeachingLessonAttendanceStatus;
+  recorded_by?: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export interface TeachingPublicLink {

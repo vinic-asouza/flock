@@ -78,9 +78,9 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Usado em:** Grupos, Membros, Relatórios  
 - **Nota:** substitui o antigo conceito de “cargos” isolados documentado em FEATURES v1 legado. **Não** confundir o tipo `Classe` com **Turma** do módulo Ensino.
 
-**Ensino** *(módulo; código: `teaching_*`)*  
-> Módulo do Painel para ciclos formativos (EBD, cursos, estudos). Menu **Ensino** → `/teaching`.  
-- **Usado em:** Programas, Turmas, matrículas, link público  
+**Ensino** *(módulo; código: `teaching_*`)*
+> Módulo do Painel para ciclos formativos (EBD, cursos, estudos). Menu **Ensino** → `/teaching`.
+- **Usado em:** Programas, Turmas, matrículas, aulas, chamada, link público
 - **UI:** “Ensino”
 
 **Programa** *(código: `TeachingProgram`, `teaching_programs`)*  
@@ -96,13 +96,23 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **UI:** “Turma” · **não** confundir com GroupType **Classe**
 
 **Aluno** *(matrícula; código: `TeachingEnrollment`, `teaching_enrollments`)*  
-> Matrícula na turma — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login.  
+> Matrícula na turma — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login. Soft-remove (`removed_at`) preserva histórico de chamada.
 - **Kinds:** `member` | `guest` | `possible_member`  
 - **Usado em:** Ensino  
 - **UI:** aba **Inscritos** no detalhe da turma; badges Membro / Convidado / Possível membro
 
+**Aula** *(código: `TeachingLesson`, `teaching_lessons`)*  
+> Encontro da turma (data, horário, título, descrição opcional). Avulsa ou ocorrência de série recorrente (`teaching_lesson_series`). Não sincroniza com o Calendário global.
+- **Usado em:** Ensino (aba **Aulas**)  
+- **UI:** “Aula” / “Nova aula”
+
+**Chamada** *(código: `TeachingLessonAttendance`, `teaching_lesson_attendance`)*  
+> Presença por aula × matrícula. Estados: **Não registrada**, **Presente**, **Ausente**.
+- **Usado em:** Ensino (detalhe da aula)  
+- **UI:** “Chamada”
+
 **Possível membro** *(código: `kind = possible_member`)*  
-> Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+).  
+> Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+). Não aparece na chamada até resolução.
 - **Usado em:** Ensino (fila no detalhe da turma)  
 - **UI:** “Possível membro”
 
@@ -340,9 +350,9 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## 🔤 Índice Alfabético
 
-- **A:** Admin OPS, Aluno (matrícula Ensino), Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
+- **A:** Admin OPS, Aluno (matrícula Ensino), Aula (Ensino), Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
 - **B:** Batismo (tipo de admissão), Billing (ver Assinatura)  
-- **C:** Calendário (item), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
+- **C:** Calendário (item), Chamada (Ensino), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Ensino, Evento (tipo calendário), Encontro  
 - **F:** Ficha de pré-cadastro  

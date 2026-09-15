@@ -74,6 +74,8 @@ function serializeEnrollment(row: any) {
     full_name: row.full_name,
     birth_date: toBirthDateString(row.birth_date),
     email: row.email,
+    attendance_eligible_from: row.attendance_eligible_from,
+    removed_at: row.removed_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
     display_name: row.members?.name || row.full_name || null,
@@ -101,6 +103,7 @@ async function enrolledMemberIdsForClass(classId: string, churchId: string) {
     .select('member_id')
     .eq('class_id', classId)
     .eq('church_id', churchId)
+    .is('removed_at', null)
     .not('member_id', 'is', null);
 
   return new Set(
@@ -248,7 +251,8 @@ export const listTeachingEnrollments = async (req: AuthRequest, res: Response) =
       .select(enrollmentSelect, { count: 'exact' })
       .eq('class_id', classId)
       .eq('church_id', churchId)
-      .neq('kind', 'possible_member');
+      .neq('kind', 'possible_member')
+      .is('removed_at', null);
 
     if (searchFilter) {
       othersQuery = othersQuery.or(searchFilter);
@@ -358,10 +362,12 @@ export const createTeachingEnrollment = async (req: AuthRequest, res: Response) 
         kind: 'member',
         member_id: member.id,
         full_name: member.name,
+        display_name_snapshot: member.name,
         whatsapp: member.whatsapp || member.phone || null,
         birth_date: toBirthDateString(member.birth),
         email: member.email || null,
         match_meta: null,
+        attendance_eligible_from: new Date().toISOString().slice(0, 10),
       };
     } else {
       // Convidado manual — nunca cria members
@@ -371,10 +377,12 @@ export const createTeachingEnrollment = async (req: AuthRequest, res: Response) 
         kind: 'guest',
         member_id: null,
         full_name: value.full_name.trim(),
+        display_name_snapshot: value.full_name.trim(),
         whatsapp: value.whatsapp.trim(),
         birth_date: value.birth_date,
         email: emptyToNull(value.email),
         match_meta: null,
+        attendance_eligible_from: new Date().toISOString().slice(0, 10),
       };
     }
 
@@ -464,6 +472,8 @@ export const resolveTeachingEnrollment = async (req: AuthRequest, res: Response)
         kind: 'guest',
         member_id: null,
         match_meta: null,
+        display_name_snapshot: enrollment.full_name,
+        attendance_eligible_from: new Date().toISOString().slice(0, 10),
         updated_at: new Date().toISOString(),
       };
     } else {
@@ -486,6 +496,7 @@ export const resolveTeachingEnrollment = async (req: AuthRequest, res: Response)
         .select('id')
         .eq('class_id', enrollment.class_id)
         .eq('member_id', member.id)
+        .is('removed_at', null)
         .neq('id', enrollment.id)
         .maybeSingle();
 
@@ -521,10 +532,12 @@ export const resolveTeachingEnrollment = async (req: AuthRequest, res: Response)
         kind: 'member',
         member_id: member.id,
         full_name: member.name,
+        display_name_snapshot: member.name,
         whatsapp: member.whatsapp || member.phone || enrollment.whatsapp,
         birth_date: toBirthDateString(member.birth) || enrollment.birth_date,
         email: member.email || enrollment.email,
         match_meta: null,
+        attendance_eligible_from: new Date().toISOString().slice(0, 10),
         updated_at: new Date().toISOString(),
       };
     }
@@ -594,24 +607,80 @@ export const deleteTeachingEnrollment = async (req: AuthRequest, res: Response) 
       return res.status(access.status).json(access.body);
     }
 
-    const { error: deleteError } = await supabase
-      .from('teaching_enrollments')
-      .delete()
-      .eq('id', id)
-      .eq('church_id', churchId);
+    if (enrollment.kind === 'possible_member') {
+      const { error: deleteError } = await supabase
+        .from('teaching_enrollments')
+        .delete()
+        .eq('id', id)
+        .eq('church_id', churchId);
+      if (deleteError) {
+        return res.status(400).json({
+          error: 'Erro ao excluir matrícula',
+          details: deleteError.message,
+        });
+      }
+      await logAudit(req, {
+        entity: 'teaching_enrollment',
+        entityId: id,
+        action: 'delete',
+        changesBefore: { kind: enrollment.kind, class_id: enrollment.class_id },
+      });
+      return res.status(204).send();
+    }
 
-    if (deleteError) {
+    if (enrollment.removed_at) {
+      return res.status(409).json({
+        error: 'Matrícula já removida',
+        details: 'Esta matrícula já não está ativa na turma',
+      });
+    }
+
+    const removalDate = new Date().toISOString().slice(0, 10);
+    const { data: futureAttendance, error: attendanceError } = await supabase
+      .from('teaching_lesson_attendance')
+      .select('id, teaching_lessons!inner(lesson_date)')
+      .eq('church_id', churchId)
+      .eq('enrollment_id', id)
+      .gte('teaching_lessons.lesson_date', removalDate)
+      .limit(1);
+    if (attendanceError) {
       return res.status(400).json({
-        error: 'Erro ao excluir matrícula',
-        details: deleteError.message,
+        error: 'Erro ao validar histórico',
+        details: attendanceError.message,
+      });
+    }
+    if (futureAttendance?.length) {
+      return res.status(409).json({
+        error: 'Presença futura impede a remoção',
+        details:
+          'Limpe a chamada futura desta matrícula antes de removê-la; nenhuma presença foi apagada.',
+      });
+    }
+
+    const removedAt = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from('teaching_enrollments')
+      .update({
+        removed_at: removedAt,
+        removed_by: req.user.id,
+        updated_at: removedAt,
+      })
+      .eq('id', id)
+      .eq('church_id', churchId)
+      .is('removed_at', null);
+    if (updateError) {
+      return res.status(400).json({
+        error: 'Erro ao remover matrícula',
+        details: updateError.message,
       });
     }
 
     await logAudit(req, {
       entity: 'teaching_enrollment',
       entityId: id,
-      action: 'delete',
-      changesBefore: enrollment,
+      action: 'deactivate',
+      changesBefore: { kind: enrollment.kind, class_id: enrollment.class_id },
+      changesAfter: { removed_at: removedAt },
     });
 
     return res.status(204).send();
