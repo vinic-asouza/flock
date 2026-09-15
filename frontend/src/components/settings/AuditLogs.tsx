@@ -54,12 +54,12 @@ const ENTITY_LABELS: Record<string, string> = {
   congregation: 'congregação',
   church: 'igreja',
   account: 'conta',
-  group: 'grupo',
+  group: 'ministério',
   calendar_item: 'evento',
   integration_member: 'integração',
   public_registration_link: 'link de cadastro',
   public_integration_link: 'link de integração',
-  member_group: 'vínculo com grupo',
+  member_group: 'vínculo com ministério',
 };
 
 const FIELD_LABELS: Record<string, string> = {
@@ -93,7 +93,7 @@ const ENTITY_FILTER_OPTIONS = [
   { value: 'church', label: 'Igreja' },
   { value: 'account', label: 'Conta' },
   { value: 'congregation', label: 'Congregações' },
-  { value: 'group', label: 'Grupos' },
+  { value: 'group', label: 'Ministérios' },
   { value: 'calendar_item', label: 'Calendário' },
   { value: 'integration_member', label: 'Integração' },
 ];
@@ -118,7 +118,7 @@ const FIELDS_BY_ENTITY: Record<string, string[]> = {
   church: ['name', 'denomination', 'address', 'city', 'state', 'cnpj', 'email_church', 'phone_church'],
   account: ['email', 'phone'],
   congregation: ['name', 'address', 'city', 'state'],
-  group: ['name', 'type', 'description'],
+  group: ['name', 'description'],
   calendar_item: ['title', 'description', 'type', 'status', 'start_at', 'end_at'],
   integration_member: ['name', 'email', 'phone', 'city', 'state', 'status'],
 };

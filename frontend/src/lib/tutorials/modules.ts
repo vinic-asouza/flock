@@ -5,7 +5,7 @@ export const TUTORIAL_MODULES: TutorialModule[] = [
   { id: 'membros', label: 'Membros', route: '/members' },
   { id: 'integracao', label: 'Integração', route: '/integration' },
   { id: 'congregacoes', label: 'Congregações', route: '/congregations' },
-  { id: 'grupos', label: 'Grupos', route: '/groups' },
+  { id: 'grupos', label: 'Ministérios', route: '/ministries' },
   { id: 'calendario', label: 'Calendário', route: '/calendar' },
 ];
 

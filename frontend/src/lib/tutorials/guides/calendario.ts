@@ -4,7 +4,7 @@ const criarEventoSteps = [
   'Clique em Calendário na barra lateral.',
   'Clique em Novo evento ou clique em um dia vazio no calendário mensal.',
   'Preencha título, tipo, data e, se aplicável, horário.',
-  '(Opcional) Associe congregação, grupo ou responsável.',
+  '(Opcional) Associe congregação, ministério ou responsável.',
   'Clique em Salvar.',
 ];
 
@@ -36,7 +36,7 @@ export const calendarioGuides: TutorialGuide[] = [
     estimatedMinutes: 2,
     tags: ['filtro', 'calendário'],
     steps: [
-      'Use os filtros horizontais: tipo, congregação, grupo, período.',
+      'Use os filtros horizontais: tipo, congregação, ministério, período.',
       'Alterne entre visão Calendário (mês) e Lista (ano).',
       'Navegue entre meses/anos pelas setas.',
     ],

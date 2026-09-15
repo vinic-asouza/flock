@@ -554,7 +554,6 @@ class ApiService {
   // Listar grupos
   async listGroups(params?: {
     congregation_id?: string;
-    type?: string;
     status?: 'active' | 'inactive' | 'all';
     search?: string;
     sort_by?: string;
@@ -563,9 +562,6 @@ class ApiService {
     const queryParams = new URLSearchParams();
     if (params?.congregation_id) {
       queryParams.append('congregation_id', params.congregation_id);
-    }
-    if (params?.type) {
-      queryParams.append('type', params.type);
     }
     if (params?.status && params.status !== 'all') {
       queryParams.append('status', params.status);
@@ -1013,14 +1009,13 @@ class ApiService {
     return response.data;
   }
 
-  async exportGroupsList(filters: {
-    types: string[];
+  async exportGroupsList(filters?: {
     search?: string;
     congregation_id?: string;
     status?: string;
   }): Promise<Blob> {
     const response = await this.api.post('/export/groups/list', {
-      filters,
+      filters: filters ?? {},
     }, {
       responseType: 'blob',
     });

@@ -107,7 +107,7 @@ export function CalendarItemCard({ item, onClick }: CalendarItemCardProps) {
         {item.group && (
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Users size={14} className="text-gray-400 flex-shrink-0" />
-            <span className="truncate">{item.group.type}: {item.group.name}</span>
+            <span className="truncate">{item.group.name}</span>
           </div>
         )}
 

@@ -706,9 +706,9 @@ export default function CalendarPage() {
                         <Users size={18} className="text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-500 mb-1">Grupo / Ministério</p>
+                        <p className="text-xs font-medium text-gray-500 mb-1">Ministério</p>
                         <p className="text-sm text-gray-900">
-                          <span className="font-medium">{selectedItem.group.type}</span>: {selectedItem.group.name}
+                          <span className="font-medium">{selectedItem.group.name}</span>
                         </p>
                       </div>
                     </div>

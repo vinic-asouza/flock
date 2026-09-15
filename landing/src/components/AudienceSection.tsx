@@ -20,7 +20,7 @@ const audiences = [
     title: 'Líderes',
     headline: 'Saiba quem está com você.',
     description:
-      'Organize equipes, ministérios e grupos sem depender de listas espalhadas.',
+      'Organize equipes e ministérios sem depender de listas espalhadas.',
   },
   {
     icon: Megaphone,

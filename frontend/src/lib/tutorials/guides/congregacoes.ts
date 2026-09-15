@@ -11,7 +11,7 @@ const cadastrarCongregacaoSteps = [
 
 const cadastrarCongregacaoDetails = [
   'A congregação principal é criada automaticamente com o nome da igreja — você cadastra as demais congregações conforme necessário.',
-  'Congregações aparecem depois nos formulários de membros, grupos e calendário.',
+  'Congregações aparecem depois nos formulários de membros, ministérios e calendário.',
   'Se você ainda não tem membros, o campo líder ficará vazio — pode editar depois.',
 ];
 

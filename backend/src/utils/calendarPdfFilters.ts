@@ -43,13 +43,10 @@ export function congregationPdfLabel(congregation: {
 
 export function groupPdfLabel(group: {
   name?: string | null;
-  type?: string | null;
 } | null | undefined): string | undefined {
   if (!group) return undefined;
   const name = group.name?.trim();
-  if (!name) return undefined;
-  const type = group.type?.trim();
-  return type ? `${type}: ${name}` : name;
+  return name || undefined;
 }
 
 type JoinedCongregation = {
@@ -61,7 +58,6 @@ type JoinedCongregation = {
 type JoinedGroup = {
   id?: string | null;
   name?: string | null;
-  type?: string | null;
 } | null | undefined;
 
 /** Reusa o join já carregado nos itens; `null` = lista vazia ou id ausente (caller faz fetch). */

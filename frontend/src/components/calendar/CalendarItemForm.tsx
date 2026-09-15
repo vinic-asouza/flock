@@ -983,14 +983,14 @@ export function CalendarItemForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="group_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Grupo / Ministério (opcional)
+            Ministério (opcional)
           </label>
           <Select
             value={watch('group_id') || ''}
             onChange={(value) => setValue('group_id', value || null)}
             options={[
               { value: '', label: 'Nenhum' },
-              ...groups.map((g: Group) => ({ value: g.id, label: `${g.type}: ${g.name}` }))
+              ...groups.map((g: Group) => ({ value: g.id, label: g.name }))
             ]}
             error={errors.group_id?.message}
             disabled={loadingGroups}

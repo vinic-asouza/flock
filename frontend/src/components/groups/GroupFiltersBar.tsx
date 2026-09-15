@@ -3,38 +3,21 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useLayoutEffect, useRef, useState, useCallback } from 'react';
 import { ArrowUpDown, ChevronDown, Loader } from 'lucide-react';
-import { GroupFilters, GroupSorting, GroupType } from '@/types';
+import { GroupFilters, GroupSorting } from '@/types';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { getCongregationDisplayName } from '@/utils/congregation';
-
-const GROUP_TYPES: GroupType[] = [
-  'Ministério',
-  'Departamento',
-  'Grupo',
-  'Equipe',
-  'Time',
-  'Comissão',
-  'Célula',
-  'Grupo de Crescimento',
-  'Pequeno Grupo',
-  'Discipulado',
-  'Classe',
-  'Núcleo',
-  'Região'
-];
 
 const statusLabels: Record<GroupFilters['status'], string> = {
   active: 'Ativo',
   inactive: 'Inativo',
-  all: 'Todos'
+  all: 'Todos',
 };
 
 const SORT_LABELS: Record<GroupSorting['sort_by'], string> = {
   name: 'Nome',
-  type: 'Tipo',
   created_at: 'Data de Criação',
   updated_at: 'Data de Atualização',
-  status: 'Status'
+  status: 'Status',
 };
 
 interface GroupFiltersBarProps {
@@ -50,7 +33,6 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownPortalRef = useRef<HTMLDivElement>(null);
   const congregationTriggerRef = useRef<HTMLButtonElement>(null);
-  const typeTriggerRef = useRef<HTMLButtonElement>(null);
   const statusTriggerRef = useRef<HTMLButtonElement>(null);
   const sortTriggerRef = useRef<HTMLButtonElement>(null);
   const [dropdownPlacement, setDropdownPlacement] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -59,13 +41,11 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
   const triggerRef =
     activeDropdown === 'congregation'
       ? congregationTriggerRef
-      : activeDropdown === 'type'
-        ? typeTriggerRef
-        : activeDropdown === 'status'
-          ? statusTriggerRef
-          : activeDropdown === 'sorting'
-            ? sortTriggerRef
-            : null;
+      : activeDropdown === 'status'
+        ? statusTriggerRef
+        : activeDropdown === 'sorting'
+          ? sortTriggerRef
+          : null;
 
   const updateDropdownPlacement = useCallback(() => {
     if (!activeDropdown || !triggerRef?.current) return;
@@ -117,7 +97,7 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
   };
 
   const getOrderHint = (field: GroupSorting['sort_by'], order: 'asc' | 'desc') => {
-    if (field === 'name' || field === 'type') {
+    if (field === 'name') {
       return order === 'asc' ? 'A-Z' : 'Z-A';
     }
     if (field === 'status') {
@@ -145,7 +125,6 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
 
   return (
     <div ref={containerRef} className="flex flex-wrap items-end gap-2 overflow-visible">
-      {/* Congregação */}
       <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[12rem]">
         <label className="block text-xs font-medium text-gray-600">Congregação</label>
         <div className="relative overflow-visible">
@@ -169,26 +148,6 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
         </div>
       </div>
 
-      {/* Tipo */}
-      <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[10rem]">
-        <label className="block text-xs font-medium text-gray-600">Tipo</label>
-        <div className="relative overflow-visible">
-          <button
-            ref={typeTriggerRef}
-            type="button"
-            onClick={() => handleToggle('type')}
-            className="inline-flex h-11 min-h-11 w-full min-w-0 items-center justify-between rounded-lg border border-gray-200 bg-white px-3 pr-10 text-sm text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
-          >
-            <span>{filters.type || 'Todos os tipos'}</span>
-            <ChevronDown
-              size={16}
-              className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-transform duration-200 ${openSelect === 'type' ? 'rotate-180' : ''}`}
-            />
-          </button>
-        </div>
-      </div>
-
-      {/* Status */}
       <div className="flex min-w-[7rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[9rem]">
         <label className="block text-xs font-medium text-gray-600">Status</label>
         <div className="relative overflow-visible">
@@ -207,7 +166,6 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
         </div>
       </div>
 
-      {/* Ordenar */}
       <div className="flex min-w-[8.5rem] flex-1 flex-col gap-1 overflow-visible sm:flex-initial sm:min-w-[10rem]">
         <label className="block text-xs font-medium text-gray-600">Ordenar por</label>
         <div className="relative overflow-visible">
@@ -229,7 +187,6 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
         </div>
       </div>
 
-      {/* Portal: dropdowns sobrepostos */}
       {dropdownPlacement &&
         activeDropdown &&
         typeof document !== 'undefined' &&
@@ -268,33 +225,6 @@ export function GroupFiltersBar({ filters, onChange, sorting, onSortingChange }:
                     className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.congregationId === cong.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
                   >
                     {getCongregationDisplayName(cong)}
-                  </button>
-                ))}
-              </>
-            )}
-            {activeDropdown === 'type' && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onChange({ type: '' });
-                    setOpenSelect(null);
-                  }}
-                  className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${!filters.type ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                >
-                  Todos os tipos
-                </button>
-                {GROUP_TYPES.map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      onChange({ type: t });
-                      setOpenSelect(null);
-                    }}
-                    className={`min-h-11 w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.type === t ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-                  >
-                    {t}
                   </button>
                 ))}
               </>

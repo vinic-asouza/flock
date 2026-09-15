@@ -16,7 +16,6 @@ import { debug, error as logError } from '../utils/logger';
  *
  * Suporta:
  * - Filtro por congregação (query param congregation_id)
- * - Filtro por tipo (query param type)
  * - Filtro por status (query param status: active | inactive | all)
  * - Busca por nome (query param search)
  * - Ordenação (query params sort_by, sort_order) com whitelist
@@ -38,12 +37,11 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     const churchId = req.church!.churchId;
 
     const congregation_id = (req.query.congregation_id as string) || '';
-    const type = req.query.type as string || '';
     const statusParam = (req.query.status as string) || 'all';
     const search = (req.query.search as string) || '';
 
     // Whitelist de campos para sort_by — evita acesso indireto a colunas sensíveis
-    const ALLOWED_SORT_FIELDS = ['name', 'type', 'created_at', 'updated_at', 'status'] as const;
+    const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at', 'status'] as const;
     const sort_by_raw = (req.query.sort_by as string) || 'name';
     const sort_by = ALLOWED_SORT_FIELDS.includes(sort_by_raw as (typeof ALLOWED_SORT_FIELDS)[number])
       ? sort_by_raw
@@ -78,11 +76,6 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
       });
     }
     query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
-
-    // Aplicar filtro de tipo
-    if (type) {
-      query = query.eq('type', type);
-    }
 
     // Aplicar filtro de status (active = true, inactive = false)
     if (statusParam === 'active') {
@@ -271,7 +264,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
  * 1. Valida dados do grupo
  * 2. Valida congregação (se fornecida)
  * 3. Valida responsável e associação com congregação (se fornecido)
- * 4. Verifica duplicidade de nome+tipo+congregação (apenas grupos ativos)
+ * 4. Verifica duplicidade de nome+congregação (apenas grupos ativos)
  * 5. Cria grupo
  * 6. Registra auditoria
  * 
@@ -296,7 +289,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { name, type, description, congregation_id, responsible_id, status } = req.body;
+    const { name, description, congregation_id, responsible_id, status } = req.body;
 
     const churchId = req.church!.churchId;
 
@@ -327,15 +320,14 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se já existe um grupo ATIVO com o mesmo nome e tipo na mesma congregação
-    // Grupos inativos não bloqueiam a criação de novos grupos
+    // Verificar se já existe um ministério ATIVO com o mesmo nome na mesma congregação
+    // Ministérios inativos não bloqueiam a criação de novos ministérios
     let duplicateQuery = supabase
       .from('groups')
       .select('id')
       .eq('church_id', churchId)
       .eq('name', name)
-      .eq('type', type)
-      .eq('status', true); // Apenas grupos ativos
+      .eq('status', true); // Apenas ministérios ativos
 
     duplicateQuery = duplicateQuery.eq('congregation_id', congregation_id);
 
@@ -343,8 +335,8 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     if (existingGroup) {
       return res.status(400).json({
-        error: 'Grupo já existe',
-        details: 'Já existe um grupo com este nome e tipo nesta congregação'
+        error: 'Ministério já existe',
+        details: 'Já existe um ministério ativo com este nome nesta congregação'
       });
     }
 
@@ -352,7 +344,6 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
     const groupData: Partial<Group> = {
       church_id: churchId,
       name,
-      type,
       description: description || null,
       congregation_id,
       responsible_id: responsible_id || null,
@@ -367,7 +358,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     if (createError) {
       return res.status(400).json({
-        error: 'Erro ao criar grupo',
+        error: 'Erro ao criar ministério',
         details: createError.message
       });
     }
@@ -397,7 +388,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
  * 1. Valida que grupo existe e pertence à igreja
  * 2. Valida congregação (se fornecida)
  * 3. Valida responsável e associação com congregação (se fornecido)
- * 4. Verifica duplicidade de nome+tipo+congregação (apenas grupos ativos)
+ * 4. Verifica duplicidade de nome+congregação (apenas grupos ativos)
  * 5. Atualiza grupo
  * 6. Registra auditoria
  * 
@@ -446,12 +437,12 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       return res.status(existingAccess.status).json(existingAccess.body);
     }
 
-    const { name, type, congregation_id, responsible_id } = req.body;
+    const { name, congregation_id, responsible_id } = req.body;
 
     if (congregation_id !== undefined && (!congregation_id || String(congregation_id).trim() === '')) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: 'A congregação é obrigatória para o grupo',
+        details: 'A congregação é obrigatória para o ministério',
       });
     }
 
@@ -486,27 +477,25 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Se nome ou tipo foram alterados, verificar duplicatas
-    if (name || type || congregation_id !== undefined) {
+    // Se nome ou congregação foram alterados, verificar duplicatas
+    if (name || congregation_id !== undefined) {
       const finalName = name || existingGroup.name;
-      const finalType = type || existingGroup.type;
 
-      // Verificar duplicidade considerando apenas grupos ativos (exceto o próprio grupo sendo editado)
+      // Verificar duplicidade considerando apenas ministérios ativos (exceto o próprio sendo editado)
       const { data: duplicateGroup } = await supabase
         .from('groups')
         .select('id')
         .eq('church_id', churchId)
         .eq('name', finalName)
-        .eq('type', finalType)
-        .eq('status', true) // Apenas grupos ativos
+        .eq('status', true) // Apenas ministérios ativos
         .eq('congregation_id', finalCongregationId)
         .neq('id', id)
         .single();
 
       if (duplicateGroup) {
         return res.status(400).json({
-          error: 'Grupo já existe',
-          details: 'Já existe outro grupo com este nome e tipo nesta congregação'
+          error: 'Ministério já existe',
+          details: 'Já existe um ministério ativo com este nome nesta congregação'
         });
       }
     }

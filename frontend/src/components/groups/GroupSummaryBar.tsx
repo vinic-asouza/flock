@@ -20,7 +20,7 @@ export function GroupSummaryBar({ groups, onRefreshClick, onExportClick, exporti
     <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
       <div className="flex min-w-0 flex-wrap items-center gap-3 text-sm text-gray-500">
         <span>
-          {totalGroups} grupo{totalGroups !== 1 ? 's' : ''}
+          {totalGroups} ministério{totalGroups !== 1 ? 's' : ''}
         </span>
         <span className="text-gray-300" aria-hidden>|</span>
         <span>

@@ -17,15 +17,14 @@ interface GroupActiveFiltersChipsProps {
 const statusLabels: Record<GroupFilters['status'], string> = {
   active: 'Ativo',
   inactive: 'Inativo',
-  all: 'Todos'
+  all: 'Todos',
 };
 
 const SORT_LABELS: Record<GroupSorting['sort_by'], string> = {
   name: 'Nome',
-  type: 'Tipo',
   created_at: 'Data de Criação',
   updated_at: 'Data de Atualização',
-  status: 'Status'
+  status: 'Status',
 };
 
 export function GroupActiveFiltersChips({
@@ -34,7 +33,7 @@ export function GroupActiveFiltersChips({
   onClearAll,
   sorting,
   onRemoveSorting,
-  defaultSorting = { sort_by: 'name', sort_order: 'asc' }
+  defaultSorting = { sort_by: 'name', sort_order: 'asc' },
 }: GroupActiveFiltersChipsProps) {
   const { congregations } = useFiltersData();
   const activeChips: { key: keyof GroupFilters; label: string }[] = [];
@@ -42,7 +41,7 @@ export function GroupActiveFiltersChips({
   if (filters.search.trim()) {
     activeChips.push({
       key: 'search',
-      label: `Busca: ${filters.search.trim()}`
+      label: `Busca: ${filters.search.trim()}`,
     });
   }
 
@@ -50,21 +49,14 @@ export function GroupActiveFiltersChips({
     const label = getCongregationDisplayName(congregations.find(c => c.id === filters.congregationId)) || 'Congregação selecionada';
     activeChips.push({
       key: 'congregationId',
-      label: `Congregação: ${label}`
-    });
-  }
-
-  if (filters.type) {
-    activeChips.push({
-      key: 'type',
-      label: `Tipo: ${filters.type}`
+      label: `Congregação: ${label}`,
     });
   }
 
   if (filters.status !== 'all') {
     activeChips.push({
       key: 'status',
-      label: `Status: ${statusLabels[filters.status]}`
+      label: `Status: ${statusLabels[filters.status]}`,
     });
   }
 

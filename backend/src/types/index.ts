@@ -221,26 +221,10 @@ export interface PublicIntegrationRequest extends Request {
   churchId?: string;
 }
 
-export type GroupType = 
-  | 'Ministério' 
-  | 'Departamento' 
-  | 'Grupo' 
-  | 'Equipe' 
-  | 'Time' 
-  | 'Comissão' 
-  | 'Célula' 
-  | 'Grupo de Crescimento' 
-  | 'Pequeno Grupo' 
-  | 'Discipulado' 
-  | 'Classe' 
-  | 'Núcleo' 
-  | 'Região';
-
 export interface Group {
   id: string;
   church_id: string;
   congregation_id?: string | null;
-  type: GroupType;
   name: string;
   description?: string | null;
   responsible_id?: string | null;

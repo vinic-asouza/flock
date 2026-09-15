@@ -43,9 +43,9 @@ const demoItems: DemoItem[] = [
   },
   {
     id: 'groups',
-    navLabel: 'Grupos',
-    title: 'Grupos',
-    description: 'Ministérios, células, equipes. Crie, acompanhe e conduza o trabalho dos grupos.',
+    navLabel: 'Ministérios',
+    title: 'Ministérios',
+    description: 'Áreas de serviço da igreja. Crie, acompanhe e conduza o trabalho dos ministérios.',
     image: '/demo/groups.png',
   },
   {
