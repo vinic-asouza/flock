@@ -353,6 +353,14 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | PDF congregações | ✅ |
 | POST | `/api/export/congregation/members/list` | ✅ | ≥ reader | PDF membros ativos da congregação | ✅ |
 
+### Ensino (`/api/teaching`)
+
+Catálogo completo (programas, turmas, aulas, presença, link): [[04_modulos/ensino]]. Export de certificados:
+
+| Método | Rota | Auth | Role | Descrição | Status |
+| --- | --- | --- | --- | --- | --- |
+| POST | `/api/teaching/classes/:id/certificates/export` | ✅ | ≥ editor | Multipart logos/cores/`enrollmentIds` → PDF multipágina (turma `closed`, ≤50) | ✅ |
+
 ### Links públicos gerenciados
 
 | Método | Rota | Auth | Role | Descrição | Status |

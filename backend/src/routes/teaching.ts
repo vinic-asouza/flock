@@ -37,6 +37,8 @@ import {
   saveTeachingLessonAttendance,
   updateTeachingLesson,
 } from '../controllers/teachingLessonController';
+import { exportTeachingCertificates } from '../controllers/teachingCertificateController';
+import { uploadCertificateImages } from '../middlewares/uploadCertificateImages';
 
 const router = Router();
 
@@ -86,5 +88,26 @@ router.delete('/enrollments/:id', requireRole('editor'), deleteTeachingEnrollmen
 router.get('/classes/:id/public-link', getTeachingPublicLink);
 router.post('/classes/:id/public-link', requireRole('editor'), createTeachingPublicLink);
 router.patch('/classes/:id/public-link', requireRole('editor'), patchTeachingPublicLink);
+
+// Certificados (PDF efêmero — sem persistência)
+router.post(
+  '/classes/:id/certificates/export',
+  requireRole('editor'),
+  (req, res, next) => {
+    uploadCertificateImages.fields([
+      { name: 'churchLogo', maxCount: 1 },
+      { name: 'extraLogos', maxCount: 2 },
+    ])(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          error: 'Upload inválido',
+          details: err instanceof Error ? err.message : 'Falha ao processar imagens',
+        });
+      }
+      return next();
+    });
+  },
+  exportTeachingCertificates
+);
 
 export default router;
