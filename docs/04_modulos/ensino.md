@@ -4,7 +4,7 @@ nome: ensino
 status: Ativo
 complexidade: Alta
 ultima_atualizacao: 2026-09-15
-versao: "1.3"
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, ensino, teaching]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -13,14 +13,14 @@ integracoes: [Supabase PostgreSQL]
 
 # Módulo — Ensino
 
-> Programas → Turmas → Inscritos → Aulas/Chamada → Materiais, com match N/W/D ao rol, fila de possível membro e link público da turma.  
+> Programas → Turmas → Inscritos → Aulas/Chamada → Materiais → Certificados (PDF efêmero), com match N/W/D ao rol, fila de possível membro e link público da turma.  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/ensino]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
 
 ---
 
 ## 1. 📌 Visão Geral
 
-Organiza ciclos formativos da igreja (**EBD**, cursos, estudos, treinamentos): catálogo de **Programas**, **Turmas** por congregação, **matrículas** (membro, convidado ou possível membro), **cronograma de aulas** (avulsas e séries), **chamada** por encontro e **materiais** da turma (links e anotações para a equipe).
+Organiza ciclos formativos da igreja (**EBD**, cursos, estudos, treinamentos): catálogo de **Programas**, **Turmas** por congregação, **matrículas** (membro, convidado ou possível membro), **cronograma de aulas** (avulsas e séries), **chamada** por encontro, **materiais da turma** (links e anotações) e **certificados** em PDF ao encerrar a turma.
 
 Resolve o problema de gerenciar ofertas formativas, inscrição e presença sem planilha — e sem misturar com **Grupos** (estrutura permanente, tipo `Classe`) nem com **Calendário** (agenda global; Ensino tem calendário próprio da turma).
 
@@ -43,15 +43,16 @@ Produto: [[01_produto/visao-do-produto]] · Glossário: Programa / Turma / Aluno
 - Cronograma de aulas (`teaching_lessons` / `teaching_lesson_series`) com recorrência materializada e escopos `single` \| `following`
 - Chamada por aula (`teaching_lesson_attendance`) com elegibilidade temporal da matrícula
 - Materiais da turma (`teaching_materials`: `link` | `note`) — referência rápida da equipe no Painel
+- Emissão de certificados PDF multipágina (efêmera; sem storage/histórico) para turma `closed`
 - Listagens autenticadas com filtros/paginação (classes, enrollments, lessons, attendance) e seletor de visão por congregação
-- Permissões: GET ≥ reader; mutações ≥ editor
+- Permissões: GET ≥ reader; mutações ≥ editor (export de certificados = editor+)
 
 ### ❌ Este módulo NÃO é responsável por:
 
 - CRUD de membros/congregações (só consome FKs)
 - Converter convidado → Integrante/Membro (fase futura)
-- PDF de chamada, capacidade/lista de espera, LMS, upload de arquivos, materiais por aula, área do aluno
-- Certificados (Issue filha)
+- PDF de chamada, capacidade/lista de espera, LMS, upload de arquivos, materiais por aula, área do aluno, branding global da igreja
+- Persistência de template/histórico de certificados ou envio por e-mail / portal do aluno
 - Sync turma/aulas → Calendário global; migrar GroupType `Classe` → Ensino
 - Login do professor / app do aluno; billing / feature flag por plano
 
@@ -62,19 +63,25 @@ Produto: [[01_produto/visao-do-produto]] · Glossário: Programa / Turma / Aluno
 ```
 backend/src/
 ├── routes/
-│   └── teaching.ts                 → programs / classes / lessons / attendance / enrollments / materials / public-link
+│   └── teaching.ts                 → programs / classes / lessons / attendance / enrollments / materials / certificates / public-link
 ├── controllers/
 │   ├── teachingProgramController.ts
 │   ├── teachingClassController.ts
 │   ├── teachingLessonController.ts
 │   ├── teachingEnrollmentController.ts
 │   ├── teachingMaterialController.ts
+│   ├── teachingCertificateController.ts
 │   └── teachingPublicLinkController.ts
+├── middlewares/
+│   └── uploadCertificateImages.ts  → multer memória (PNG/JPEG, ≤2 MB, ≤3 arquivos)
 ├── services/
 │   ├── teachingMatchService.ts
 │   ├── teachingEnrollmentPolicy.ts
 │   ├── teachingLessonRecurrenceService.ts
-│   └── teachingAttendanceEligibility.ts
+│   ├── teachingAttendanceEligibility.ts
+│   └── teachingCertificateService.ts
+├── utils/pdf/
+│   └── renderTeachingCertificate.ts
 ├── validators/
 │   └── teachingValidator.ts
 └── (público) rotas em router public + rate limit
@@ -85,9 +92,9 @@ frontend/src/
 │   ├── [programId]/page.tsx
 │   └── [programId]/[classId]/page.tsx
 ├── app/public/teaching/[token]/page.tsx
-└── components/teaching/            → UI, filtros, detalhe (abas), inscritos, aulas/chamada, materiais, modais
+└── components/teaching/            → UI, filtros, detalhe (abas), inscritos, aulas/chamada, materiais, certificados, modais
 
-Testes: match, enrollment policy, validators (incl. materiais/URL), recurrence, attendance eligibility
+Testes: match, enrollment policy, validators (incl. materiais/URL), recurrence, attendance eligibility, certificate service/PDF
 Schema: Supabase live + espelho parcial em `backend/bd-structure.sql` (seção Ensino)
 RPCs (service_role): create/update/delete lesson series scope, save attendance
 ```
@@ -167,10 +174,10 @@ Um link por turma (`UNIQUE class_id`); `token` UNIQUE; `expires_at`, `max_uses`,
 
 ### teaching_materials
 
-Referências gerais da turma (não por aula). `type`: `link` \| `note`. Link exige `url` (http/https) e `content` null; anotação exige `content` e `url` null. Título 2–120. Ordenação de lista: `updated_at DESC`. CASCADE com a turma. Sem upload de arquivo.
+Referências gerais da turma (não por aula). Regras: BR-ENS-026/027. `type`: `link` \| `note`. Link exige `url` (http/https) e `content` null; anotação exige `content` e `url` null. Título 2–120. Ordenação padrão: `updated_at DESC`. Cascade ao excluir a turma.
 
-**Soft delete:** matrícula usa `removed_at` (histórico de chamada preservado); aulas/séries usam hard delete via RPC de escopo; materiais usam hard delete.  
-**Auditoria:** timestamps; mutações sensíveis via `audit_logs` (entidades de aula/série/presença/material).
+**Soft delete:** matrícula usa `removed_at` (histórico de chamada preservado); aulas/séries usam hard delete via RPC de escopo.  
+**Auditoria:** timestamps; mutações sensíveis via `audit_logs` (entidades de aula/série/presença).
 
 ---
 
@@ -196,11 +203,14 @@ Router autenticado: `authMiddleware` + `requireRole('reader')`; mutações `edit
 | DELETE | `/api/teaching/lessons/:lessonId` | editor | Exclui com escopo; confirma presença se necessário |
 | GET | `/api/teaching/lessons/:lessonId/attendance` | reader | Chamada paginada + resumo |
 | PUT | `/api/teaching/lessons/:lessonId/attendance` | editor | Salva mudanças / marcar não registradas presentes |
-| GET/POST | `/api/teaching/classes/:id/materials` | reader / editor | Lista (`updated_at DESC`) / cria link ou anotação |
-| PATCH/DELETE | `/api/teaching/materials/:materialId` | editor | Atualiza (sem mudar `type`) / exclui |
 | GET/POST/PATCH | `/api/teaching/classes/:id/public-link` | reader*/editor | Meta / gerar / ativar-desativar |
+| GET/POST | `/api/teaching/classes/:id/materials` | reader / editor | Lista (`updated_at DESC`) / cria link ou anotação |
+| PATCH/DELETE | `/api/teaching/materials/:materialId` | editor | Atualiza (sem mudar type) / remove |
+| POST | `/api/teaching/classes/:id/certificates/export` | editor | Multipart: logos + cores + `enrollmentIds` → PDF multipágina |
 
 \* GET do link: autenticado reader+ (token não é secreto no Painel; POST público usa o token).
+
+**Export de certificados (multipart):** `churchLogo` (obrigatório, PNG/JPEG ≤2 MB) + até 2 `extraLogos`; `primaryColor` / `secondaryColor` `#RRGGBB`; `enrollmentIds` (JSON/CSV, máx. 50). Turma deve estar `closed`; elegíveis só `member`/`guest` ativos. Sem Storage — buffers só no request. Resposta `application/pdf`.
 
 | Método | Rota | Auth | Descrição |
 | --- | --- | --- | --- |
@@ -220,6 +230,7 @@ Router autenticado: `authMiddleware` + `requireRole('reader')`; mutações `edit
 5. **Aulas** — criar avulsa ou série (prévia obrigatória); editar/excluir `single` \| `following`; calendário/lista mensal na aba Aulas.
 6. **Chamada** — estados Não registrada / Presente / Ausente; marcar todos presentes (sobrescrita de ausentes com confirmação); dirty guard na UI.
 7. **Materiais** — aba `?tab=materiais`: CRUD de links e anotações da turma (reader consulta; editor+ mantém); sem upload.
+8. **Certificados** — só com turma `closed`; editor+ configura logos/cores (efêmero), seleciona elegíveis e gera PDF multipágina; reader consulta sem gerar; sem histórico no servidor.
 
 ```mermaid
 flowchart LR
@@ -243,7 +254,7 @@ flowchart LR
 | `/public/teaching/[token]` | Form público brand full-bleed |
 
 Nav: label **Ensino**, ícone `GraduationCap`, entre Calendário e Configurações.  
-UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Aba **Aulas** cobre calendário/lista, detalhe e chamada (`?tab=aulas&lessonId=`). Aba **Materiais** cobre links e anotações da turma (`TeachingMaterialsTab`). Certificados permanecem placeholder (DEV-110).
+UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Aba **Aulas** cobre calendário/lista, detalhe e chamada (`?tab=aulas&lessonId=`). Aba **Materiais** (`?tab=materiais`). Aba **Certificados** (`?tab=certificados`): emissão PDF após Encerrada. Materiais permanece placeholder (DEV-112).
 
 ---
 
@@ -266,16 +277,18 @@ UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** =
 | `teachingValidator.test.ts` | Status, datas, nomes, aulas/presença, materiais (tipo/URL) |
 | `teachingLessonRecurrenceService.test.ts` | Expand weekly/monthly/interval + teto |
 | `teachingAttendanceEligibility.test.ts` | Lifecycle + filtro PostgREST same-day |
+| `teachingCertificateService.test.ts` | Parse IDs, hex, magic bytes PNG/JPEG, rejeição WebP, elegibilidade |
+| `renderTeachingCertificate.test.ts` | Stream PDF multipágina |
 
 ---
 
 ## 10. 📝 Notas para Agentes
 
-- Código EN (`teaching_*`); UI PT (**Ensino / Programa / Turma / Inscritos / Aulas / Chamada / Materiais**).
+- Código EN (`teaching_*`); UI PT (**Ensino / Programa / Turma / Inscritos / Aulas / Chamada / Materiais / Certificados**).
 - Não confundir Turma com GroupType **Classe**.
 - Convidado **nunca** vira `members` neste módulo.
 - Calendário de Ensino **não** sincroniza com o módulo Calendário global.
-- Materiais são da **turma** (não da aula); IDs de regra: BR-ENS-024/025 (019–023 já cobrem aulas/chamada).
 - Em edição `single` de série, a **data** da ocorrência não é alterável (`occurrence_key` permanece alinhado).
+- Certificados: só PNG/JPEG (PDFKit); template efêmero; sem tabela/histórico; limite 50 páginas/request.
 - Documentar mudanças permanentes em `BR-ENS-*` + este arquivo + glossário/jornadas.
 - Dump: seção Ensino em `backend/bd-structure.sql`; fonte de verdade = Supabase live.

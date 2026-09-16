@@ -2,8 +2,8 @@
 type: regras-modulo
 modulo: ensino
 ultima_atualizacao: 2026-09-15
-versao: "1.2"
-total_regras: 25
+versao: "1.3"
+total_regras: 27
 tags: [regras, modulo:ensino]
 ver_tambem:
   - "[[04_modulos/ensino]]"
@@ -15,7 +15,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada** e **materiais da turma** (links e anotações) — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
+Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada**, **materiais da turma** (links e anotações) e **certificados PDF** ao encerrar a turma — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
 
 ## Índice de Regras
 
@@ -44,8 +44,10 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 | BR-ENS-021 | Escopos single / following | Gatilho | Ativo |
 | BR-ENS-022 | Chamada aula × matrícula | Restrição | Ativo |
 | BR-ENS-023 | Elegibilidade temporal da chamada | Política | Ativo |
-| BR-ENS-024 | Materiais da turma (link / anotação) | Restrição | Ativo |
-| BR-ENS-025 | Ordenação de materiais | Política | Ativo |
+| BR-ENS-024 | Emissão de certificado só com turma encerrada | Restrição | Ativo |
+| BR-ENS-025 | Conteúdo e template efêmero do certificado | Política | Ativo |
+| BR-ENS-026 | Materiais da turma (link / anotação) | Restrição | Ativo |
+| BR-ENS-027 | Ordenação de materiais | Política | Ativo |
 
 ---
 
@@ -210,7 +212,7 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Depende de:** BR-POL-001, BR-POL-003
 
 ### BR-ENS-016: Permissões reader / editor+
-- **Declaração:** GET autenticado ≥ reader; mutações (CRUD, fila, link) ≥ editor. Disponível em **todos** os planos (BR-POL-027).
+- **Declaração:** GET autenticado ≥ reader; mutações (CRUD, fila, link, **export de certificados**) ≥ editor. Disponível em **todos** os planos (BR-POL-027). Reader consulta a aba Certificados sem configurar/gerar; não há biblioteca de PDFs entre sessões.
 - **Tipo:** Restrição
 - **Gatilho:** Rotas `/api/teaching/*`
 - **Comportamento esperado:** 200 / 403 conforme role
@@ -293,9 +295,31 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Testado em:** `teachingAttendanceEligibility.test.ts`
 - **Depende de:** BR-ENS-008, BR-ENS-022
 
+### 📜 Certificados
+
+### BR-ENS-024: Emissão de certificado só com turma encerrada
+- **Declaração:** Export de certificados exige turma `status = closed`. Elegíveis: matrículas `member` ou `guest` **sem** `removed_at`. `possible_member` é inelegível até resolução. Máximo **50** enrollmentIds por request. Revalidação no servidor (tenant, congregação, ownership turma × IDs).
+- **Tipo:** Restrição
+- **Gatilho:** `POST /api/teaching/classes/:id/certificates/export`
+- **Comportamento esperado:** PDF multipágina (1 página/aluno) ou 400 com motivo
+- **Comportamento em violação:** 400 (turma não encerrada / seleção inválida / limite)
+- **Implementado em:** `teachingCertificateController.ts` + `teachingCertificateService.ts`
+- **Testado em:** `teachingCertificateService.test.ts`
+- **Depende de:** BR-ENS-005, BR-ENS-008, BR-ENS-016
+
+### BR-ENS-025: Conteúdo e template efêmero do certificado
+- **Declaração:** PDF landscape A4 com campos mínimos: nome do aluno, Turma, Programa, Igreja, data de emissão. Template **efêmero** no request: logo da Igreja obrigatório (PNG/JPEG ≤2 MB), até 2 logos adicionais, cores primária/secundária `#RRGGBB`. Sem tabela de template, sem storage de PDF, sem histórico de emissão. WebP não é aceito (PDFKit).
+- **Tipo:** Política
+- **Gatilho:** Export de certificados (multipart)
+- **Comportamento esperado:** PDF com logos embutidos; falha se logo obrigatório inválido ou não embutível
+- **Comportamento em violação:** 400 (logo/cores) / 500 se embed obrigatório falhar após headers
+- **Implementado em:** `uploadCertificateImages.ts` + `renderTeachingCertificate.ts`
+- **Testado em:** `teachingCertificateService.test.ts` · `renderTeachingCertificate.test.ts`
+- **Depende de:** BR-ENS-024
+
 ### 📎 Materiais da turma
 
-### BR-ENS-024: Materiais da turma (link / anotação)
+### BR-ENS-026: Materiais da turma (link / anotação)
 - **Declaração:** Material pertence a uma Turma (`teaching_materials.class_id`); `type ∈ {link, note}`; título obrigatório (2–120). **Link:** URL `http`/`https` obrigatória e `content` nulo. **Anotação:** conteúdo textual obrigatório (até 5000) e `url` nula. Sem upload de arquivo; sem vínculo a aula; disponível em qualquer status da turma (só papel restringe). Tipo **não** muda no PATCH.
 - **Tipo:** Restrição
 - **Gatilho:** POST/PATCH/DELETE materiais; GET lista
@@ -305,7 +329,7 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Testado em:** `teachingValidator.test.ts`
 - **Depende de:** BR-ENS-016, BR-GEN-010/024, BR-GEN-022
 
-### BR-ENS-025: Ordenação de materiais
+### BR-ENS-027: Ordenação de materiais
 - **Declaração:** Listagem padrão por `updated_at DESC` (mais recentemente atualizados primeiro). Sem reordenação manual no v1.
 - **Tipo:** Política
 - **Gatilho:** GET `/api/teaching/classes/:id/materials`
@@ -313,7 +337,8 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Comportamento em violação:** —
 - **Implementado em:** `listTeachingMaterials` (`.order('updated_at', { ascending: false })`)
 - **Testado em:** N/A — QA smoke
-- **Depende de:** BR-ENS-024
+- **Depende de:** BR-ENS-026
+
 
 ---
 

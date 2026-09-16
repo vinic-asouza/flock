@@ -80,7 +80,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 
 **Ensino** *(módulo; código: `teaching_*`)*
 > Módulo do Painel para ciclos formativos (EBD, cursos, estudos). Menu **Ensino** → `/teaching`.
-- **Usado em:** Programas, Turmas, matrículas, aulas, chamada, link público
+- **Usado em:** Programas, Turmas, matrículas, aulas, chamada, materiais, certificados, link público
 - **UI:** “Ensino”
 
 **Programa** *(código: `TeachingProgram`, `teaching_programs`)*  
@@ -110,6 +110,12 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Presença por aula × matrícula. Estados: **Não registrada**, **Presente**, **Ausente**.
 - **Usado em:** Ensino (detalhe da aula)  
 - **UI:** “Chamada”
+
+**Certificado (Ensino)** *(código: export PDF; sem tabela)*  
+> Documento PDF multipágina emitido na aba **Certificados** após a turma **Encerrada**. Template efêmero (logos PNG/JPEG + cores no request); campos mínimos: aluno, Turma, Programa, Igreja, data. Sem histórico/storage no produto.
+- **Elegíveis:** matrículas Membro e Convidado (não Possível membro)  
+- **Usado em:** Ensino (`?tab=certificados`)  
+- **UI:** “Certificados” / “Gerar certificados”
 
 **Possível membro** *(código: `kind = possible_member`)*  
 > Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+). Não aparece na chamada até resolução.
@@ -357,14 +363,14 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 - **A:** Admin OPS, Aluno (matrícula Ensino), Aula (Ensino), Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
 - **B:** Batismo (tipo de admissão), Billing (ver Assinatura)  
-- **C:** Calendário (item), Chamada (Ensino), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
+- **C:** Calendário (item), Certificado (Ensino), Chamada (Ensino), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Ensino, Evento (tipo calendário), Encontro  
 - **F:** Ficha de pré-cadastro  
 - **G:** Grupo, Guest/Convidado (calendário), Guest/Convidado (Ensino)  
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros, Inscritos (UI Ensino)  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração, Link público de turma  
-- **M:** Membro, Mentor, Membership, Match N/W/D, Ministério (tipo de grupo)  
+- **M:** Membro, Mentor, Membership, Match N/W/D, Material (turma Ensino), Ministério (tipo de grupo)  
 - **O:** Operador da plataforma, Owner (`dono`)  
 - **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Possível membro, Professor (turma), Programa (Ensino), Programação  
 - **Q:** Questionário eclesiástico  

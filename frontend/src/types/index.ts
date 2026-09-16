@@ -467,3 +467,98 @@ export interface TeachingMaterial {
   created_at: string;
   updated_at: string;
 }
+
+export type TeachingRecurrenceType = 'weekly' | 'monthly' | 'interval_days';
+export type TeachingLessonScope = 'single' | 'following';
+export type TeachingAttendanceStatus = 'unregistered' | 'present' | 'absent';
+
+export interface TeachingLessonSeries {
+  id: string;
+  recurrence_type: TeachingRecurrenceType;
+  starts_on: string;
+  ends_on: string;
+  weekdays?: number[] | null;
+  day_of_month?: number | null;
+  interval_days?: number | null;
+}
+
+export interface TeachingLesson {
+  id: string;
+  church_id: string;
+  class_id: string;
+  series_id?: string | null;
+  occurrence_key?: string | null;
+  title: string;
+  description?: string | null;
+  lesson_date: string;
+  start_time: string;
+  created_at: string;
+  updated_at: string;
+  teaching_lesson_series?: TeachingLessonSeries | null;
+}
+
+export interface TeachingLessonPayload {
+  title: string;
+  description?: string | null;
+  lesson_date: string;
+  start_time: string;
+}
+
+export interface TeachingLessonRecurrencePayload {
+  title: string;
+  description?: string | null;
+  start_time: string;
+  starts_on: string;
+  ends_on: string;
+  recurrence_type: TeachingRecurrenceType;
+  weekdays?: number[];
+  day_of_month?: number;
+  interval_days?: number;
+}
+
+export interface TeachingLessonConflict {
+  id: string;
+  lesson_date: string;
+  start_time: string;
+  title: string;
+  series_id?: string | null;
+  occurrence_key?: string | null;
+}
+
+export interface TeachingLessonSeriesPreview {
+  count: number;
+  first_date: string;
+  last_date: string;
+  dates: string[];
+  skipped_months: string[];
+  conflicts: TeachingLessonConflict[];
+}
+
+export interface TeachingAttendanceItem {
+  enrollment_id: string;
+  kind: Exclude<TeachingEnrollmentKind, 'possible_member'>;
+  display_name: string;
+  removed_from_class: boolean;
+  status: TeachingAttendanceStatus;
+  attendance_updated_at?: string | null;
+}
+
+export interface TeachingAttendanceSummary {
+  total: number;
+  present: number;
+  absent: number;
+  unregistered: number;
+}
+
+export interface TeachingAttendanceResponse {
+  lesson: Pick<TeachingLesson, 'id' | 'lesson_date' | 'start_time' | 'title'>;
+  data: TeachingAttendanceItem[];
+  summary: TeachingAttendanceSummary;
+  pagination: TeachingPagination;
+}
+
+export interface TeachingAttendanceChange {
+  enrollment_id: string;
+  status: Exclude<TeachingAttendanceStatus, 'unregistered'> | null;
+}
+}

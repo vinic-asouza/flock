@@ -158,6 +158,7 @@ export const createPublicTeachingEnrollment = async (
       kind: match.kind,
       member_id: match.kind === 'member' ? match.memberId || null : null,
       full_name: value.full_name.trim(),
+      display_name_snapshot: value.full_name.trim(),
       whatsapp: value.whatsapp.trim(),
       birth_date: value.birth_date,
       email: value.email ? String(value.email).trim() : null,
@@ -170,6 +171,8 @@ export const createPublicTeachingEnrollment = async (
           : match.kind === 'member'
             ? { signals: match.signals }
             : null,
+      attendance_eligible_from:
+        match.kind === 'possible_member' ? null : new Date().toISOString().slice(0, 10),
     };
 
     // Se auto-membro e já matriculado, não duplica — trata como confirmado
@@ -179,6 +182,7 @@ export const createPublicTeachingEnrollment = async (
         .select('id')
         .eq('class_id', teachingLink.class_id)
         .eq('member_id', match.memberId)
+        .is('removed_at', null)
         .maybeSingle();
 
       if (existing) {
@@ -203,6 +207,7 @@ export const createPublicTeachingEnrollment = async (
           .from('teaching_enrollments')
           .select('member_id')
           .eq('class_id', teachingLink.class_id)
+          .is('removed_at', null)
           .in('member_id', candidateIds);
 
         if (

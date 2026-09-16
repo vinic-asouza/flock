@@ -16,6 +16,133 @@ const isoDateOnly = Joi.string()
     'string.pattern.base': 'A data deve estar no formato YYYY-MM-DD',
   });
 
+const timeOnly = Joi.string()
+  .pattern(/^([01]\d|2[0-3]):[0-5]\d$/)
+  .messages({
+    'string.pattern.base': 'O horário deve estar no formato HH:mm',
+  });
+
+const lessonTitle = Joi.string().trim().min(2).max(150).messages({
+  'string.empty': 'O título da aula é obrigatório',
+  'string.min': 'O título da aula deve ter pelo menos 2 caracteres',
+  'string.max': 'O título da aula não pode ter mais de 150 caracteres',
+});
+
+export const teachingRecurrenceTypes = ['weekly', 'monthly', 'interval_days'] as const;
+
+const recurrenceFields = {
+  recurrence_type: Joi.string()
+    .valid(...teachingRecurrenceTypes)
+    .required(),
+  starts_on: isoDateOnly.required(),
+  ends_on: isoDateOnly.required(),
+  weekdays: Joi.when('recurrence_type', {
+    is: 'weekly',
+    then: Joi.array()
+      .items(Joi.number().integer().min(0).max(6))
+      .min(1)
+      .max(7)
+      .unique()
+      .required(),
+    otherwise: Joi.forbidden(),
+  }),
+  day_of_month: Joi.when('recurrence_type', {
+    is: 'monthly',
+    then: Joi.number().integer().min(1).max(31).required(),
+    otherwise: Joi.forbidden(),
+  }),
+  interval_days: Joi.when('recurrence_type', {
+    is: 'interval_days',
+    then: Joi.number().integer().min(1).max(366).required(),
+    otherwise: Joi.forbidden(),
+  }),
+};
+
+function assertRecurrencePeriod(
+  value: { starts_on?: string; ends_on?: string },
+  helpers: Joi.CustomHelpers
+) {
+  if (value.starts_on && value.ends_on && value.ends_on < value.starts_on) {
+    return helpers.error('any.custom');
+  }
+  return value;
+}
+
+export const createTeachingLessonSchema = Joi.object({
+  title: lessonTitle.required(),
+  description: Joi.string().allow('', null).max(5000).optional(),
+  lesson_date: isoDateOnly.required(),
+  start_time: timeOnly.required(),
+});
+
+export const teachingLessonSeriesSchema = Joi.object({
+  title: lessonTitle.required(),
+  description: Joi.string().allow('', null).max(5000).optional(),
+  start_time: timeOnly.required(),
+  ...recurrenceFields,
+})
+  .custom(assertRecurrencePeriod)
+  .messages({
+    'any.custom': 'A data final deve ser igual ou posterior à data inicial',
+  });
+
+const followingRecurrenceSchema = Joi.object(recurrenceFields)
+  .custom(assertRecurrencePeriod)
+  .messages({
+    'any.custom': 'A data final deve ser igual ou posterior à data inicial',
+  });
+
+export const updateTeachingLessonSchema = Joi.object({
+  scope: Joi.string().valid('single', 'following').required(),
+  title: lessonTitle.optional(),
+  description: Joi.string().allow('', null).max(5000).optional(),
+  lesson_date: isoDateOnly.optional(),
+  start_time: timeOnly.optional(),
+  recurrence: followingRecurrenceSchema.optional(),
+})
+  .or('title', 'description', 'lesson_date', 'start_time', 'recurrence')
+  .custom((value, helpers) => {
+    if (value.scope === 'single' && value.recurrence) return helpers.error('any.custom');
+    if (value.scope === 'following' && value.lesson_date) return helpers.error('any.custom');
+    return value;
+  })
+  .messages({
+    'any.custom':
+      'Recorrência só pode ser alterada com following; data avulsa só pode ser alterada com single',
+  });
+
+export const teachingLessonDeleteQuerySchema = Joi.object({
+  scope: Joi.string().valid('single', 'following').default('single'),
+  confirm_attendance_deletion: Joi.boolean().truthy('true').falsy('false').default(false),
+});
+
+export const saveTeachingAttendanceSchema = Joi.object({
+  changes: Joi.array()
+    .items(
+      Joi.object({
+        enrollment_id: Joi.string().uuid().required(),
+        status: Joi.string().valid('present', 'absent', null).required(),
+      })
+    )
+    .max(500)
+    .unique('enrollment_id')
+    .default([]),
+  mark_unregistered_present: Joi.boolean().default(false),
+  overwrite_absent: Joi.boolean().default(false),
+})
+  .custom((value, helpers) => {
+    if (!value.mark_unregistered_present && value.overwrite_absent) {
+      return helpers.error('any.custom');
+    }
+    if (!value.mark_unregistered_present && value.changes.length === 0) {
+      return helpers.error('any.custom');
+    }
+    return value;
+  })
+  .messages({
+    'any.custom': 'Informe alterações ou marque os não registrados como presentes',
+  });
+
 function assertClassPeriod(
   value: { start_date?: string | null; end_date?: string | null },
   helpers: Joi.CustomHelpers
