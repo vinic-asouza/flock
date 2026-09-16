@@ -23,7 +23,7 @@ tags: [regras, índice, módulos]
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
 | Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
-| Ensino | [[02_regras-de-negocio/regras-por-modulo/ensino]] | ENS | 18 | Programas, turmas, matrículas, match, link público |
+| Ensino | [[02_regras-de-negocio/regras-por-modulo/ensino]] | ENS | 25 | Programas, turmas, matrículas, aulas, chamada, certificados |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
 | Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 15 | Igreja, conta, equipe, audit |
@@ -31,7 +31,7 @@ tags: [regras, índice, módulos]
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 14 módulos · **168 regras**
+**Total:** 14 módulos · **175 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
@@ -50,4 +50,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-09-13 — BR-ENS-001…018 (módulo Ensino, DEV-99).
+2026-09-15 — BR-ENS-024…025 (certificados da Turma, DEV-110); índice ENS alinhado a 25 regras.

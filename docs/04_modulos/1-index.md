@@ -107,7 +107,7 @@ graph TD
 | **integracao** | Pré-membros, conversão, links públicos de integração | Alta | Ativo | auth, igreja-config, membros, congregacoes | ~14 |
 | **congregacoes** | Unidades locais (CRUD + batch) | Baixa | Ativo | auth, igreja-config | ~6 |
 | **grupos** | Ministérios/células e vínculos membro↔grupo | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
-| **ensino** | Programas, turmas, matrículas, match e link público | Alta | Ativo | auth, igreja-config, congregacoes, membros | ~16 |
+| **ensino** | Programas, turmas, matrículas, aulas, chamada, certificados | Alta | Ativo | auth, igreja-config, congregacoes, membros | ~25 |
 | **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo | auth, igreja-config, congregacoes, grupos, membros | ~11 |
 | **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~13 |
 | **igreja-config** | Igreja, conta do usuário, equipe (`church_users`), audit logs | Alta | Ativo | auth | ~16 |
