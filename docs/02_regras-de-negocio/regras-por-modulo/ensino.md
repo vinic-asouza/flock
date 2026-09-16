@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: ensino
-ultima_atualizacao: 2026-09-13
-versao: "1.0"
-total_regras: 18
+ultima_atualizacao: 2026-09-15
+versao: "1.2"
+total_regras: 25
 tags: [regras, modulo:ensino]
 ver_tambem:
   - "[[04_modulos/ensino]]"
@@ -15,7 +15,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol e link público da turma — sem confundir com Grupos (`Classe`) nem consumir cota de membros para convidados.
+Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada** e **materiais da turma** (links e anotações) — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
 
 ## Índice de Regras
 
@@ -39,6 +39,13 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 | BR-ENS-016 | Permissões reader / editor+ | Restrição | Ativo |
 | BR-ENS-017 | Um link público por turma | Restrição | Ativo |
 | BR-ENS-018 | Cascade delete programa → turmas | Gatilho | Ativo |
+| BR-ENS-019 | Aulas sem sync com Calendário | Restrição | Ativo |
+| BR-ENS-020 | Séries recorrentes materializadas | Restrição | Ativo |
+| BR-ENS-021 | Escopos single / following | Gatilho | Ativo |
+| BR-ENS-022 | Chamada aula × matrícula | Restrição | Ativo |
+| BR-ENS-023 | Elegibilidade temporal da chamada | Política | Ativo |
+| BR-ENS-024 | Materiais da turma (link / anotação) | Restrição | Ativo |
+| BR-ENS-025 | Ordenação de materiais | Política | Ativo |
 
 ---
 
@@ -233,6 +240,80 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Implementado em:** FKs `ON DELETE CASCADE`
 - **Testado em:** N/A — schema
 - **Depende de:** —
+
+### 📅 Aulas e chamada
+
+### BR-ENS-019: Aulas sem sync com Calendário
+- **Declaração:** Aulas de Ensino vivem só em `teaching_lessons` / série da turma. Criar, editar ou excluir aula **não** cria nem altera itens do módulo Calendário global.
+- **Tipo:** Restrição
+- **Gatilho:** CRUD de aulas / séries
+- **Comportamento esperado:** Isolamento de bounded contexts
+- **Comportamento em violação:** —
+- **Implementado em:** `teachingLessonController.ts` (sem chamadas ao Calendário)
+- **Testado em:** N/A — revisão / QA
+- **Depende de:** —
+
+### BR-ENS-020: Séries recorrentes materializadas
+- **Declaração:** Recorrência `weekly` \| `monthly` \| `interval_days` materializa ocorrências até `ends_on`, com teto de **366** datas, prévia obrigatória (conflitos e meses ignorados) e UNIQUE de horário por turma.
+- **Tipo:** Restrição
+- **Gatilho:** Preview / create lesson-series
+- **Comportamento esperado:** Lote criado sem duplicar silenciosamente aula equivalente
+- **Comportamento em violação:** 400 / 409
+- **Implementado em:** `teachingLessonRecurrenceService.ts` + RPCs de série
+- **Testado em:** `teachingLessonRecurrenceService.test.ts`
+- **Depende de:** BR-ENS-019
+
+### BR-ENS-021: Escopos single / following
+- **Declaração:** Edição e exclusão de aula recorrente usam `scope=single` (só a ocorrência) ou `following` (esta e as próximas). Em `single`, a **data** não pode mudar (mantém `occurrence_key`); título/horário/descrição sim. Excluir a última ocorrência remove a série órfã.
+- **Tipo:** Gatilho
+- **Gatilho:** PATCH/DELETE `/api/teaching/lessons/:id`
+- **Comportamento esperado:** Conjunto correto de ocorrências afetado; 400 se tentar mudar data em single
+- **Comportamento em violação:** 400 / 409 (presença exige confirmação)
+- **Implementado em:** `teachingLessonController.ts` + `delete_teaching_lessons_scope` / update RPC
+- **Testado em:** N/A — QA smoke + review
+- **Depende de:** BR-ENS-020
+
+### BR-ENS-022: Chamada aula × matrícula
+- **Declaração:** Presença é por combinação aula × inscrição, com estados **Não registrada**, **Presente** e **Ausente**. “Marcar todos presentes” promove não registradas; sobrescrever Ausente exige confirmação explícita (`overwrite_absent`).
+- **Tipo:** Restrição
+- **Gatilho:** GET/PUT attendance
+- **Comportamento esperado:** Persistência idempotente; UI com dirty guard
+- **Comportamento em violação:** 400 / 409
+- **Implementado em:** `save_teaching_lesson_attendance` + `TeachingLessonAttendance.tsx`
+- **Testado em:** N/A — QA
+- **Depende de:** BR-ENS-016, BR-ENS-023
+
+### BR-ENS-023: Elegibilidade temporal da chamada
+- **Declaração:** `possible_member` não entra na chamada até resolução. Membro/convidado entram a partir de `attendance_eligible_from` (inclusivo). Remoção lógica (`removed_at`) preserva presenças de dias **anteriores** e torna a matrícula inelegível a partir do **dia calendário** da remoção (incluindo o próprio dia).
+- **Tipo:** Política
+- **Gatilho:** GET/PUT attendance; DELETE enrollment
+- **Comportamento esperado:** Lista/resumo alinhados ao RPC; histórico anterior consultável
+- **Comportamento em violação:** 409 inelegível
+- **Implementado em:** `teachingAttendanceEligibility.ts` + RPC save attendance
+- **Testado em:** `teachingAttendanceEligibility.test.ts`
+- **Depende de:** BR-ENS-008, BR-ENS-022
+
+### 📎 Materiais da turma
+
+### BR-ENS-024: Materiais da turma (link / anotação)
+- **Declaração:** Material pertence a uma Turma (`teaching_materials.class_id`); `type ∈ {link, note}`; título obrigatório (2–120). **Link:** URL `http`/`https` obrigatória e `content` nulo. **Anotação:** conteúdo textual obrigatório (até 5000) e `url` nula. Sem upload de arquivo; sem vínculo a aula; disponível em qualquer status da turma (só papel restringe). Tipo **não** muda no PATCH.
+- **Tipo:** Restrição
+- **Gatilho:** POST/PATCH/DELETE materiais; GET lista
+- **Comportamento esperado:** Persistência coerente com o tipo; cascade ao excluir a turma
+- **Comportamento em violação:** 400 (validação / CHECK); 403 (reader em mutação)
+- **Implementado em:** `teachingMaterialController.ts` + `teachingValidator.ts` + CHECKs da tabela
+- **Testado em:** `teachingValidator.test.ts`
+- **Depende de:** BR-ENS-016, BR-GEN-010/024, BR-GEN-022
+
+### BR-ENS-025: Ordenação de materiais
+- **Declaração:** Listagem padrão por `updated_at DESC` (mais recentemente atualizados primeiro). Sem reordenação manual no v1.
+- **Tipo:** Política
+- **Gatilho:** GET `/api/teaching/classes/:id/materials`
+- **Comportamento esperado:** Ordem estável após create/update
+- **Comportamento em violação:** —
+- **Implementado em:** `listTeachingMaterials` (`.order('updated_at', { ascending: false })`)
+- **Testado em:** N/A — QA smoke
+- **Depende de:** BR-ENS-024
 
 ---
 
