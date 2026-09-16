@@ -561,4 +561,3 @@ export interface TeachingAttendanceChange {
   enrollment_id: string;
   status: Exclude<TeachingAttendanceStatus, 'unregistered'> | null;
 }
-}
