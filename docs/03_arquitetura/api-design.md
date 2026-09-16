@@ -1,7 +1,7 @@
 ---
 type: api-design
-ultima_atualizacao: 2026-09-01
-versao: "1.5"
+ultima_atualizacao: 2026-09-15
+versao: "1.6"
 tipo_api: REST
 base_url: /api
 tags: [arquitetura, API, endpoints, contratos]
@@ -296,13 +296,15 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | PUT | `/api/congregations/:id` | ✅ | ≥ editor | Atualizar | ✅ |
 | DELETE | `/api/congregations/:id` | ✅ | ≥ editor | Deletar | ✅ |
 
-### Groups (`/api/groups`)
+### Groups / Ministérios (`/api/groups`)
+
+> Produto: **Ministérios**. Paths de API permanecem `/api/groups`. Sem query/sort por `type`.
 
 | Método | Rota | Auth | Role | Descrição | Status |
 | --- | --- | --- | --- | --- | --- |
-| GET | `/api/groups/` | ✅ | ≥ reader | Listar (filtros + `sort_by`/`sort_order`) | ✅ |
+| GET | `/api/groups/` | ✅ | ≥ reader | Listar (filtros + `sort_by`/`sort_order`; sem `type`) | ✅ |
 | GET | `/api/groups/:id` | ✅ | ≥ reader | Detalhe + membros | ✅ |
-| GET | `/api/groups/:id/members` | ✅ | ≥ reader | Membros do grupo | ✅ |
+| GET | `/api/groups/:id/members` | ✅ | ≥ reader | Membros do ministério | ✅ |
 | POST | `/api/groups/` | ✅ | ≥ editor | Criar | ✅ |
 | PUT | `/api/groups/:id` | ✅ | ≥ editor | Atualizar | ✅ |
 | DELETE | `/api/groups/:id` | ✅ | ≥ editor | Deletar | ✅ |
@@ -347,9 +349,9 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | GET | `/api/export/dashboard/pdf` | ✅ | ≥ reader | PDF dashboard | ✅ |
 | POST | `/api/export/members/list` | ✅ | ≥ reader | Lista membros PDF | ✅ |
 | POST | `/api/export/members/list/csv` | ✅ | ≥ reader | Lista membros CSV | ✅ |
-| POST | `/api/export/group/members/list` | ✅ | ≥ reader | PDF membros do grupo | ✅ |
+| POST | `/api/export/group/members/list` | ✅ | ≥ reader | PDF membros do ministério | ✅ |
 | POST | `/api/export/integration/list` | ✅ | ≥ reader | Lista integração | ✅ |
-| POST | `/api/export/groups/list` | ✅ | ≥ reader | PDF grupos (`filters.types[]` min 1) | ✅ |
+| POST | `/api/export/groups/list` | ✅ | ≥ reader | PDF ministérios (`search` / `congregation_id` / `status`; sem `types[]`) | ✅ |
 | POST | `/api/export/congregations/list` | ✅ | ≥ reader | PDF congregações | ✅ |
 | POST | `/api/export/congregation/members/list` | ✅ | ≥ reader | PDF membros ativos da congregação | ✅ |
 
@@ -375,7 +377,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | Método | Rota | Auth | Role | Descrição | Status |
 | --- | --- | --- | --- | --- | --- |
 | GET | `/api/public/registration/:token` | 🔗 | — | Validar link | ✅ |
-| GET | `/api/public/registration/:token/groups` | 🔗 | — | Grupos para form | ✅ |
+| GET | `/api/public/registration/:token/groups` | 🔗 | — | Ministérios para form | ✅ |
 | POST | `/api/public/registration/:token` | 🔗 | — | Criar membro (RL 15/15min) | ✅ |
 | GET | `/api/public/integration/:token` | 🔗 | — | Validar link | ✅ |
 | POST | `/api/public/integration/:token` | 🔗 | — | Criar integrante (RL 15/15min) | ✅ |
@@ -447,7 +449,7 @@ Query params: `search`, `active`, `congregation_id`, `gender`, `marital_status`,
 ### Outros módulos
 
 Integration: page/limit + filtros de status/nome (ver controller).  
-Groups: filtros `congregation_id`, `type`, `status`, `search` + ordenação `sort_by`/`sort_order` (whitelist `name|type|created_at|updated_at|status`; default `name` asc; fallback silencioso; resposta array sem eco de `sorting`).  
+Groups (Ministérios): filtros `congregation_id`, `status`, `search` + ordenação `sort_by`/`sort_order` (whitelist `name|created_at|updated_at|status`; **sem** `type`; default `name` asc; fallback silencioso; resposta array sem eco de `sorting`).  
 Calendar: filtros por query específicos do domínio. Account logs: page/limit.
 
 Resposta de members ecoa `filters` e `sorting` aplicados.

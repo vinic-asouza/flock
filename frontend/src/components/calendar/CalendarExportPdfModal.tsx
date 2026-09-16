@@ -194,16 +194,16 @@ export function CalendarExportPdfModal({
         />
 
         <Select
-          label="Grupo / Ministério"
+          label="Ministério"
           value={groupId}
           onChange={setGroupId}
           disabled={exporting || loadingGroups}
-          placeholder={loadingGroups ? 'Carregando...' : 'Todos os grupos'}
+          placeholder={loadingGroups ? 'Carregando...' : 'Todos os ministérios'}
           options={[
-            { value: '', label: 'Todos os grupos' },
+            { value: '', label: 'Todos os ministérios' },
             ...groups.map((group) => ({
               value: group.id,
-              label: `${group.type}: ${group.name}`,
+              label: group.name,
             })),
           ]}
         />

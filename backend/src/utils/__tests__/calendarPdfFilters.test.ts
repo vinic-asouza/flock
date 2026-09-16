@@ -32,9 +32,9 @@ describe('buildCalendarPdfFilterSummary', () => {
       buildCalendarPdfFilterSummary({
         types: ['Evento', 'Reunião'],
         congregationLabel: 'Sede',
-        groupLabel: 'Ministério: Louvor',
+        groupLabel: 'Louvor',
       })
-    ).toBe('Evento, Reunião • Sede • Ministério: Louvor');
+    ).toBe('Evento, Reunião • Sede • Louvor');
   });
 });
 
@@ -43,8 +43,8 @@ describe('congregationPdfLabel / groupPdfLabel', () => {
     expect(congregationPdfLabel({ name: 'Congregação Central', abbreviation: 'Sede' })).toBe('Sede');
   });
 
-  it('should format group as type: name', () => {
-    expect(groupPdfLabel({ name: 'Louvor', type: 'Ministério' })).toBe('Ministério: Louvor');
+  it('should return group name only', () => {
+    expect(groupPdfLabel({ name: 'Louvor' })).toBe('Louvor');
   });
 });
 
@@ -52,7 +52,7 @@ describe('findJoinedCongregation / findJoinedGroup', () => {
   const items = [
     {
       congregation: { id: 'cong-1', name: 'Igreja da Paz', abbreviation: 'IDP' },
-      group: { id: 'grp-1', name: 'Jovens', type: 'Ministério' },
+      group: { id: 'grp-1', name: 'Jovens' },
     },
     {
       congregation: { id: 'cong-2', name: 'Sede', abbreviation: null },

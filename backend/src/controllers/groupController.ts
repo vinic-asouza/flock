@@ -16,7 +16,6 @@ import { debug, error as logError } from '../utils/logger';
  *
  * Suporta:
  * - Filtro por congregação (query param congregation_id)
- * - Filtro por tipo (query param type)
  * - Filtro por status (query param status: active | inactive | all)
  * - Busca por nome (query param search)
  * - Ordenação (query params sort_by, sort_order) com whitelist
@@ -38,12 +37,11 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     const churchId = req.church!.churchId;
 
     const congregation_id = (req.query.congregation_id as string) || '';
-    const type = req.query.type as string || '';
     const statusParam = (req.query.status as string) || 'all';
     const search = (req.query.search as string) || '';
 
     // Whitelist de campos para sort_by — evita acesso indireto a colunas sensíveis
-    const ALLOWED_SORT_FIELDS = ['name', 'type', 'created_at', 'updated_at', 'status'] as const;
+    const ALLOWED_SORT_FIELDS = ['name', 'created_at', 'updated_at', 'status'] as const;
     const sort_by_raw = (req.query.sort_by as string) || 'name';
     const sort_by = ALLOWED_SORT_FIELDS.includes(sort_by_raw as (typeof ALLOWED_SORT_FIELDS)[number])
       ? sort_by_raw
@@ -79,11 +77,6 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     }
     query = applyScopedCongregationFilter(query, 'congregation_id', scoped);
 
-    // Aplicar filtro de tipo
-    if (type) {
-      query = query.eq('type', type);
-    }
-
     // Aplicar filtro de status (active = true, inactive = false)
     if (statusParam === 'active') {
       query = query.eq('status', true);
@@ -104,7 +97,7 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
 
     if (error) {
       return res.status(400).json({
-        error: 'Erro ao buscar grupos',
+        error: 'Erro ao buscar ministérios',
         details: error.message
       });
     }
@@ -122,8 +115,8 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
     if (memberGroupsError) {
       logError('Erro ao carregar contagem de membros dos grupos:', memberGroupsError);
       return res.status(500).json({
-        error: 'Erro ao calcular resumo dos grupos',
-        details: 'Não foi possível carregar a contagem de membros por grupo no momento'
+        error: 'Erro ao calcular resumo dos ministérios',
+        details: 'Não foi possível carregar a contagem de membros por ministério no momento'
       });
     }
 
@@ -143,8 +136,8 @@ export const listGroups = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao buscar grupos:', error);
     return res.status(500).json({
-      error: 'Erro ao carregar lista de grupos',
-      details: error instanceof Error ? error.message : 'Não foi possível carregar a lista de grupos. Tente novamente.'
+      error: 'Erro ao carregar lista de ministérios',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar a lista de ministérios. Tente novamente.'
     });
   }
 };
@@ -202,8 +195,8 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
 
     if (groupError || !group) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -238,8 +231,8 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
     if (memberGroupsError) {
       logError('Erro ao buscar membros do grupo:', memberGroupsError);
       return res.status(500).json({
-        error: 'Erro ao carregar membros do grupo',
-        details: 'Não foi possível carregar os membros vinculados a este grupo no momento'
+        error: 'Erro ao carregar membros do ministério',
+        details: 'Não foi possível carregar os membros vinculados a este ministério no momento'
       });
     }
 
@@ -258,8 +251,8 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao buscar grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao carregar dados do grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível carregar os dados do grupo. Tente novamente.'
+      error: 'Erro ao carregar dados do ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar os dados do ministério. Tente novamente.'
     });
   }
 };
@@ -271,7 +264,7 @@ export const getGroup = async (req: AuthRequest, res: Response) => {
  * 1. Valida dados do grupo
  * 2. Valida congregação (se fornecida)
  * 3. Valida responsável e associação com congregação (se fornecido)
- * 4. Verifica duplicidade de nome+tipo+congregação (apenas grupos ativos)
+ * 4. Verifica duplicidade de nome+congregação (apenas grupos ativos)
  * 5. Cria grupo
  * 6. Registra auditoria
  * 
@@ -296,7 +289,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { name, type, description, congregation_id, responsible_id, status } = req.body;
+    const { name, description, congregation_id, responsible_id, status } = req.body;
 
     const churchId = req.church!.churchId;
 
@@ -327,24 +320,23 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Verificar se já existe um grupo ATIVO com o mesmo nome e tipo na mesma congregação
-    // Grupos inativos não bloqueiam a criação de novos grupos
+    // Verificar se já existe um ministério ATIVO com o mesmo nome na mesma congregação
+    // Ministérios inativos não bloqueiam a criação de novos ministérios
     let duplicateQuery = supabase
       .from('groups')
       .select('id')
       .eq('church_id', churchId)
       .eq('name', name)
-      .eq('type', type)
-      .eq('status', true); // Apenas grupos ativos
+      .eq('status', true); // Apenas ministérios ativos
 
     duplicateQuery = duplicateQuery.eq('congregation_id', congregation_id);
 
-    const { data: existingGroup } = await duplicateQuery.single();
+    const { data: existingGroups } = await duplicateQuery.limit(1);
 
-    if (existingGroup) {
+    if (existingGroups && existingGroups.length > 0) {
       return res.status(400).json({
-        error: 'Grupo já existe',
-        details: 'Já existe um grupo com este nome e tipo nesta congregação'
+        error: 'Ministério já existe',
+        details: 'Já existe um ministério ativo com este nome nesta congregação'
       });
     }
 
@@ -352,7 +344,6 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
     const groupData: Partial<Group> = {
       church_id: churchId,
       name,
-      type,
       description: description || null,
       congregation_id,
       responsible_id: responsible_id || null,
@@ -367,7 +358,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
 
     if (createError) {
       return res.status(400).json({
-        error: 'Erro ao criar grupo',
+        error: 'Erro ao criar ministério',
         details: createError.message
       });
     }
@@ -384,8 +375,8 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao criar grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao cadastrar grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível cadastrar o grupo. Verifique os dados e tente novamente.'
+      error: 'Erro ao cadastrar ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível cadastrar o ministério. Verifique os dados e tente novamente.'
     });
   }
 };
@@ -397,7 +388,7 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
  * 1. Valida que grupo existe e pertence à igreja
  * 2. Valida congregação (se fornecida)
  * 3. Valida responsável e associação com congregação (se fornecido)
- * 4. Verifica duplicidade de nome+tipo+congregação (apenas grupos ativos)
+ * 4. Verifica duplicidade de nome+congregação (apenas grupos ativos)
  * 5. Atualiza grupo
  * 6. Registra auditoria
  * 
@@ -436,8 +427,8 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
 
     if (existingError || !existingGroup) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -446,12 +437,12 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       return res.status(existingAccess.status).json(existingAccess.body);
     }
 
-    const { name, type, congregation_id, responsible_id } = req.body;
+    const { name, congregation_id, responsible_id, status } = req.body;
 
     if (congregation_id !== undefined && (!congregation_id || String(congregation_id).trim() === '')) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: 'A congregação é obrigatória para o grupo',
+        details: 'A congregação é obrigatória para o ministério',
       });
     }
 
@@ -486,27 +477,25 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Se nome ou tipo foram alterados, verificar duplicatas
-    if (name || type || congregation_id !== undefined) {
+    const finalStatus = status !== undefined ? status : existingGroup.status;
+    // Unicidade ativa: revalidar ao mudar nome/congregação ou ao reativar
+    if (finalStatus === true && (name || congregation_id !== undefined || status === true)) {
       const finalName = name || existingGroup.name;
-      const finalType = type || existingGroup.type;
 
-      // Verificar duplicidade considerando apenas grupos ativos (exceto o próprio grupo sendo editado)
-      const { data: duplicateGroup } = await supabase
+      const { data: duplicateGroups } = await supabase
         .from('groups')
         .select('id')
         .eq('church_id', churchId)
         .eq('name', finalName)
-        .eq('type', finalType)
-        .eq('status', true) // Apenas grupos ativos
+        .eq('status', true)
         .eq('congregation_id', finalCongregationId)
         .neq('id', id)
-        .single();
+        .limit(1);
 
-      if (duplicateGroup) {
+      if (duplicateGroups && duplicateGroups.length > 0) {
         return res.status(400).json({
-          error: 'Grupo já existe',
-          details: 'Já existe outro grupo com este nome e tipo nesta congregação'
+          error: 'Ministério já existe',
+          details: 'Já existe um ministério ativo com este nome nesta congregação'
         });
       }
     }
@@ -538,7 +527,7 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
 
     if (updateError || !group) {
       return res.status(400).json({
-        error: 'Erro ao atualizar grupo',
+        error: 'Erro ao atualizar ministério',
         details: updateError?.message || 'Erro desconhecido'
       });
     }
@@ -556,8 +545,8 @@ export const updateGroup = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao atualizar grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao atualizar grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível atualizar os dados do grupo. Tente novamente.'
+      error: 'Erro ao atualizar ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível atualizar os dados do ministério. Tente novamente.'
     });
   }
 };
@@ -594,8 +583,8 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
 
     if (existingError || !existingGroup) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -619,7 +608,7 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
 
     if (deleteError) {
       return res.status(400).json({
-        error: 'Erro ao deletar grupo',
+        error: 'Erro ao excluir ministério',
         details: deleteError.message
       });
     }
@@ -636,8 +625,8 @@ export const deleteGroup = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao deletar grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao remover grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível remover o grupo. Tente novamente.'
+      error: 'Erro ao remover ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível remover o ministério. Tente novamente.'
     });
   }
 };
@@ -675,8 +664,8 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
 
     if (!group) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -711,7 +700,7 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
 
     if (memberGroupsError) {
       return res.status(400).json({
-        error: 'Erro ao buscar membros do grupo',
+        error: 'Erro ao buscar membros do ministério',
         details: memberGroupsError.message
       });
     }
@@ -726,8 +715,8 @@ export const getGroupMembers = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao buscar membros do grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao carregar membros do grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível carregar os membros do grupo. Tente novamente.'
+      error: 'Erro ao carregar membros do ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível carregar os membros do ministério. Tente novamente.'
     });
   }
 };
@@ -777,8 +766,8 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
 
     if (!group) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -792,7 +781,7 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
     if (!memberValidation.isValid) {
       return res.status(400).json({
         error: 'Membro inválido',
-        details: memberValidation.errorMessage || 'O membro não pode ser adicionado a este grupo'
+        details: memberValidation.errorMessage || 'O membro não pode ser adicionado a este ministério'
       });
     }
 
@@ -806,8 +795,8 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
 
     if (existingMemberGroup) {
       return res.status(400).json({
-        error: 'Membro já está no grupo',
-        details: 'Este membro já está vinculado a este grupo'
+        error: 'Membro já está no ministério',
+        details: 'Este membro já está vinculado a este ministério'
       });
     }
 
@@ -823,7 +812,7 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
 
     if (addError) {
       return res.status(400).json({
-        error: 'Erro ao adicionar membro ao grupo',
+        error: 'Erro ao adicionar membro ao ministério',
         details: addError.message
       });
     }
@@ -859,8 +848,8 @@ export const addMemberToGroup = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logError('Erro ao adicionar membro ao grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao adicionar membro ao grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível adicionar o membro ao grupo. Tente novamente.'
+      error: 'Erro ao adicionar membro ao ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível adicionar o membro ao ministério. Tente novamente.'
     });
   }
 };
@@ -900,8 +889,8 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
 
     if (!group) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -937,7 +926,7 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
 
     if (removeError) {
       return res.status(400).json({
-        error: 'Erro ao remover membro do grupo',
+        error: 'Erro ao remover membro do ministério',
         details: removeError.message
       });
     }
@@ -961,8 +950,8 @@ export const removeMemberFromGroup = async (req: AuthRequest, res: Response) => 
   } catch (error) {
     logError('Erro ao remover membro do grupo:', error);
     return res.status(500).json({
-      error: 'Erro ao remover membro do grupo',
-      details: error instanceof Error ? error.message : 'Não foi possível remover o membro do grupo. Tente novamente.'
+      error: 'Erro ao remover membro do ministério',
+      details: error instanceof Error ? error.message : 'Não foi possível remover o membro do ministério. Tente novamente.'
     });
   }
 };

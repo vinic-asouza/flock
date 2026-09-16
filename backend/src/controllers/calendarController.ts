@@ -1116,7 +1116,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
     if (groupId) {
       const joinedGroup = findJoinedGroup(normalizedItems, groupId);
       if (joinedGroup) {
-        groupLabel = groupPdfLabel(joinedGroup) || 'Grupo filtrado';
+        groupLabel = groupPdfLabel(joinedGroup) || 'Ministério filtrado';
       } else {
         const { data: group } = await supabase
           .from('groups')
@@ -1124,7 +1124,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
           .eq('id', groupId)
           .eq('church_id', churchId)
           .maybeSingle();
-        groupLabel = groupPdfLabel(group) || 'Grupo filtrado';
+        groupLabel = groupPdfLabel(group) || 'Ministério filtrado';
       }
     }
 

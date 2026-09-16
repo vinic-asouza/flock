@@ -727,22 +727,22 @@ export function PublicMemberForm({
             disabled={isLoading || submitDisabled}
           />
 
-          {/* Grupos */}
+          {/* Ministérios */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Grupos / Ministérios</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Ministérios</label>
             {groupsLoadFailed && (
               <p className="mb-2 text-xs text-amber-700">
-                Não foi possível carregar os grupos. Você ainda pode enviar o cadastro sem selecionar grupos.
+                Não foi possível carregar os ministérios. Você ainda pode enviar o cadastro sem selecionar ministérios.
               </p>
             )}
             <div className="border border-gray-300 rounded-md p-3 bg-gray-50 max-h-80 overflow-y-auto">
               {loadingGroups ? (
                 <div className="flex items-center justify-center py-8">
-                  <p className="text-sm text-gray-500">Carregando grupos...</p>
+                  <p className="text-sm text-gray-500">Carregando ministérios...</p>
                 </div>
               ) : availableGroups.length === 0 ? (
                 <div className="flex items-center justify-center py-8">
-                  <p className="text-sm text-gray-500">Nenhum grupo disponível</p>
+                  <p className="text-sm text-gray-500">Nenhum ministério disponível</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -761,7 +761,9 @@ export function PublicMemberForm({
                           className="mt-0.5 h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded flex-shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <span className="text-sm text-gray-500 block truncate">{group.type}{group.congregations && ` • ${getCongregationDisplayName(group.congregations)}`}</span>
+                          {group.congregations && (
+                            <span className="text-sm text-gray-500 block truncate">{getCongregationDisplayName(group.congregations)}</span>
+                          )}
                           <span className={`text-sm font-medium block truncate ${isSelected ? 'text-primary' : 'text-gray-900'}`}>{group.name}</span>
                         </div>
                       </label>
@@ -772,7 +774,7 @@ export function PublicMemberForm({
             </div>
             {selectedGroups.length > 0 && (
               <p className="mt-1 text-xs text-primary font-medium">
-                {selectedGroups.length} {selectedGroups.length === 1 ? 'grupo selecionado' : 'grupos selecionados'}
+                {selectedGroups.length} {selectedGroups.length === 1 ? 'ministério selecionado' : 'ministérios selecionados'}
               </p>
             )}
           </div>

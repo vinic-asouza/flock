@@ -22,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Painel', href: '/', icon: Home },
   { label: 'Membros', href: '/members', icon: Users },
   { label: 'Integração', href: '/integration', icon: UserPlus },
-  { label: 'Grupos', href: '/groups', icon: UserCog },
+  { label: 'Ministérios', href: '/ministries', icon: UserCog },
   { label: 'Congregações', href: '/congregations', icon: Layers },
   { label: 'Calendário', href: '/calendar', icon: Calendar },
   { label: 'Configurações', href: '/settings', icon: Settings, sectionStart: true },

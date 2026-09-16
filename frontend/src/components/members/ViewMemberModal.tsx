@@ -477,24 +477,22 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     )}
                     {member.groups && member.groups.length > 0 && (
                       <div>
-                        <span className="text-sm font-medium text-gray-500">Grupos / Ministérios</span>
+                        <span className="text-sm font-medium text-gray-500">Ministérios</span>
                         <div className="mt-2 flex flex-wrap gap-2">
                           {member.groups
-                            .filter(group => group.status) // Apenas grupos ativos
+                            .filter(group => group.status)
                             .map((group) => (
                               <span
                                 key={group.id}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
                               >
-                                <span className="text-purple-600">{group.type}</span>
-                                <span className="text-purple-500">•</span>
                                 <span>{group.name}</span>
                               </span>
                             ))}
                           {member.groups.filter(group => !group.status).length > 0 && (
                             <>
                               <div className="w-full mt-2 pt-2 border-t border-gray-200">
-                                <span className="text-xs text-gray-500">Grupos Inativos:</span>
+                                <span className="text-xs text-gray-500">Ministérios inativos:</span>
                               </div>
                               {member.groups
                                 .filter(group => !group.status)
@@ -503,8 +501,6 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                                     key={group.id}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 opacity-75"
                                   >
-                                    <span className="text-gray-500">{group.type}</span>
-                                    <span className="text-gray-400">•</span>
                                     <span>{group.name}</span>
                                   </span>
                                 ))}
@@ -515,8 +511,8 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     )}
                     {(!member.groups || member.groups.length === 0) && (
                       <div>
-                        <span className="text-sm font-medium text-gray-500">Grupos / Ministérios</span>
-                        <p className="text-gray-500 text-sm mt-1">Nenhum grupo vinculado</p>
+                        <span className="text-sm font-medium text-gray-500">Ministérios</span>
+                        <p className="text-gray-500 text-sm mt-1">Nenhum ministério vinculado</p>
                       </div>
                     )}
                   </div>

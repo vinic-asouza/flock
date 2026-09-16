@@ -24,7 +24,7 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | BR-MEM-003 | E-mail único na igreja | Restrição | Ativo |
 | BR-MEM-004 | Campos obrigatórios do membro | Restrição | Ativo |
 | BR-MEM-005 | Nascimento active true | Fato | Ativo |
-| BR-MEM-006 | Grupos do membro válidos | Restrição | Ativo |
+| BR-MEM-006 | Ministérios do membro válidos | Restrição | Ativo |
 | BR-MEM-007 | Import e limite | Restrição | Ativo |
 | BR-MEM-008 | Skip duplicatas no import | Derivação | Ativo |
 | BR-MEM-009 | Escrita editor+ | Restrição | Ativo |
@@ -94,8 +94,8 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
-### BR-MEM-006: Grupos do membro válidos
-- **Declaração:** Grupos associados devem existir e pertencer à igreja/congregações dela.
+### BR-MEM-006: Ministérios do membro válidos
+- **Declaração:** Ministérios associados (`groups[]`) devem existir e pertencer à igreja/congregações dela.
 - **Tipo:** Restrição
 - **Gatilho:** Create/update com groups
 - **Comportamento esperado:** Vínculos OK

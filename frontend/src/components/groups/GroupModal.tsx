@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download, Tag, CircleDot, MapPin, User, FileText } from 'lucide-react';
+import { Edit, Trash2, UserPlus, X, Users, Loader2, ChevronLeft, ChevronRight, Mail, Phone, MessageCircle, Download, CircleDot, MapPin, User, FileText } from 'lucide-react';
 import { GroupWithMembers } from '@/types';
 import { Member } from '@/types/reports';
 import { apiService, formatApiError } from '@/services/api';
@@ -74,7 +74,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
       const data = await apiService.getGroup(groupId);
       setGroup(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do grupo';
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar dados do ministério';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -173,7 +173,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
     const member = fullMembersData.find(m => m.id === memberId);
     const memberName = member?.name || 'este membro';
     const confirmed = window.confirm(
-      `Tem certeza que deseja remover ${memberName} do grupo?\n\nEsta ação não poderá ser desfeita.`
+      `Tem certeza que deseja remover ${memberName} do ministério?\n\nEsta ação não poderá ser desfeita.`
     );
     if (!confirmed) return;
     try {
@@ -210,26 +210,6 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
     (membersPage - 1) * membersPerPage,
     membersPage * membersPerPage
   );
-
-  const getTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      'Ministério': 'bg-blue-100 text-blue-700',
-      'Departamento': 'bg-purple-100 text-purple-700',
-      'Grupo': 'bg-green-100 text-green-700',
-      'Equipe': 'bg-yellow-100 text-yellow-700',
-      'Time': 'bg-orange-100 text-orange-700',
-      'Comissão': 'bg-pink-100 text-pink-700',
-      'Célula': 'bg-indigo-100 text-indigo-700',
-      'Grupo de Crescimento': 'bg-teal-100 text-teal-700',
-      'Pequeno Grupo': 'bg-cyan-100 text-cyan-700',
-      'Discipulado': 'bg-amber-100 text-amber-700',
-      'Classe': 'bg-rose-100 text-rose-700',
-      'Núcleo': 'bg-violet-100 text-violet-700',
-      'Região': 'bg-slate-100 text-slate-700',
-    };
-    return colors[type] || 'bg-gray-100 text-gray-700';
-  };
-
 
   const renderActionButtons = (layoutClassName: string) => {
     if (!group) return null;
@@ -286,7 +266,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
       <Modal
         isOpen={isOpen}
         onClose={handleClose}
-        title={group ? `${group.type} - ${group.name}` : 'Carregando...'}
+        title={group ? group.name : 'Carregando...'}
         size="xl"
         footer={
           showMobileStickyActions
@@ -309,16 +289,6 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
           <div className="flex h-full min-h-0 flex-col gap-4 p-4 md:flex-row md:gap-6 md:p-6">
             <div className="w-full shrink-0 overflow-y-auto border-b border-gray-200 pb-4 md:w-[30%] md:border-b-0 md:border-r md:pb-0 md:pr-6">
               <div className="space-y-4 md:space-y-6">
-                <div>
-                  <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
-                    <Tag size={18} className="shrink-0 text-gray-400" />
-                    Tipo
-                  </label>
-                  <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${getTypeColor(group.type)}`}>
-                    {group.type}
-                  </span>
-                </div>
-
                 <div>
                   <label className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
                     <CircleDot size={18} className="shrink-0 text-gray-400" />
@@ -490,7 +460,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                                 <button
                                   onClick={() => handleRemoveMember(member.id)}
                                   className="absolute top-2 right-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-red-600 opacity-100 transition-colors hover:bg-red-50 sm:opacity-0 sm:group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
-                                  title="Remover do grupo"
+                                  title="Remover do ministério"
                                   disabled={removingMemberId === member.id}
                                 >
                                   {removingMemberId === member.id ? (
@@ -553,7 +523,7 @@ export function GroupModal({ isOpen, onClose, groupId, canEdit = true, onEdit, o
                         <p>
                           {errorMembersList
                             ? 'Falha ao carregar membros vinculados'
-                            : 'Nenhum membro vinculado a este grupo'}
+                            : 'Nenhum membro vinculado a este ministério'}
                         </p>
                         {errorMembersList && (
                           <div className="mt-3">

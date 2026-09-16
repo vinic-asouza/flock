@@ -59,11 +59,9 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
                     <span
                       key={group.id}
                       className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700"
-                      title={`${group.type} - ${group.name}`}
+                      title={group.name}
                     >
                       <Users size={12} className="text-purple-600" />
-                      <span className="text-purple-600">{group.type}</span>
-                      <span className="text-purple-500">•</span>
                       <span>{group.name}</span>
                     </span>
                   ))

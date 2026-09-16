@@ -1,7 +1,7 @@
 ---
 type: padroes-api
-ultima_atualizacao: 2026-08-26
-versao: "1.3"
+ultima_atualizacao: 2026-09-15
+versao: "1.4"
 tipo_api: REST
 tags: [padrões, API, endpoints]
 ---
@@ -68,7 +68,7 @@ tags: [padrões, API, endpoints]
 ### API-006: Mensagens Joi em português
 > Padrão dos validators (`congregationValidator`, `groupValidator`).
 - **Nível:** 🔴
-- ✅ `.messages({ 'any.required': 'O nome do grupo é obrigatório' })`
+- ✅ `.messages({ 'any.required': 'O nome do ministério é obrigatório' })`
 - ❌ Mensagens default inglês para usuário final
 
 ### API-007: Validar query/params críticos
@@ -160,7 +160,7 @@ tags: [padrões, API, endpoints]
 ### API-020: Regra de negócio = 400 (não 422) no padrão atual
 > Projeto usa 400 para violações BR; não introduzir 422 sem migrar front.
 - **Nível:** 🔴 manter consistência
-- ✅ 400 `Grupo já existe` / `Limite de membros`
+- ✅ 400 `Ministério já existe` / `Limite de membros`
 - ❌ 422 isolado
 
 ---

@@ -307,7 +307,7 @@ export function CalendarItemForm({
         const data = await apiService.listGroups({ congregation_id: selectedCongregation || undefined });
         setGroups(data);
       } catch {
-        toast.error('Erro ao carregar grupos');
+        toast.error('Erro ao carregar ministérios');
         setGroups([]);
       } finally {
         setLoadingGroups(false);
@@ -349,7 +349,7 @@ export function CalendarItemForm({
   // Função para adicionar membros do grupo selecionado como participantes
   const handleAddGroupMembers = async () => {
     if (!selectedGroupId) {
-      toast.error('Selecione um grupo primeiro');
+      toast.error('Selecione um ministério primeiro');
       return;
     }
 
@@ -363,7 +363,7 @@ export function CalendarItemForm({
       const activeMembers = groupMembers.filter((m: Member) => m.active);
 
       if (activeMembers.length === 0) {
-        toast('Este grupo não possui membros ativos', { icon: 'ℹ️' });
+        toast('Este ministério não possui membros ativos', { icon: 'ℹ️' });
         return;
       }
 
@@ -387,12 +387,12 @@ export function CalendarItemForm({
         );
 
         if (newParticipants.length === 0) {
-          toast('Todos os membros do grupo já foram adicionados', { icon: 'ℹ️' });
+          toast('Todos os membros do ministério já foram adicionados', { icon: 'ℹ️' });
           return;
         }
 
         setTempParticipants([...tempParticipants, ...newParticipants]);
-        toast.success(`${newParticipants.length} ${newParticipants.length === 1 ? 'membro adicionado' : 'membros adicionados'} do grupo!`);
+        toast.success(`${newParticipants.length} ${newParticipants.length === 1 ? 'membro adicionado' : 'membros adicionados'} do ministério!`);
         return;
       }
 
@@ -410,7 +410,7 @@ export function CalendarItemForm({
       const { added, duplicates, errors } = result.summary;
       
       if (added > 0) {
-        toast.success(`${added} ${added === 1 ? 'membro adicionado' : 'membros adicionados'} do grupo!`);
+        toast.success(`${added} ${added === 1 ? 'membro adicionado' : 'membros adicionados'} do ministério!`);
       }
       
       if (duplicates > 0) {
@@ -426,7 +426,7 @@ export function CalendarItemForm({
         participantsManagerRef.current.loadParticipants();
       }
     } catch {
-      toast.error('Não foi possível adicionar membros do grupo');
+      toast.error('Não foi possível adicionar membros do ministério');
     } finally {
       setIsAddingGroupMembers(false);
     }
@@ -983,14 +983,14 @@ export function CalendarItemForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="group_id" className="block text-sm font-medium text-gray-700 mb-1">
-            Grupo / Ministério (opcional)
+            Ministério (opcional)
           </label>
           <Select
             value={watch('group_id') || ''}
             onChange={(value) => setValue('group_id', value || null)}
             options={[
               { value: '', label: 'Nenhum' },
-              ...groups.map((g: Group) => ({ value: g.id, label: `${g.type}: ${g.name}` }))
+              ...groups.map((g: Group) => ({ value: g.id, label: g.name }))
             ]}
             error={errors.group_id?.message}
             disabled={loadingGroups}

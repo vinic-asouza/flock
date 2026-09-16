@@ -130,13 +130,13 @@ export function renderMemberProfilePdf(
   if (Array.isArray(member.groups) && member.groups.length > 0) {
     const active = member.groups
       .filter((g: any) => g.status)
-      .map((g: any) => `${g.type} — ${g.name}`);
+      .map((g: any) => g.name);
     const inactive = member.groups
       .filter((g: any) => !g.status)
-      .map((g: any) => `${g.type} — ${g.name} (inativo)`);
+      .map((g: any) => `${g.name} (inativo)`);
     drawChipRow(ctx, [...active, ...inactive]);
   } else {
-    drawKeyValueGrid(ctx, [{ label: 'Grupos / Ministérios', value: 'Nenhum grupo vinculado', fullWidth: true }], {
+    drawKeyValueGrid(ctx, [{ label: 'Ministérios', value: 'Nenhum ministério vinculado', fullWidth: true }], {
       columns: 1,
     });
   }
