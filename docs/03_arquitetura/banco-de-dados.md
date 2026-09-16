@@ -1,7 +1,7 @@
 ---
 type: banco-de-dados
-ultima_atualizacao: 2026-09-01
-versao: "1.2"
+ultima_atualizacao: 2026-09-15
+versao: "1.3"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
 tags: [arquitetura, banco-de-dados, schema, ERD]
@@ -120,7 +120,6 @@ erDiagram
     uuid church_id FK
     uuid congregation_id FK
     uuid responsible_id FK
-    varchar type
     varchar name
     boolean status
     timestamptz created_at
@@ -409,32 +408,33 @@ erDiagram
 ---
 
 #### groups
-> Ministérios / células / equipes da igreja.
+> Ministérios (áreas de serviço) da igreja. Produto: Ministérios; tabela permanece `groups`. Coluna `type` removida (DEV-115).
 
 | Campo | Tipo | Restrições | Default | Descrição |
 | --- | --- | --- | --- | --- |
 | id | uuid | PK | `gen_random_uuid()` | Identificador |
 | church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
-| congregation_id | uuid | NULL, FK SET NULL | — | Escopo congregação (API de grupos exige UUID) |
-| type | varchar | NOT NULL, CHECK lista PT (Ministério, Célula, …) | — | Tipo |
+| congregation_id | uuid | NULL, FK SET NULL | — | Escopo congregação (API exige UUID) |
 | name | varchar | NOT NULL | — | Nome |
 | description | text | NULL | — | Descrição |
 | responsible_id | uuid | NULL, FK → members SET NULL | — | Responsável |
 | status | boolean | NOT NULL | `true` | Ativo/inativo |
 | created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
 
-**Índices:** `church_id`, `congregation_id`, `(church_id, congregation_id)`, `type`, `status`, `(church_id, type, name)`, duplicate-check `(church_id, name, type, status, congregation_id)`, responsible parcial.
+**Índices:** `church_id`, `congregation_id`, `(church_id, congregation_id)`, `status`, duplicate-check ativo por `(church_id, name, status, congregation_id)` (sem `type`), responsible parcial.
+
+> **Migração DEV-115 (one-time):** apagou linhas cujo `type` ≠ `Ministério`, depois removeu a coluna `type` e CHECKs/índices associados.
 
 ---
 
 #### member_groups
-> N:N membro ↔ grupo.
+> N:N membro ↔ ministério (`groups`).
 
 | Campo | Tipo | Restrições | Default | Descrição |
 | --- | --- | --- | --- | --- |
 | id | uuid | PK | `gen_random_uuid()` | Identificador |
 | member_id | uuid | NOT NULL, FK CASCADE | — | Membro |
-| group_id | uuid | NOT NULL, FK CASCADE | — | Grupo |
+| group_id | uuid | NOT NULL, FK CASCADE | — | Ministério (`groups`) |
 | created_at | timestamptz | NOT NULL | `now()` | Vínculo |
 
 **Índices:** UNIQUE `(member_id, group_id)` (constraint + índice espelhado); índices em cada FK; `(group_id, created_at DESC)`.
@@ -682,7 +682,6 @@ erDiagram
 | Stripe status | active, canceled, past_due, unpaid, incomplete, incomplete_expired, trialing, paused | churches / pending |
 | Member gender | Masculino, Feminino | `members.gender` |
 | Member marital | Solteiro, Casado, Divorciado, Viúvo, Outro, União Estável | `members.marital_status` |
-| Group type | Ministério, Departamento, Equipe, Time, Comissão, Célula, … | `groups.type` |
 | Calendar type/status/recurrence | ver dicionário | `calendar_items` |
 | Audit entity/action | member, role, … / create, update, delete, convert, import, export, deactivate | `audit_logs` |
 | Webhook outcome | processing, success, released, failed | `processed_webhook_events` |

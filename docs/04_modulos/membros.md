@@ -203,7 +203,7 @@ Capability de autocadastro.
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
 | GET | `/registration/:token` | 🔗 | — | Validar link |
-| GET | `/registration/:token/groups` | 🔗 | — | Grupos do form |
+| GET | `/registration/:token/groups` | 🔗 | — | Ministérios do form |
 | POST | `/registration/:token` | 🔗 | — | Criar membro (RL 15/15min) |
 
 **Total aprox.:** **21** endpoints do domínio membros.
@@ -297,7 +297,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**18** regras).
 | BR-MEM-003 | E-mail único na igreja |
 | BR-MEM-004 | Campos obrigatórios / formatos (Joi) |
 | BR-MEM-005 | Novo membro nasce `active=true` |
-| BR-MEM-006 | Grupos devem pertencer à igreja |
+| BR-MEM-006 | Ministérios devem pertencer à igreja |
 | BR-MEM-007 | Import respeita capacidade restante |
 | BR-MEM-008 | Import: skipDuplicates (padrão) por nome |
 | BR-MEM-009 | Mutações exigem editor+ |

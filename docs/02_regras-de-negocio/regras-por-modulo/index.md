@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-08-31
-versao: "1.6"
+ultima_atualizacao: 2026-09-15
+versao: "1.7"
 total_modulos: 13
-total_regras: 150
+total_regras: 153
 tags: [regras, índice, módulos]
 ---
 
@@ -22,7 +22,7 @@ tags: [regras, índice, módulos]
 | Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 16 | Rol oficial, import, autocadastro |
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 15 | Pré-membros e conversão |
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
-| Grupos | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 10 | Ministérios/células/etc. |
+| Ministérios | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 13 | Áreas de serviço (API `groups`) |
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
 | Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 15 | Igreja, conta, equipe, audit |
@@ -30,7 +30,7 @@ tags: [regras, índice, módulos]
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 13 módulos · **150 regras**
+**Total:** 13 módulos · **153 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
@@ -38,7 +38,7 @@ tags: [regras, índice, módulos]
 | --- | --- |
 | Crítica | auth, membros, billing, onboarding |
 | Alta | integracao, igreja-config, congregacoes |
-| Média | grupos, calendario, relatorios |
+| Média | ministérios (grupos), calendario, relatorios |
 | Baixa / acquis. | aquisicao, tutoriais, admin-ops |
 
 ## Convenções de ID

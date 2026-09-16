@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-08-31
-versao: "1.7"
+ultima_atualizacao: 2026-09-15
+versao: "1.8"
 total_regras: 13
 tags: [regras, modulo:relatorios]
 ver_tambem:
@@ -29,7 +29,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 | BR-REL-007 | Export fields obrigatórios | Restrição | Ativo |
 | BR-REL-008 | Export lista vazia | Restrição | Ativo |
 | BR-REL-009 | Vision UI painel | Fato | Ativo |
-| BR-REL-010 | Export grupos exige types | Restrição | Ativo |
+| BR-REL-010 | Export grupos exige types | Restrição | Removido |
 | BR-REL-011 | Flock Print (padrão PDF) | Fato | Ativo |
 | BR-REL-012 | Export membros da congregação | Restrição | Ativo |
 | BR-REL-013 | Ficha de pré-cadastro em branco | Fato | Ativo |
@@ -135,14 +135,15 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** Escopo de congregação (DEV-15)
 
 ### BR-REL-010: Export grupos exige types
-- **Declaração:** `POST /api/export/groups/list` exige `filters.types` como array com pelo menos um valor ∈ GroupType (whitelist). Tipos inválidos ou array vazio → 400. A UI abre modal de multi-seleção antes do download; a seleção afeta só o PDF (não a listagem). Demais filtros opcionais: `congregation_id`, `status`, `search`.
+- **Declaração:** ~~`POST /api/export/groups/list` exige `filters.types`…~~ **Removido** (DEV-115): o módulo é só ministérios; `filters.types` **não** é mais exigido. Export lista usa filtros opcionais `search`, `congregation_id`, `status` apenas. Modal de multi-seleção de tipos (`ExportGroupsTypesModal`) removido.
 - **Tipo:** Restrição
-- **Gatilho:** Export lista de grupos
-- **Comportamento esperado:** PDF apenas com grupos dos tipos selecionados
-- **Comportamento em violação:** 400 Filtros inválidos
-- **Implementado em:** `groupValidator.ts` (`exportGroupsListFiltersSchema`) + `exportController.ts` + `ExportGroupsTypesModal.tsx`
-- **Testado em:** N/A — validação schema manual (DEV-14); sem suite dedicada
-- **Depende de:** [[BR-GRP-001]], [[BR-REL-006]], [[BR-REL-008]]
+- **Gatilho:** — (não aplicável)
+- **Comportamento esperado:** PDF da lista de ministérios com filtros search/congregation/status
+- **Comportamento em violação:** —
+- **Implementado em:** `groupValidator.ts` (`exportGroupsListFiltersSchema` sem types) + `exportController.ts`
+- **Testado em:** `groupValidator.test.ts`
+- **Depende de:** [[BR-GRP-012]], [[BR-REL-006]], [[BR-REL-008]]
+- **Status:** Removido
 
 ### BR-REL-011: Flock Print (padrão PDF)
 - **Declaração:** Todos os PDFs do tenant gerados via kit `backend/src/utils/pdf/` compartilham cabeçalho (igreja + título + meta), rodapé com data/hora e numeração de páginas, tipografia/tokens comuns. Listas tabulares densas usam A4 **landscape**; fichas e dashboard usam **portrait**.

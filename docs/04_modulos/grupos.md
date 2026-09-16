@@ -3,29 +3,32 @@ type: modulo
 nome: grupos
 status: Ativo
 complexidade: Média
-ultima_atualizacao: 2026-08-25
-versao: "1.3"
+ultima_atualizacao: 2026-09-15
+versao: "2.0"
 owner: (não identificado no código)
-tags: [módulo, grupos]
+tags: [módulo, grupos, ministérios]
 depende_de: [auth, igreja-config, congregacoes, membros]
 integracoes: [Supabase PostgreSQL]
 ---
 
-# Módulo — Grupos
+# Módulo — Ministérios
 
-> Ministérios, células, equipes e demais tipos: CRUD de `groups` + vínculo N:N `member_groups`, com alinhamento por congregação (UUID).  
+> Áreas de serviço da igreja: CRUD de `groups` + vínculo N:N `member_groups`, com alinhamento por congregação (UUID).  
+> Produto: **Ministérios** (não células/classes/equipes). API e tabelas permanecem `groups` / `member_groups`.  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/grupos]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
 
 ---
 
 ## 1. 📌 Visão Geral
 
-Organiza membros em estruturas pastorais e operacionais (Ministério, Célula, Equipe, etc.), com responsável opcional, escopo de congregação (UUID obrigatório na API) e status ativo/inativo.
+Organiza membros em **ministérios** (áreas de serviço), com responsável opcional, escopo de congregação (UUID obrigatório na API) e status ativo/inativo.
 
-Resolve o problema de segmentar o rol além da congregação geográfica — um membro pode participar de vários grupos.
+Resolve o problema de segmentar o rol além da congregação geográfica — um membro pode participar de vários ministérios.
 
 É entidade de domínio intermediária: consome [[04_modulos/membros]] e [[04_modulos/congregacoes]]; é consumida por calendário e relatórios.  
 Produto: [[01_produto/visao-do-produto]].
+
+**DEV-115:** coluna `type` / enum `GroupType` removidos; entidade de produto é só Ministério; migração one-time apagou linhas que não eram `Ministério`.
 
 ---
 
@@ -33,23 +36,24 @@ Produto: [[01_produto/visao-do-produto]].
 
 ### ✅ Este módulo É responsável por:
 
-- CRUD de `groups` no tenant autenticado
-- Tipos restringidos (`GroupType` enum PT)
-- Unicidade de grupo **ativo** por `name + type + congregation_id` (UUID)
+- CRUD de `groups` no tenant autenticado (produto: ministérios)
+- Unicidade de ministério **ativo** por `name + congregation_id` (UUID); check com `.limit(1)`
 - Validação de `congregation_id` obrigatório e pertencente à igreja
-- Validação de `responsible_id` (membro da igreja, mesma congregação do grupo)
-- Vínculos N:N via `member_groups` (add/list/remove)
-- Alinhamento membro↔grupo na mesma congregação
-- Impedir membro duplicado no mesmo grupo
-- Listagem com filtros (`congregation_id` UUID, `type`, `status`, `search`), ordenação (`sort_by` / `sort_order` com whitelist) + `memberCount`
-- Soft-flag `status` (ativo/inativo); hard delete do grupo (CASCADE em `member_groups`)
-- Auditoria create/update/delete (grupo e vínculo)
+- Validação de `responsible_id` (membro da igreja, mesma congregação do ministério)
+- Vínculos N:N via `member_groups` (add/list/remove) — sem cargo/função no link
+- Alinhamento membro↔ministério na mesma congregação
+- Impedir membro duplicado no mesmo ministério
+- Listagem com filtros (`congregation_id` UUID, `status`, `search`), ordenação (`sort_by` / `sort_order` com whitelist **sem** `type`) + `memberCount`
+- Soft-flag `status` (ativo/inativo); hard delete do ministério (CASCADE em `member_groups`)
+- Auditoria create/update/delete (ministério e vínculo)
+- Mensagens de API/UI em português com “ministério” (não “grupo”)
 
 ### ❌ Este módulo NÃO é responsável por:
 
 - CRUD de membros ou congregações (só consome FKs)
-- Cargo/função do membro no grupo (vínculo sem role)
-- Export **PDF** de membros do grupo (não há CSV de grupo; UI chama [[04_modulos/relatorios]])
+- Cargo/função do membro no ministério (vínculo sem role)
+- Tipos de estrutura (célula, classe, equipe, etc.) — removidos
+- Export **PDF** de membros do ministério (não há CSV; UI chama [[04_modulos/relatorios]])
 - Agenda/recorrência (→ [[04_modulos/calendario]], `group_id` opcional)
 - Quota de plano / billing
 - Bloquear DELETE por quantidade de membros (cascata permite)
@@ -61,22 +65,26 @@ Produto: [[01_produto/visao-do-produto]].
 ```
 backend/src/
 ├── routes/
-│   └── groups.ts                    → 8 rotas REST
+│   └── groups.ts                    → 8 rotas REST (/api/groups)
 ├── controllers/
 │   └── groupController.ts           → list/get/create/update/delete + members
 ├── validators/
-│   └── groupValidator.ts            → Joi create/update (GroupType)
+│   └── groupValidator.ts            → Joi create/update (sem type)
 ├── utils/
 │   ├── groupValidations.ts          → cong./responsável/membro alinhados
 │   └── auditLogger.ts
-└── types/index.ts                   → GroupType, Group, MemberGroup
+└── types/index.ts                   → Group, MemberGroup (sem GroupType)
 
 frontend/src/
-├── app/(main)/groups/page.tsx
-└── components/groups/               → list, form, filters, export modal
+├── app/(main)/ministries/page.tsx   → hub UI
+├── app/(main)/groups/               → redirect → /ministries
+└── components/groups/               → list, form, filters (sem type), export
 
-Testes: inexistentes no backend.
-Migrations: schema no Supabase (ver banco-de-dados).
+Testes:
+- backend: `groupValidator.test.ts`
+- calendar PDF filters (cobertura relacionada a filtros sem type)
+
+Migrations: schema no Supabase; DEV-115 removeu `type` e linhas não-Ministério (one-time).
 ```
 
 ---
@@ -85,14 +93,13 @@ Migrations: schema no Supabase (ver banco-de-dados).
 
 ### groups
 
-Ministério / célula / equipe da igreja.
+Ministério (área de serviço) da igreja. Nome de tabela/código permanece `groups` / `Group`.
 
 | Campo | Tipo | Nullable | Default | Descrição |
 | --- | --- | --- | --- | --- |
 | id | uuid | NOT NULL | gen_random_uuid() | PK |
 | church_id | uuid | NOT NULL | — | Tenant (CASCADE) |
 | congregation_id | uuid | NULL* | — | Escopo; **API create/update exige UUID** (*coluna ainda nullable no schema) |
-| type | varchar | NOT NULL | — | GroupType (CHECK) |
 | name | varchar | NOT NULL | — | Nome |
 | description | text | NULL | — | Descrição ≤5000 no validator |
 | responsible_id | uuid | NULL | — | Membro responsável (SET NULL) |
@@ -100,8 +107,7 @@ Ministério / célula / equipe da igreja.
 | created_at | timestamptz | NOT NULL | now() | Criação |
 | updated_at | timestamptz | NOT NULL | now() | Atualização |
 
-**GroupType (lista fixa):**  
-`Ministério`, `Departamento`, `Grupo`, `Equipe`, `Time`, `Comissão`, `Célula`, `Grupo de Crescimento`, `Pequeno Grupo`, `Discipulado`, `Classe`, `Núcleo`, `Região`.
+> **Removido (DEV-115):** coluna `type` e enum `GroupType`.
 
 **Relacionamentos:**
 
@@ -119,7 +125,6 @@ interface Group {
   id: string;
   church_id: string;
   congregation_id: string; // UUID obrigatório na API
-  type: GroupType;
   name: string;
   description?: string | null;
   responsible_id?: string | null;
@@ -137,7 +142,7 @@ interface Group {
 
 ### member_groups
 
-Vínculo N:N membro ↔ grupo.
+Vínculo N:N membro ↔ ministério (sem role/função).
 
 | Campo | Tipo | Nullable | Default | Descrição |
 | --- | --- | --- | --- | --- |
@@ -163,34 +168,35 @@ interface MemberGroup {
 
 ## 5. 🌐 Interface Pública
 
-Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.
+Router: `authMiddleware` + `requireRole('reader')`; mutações `editor+`.  
+Paths de API: **`/api/groups`** (legado estável). Hub UI: **`/ministries`** (`/groups` redireciona).
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
 | GET | `/api/groups/` | ✅ | ≥ reader | Lista (+ filtros, ordenação, `memberCount`) |
 | GET | `/api/groups/:id` | ✅ | ≥ reader | Detalhe + `responsible` + `membersList` |
-| GET | `/api/groups/:id/members` | ✅ | ≥ reader | Só membros do grupo |
+| GET | `/api/groups/:id/members` | ✅ | ≥ reader | Só membros do ministério |
 | POST | `/api/groups/` | ✅ | ≥ editor | Criar |
 | PUT | `/api/groups/:id` | ✅ | ≥ editor | Atualizar |
 | DELETE | `/api/groups/:id` | ✅ | ≥ editor | Remover (204, CASCADE vínculos) |
 | POST | `/api/groups/:id/members` | ✅ | ≥ editor | Adicionar membro |
 | DELETE | `/api/groups/:id/members/:memberId` | ✅ | ≥ editor | Remover membro (204) |
 
-**Total:** **8** endpoints.
+**Total:** **8** endpoints neste router.
 
 ### Query — `GET /api/groups/`
 
 | Param | Valores | Efeito |
 | --- | --- | --- |
 | `congregation_id` | uuid | Filtra congregação (`sede` rejeitado) |
-| `type` | GroupType | Filtra tipo |
 | `status` | `active` \| `inactive` \| `all` (default) | `status` boolean |
 | `search` | string | `ilike` no name |
-| `sort_by` | `name` \| `type` \| `created_at` \| `updated_at` \| `status` | Campo de ordenação (whitelist); inválido → fallback `name` |
+| `sort_by` | `name` \| `created_at` \| `updated_at` \| `status` | Whitelist (BR-GRP-011); inválido → fallback `name` |
 | `sort_order` | `asc` \| `desc` | Direção; valor ≠ `desc` → `asc` |
 
 **Default:** `sort_by=name`, `sort_order=asc`, com desempate estável por `id` asc.  
-Sem paginação — retorna todos do tenant filtrados (array `Group[]`; não ecoa `sorting` no body).
+Sem paginação — retorna todos do tenant filtrados (array; não ecoa `sorting` no body).  
+**Sem** filtro `type` (removido).
 
 ### Contrato — `POST /api/groups/`
 
@@ -198,7 +204,6 @@ Sem paginação — retorna todos do tenant filtrados (array `Group[]`; não eco
 // Request (createGroupSchema):
 {
   name: string;                 // 2–100, obrigatório
-  type: GroupType;              // obrigatório
   description?: string;         // max 5000, '' ok
   congregation_id: string;      // UUID obrigatório
   responsible_id?: string | null;  // uuid membro
@@ -208,7 +213,7 @@ Sem paginação — retorna todos do tenant filtrados (array `Group[]`; não eco
 // Response 201: Group row
 
 // Erros:
-// 400 — Dados inválidos / Congregação inválida / Responsável inválido / Grupo já existe
+// 400 — Dados inválidos / Congregação inválida / Responsável inválido / Ministério já existe
 // 401/403 — auth/role
 // 500 — catch
 ```
@@ -222,8 +227,8 @@ Sem paginação — retorna todos do tenant filtrados (array `Group[]`; não eco
 // Response 201: MemberGroup { id, member_id, group_id, created_at }
 
 // Erros:
-// 400 — member_id ausente / Membro inválido (cong.) / Membro já está no grupo
-// 404 — grupo não encontrado no tenant
+// 400 — member_id ausente / Membro inválido (cong.) / Membro já está no ministério
+// 404 — ministério não encontrado no tenant
 ```
 
 ### Detalhe — `GET /api/groups/:id`
@@ -237,33 +242,39 @@ Sem paginação — retorna todos do tenant filtrados (array `Group[]`; não eco
 }
 ```
 
+### Export (módulo relatórios)
+
+`POST /api/export/groups/list` — filtros opcionais: `search`, `congregation_id`, `status` apenas. **Não** exige `filters.types` (BR-REL-010 removida).
+
 ---
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/grupos]] (**11** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/grupos]] (**13** regras; BR-GRP-001 removida).
 
 | ID | Declaração curta |
 | --- | --- |
-| BR-GRP-001 | `type` ∈ GroupType permitido |
+| BR-GRP-001 | ~~`type` ∈ GroupType~~ — **Removido** (DEV-115) |
 | BR-GRP-002 | Nome 2–100; descrição ≤5000 |
-| BR-GRP-003 | Sem outro **ativo** com mesmo name+type+congregation |
+| BR-GRP-003 | Sem outro **ativo** com mesmo name+congregation (`.limit(1)`) |
 | BR-GRP-004 | Create defaulta `status=true` |
-| BR-GRP-005 | `responsible_id` membro da mesma congregação do grupo |
+| BR-GRP-005 | `responsible_id` membro da mesma congregação do ministério |
 | BR-GRP-006 | `congregation_id` UUID obrigatório e da igreja |
 | BR-GRP-007 | Mutações editor+; leitura reader+ |
-| BR-GRP-008 | Add membro: mesma igreja e mesma congregação do grupo |
-| BR-GRP-009 | Membro único por grupo |
-| BR-GRP-010 | DELETE remove grupo e CASCADE `member_groups` |
-| BR-GRP-011 | Ordenação da listagem: whitelist `sort_by` + fallback default |
+| BR-GRP-008 | Add membro: mesma igreja e mesma congregação do ministério |
+| BR-GRP-009 | Membro único por ministério |
+| BR-GRP-010 | DELETE remove ministério e CASCADE `member_groups` |
+| BR-GRP-011 | Ordenação: whitelist `name`, `created_at`, `updated_at`, `status` (sem `type`) |
+| BR-GRP-012 | Entidade de produto é só Ministério |
+| BR-GRP-013 | Migração one-time: apagar linhas não-Ministério |
 
-**Alinhamento (BR-GRP-005/008):** responsável e membro devem pertencer à mesma congregação do grupo (sem coringa null/Sede).
+**Alinhamento (BR-GRP-005/008):** responsável e membro devem pertencer à mesma congregação do ministério (sem coringa null/Sede).
 
 ---
 
 ## 7. 🔄 Fluxos do Módulo
 
-### Fluxo: Criar grupo
+### Fluxo: Criar ministério
 
 ```mermaid
 sequenceDiagram
@@ -280,9 +291,9 @@ sequenceDiagram
   VAL->>DB: congregations by id + church
   API->>VAL: validateResponsibleAndCongregation
   VAL->>DB: members + optional cong
-  API->>DB: select ativo name+type+congregation
+  API->>DB: select ativo name+congregation (.limit 1)
   alt duplicado
-    API-->>U: 400 Grupo já existe
+    API-->>U: 400 Ministério já existe
   end
   API->>DB: INSERT groups
   API->>API: logAudit create
@@ -290,7 +301,7 @@ sequenceDiagram
   deactivate API
 ```
 
-### Fluxo: Adicionar membro ao grupo
+### Fluxo: Adicionar membro ao ministério
 
 ```mermaid
 sequenceDiagram
@@ -312,14 +323,14 @@ sequenceDiagram
   end
   API->>DB: check member_groups existing
   alt já vinculado
-    API-->>U: 400 Membro já está no grupo
+    API-->>U: 400 Membro já está no ministério
   end
   API->>DB: INSERT member_groups
   API->>API: logAudit member_group create
   API-->>U: 201
 ```
 
-### Fluxo: Excluir grupo
+### Fluxo: Excluir ministério
 
 ```mermaid
 sequenceDiagram
@@ -340,7 +351,7 @@ sequenceDiagram
   API-->>U: 204
 ```
 
-### Estados do grupo
+### Estados do ministério
 
 ```mermaid
 stateDiagram-v2
@@ -351,22 +362,23 @@ stateDiagram-v2
   Inativo --> [*]: DELETE hard
   note right of Inativo
     Inativo não bloqueia
-    novo grupo com mesmo
-    name+type+cong (BR-GRP-003)
+    novo ministério com mesmo
+    name+cong (BR-GRP-003)
   end note
 ```
 
-### UI — hub e modais (`/groups`)
+### UI — hub e modais (`/ministries`)
 
-Hub autenticado em `frontend/src/app/(main)/groups/page.tsx` + `components/groups/*`.
+Hub autenticado em `frontend/src/app/(main)/ministries/page.tsx` + `components/groups/*`.  
+Rota legada `/groups` redireciona para `/ministries`.
 
-**Responsividade (mobile/tablet):** header com label curta em `<sm`; busca + filtros fazem wrap (sem `overflow-x` forçado); summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/View/Delete e exports usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
+**Responsividade (mobile/tablet):** header com label curta em `<sm`; busca + filtros fazem wrap; summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/View/Delete e exports usam o `Modal` compartilhado em sheet inferior no mobile.
 
-- **View (`GroupModal`):** empilha info + gestão de membros em `<md`; restaura layout 2 colunas (info ~30% + membros) em `md+`. No mobile, Export/Editar/Excluir ficam no `footer` do Modal; no desktop permanecem no painel lateral. Add membro empilha Select + CTA em `<sm`.
-- **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário), mitigando teclado virtual.
-- **Exports:** `ExportGroupsTypesModal` (lista) e `ExportGroupMembersModal` (wrapper de `ExportMemberFieldsModal`) via `Modal` sheet; conteúdo/payload PDF inalterado (BR-REL).
+- **View:** empilha info + gestão de membros em `<md`; restaura layout 2 colunas em `md+`. No mobile, Export/Editar/Excluir ficam no `footer` do Modal.
+- **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário). Sem campo de tipo.
+- **Exports:** lista via `POST /api/export/groups/list` (filtros search/congregation/status); membros do ministério via modal de campos (PDF). **Sem** `ExportGroupsTypesModal`.
 
-Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo.
+Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo (form público de membros consome listagem via outro router).
 
 ---
 
@@ -406,11 +418,11 @@ N/A — este módulo não possui operações assíncronas (jobs/cron).
 | Joi inválido | 400 | `Dados inválidos` | create/update |
 | Congregação inválida | 400 | `Congregação inválida` | create/update |
 | Responsável inválido | 400 | `Responsável inválido` | create/update |
-| Nome+tipo+cong ativo | 400 | `Grupo já existe` | create/update |
+| Nome+cong ativo | 400 | `Ministério já existe` | create/update |
 | Membro desalinhado | 400 | `Membro inválido` | add member |
-| Já no grupo | 400 | `Membro já está no grupo` | add member |
+| Já no ministério | 400 | `Membro já está no ministério` | add member |
 | member_id ausente | 400 | `Dados inválidos` | add member |
-| Grupo inexistente | 404 | `Grupo não encontrado` | get/update/delete/members |
+| Ministério inexistente | 404 | `Ministério não encontrado` | get/update/delete/members |
 | Erro query/insert | 400/500 | mensagem operacional | catch / PostgREST |
 
 Não há enum de `código interno` padronizado — responses usam `{ error, details }`.
@@ -423,10 +435,10 @@ Não há enum de `código interno` padronizado — responses usam `{ error, deta
 | --- | --- |
 | Auth | JWT + contexto `req.church.churchId` |
 | Leitura | reader+ |
-| Escrita (grupo e vínculos) | editor+ |
+| Escrita (ministério e vínculos) | editor+ |
 | Tenant | todas as queries filtram `church_id` |
 | Crosstalk cong. | validado em responsible/member helpers |
-| Dados | nomes/contatos de membros no detalhe do grupo (PII do rol) |
+| Dados | nomes/contatos de membros no detalhe (PII do rol) |
 
 Sem policy RLS efetiva: isolamento é **aplicacional** (service_role).
 
@@ -436,15 +448,16 @@ Sem policy RLS efetiva: isolamento é **aplicacional** (service_role).
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| — | — | 0% | Nenhum teste dedicado |
+| Unit | `groupValidator.test.ts` | schemas create/update/export list | Joi sem `type`; export filters sem `types` |
+| Relacionado | testes de calendar PDF filters | filtros de export | ausência de type/types onde aplicável |
 
-**Gaps críticos:**
+**Gaps / atenção:**
 
-- Unicidade só entre ativos (e case-sensitive no `eq('name')`)
-- Alinhamento membro/responsável ↔ congregação do grupo
+- Unicidade só entre ativos (e case-sensitive no `eq('name')`); check com `.limit(1)`
+- Alinhamento membro/responsável ↔ congregação
 - Duplicata no `member_groups` / UNIQUE DB
 - DELETE com CASCADE (não bloqueia)
-- Filtros list (UUID, rejeição de `sede`, status, search)
+- Filtros list (UUID, rejeição de `sede`, status, search) — sem `type`
 - Isolamento cross-tenant
 
 ---
@@ -460,13 +473,13 @@ Sem policy RLS efetiva: isolamento é **aplicacional** (service_role).
 
 **Dependem deste:**
 
-- [[04_modulos/calendario]] — item pode referenciar grupo  
-- [[04_modulos/relatorios]] — charts/export de grupos  
-- [[04_modulos/membros]] — UI/associação inversa de grupos do membro (leitura de `member_groups`)
+- [[04_modulos/calendario]] — item pode referenciar ministério (`group_id`)  
+- [[04_modulos/relatorios]] — charts/export de ministérios  
+- [[04_modulos/membros]] — UI/associação inversa (leitura de `member_groups`)
 
 ```mermaid
 graph LR
-  GRP[[grupos]]
+  GRP[[ministérios / groups]]
   GRP --> AUTH[[auth]]
   GRP --> CFG[[igreja-config]]
   GRP --> CON[[congregacoes]]
@@ -479,14 +492,15 @@ graph LR
 
 ## 14. ⚠️ Pontos de Atenção
 
-1. **DELETE não bloqueia por membros** — `memberCount` é consultado em `deleteGroup` mas **não usado** para gate; CASCADE apaga vínculos. Diferente de congregações.  
-2. Unicidade é **case-sensitive** (`eq('name')`), ao contrário de congregações (`ilike`).  
-3. Unicidade só considera `status=true` — reativar/duplicar inativos exige cuidado.  
-4. Lista **sem paginação**; `memberCount` carrega todos os `member_groups` dos IDs listados (ok para volumes típicos, revisar se escalar). Ordenação no banco **antes** do enrichment de `memberCount`.  
-5. Responsável **não** é auto-inserido em `member_groups` — só FK `responsible_id`.  
-6. Remover membro: se vínculo inexistente, delete “silencia” e ainda pode retornar 204 (sem 404 explícito de vínculo).  
-7. Export no front (`ExportGroupMembersModal`) não faz parte deste módulo de API.  
-8. **Modal view:** layout 2 colunas em `md+`; no mobile as ações Export/Editar/Excluir estão no footer sticky — não duplicar CTAs na coluna info (`md:hidden` / `hidden md:flex`).
+1. **Produto ≠ código:** UI/copy = Ministérios; API/tabelas = `groups` / `member_groups` / `Group`.  
+2. **DELETE não bloqueia por membros** — `memberCount` é consultado mas **não** gate; CASCADE apaga vínculos.  
+3. Unicidade é **case-sensitive** (`eq('name')`), ao contrário de congregações (`ilike`).  
+4. Unicidade só considera `status=true` — reativar/duplicar inativos exige cuidado.  
+5. Lista **sem paginação**; `memberCount` carrega vínculos dos IDs listados.  
+6. Responsável **não** é auto-inserido em `member_groups` — só FK `responsible_id`.  
+7. Remover membro: se vínculo inexistente, delete pode retornar 204 sem 404 de vínculo.  
+8. Export de lista **não** usa modal de tipos (`ExportGroupsTypesModal` removido).  
+9. Migração DEV-115 foi **one-time** (BR-GRP-013) — não reexecutar como rotina.
 
 ---
 
@@ -494,6 +508,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-15 | 2.0 | Ministérios: remove GroupType/`type`; unicidade name+cong; UI `/ministries`; copy ministério; BR-GRP-012/013 | DEV-115 |
 | 2026-08-25 | 1.3 | Inventário: export de membros do grupo é só PDF (sem CSV) | DEV-49 |
 | 2026-07-31 | 1.2 | UX mobile/tablet: hub wrap, view stack, Modal footer sticky Create/Edit/View, exports via Modal | DEV-31 |
 | 2026-07-16 | 1.1 | Ordenação na listagem (`sort_by` / `sort_order` + whitelist; default `name` asc) | DEV-13 |
@@ -505,10 +520,12 @@ graph LR
 
 | Item | Valor |
 | --- | --- |
-| Módulo documentado | **grupos** ✅ |
-| Endpoints | **8** |
-| Regras BR-GRP | **10** |
+| Produto | **Ministérios** ✅ |
+| Módulo / arquivo wiki | `grupos` (links `[[04_modulos/grupos]]`) |
+| API | `/api/groups` (8 endpoints) |
+| UI hub | `/ministries` (`/groups` → redirect) |
+| Regras BR-GRP | **13** (001 removida; 012–013 novas) |
 | Entidades | `groups`, `member_groups` |
 | Integrações | Só Supabase PostgreSQL |
 | Jobs | Nenhum |
-| Testes | Nenhum dedicado |
+| Testes | `groupValidator.test.ts` (+ calendar PDF filters) |
