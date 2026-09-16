@@ -1,8 +1,8 @@
 ---
 type: padroes-git
-ultima_atualizacao: 2026-08-25
-versao: "1.1"
-workflow: GitHub Flow adaptado (feature branches → main)
+ultima_atualizacao: 2026-09-10
+versao: "1.2"
+workflow: GitHub Flow adaptado (MVP → main; v1 → major-v1)
 tags: [padrões, git, commits, branches]
 ---
 
@@ -27,15 +27,16 @@ gitGraph
   merge feature/pdt-12-csv-import id: "PR merge"
 ```
 
-Fluxo observado: branches de trabalho → merge em **`main`**. Também existem `dev/*`, `qa-*`, `refinements-*`, `docs/*`, `fix/*`, `feature/*`, `vinisouzadev/pdt-*`.
+Fluxo: branches de trabalho → merge na **base do milestone** (`main` no MVP; `major-v1` no pós-MVP). Também existem `dev/*`, `qa-*`, `refinements-*`, `docs/*`, `fix/*`, `feature/*`, `vinisouzadev/pdt-*`.
 
 | Branch | Propósito | Merge para |
 | --- | --- | --- |
-| `main` | Produção / linha principal | — |
-| `feature/*` ou `vinisouzadev/pdt-N-...` | Feature / ticket | `main` |
-| `fix/*` | Correção | `main` |
-| `dev/*` | Spike/experimento | `main` (ou descartar) |
-| `docs/*` | Só documentação | `main` |
+| `main` | Produção / linha principal (MVP e releases) | — |
+| `major-v1` | Linha longa pós-MVP (Major v1.0); épica DEV-108 | `main` só no cutover de release |
+| `feature/*` ou `vinisouzadev/pdt-N-...` | Feature / ticket | `main` (MVP) ou `major-v1` (milestone `v1` / filha de DEV-108) |
+| `fix/*` | Correção | mesma regra da feature (milestone → base) |
+| `dev/*` | Spike/experimento | base do milestone (ou descartar) |
+| `docs/*` | Só documentação | `main` (processo/KB) salvo docs exclusivas de v1 |
 | `qa-*` / `refinements-*` | Lotes QA (legado de naming) | Preferir migrar para `fix/` ou `feature/` |
 
 ### GIT-001: Nomenclatura
@@ -45,6 +46,7 @@ Fluxo observado: branches de trabalho → merge em **`main`**. Também existem `
 
 ### GIT-002: Vida curta — merge em ≤7–10 dias quando possível
 - **Nível:** 🟡
+- Exceção: `major-v1` é branch longa até o cutover DEV-108.
 
 ### GIT-003: Branches pessoais ok se prefixadas (`vinisouzadev/...`); preferir ticketing `pdt-N`
 - **Nível:** 🟡
@@ -53,6 +55,14 @@ Fluxo observado: branches de trabalho → merge em **`main`**. Também existem `
 - **Nível:** 🔴 (protege via disciplina / branch protection quando disponível)
 - ✅ PR → review → merge
 - ❌ `git push origin main` com feature crua
+- Também: não commit direto em `major-v1` no fluxo normal — features entram por PR.
+
+### GIT-025: Milestone → base do PR (MVP vs v1)
+- **Nível:** 🔴
+- Milestone **`MVP`** (e demais ≠ `v1`) → feature a partir de `main` → PR com base **`main`**.
+- Milestone **`v1`** ou Issue **filha de DEV-108** → ao iniciar a Issue, atualizar/rebasear `major-v1` com `main` → feature a partir de `major-v1` → PR com base **`major-v1`** (nunca `main`) → **Done** = merge em `major-v1` (**não** é produção).
+- **Cutover:** único PR `major-v1` → `main` = Done da épica DEV-108, só com liberação explícita do fundador.
+- Detalhe operacional: workflow §15.7.
 
 ---
 
@@ -207,4 +217,4 @@ Closes #
 
 ## Confirmação
 
-Regras **GIT-001…024** · workflow GitHub Flow → `main` · Conventional Commits **em adoção** · sem CI GitHub ainda.
+Regras **GIT-001…025** · MVP → `main` · v1 → `major-v1` · Conventional Commits **em adoção** · sem CI GitHub ainda.
