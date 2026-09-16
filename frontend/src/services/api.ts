@@ -1548,8 +1548,6 @@ class ApiService {
     return { blob: response.data, filename };
   }
 
-  }
-
   async validateTeachingPublicLink(token: string) {
     const response = await this.api.get(`/public/teaching/${token}`);
     return response.data;
