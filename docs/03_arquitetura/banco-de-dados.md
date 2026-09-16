@@ -1,7 +1,7 @@
 ---
 type: banco-de-dados
 ultima_atualizacao: 2026-09-15
-versao: "1.4"
+versao: "1.5"
 banco: PostgreSQL 17.4 (Supabase flock-app-01, sa-east-1)
 orm: nenhum (@supabase/supabase-js ^2.38 — PostgREST)
 tags: [arquitetura, banco-de-dados, schema, ERD]
@@ -571,6 +571,26 @@ erDiagram
 
 ---
 
+#### teaching_materials
+> Links e anotações gerais da turma (equipe no Painel; sem upload; sem vínculo a aula).
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE → churches | — | Tenant |
+| class_id | uuid | NOT NULL, FK CASCADE → teaching_classes | — | Turma |
+| type | text | NOT NULL, CHECK link\|note | — | Tipo |
+| title | text | NOT NULL, len trim 2–120 | — | Título |
+| url | text | NULL, len ≤ 2048; obrigatório se link | — | URL http/https |
+| content | text | NULL, len ≤ 5000; obrigatório se note | — | Texto da anotação |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria; lista ordena por `updated_at DESC` |
+
+**CHECK de coerência:** link → `url` NOT NULL e `content` IS NULL; note → `content` NOT NULL e `url` IS NULL.  
+**Índices:** `church_id`, `(class_id, updated_at DESC)`, `(class_id, type)`.  
+**RLS:** habilitado sem policies (acesso via `service_role` do backend).
+
+---
+
 #### member_groups
 > N:N membro ↔ grupo.
 
@@ -831,6 +851,7 @@ erDiagram
 | Teaching enrollment kind | member, guest, possible_member | `teaching_enrollments.kind` |
 | Teaching lesson recurrence | weekly, monthly, interval_days | `teaching_lesson_series.recurrence_type` |
 | Teaching attendance status | unregistered, present, absent | `teaching_lesson_attendance.status` |
+| Teaching material type | link, note | `teaching_materials.type` |
 | Calendar type/status/recurrence | ver dicionário | `calendar_items` |
 | Audit entity/action | member, role, … / create, update, delete, convert, import, export, deactivate | `audit_logs` |
 | Webhook outcome | processing, success, released, failed | `processed_webhook_events` |

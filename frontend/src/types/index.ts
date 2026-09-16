@@ -454,6 +454,20 @@ export interface TeachingPublicLink {
   class_status?: TeachingClassStatus;
 }
 
+export type TeachingMaterialType = 'link' | 'note';
+
+export interface TeachingMaterial {
+  id: string;
+  church_id: string;
+  class_id: string;
+  type: TeachingMaterialType;
+  title: string;
+  url?: string | null;
+  content?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type TeachingRecurrenceType = 'weekly' | 'monthly' | 'interval_days';
 export type TeachingLessonScope = 'single' | 'following';
 export type TeachingAttendanceStatus = 'unregistered' | 'present' | 'absent';
@@ -546,4 +560,5 @@ export interface TeachingAttendanceResponse {
 export interface TeachingAttendanceChange {
   enrollment_id: string;
   status: Exclude<TeachingAttendanceStatus, 'unregistered'> | null;
+}
 }

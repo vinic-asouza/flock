@@ -1491,6 +1491,31 @@ class ApiService {
     return response.data;
   }
 
+  async listTeachingMaterials(classId: string) {
+    const response = await this.api.get(`/teaching/classes/${classId}/materials`);
+    return response.data as { data: import('@/types').TeachingMaterial[] };
+  }
+
+  async createTeachingMaterial(
+    classId: string,
+    data: { type: 'link' | 'note'; title: string; url?: string; content?: string }
+  ) {
+    const response = await this.api.post(`/teaching/classes/${classId}/materials`, data);
+    return response.data as import('@/types').TeachingMaterial;
+  }
+
+  async updateTeachingMaterial(
+    materialId: string,
+    data: { title?: string; url?: string; content?: string }
+  ) {
+    const response = await this.api.patch(`/teaching/materials/${materialId}`, data);
+    return response.data as import('@/types').TeachingMaterial;
+  }
+
+  async deleteTeachingMaterial(materialId: string) {
+    await this.api.delete(`/teaching/materials/${materialId}`);
+  }
+
   async exportTeachingCertificates(
     classId: string,
     payload: {
@@ -1521,6 +1546,8 @@ class ApiService {
       ) ?? `certificados-${classId}.pdf`;
 
     return { blob: response.data, filename };
+  }
+
   }
 
   async validateTeachingPublicLink(token: string) {

@@ -50,4 +50,4 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
-2026-09-15 — BR-ENS-024…025 (certificados da Turma, DEV-110); índice ENS alinhado a 25 regras.
+2026-09-15 — BR-ENS-024…025 (certificados, DEV-110); BR-ENS-026…027 (materiais, DEV-112); índice ENS alinhado a 27 regras.

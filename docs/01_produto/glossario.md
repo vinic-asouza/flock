@@ -80,7 +80,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 
 **Ensino** *(módulo; código: `teaching_*`)*
 > Módulo do Painel para ciclos formativos (EBD, cursos, estudos). Menu **Ensino** → `/teaching`.
-- **Usado em:** Programas, Turmas, matrículas, aulas, chamada, certificados, link público
+- **Usado em:** Programas, Turmas, matrículas, aulas, chamada, materiais, certificados, link público
 - **UI:** “Ensino”
 
 **Programa** *(código: `TeachingProgram`, `teaching_programs`)*  
@@ -129,6 +129,11 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 **Professor (turma)** *(código: `teaching_class_teachers`)*  
 > Membro adicional (0..N), distinto do responsável. Sem login próprio de professor.  
 - **UI:** “Professores”
+
+**Material (turma)** *(código: `TeachingMaterial`, `teaching_materials`)*  
+> Referência geral da turma para a equipe: **Link** (título + URL http/https) ou **Anotação** (título + texto). Não é arquivo nem material de uma aula específica.  
+- **Usado em:** Ensino — aba **Materiais** (`?tab=materiais`)  
+- **UI:** “Materiais” · badges Link / Anotação
 
 **Usuário da igreja** *(código: vínculo `ChurchUser` / `church_users`)*  
 > Conta Auth (`auth.users`) com papel na igreja. É quem **faz login**.  
@@ -365,7 +370,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - **G:** Grupo, Guest/Convidado (calendário), Guest/Convidado (Ensino)  
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros, Inscritos (UI Ensino)  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração, Link público de turma  
-- **M:** Membro, Mentor, Membership, Match N/W/D, Ministério (tipo de grupo)  
+- **M:** Membro, Mentor, Membership, Match N/W/D, Material (turma Ensino), Ministério (tipo de grupo)  
 - **O:** Operador da plataforma, Owner (`dono`)  
 - **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Possível membro, Professor (turma), Programa (Ensino), Programação  
 - **Q:** Questionário eclesiástico  

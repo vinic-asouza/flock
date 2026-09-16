@@ -25,8 +25,8 @@ import { getCongregationDisplayName } from '@/utils/congregation';
 import { formatClassPeriod } from './dates';
 import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
 import { TeachingLessonsTab } from './TeachingLessonsTab';
+import { TeachingMaterialsTab } from './TeachingMaterialsTab';
 import { TeachingCertificatesTab } from './TeachingCertificatesTab';
-import { TeachingEmptyState } from './TeachingUi';
 import {
   type TeachingClassTab,
   useTeachingClassTab,
@@ -42,10 +42,6 @@ const CLASS_TABS: Array<{
   { id: 'materiais', label: 'Materiais', panelId: 'materiais-panel' },
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
 ];
-
-const PLACEHOLDER_COPY: Record<'materiais', string> = {
-  materiais: 'Links e anotações da turma serão gerenciados aqui.',
-};
 
 function PersonChip({ name }: { name: string }) {
   const initial = name.trim().charAt(0).toUpperCase() || '?';
@@ -369,15 +365,18 @@ export function TeachingClassDetailView({
               readOnly={readOnly}
               onDirtyChange={setLessonsDirty}
             />
+          ) : activeTab === 'materiais' ? (
+            <TeachingMaterialsTab
+              teachingClass={teachingClass}
+              readOnly={readOnly}
+            />
           ) : activeTab === 'certificados' ? (
             <TeachingCertificatesTab
               teachingClass={teachingClass}
               readOnly={readOnly}
               onDirtyChange={setCertificatesDirty}
             />
-          ) : (
-            <TeachingEmptyState text={PLACEHOLDER_COPY.materiais} />
-          )}
+          ) : null}
         </section>
       </div>
     </div>

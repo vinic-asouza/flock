@@ -2,8 +2,8 @@
 type: regras-modulo
 modulo: ensino
 ultima_atualizacao: 2026-09-15
-versao: "1.2"
-total_regras: 25
+versao: "1.3"
+total_regras: 27
 tags: [regras, modulo:ensino]
 ver_tambem:
   - "[[04_modulos/ensino]]"
@@ -15,7 +15,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada** e **certificados PDF** ao encerrar a turma — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
+Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada**, **materiais da turma** (links e anotações) e **certificados PDF** ao encerrar a turma — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
 
 ## Índice de Regras
 
@@ -46,6 +46,8 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 | BR-ENS-023 | Elegibilidade temporal da chamada | Política | Ativo |
 | BR-ENS-024 | Emissão de certificado só com turma encerrada | Restrição | Ativo |
 | BR-ENS-025 | Conteúdo e template efêmero do certificado | Política | Ativo |
+| BR-ENS-026 | Materiais da turma (link / anotação) | Restrição | Ativo |
+| BR-ENS-027 | Ordenação de materiais | Política | Ativo |
 
 ---
 
@@ -314,6 +316,29 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Implementado em:** `uploadCertificateImages.ts` + `renderTeachingCertificate.ts`
 - **Testado em:** `teachingCertificateService.test.ts` · `renderTeachingCertificate.test.ts`
 - **Depende de:** BR-ENS-024
+
+### 📎 Materiais da turma
+
+### BR-ENS-026: Materiais da turma (link / anotação)
+- **Declaração:** Material pertence a uma Turma (`teaching_materials.class_id`); `type ∈ {link, note}`; título obrigatório (2–120). **Link:** URL `http`/`https` obrigatória e `content` nulo. **Anotação:** conteúdo textual obrigatório (até 5000) e `url` nula. Sem upload de arquivo; sem vínculo a aula; disponível em qualquer status da turma (só papel restringe). Tipo **não** muda no PATCH.
+- **Tipo:** Restrição
+- **Gatilho:** POST/PATCH/DELETE materiais; GET lista
+- **Comportamento esperado:** Persistência coerente com o tipo; cascade ao excluir a turma
+- **Comportamento em violação:** 400 (validação / CHECK); 403 (reader em mutação)
+- **Implementado em:** `teachingMaterialController.ts` + `teachingValidator.ts` + CHECKs da tabela
+- **Testado em:** `teachingValidator.test.ts`
+- **Depende de:** BR-ENS-016, BR-GEN-010/024, BR-GEN-022
+
+### BR-ENS-027: Ordenação de materiais
+- **Declaração:** Listagem padrão por `updated_at DESC` (mais recentemente atualizados primeiro). Sem reordenação manual no v1.
+- **Tipo:** Política
+- **Gatilho:** GET `/api/teaching/classes/:id/materials`
+- **Comportamento esperado:** Ordem estável após create/update
+- **Comportamento em violação:** —
+- **Implementado em:** `listTeachingMaterials` (`.order('updated_at', { ascending: false })`)
+- **Testado em:** N/A — QA smoke
+- **Depende de:** BR-ENS-026
+
 
 ---
 

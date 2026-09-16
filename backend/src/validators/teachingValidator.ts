@@ -360,3 +360,73 @@ export const patchTeachingPublicLinkSchema = Joi.object({
     'boolean.base': 'is_active deve ser um booleano',
   }),
 });
+
+export const teachingMaterialTypes = ['link', 'note'] as const;
+export type TeachingMaterialTypeValue = (typeof teachingMaterialTypes)[number];
+
+function assertHttpUrl(value: string, helpers: Joi.CustomHelpers) {
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return helpers.error('any.custom');
+    }
+    return value;
+  } catch {
+    return helpers.error('any.custom');
+  }
+}
+
+const materialTitle = Joi.string().trim().min(2).max(120).messages({
+  'string.empty': 'O título é obrigatório',
+  'any.required': 'O título é obrigatório',
+  'string.min': 'O título deve ter pelo menos 2 caracteres',
+  'string.max': 'O título não pode ter mais de 120 caracteres',
+});
+
+const materialUrl = Joi.string()
+  .trim()
+  .max(2048)
+  .custom(assertHttpUrl)
+  .messages({
+    'string.empty': 'A URL é obrigatória',
+    'any.required': 'A URL é obrigatória',
+    'string.max': 'A URL não pode ter mais de 2048 caracteres',
+    'any.custom': 'A URL deve usar http:// ou https://',
+  });
+
+const materialContent = Joi.string().trim().min(1).max(5000).messages({
+  'string.empty': 'O conteúdo é obrigatório',
+  'any.required': 'O conteúdo é obrigatório',
+  'string.min': 'O conteúdo é obrigatório',
+  'string.max': 'O conteúdo não pode ter mais de 5000 caracteres',
+});
+
+export const createTeachingMaterialSchema = Joi.object({
+  type: Joi.string()
+    .valid(...teachingMaterialTypes)
+    .required()
+    .messages({
+      'any.only': 'O tipo deve ser link ou note',
+      'any.required': 'O tipo é obrigatório',
+    }),
+  title: materialTitle.required(),
+  url: Joi.when('type', {
+    is: 'link',
+    then: materialUrl.required(),
+    otherwise: Joi.string().allow('', null).optional().strip(),
+  }),
+  content: Joi.when('type', {
+    is: 'note',
+    then: materialContent.required(),
+    otherwise: Joi.string().allow('', null).optional().strip(),
+  }),
+});
+
+export const updateTeachingMaterialSchema = Joi.object({
+  title: materialTitle.optional(),
+  url: materialUrl.optional(),
+  content: materialContent.optional(),
+  type: Joi.forbidden().messages({
+    'any.unknown': 'Não é permitido alterar o tipo do material',
+  }),
+}).min(1);

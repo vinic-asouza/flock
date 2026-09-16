@@ -1,5 +1,7 @@
 import {
   createTeachingClassSchema,
+  createTeachingMaterialSchema,
+  updateTeachingMaterialSchema,
   saveTeachingAttendanceSchema,
   teachingLessonSeriesSchema,
   updateTeachingClassSchema,
@@ -59,6 +61,72 @@ describe('updateTeachingClassSchema', () => {
       end_date: '2026-03-01',
     });
     expect(error).toBeDefined();
+  });
+});
+
+describe('createTeachingMaterialSchema', () => {
+  it('accepts a valid link', () => {
+    const { error, value } = createTeachingMaterialSchema.validate({
+      type: 'link',
+      title: 'Slides',
+      url: 'https://example.com/slides',
+    });
+    expect(error).toBeUndefined();
+    expect(value.type).toBe('link');
+    expect(value.url).toBe('https://example.com/slides');
+  });
+
+  it('accepts a valid note', () => {
+    const { error, value } = createTeachingMaterialSchema.validate({
+      type: 'note',
+      title: 'Lembrete',
+      content: 'Trazer Bíblia',
+    });
+    expect(error).toBeUndefined();
+    expect(value.type).toBe('note');
+    expect(value.content).toBe('Trazer Bíblia');
+  });
+
+  it('rejects link without url', () => {
+    const { error } = createTeachingMaterialSchema.validate({
+      type: 'link',
+      title: 'Slides',
+    });
+    expect(error).toBeDefined();
+  });
+
+  it('rejects javascript protocol', () => {
+    const { error } = createTeachingMaterialSchema.validate({
+      type: 'link',
+      title: 'Bad',
+      url: 'javascript:alert(1)',
+    });
+    expect(error).toBeDefined();
+    expect(error?.message).toMatch(/http/i);
+  });
+
+  it('rejects note without content', () => {
+    const { error } = createTeachingMaterialSchema.validate({
+      type: 'note',
+      title: 'Lembrete',
+    });
+    expect(error).toBeDefined();
+  });
+});
+
+describe('updateTeachingMaterialSchema', () => {
+  it('rejects type changes', () => {
+    const { error } = updateTeachingMaterialSchema.validate({
+      type: 'note',
+      title: 'X',
+    });
+    expect(error).toBeDefined();
+  });
+
+  it('accepts title-only update', () => {
+    const { error, value } = updateTeachingMaterialSchema.validate({ title: 'Novo título' });
+    expect(error).toBeUndefined();
+    expect(value.title).toBe('Novo título');
   });
 });
 
