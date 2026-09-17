@@ -3,8 +3,8 @@ type: modulo
 nome: grupos
 status: Ativo
 complexidade: Média
-ultima_atualizacao: 2026-09-15
-versao: "2.0"
+ultima_atualizacao: 2026-09-17
+versao: "2.1"
 owner: (não identificado no código)
 tags: [módulo, grupos, ministérios]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -77,8 +77,10 @@ backend/src/
 
 frontend/src/
 ├── app/(main)/ministries/page.tsx   → hub UI
+├── app/(main)/ministries/[id]/     → detalhe (`MinistryDetailView`)
 ├── app/(main)/groups/               → redirect → /ministries
-└── components/groups/               → list, form, filters (sem type), export
+├── components/groups/               → list, form, filters, export, `MinistryDetailView`
+└── components/entity-detail/        → shell aside + tabs compartilhado
 
 Testes:
 - backend: `groupValidator.test.ts`
@@ -367,16 +369,16 @@ stateDiagram-v2
   end note
 ```
 
-### UI — hub e modais (`/ministries`)
+### UI — hub e detalhe (`/ministries`, `/ministries/[id]`)
 
 Hub autenticado em `frontend/src/app/(main)/ministries/page.tsx` + `components/groups/*`.  
 Rota legada `/groups` redireciona para `/ministries`.
 
-**Responsividade (mobile/tablet):** header com label curta em `<sm`; busca + filtros fazem wrap; summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/View/Delete e exports usam o `Modal` compartilhado em sheet inferior no mobile.
+**Responsividade (mobile/tablet):** header com label curta em `<sm`; busca + filtros fazem wrap; summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/Delete e exports usam o `Modal` compartilhado em sheet inferior no mobile. Detalhe é **página** (`MinistryDetailView` + `EntityDetailLayout`).
 
-- **View:** empilha info + gestão de membros em `<md`; restaura layout 2 colunas em `md+`. No mobile, Export/Editar/Excluir ficam no `footer` do Modal.
+- **Detalhe:** aside (nome, congregação, responsável, status, contagem) + aba **Membros** (`?tab=membros`, default). Gestão add/remove na aba. Export PDF de membros / Editar / Excluir no header da página. Aside empilha acima do painel em `<md`.
 - **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário). Sem campo de tipo.
-- **Exports:** lista via `POST /api/export/groups/list` (filtros search/congregation/status); membros do ministério via modal de campos (PDF). **Sem** `ExportGroupsTypesModal`.
+- **Exports:** lista via `POST /api/export/groups/list` (filtros search/congregation/status); membros do ministério via modal de campos no detalhe (PDF). **Sem** `ExportGroupsTypesModal`.
 
 Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Sem rota pública neste módulo (form público de membros consome listagem via outro router).
 
@@ -508,6 +510,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-17 | 2.1 | Detalhe em página `/ministries/[id]` (aside + aba Membros); remove modal de view | DEV-121 |
 | 2026-09-15 | 2.0 | Ministérios: remove GroupType/`type`; unicidade name+cong; UI `/ministries`; copy ministério; BR-GRP-012/013 | DEV-115 |
 | 2026-08-25 | 1.3 | Inventário: export de membros do grupo é só PDF (sem CSV) | DEV-49 |
 | 2026-07-31 | 1.2 | UX mobile/tablet: hub wrap, view stack, Modal footer sticky Create/Edit/View, exports via Modal | DEV-31 |

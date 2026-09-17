@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { FileText, LinkIcon, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -18,7 +19,6 @@ import { MemberSearchInput } from '@/components/members/MemberSearchInput';
 import { IntegrationFiltersBar } from '@/components/integration/IntegrationFiltersBar';
 import { IntegrationActiveFiltersChips } from '@/components/integration/IntegrationActiveFiltersChips';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
-import { ViewIntegrationModal } from '@/components/integration/ViewIntegrationModal';
 import { ExportIntegrationModal } from '@/components/integration/ExportIntegrationModal';
 import { IntegrationLinksModal } from '@/components/integration/IntegrationLinksModal';
 import apiService from '@/services/api';
@@ -36,6 +36,7 @@ const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igre
 
 function IntegrationPageContent() {
   const { canEdit } = useAuth();
+  const router = useRouter();
   const {
     loading,
     loadIntegrationMembers,
@@ -55,7 +56,6 @@ function IntegrationPageContent() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [convertModalOpen, setConvertModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<IntegrationMember | null>(null);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportingList, setExportingList] = useState(false);
   const [preRegistrationLoading, setPreRegistrationLoading] = useState(false);
@@ -285,8 +285,7 @@ function IntegrationPageContent() {
           setDeleteModalOpen(true);
         }}
         onView={(member) => {
-          setSelectedMember(member);
-          setViewModalOpen(true);
+          router.push(`/integration/${member.id}`);
         }}
         onPageChange={handlePageChange}
         onExport={() => setExportModalOpen(true)}
@@ -331,38 +330,6 @@ function IntegrationPageContent() {
         }}
         integrationMember={selectedMember ?? undefined}
         onSuccess={handleConvertSuccess}
-      />
-
-      <ViewIntegrationModal
-        isOpen={viewModalOpen}
-        onClose={() => {
-          setViewModalOpen(false);
-          setSelectedMember(null);
-        }}
-        integrationMemberId={selectedMember?.id || null}
-        canEdit={canEdit}
-        onDelete={() => {
-          if (selectedMember) {
-            removeIntegrationMemberOptimistic(selectedMember.id);
-          }
-          setViewModalOpen(false);
-          setSelectedMember(null);
-        }}
-        onConvert={() => {
-          setViewModalOpen(false);
-          // Não limpar selectedMember aqui, pois o ConvertIntegrationModal precisa dele
-          setConvertModalOpen(true);
-        }}
-        onDiscard={() => {
-          if (selectedMember) {
-            updateIntegrationMemberOptimistic(selectedMember.id, {
-              ...selectedMember,
-              status: 'descartado'
-            });
-          }
-          setViewModalOpen(false);
-          setSelectedMember(null);
-        }}
       />
 
       <ExportIntegrationModal

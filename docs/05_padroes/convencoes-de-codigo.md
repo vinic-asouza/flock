@@ -1,7 +1,7 @@
 ---
 type: convencoes-codigo
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-09-17
+versao: "1.1"
 linguagem: TypeScript
 formatter: ESLint (frontend next/core-web-vitals) | nenhum Prettier no repo | backend sem ESLint config
 tags: [padrões, código, convenções]
@@ -237,6 +237,12 @@ tags: [padrões, código, convenções]
 > Ex.: alinhamento mentor/responsável/membro à congregação em group/calendar/integrations; `resolveCongregationFilter` (rejeita `sede`).
 - **Nível:** 🟡 · **Enforcement:** 👁️
 
+### CONV-034: Página de detalhe de entidade — shell compartilhado
+> Detalhe de entidade (membro, integrante, ministério, congregação, turma) usa **página** `/{recurso}/[id]`, não modal de visualização. Create/Edit/Delete/Export de lista continuam em `Modal`.
+- **Nível:** 🔴 em novos detalhes de entidade · **Enforcement:** 👁️
+- ✅ `EntityDetailLayout` + `EntityDetailPageHeader` + `useEntityTab` em `frontend/src/components/entity-detail/`; abas via `?tab=`; tab inválida limpa da URL; default sem query
+- ❌ Novo `View*Modal` só para leitura; tabs sem sincronizar URL; aninhar `<a>`/`Link` dentro de outro link do card
+
 ---
 
 ## 6. 🔧 Configurações de Tooling
@@ -274,4 +280,4 @@ tags: [padrões, código, convenções]
 
 ## Confirmação
 
-Documento prescritivo com **CONV-001…033**, baseado no código Flock (2026-07-14).
+Documento prescritivo com **CONV-001…034**, baseado no código Flock (atualizado 2026-09-17: CONV-034 EntityDetail).

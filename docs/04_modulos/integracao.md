@@ -3,8 +3,8 @@ type: modulo
 nome: integracao
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-31
-versao: "1.2"
+ultima_atualizacao: 2026-09-17
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, integracao]
 depende_de: [auth, igreja-config, membros, congregacoes]
@@ -77,14 +77,15 @@ backend/src/
 └── types/index.ts                  → IntegrationMember
 
 frontend/src/app/
-├── (main)/integration/             → UI pipeline
+├── (main)/integration/             → hub UI pipeline
+├── (main)/integration/[id]/       → página de detalhe (`IntegrationDetailView`)
 └── public/integration/[token]/    → form público
 
 frontend/src/components/integration/
 ├── IntegrationForm.tsx             → 3 seções (pessoais / eclesiásticas / Acompanhamento)
 ├── EcclesiasticalQuestionnaire.tsx → questionário compartilhado
 ├── PublicIntegrationForm.tsx       → 2 seções (pessoais + eclesiásticas)
-└── ViewIntegrationModal.tsx        → mesmas seções em leitura
+└── IntegrationDetailView.tsx       → leitura: aside + abas Ficha / Acompanhamento
 
 Testes: `validators/__tests__/integrationMemberValidator.test.ts`, `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts`. CRUD/HTTP sem suite dedicada.
 ```
@@ -371,23 +372,28 @@ stateDiagram-v2
   Inativo --> [*]: DELETE
 ```
 
-### UI — hub e modais (`/integration`)
+### UI — hub e detalhe (`/integration`, `/integration/[id]`)
 
-**Form autenticado (`IntegrationForm`):** três seções na ordem — Informações pessoais → Informações eclesiásticas (questionário + tipo de recebimento previsto + congregação prevista) → Acompanhamento (mentor, status na edição, observações). Modal `xl`; CTAs no footer sticky.
+**Form autenticado (`IntegrationForm`):** três seções na ordem — Informações pessoais → Informações eclesiásticas (questionário + tipo de recebimento previsto + congregação prevista) → Acompanhamento (mentor, status na edição, observações). Create/Edit/Convert em `Modal` `xl`; CTAs no footer sticky.
 
 **Form público (`PublicIntegrationForm`):** duas seções — pessoais e eclesiásticas (questionário + congregação prevista). Sem mentor, tipo de recebimento previsto, observações nem status. Copy de `time_attending` usa o nome da igreja do link.
 
-**Ficha (`ViewIntegrationModal`):** mesmas seções em leitura; questionário só com valores preenchidos.
+**Detalhe (`IntegrationDetailView`):** página com `EntityDetailLayout` + `useEntityTab`. Aside (identidade, status, congregação prevista, mentor, ações: export PDF, editar, integrar, descartar/excluir). Abas (`?tab=`):
 
-| Ação | Visibilidade | Descrição |
+| Tab | Default | Conteúdo |
+| --- | --- | --- |
+| **Ficha** (`ficha`) | sim | Pessoais + eclesiásticas em leitura; questionário só com valores preenchidos |
+| **Acompanhamento** (`acompanhamento`) | — | Mentor, status, observações (preparada para timeline futura) |
+
+| Ação (hub) | Visibilidade | Descrição |
 | --- | --- | --- |
 | **Ficha de pré-cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/integration/registration-form/pdf` (handler em [[04_modulos/relatorios]], BR-REL-013). Desktop: “Ficha de pré-cadastro”; mobile: “Ficha”. Não gated por `canEdit`. |
 | **Links de Autocadastro** | reader+ | Modal de links públicos. |
 | **Novo integrante** | editor+ | CTA primário; desabilitado para reader. |
 
-Demais exports (ficha preenchida de um integrante, lista PDF) permanecem no detalhe / `ExportIntegrationModal`.
+Export da ficha preenchida fica no detalhe; lista PDF no hub (`ExportIntegrationModal`).
 
-**Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, Convert, View, export PDF da lista e links de autocadastro usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno). Export de lista PDF passa por esse `Modal` (não overlay ad hoc). Desktop (≥`md`/`sm` conforme componente) permanece equivalente. Autocadastro público: `/public/integration/[token]` com safe-area + `PublicIntegrationForm` (CTAs full-width no mobile).
+**Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, Convert, export PDF da lista e links usam o `Modal` compartilhado em sheet inferior no mobile. Detalhe é página full (aside empilha acima das abas em `<md`). Autocadastro público: `/public/integration/[token]` com safe-area + `PublicIntegrationForm`.
 
 ---
 
@@ -513,6 +519,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-17 | 1.3 | Detalhe em página `/integration/[id]` (aside + abas Ficha/Acompanhamento); remove modal de view | DEV-120 |
 | 2026-08-31 | 1.2 | Questionário eclesiástico no Integrante (BR-INT-016); form 3 seções; público inclui questionário | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo integração | — |
 | 2026-08-31 | 1.2 | Ação UI **Ficha de pré-cadastro** (export PDF em branco, BR-REL-013) | DEV-92 |

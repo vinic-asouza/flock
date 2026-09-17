@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-31
-versao: "1.6"
+ultima_atualizacao: 2026-09-17
+versao: "1.7"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -85,8 +85,12 @@ backend/src/
 └── types/index.ts                 → interface Member
 
 frontend/src/app/
-├── (main)/members/                → UI rol (+ botão **Ficha de Cadastro** → export PDF em branco)
+├── (main)/members/                → hub (+ **Ficha de Cadastro** → PDF em branco)
+├── (main)/members/[id]/          → página de detalhe (`MemberDetailView`)
 └── public/register/[token]/      → form autocadastro
+
+frontend/src/components/members/   → lista, forms, modais CRUD/import/export; `MemberDetailView`
+frontend/src/components/entity-detail/ → shell compartilhado (aside + tabs + `?tab=`)
 
 Testes: `utils/__tests__/csvParser.test.ts` (mapping/skip/legado). CRUD/HTTP sem suite dedicada.
 Migrations: recebimento e família em `members`; questionário eclesiástico só em `integration_members` (DEV-91). Sem pasta local de migrations.
@@ -229,15 +233,17 @@ Fonte de labels: `memberCsvFieldLabels` em `utils/pdf/listFields.ts`. Modelo: `f
 
 **Responsividade (mobile/tablet):** toolbar e filtros fazem wrap; labels curtas em `<sm`; alvos touch `min-h-11`. CRUD, import, export PDF/CSV e links de autocadastro usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; props opcionais `description` / `footer`). Export de lista PDF/CSV também passa por esse `Modal` (não overlay ad hoc). Desktop (≥`md`/`sm` conforme componente) permanece equivalente.
 
-### UI — detalhe do membro (`ViewMemberModal`)
+### UI — detalhe do membro (`/members/[id]`)
 
-Seções principais do modal de visualização (paridade com o PDF de perfil):
+Hub `/members` abre o detalhe em **página** (não modal). Shell: `EntityDetailLayout` + `useEntityTab` (`frontend/src/components/entity-detail/`). Create/Edit/Delete/Export de lista permanecem em `Modal`.
 
-1. **Informações Pessoais** — layout em duas colunas (gênero, idade, nascimento, naturalidade | estado civil, data de casamento/união, profissão).
-2. **Família** — seção de primeiro nível com cônjuge, pai, mãe e filhos; exibida apenas se houver ao menos um dado familiar.
-3. Contato / Endereço / **Vínculo na igreja** (congregação, data de batismo, recebimento, grupos — quando houver dados). Sem Histórico Eclesiástico / questionário (fonte: Integrante, [[BR-INT-016]]).
+- **Aside:** identidade (avatar/iniciais, nome, ativo/inativo), congregação, contatos rápidos, ações no header (voltar, export PDF da ficha, editar, excluir / status).
+- **Abas** (`?tab=`; inválido é limpo da URL; default sem query):
+  1. **Dados** (`dados`) — pessoais, contato, endereço (paridade com PDF de perfil).
+  2. **Família** (`familia`) — cônjuge, pai, mãe, filhos; conteúdo vazio se não houver dados.
+  3. **Vínculos** (`vinculos`) — congregação, batismo, recebimento, ministérios. Sem questionário eclesiástico (fonte: Integrante, [[BR-INT-016]]).
 
-> O formulário create/edit (`MemberForm`) ainda pode agrupar cônjuge em Informações Básicas — alinhamento visual form ↔ view é follow-up separado.
+> Create/Edit (`MemberForm`) continuam em modal; alinhamento fino form ↔ abas do detalhe é follow-up separado.
 
 ### Contrato principal — `POST /api/members/`
 
@@ -570,6 +576,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-17 | 1.7 | Detalhe em página `/members/[id]` (aside + abas Dados/Família/Vínculos); remove modal de view | DEV-119 |
 | 2026-08-31 | 1.6 | Questionário eclesiástico sai de membros (BR-MEM-004 / BR-INT-016); ficha: **Vínculo na igreja** | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
