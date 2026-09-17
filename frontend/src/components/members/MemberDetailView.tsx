@@ -4,9 +4,6 @@ import Link from 'next/link';
 import {
   Church,
   Home,
-  Mail,
-  MessageCircle,
-  Phone,
   User,
   Users,
 } from 'lucide-react';
@@ -14,10 +11,12 @@ import {
   EntityDetailLayout,
   useEntityTab,
 } from '@/components/entity-detail';
+import { ContactRowsList } from '@/components/ui/ContactRow';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import { formatMemberName } from '@/utils/formatMemberName';
-import { calculateAge, formatDate, formatPhone } from '@/utils';
+import { getNameInitials } from '@/utils/getNameInitials';
+import { calculateAge, formatDate } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 export type MemberDetail = {
@@ -61,14 +60,16 @@ export type MemberDetail = {
   active: boolean;
 };
 
-const MEMBER_TABS = ['dados', 'familia', 'vinculos'] as const;
+const MEMBER_TABS = ['dados', 'vinculos'] as const;
 type MemberTab = (typeof MEMBER_TABS)[number];
 
 const TAB_ITEMS = [
   { id: 'dados', label: 'Dados', panelId: 'dados-panel' },
-  { id: 'familia', label: 'Família', panelId: 'familia-panel' },
   { id: 'vinculos', label: 'Vínculos', panelId: 'vinculos-panel' },
 ];
+
+const DETAIL_GRID =
+  'grid grid-cols-1 gap-6 min-[1920px]:grid-cols-2';
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -91,88 +92,51 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
   const idade = calculateAge(member.birth);
   const activeGroups = (member.groups || []).filter((g) => g.status);
   const inactiveGroups = (member.groups || []).filter((g) => !g.status);
-  const initial = formatMemberName(member.name).charAt(0) || '?';
+  const initials = getNameInitials(member.name);
   const hasFamily =
     Boolean(member.spouse) ||
     Boolean(member.father_name) ||
     Boolean(member.mother_name) ||
     Boolean(member.children?.length);
+  const hasRecebimento = Boolean(member.admission || member.admission_date || member.baptism_date);
 
   return (
     <EntityDetailLayout
       aside={
-        <>
-          <Card className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
-                {initial}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-gray-900 uppercase">
-                  {formatMemberName(member.name)}
-                </p>
-                <span
-                  className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                    member.active
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-600'
-                  }`}
-                >
-                  {member.active ? 'Ativo' : 'Inativo'}
-                </span>
-              </div>
-            </div>
-            <dl className="space-y-3">
-              <Field label="Congregação">
-                {getCongregationDisplayName(member.congregation) || '—'}
-              </Field>
-              {member.admission ? (
-                <Field label="Tipo de recebimento">{member.admission}</Field>
-              ) : null}
-              {member.baptism_date ? (
-                <Field label="Batismo">{formatDate(member.baptism_date) || '—'}</Field>
-              ) : null}
-            </dl>
-            <div className="flex flex-wrap gap-2">
-              {member.phone ? (
-                <a
-                  href={`tel:${member.phone.replace(/\D/g, '')}`}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-gray-200 px-3 text-sm text-gray-700 hover:border-primary hover:text-primary"
-                  aria-label="Ligar"
-                >
-                  <Phone className="h-4 w-4" />
-                  {formatPhone(member.phone)}
-                </a>
-              ) : null}
-              {member.whatsapp ? (
-                <a
-                  href={`https://wa.me/${member.whatsapp.replace(/\D/g, '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-gray-200 px-3 text-sm text-gray-700 hover:border-emerald-600 hover:text-emerald-700"
-                  aria-label="Enviar WhatsApp"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  WhatsApp
-                </a>
-              ) : null}
-              {member.email ? (
-                <a
-                  href={`mailto:${member.email}`}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-md border border-gray-200 px-3 text-sm text-gray-700 hover:border-primary hover:text-primary"
-                  aria-label="Enviar e-mail"
-                >
-                  <Mail className="h-4 w-4" />
-                  E-mail
-                </a>
-              ) : null}
-            </div>
-            <span className="inline-flex rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-600/20">
-              {activeGroups.length}{' '}
-              {activeGroups.length === 1 ? 'ministério' : 'ministérios'}
+        <Card className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
+              aria-hidden
+            >
+              {initials}
             </span>
-          </Card>
-        </>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium uppercase text-gray-900">
+                {formatMemberName(member.name)}
+              </p>
+              <span
+                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                  member.active
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {member.active ? 'Ativo' : 'Inativo'}
+              </span>
+            </div>
+          </div>
+          <dl className="space-y-3">
+            <Field label="Congregação">
+              {getCongregationDisplayName(member.congregation) || '—'}
+            </Field>
+          </dl>
+          <ContactRowsList
+            phone={member.phone}
+            whatsapp={member.whatsapp}
+            email={member.email}
+          />
+        </Card>
       }
     >
       <Tabs
@@ -189,7 +153,7 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
         className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {activeTab === 'dados' ? (
-          <div className="space-y-6">
+          <div className={DETAIL_GRID}>
             <Card className="space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
                 <User className="h-4 w-4 text-gray-400" />
@@ -225,6 +189,7 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
                 ) : null}
               </dl>
             </Card>
+
             <Card className="space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
                 <Home className="h-4 w-4 text-gray-400" />
@@ -250,77 +215,99 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
                 {member.cep ? <p>CEP: {member.cep}</p> : null}
               </div>
             </Card>
+
+            {hasRecebimento ? (
+              <Card className="space-y-4">
+                <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                  <Church className="h-4 w-4 text-gray-400" />
+                  Recebimento
+                </h3>
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {member.admission ? (
+                    <Field label="Tipo de recebimento">{member.admission}</Field>
+                  ) : null}
+                  {member.admission_date ? (
+                    <Field label="Data de recebimento">
+                      {formatDate(member.admission_date) || '—'}
+                    </Field>
+                  ) : null}
+                  {member.baptism_date ? (
+                    <Field label="Batismo">
+                      {formatDate(member.baptism_date) || '—'}
+                    </Field>
+                  ) : null}
+                </dl>
+              </Card>
+            ) : null}
+
+            {hasFamily ? (
+              <Card className="space-y-4">
+                <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                  <Users className="h-4 w-4 text-gray-400" />
+                  Família
+                </h3>
+                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {member.spouse ? (
+                    <Field label="Cônjuge">
+                      {member.spouse}{' '}
+                      <span className="text-xs text-gray-500">
+                        {memberFlag(member.spouse_is_member)}
+                      </span>
+                    </Field>
+                  ) : null}
+                  {member.father_name ? (
+                    <Field label="Pai">
+                      {member.father_name}{' '}
+                      <span className="text-xs text-gray-500">
+                        {memberFlag(member.father_is_member)}
+                      </span>
+                    </Field>
+                  ) : null}
+                  {member.mother_name ? (
+                    <Field label="Mãe">
+                      {member.mother_name}{' '}
+                      <span className="text-xs text-gray-500">
+                        {memberFlag(member.mother_is_member)}
+                      </span>
+                    </Field>
+                  ) : null}
+                </dl>
+                {member.children && member.children.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-500">Filhos</p>
+                    <ul className="space-y-2">
+                      {member.children.map((child, index) => {
+                        const age = child.birth ? calculateAge(child.birth) : null;
+                        return (
+                          <li key={`${child.name}-${index}`} className="text-sm text-gray-900">
+                            {child.name}
+                            {age !== null ? (
+                              <span className="ml-2 text-xs text-blue-700">
+                                {age} {age === 1 ? 'ano' : 'anos'}
+                              </span>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
+              </Card>
+            ) : (
+              <Card className="py-10 text-center">
+                <p className="text-sm font-medium text-gray-900">
+                  Nenhum vínculo familiar cadastrado.
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Cadastre cônjuge, pais ou filhos na edição do membro.
+                </p>
+              </Card>
+            )}
           </div>
         ) : null}
 
-        {activeTab === 'familia' ? (
-          hasFamily ? (
-            <Card className="space-y-4">
-              <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                <Users className="h-4 w-4 text-gray-400" />
-                Família
-              </h3>
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {member.spouse ? (
-                  <Field label="Cônjuge">
-                    {member.spouse}{' '}
-                    <span className="text-xs text-gray-500">
-                      {memberFlag(member.spouse_is_member)}
-                    </span>
-                  </Field>
-                ) : null}
-                {member.father_name ? (
-                  <Field label="Pai">
-                    {member.father_name}{' '}
-                    <span className="text-xs text-gray-500">
-                      {memberFlag(member.father_is_member)}
-                    </span>
-                  </Field>
-                ) : null}
-                {member.mother_name ? (
-                  <Field label="Mãe">
-                    {member.mother_name}{' '}
-                    <span className="text-xs text-gray-500">
-                      {memberFlag(member.mother_is_member)}
-                    </span>
-                  </Field>
-                ) : null}
-              </dl>
-              {member.children && member.children.length > 0 ? (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-500">Filhos</p>
-                  <ul className="space-y-2">
-                    {member.children.map((child, index) => {
-                      const age = child.birth ? calculateAge(child.birth) : null;
-                      return (
-                        <li key={`${child.name}-${index}`} className="text-sm text-gray-900">
-                          {child.name}
-                          {age !== null ? (
-                            <span className="ml-2 text-xs text-blue-700">
-                              {age} {age === 1 ? 'ano' : 'anos'}
-                            </span>
-                          ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              ) : null}
-            </Card>
-          ) : (
-            <Card className="py-10 text-center">
-              <p className="text-sm font-medium text-gray-900">
-                Nenhum vínculo familiar cadastrado.
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                Cadastre cônjuge, pais ou filhos na edição do membro.
-              </p>
-            </Card>
-          )
-        ) : null}
-
         {activeTab === 'vinculos' ? (
-          <div className="space-y-4">
+          <div className={DETAIL_GRID}>
             <Card className="space-y-3">
               <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
                 <Church className="h-4 w-4 text-gray-400" />
@@ -329,15 +316,6 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
               <p className="text-sm text-gray-900">
                 {getCongregationDisplayName(member.congregation) || '—'}
               </p>
-              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Field label="Recebimento">
-                  {formatDate(member.admission_date) || '—'}
-                </Field>
-                <Field label="Tipo">{member.admission || '—'}</Field>
-                <Field label="Batismo">
-                  {formatDate(member.baptism_date) || '—'}
-                </Field>
-              </dl>
             </Card>
             <Card className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900">Ministérios</h3>

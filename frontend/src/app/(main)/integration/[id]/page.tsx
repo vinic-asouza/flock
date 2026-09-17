@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Download, Loader2, Pencil } from 'lucide-react';
@@ -26,6 +26,7 @@ function IntegrationDetailContent() {
   const router = useRouter();
   const params = useParams();
   const integrationId = String(params.id || '');
+  const hasDataRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<IntegrationMember | null>(null);
@@ -41,12 +42,14 @@ function IntegrationDetailContent() {
   const loadMember = useCallback(async () => {
     if (!integrationId) return;
     try {
-      setLoading(true);
+      if (!hasDataRef.current) setLoading(true);
       setNotFound(false);
       const data = await apiService.getIntegrationMember(integrationId);
+      hasDataRef.current = true;
       setMember(data);
     } catch (err) {
       toast.error(formatApiError(err));
+      hasDataRef.current = false;
       setMember(null);
       setNotFound(true);
     } finally {
@@ -55,6 +58,8 @@ function IntegrationDetailContent() {
   }, [integrationId]);
 
   useEffect(() => {
+    hasDataRef.current = false;
+    setMember(null);
     loadMember();
   }, [loadMember]);
 

@@ -11,11 +11,11 @@ interface MemberCardCompactProps {
   member: {
     id: string;
     name: string;
-    birth: string; // ISO date
-    active: boolean;
+    birth?: string | null;
+    active?: boolean;
     congregation?: { name: string; abbreviation?: string | null } | null;
-    gender: string;
-    marital_status: string;
+    gender?: string | null;
+    marital_status?: string | null;
     occupation?: string | null;
     whatsapp?: string | null;
     email?: string | null;
@@ -28,7 +28,7 @@ interface MemberCardCompactProps {
 }
 
 export function MemberCardCompact({ member, href }: MemberCardCompactProps) {
-  const idade = calculateAge(member.birth);
+  const idade = member.birth ? calculateAge(member.birth) : null;
   const nameClassName = 'font-medium text-gray-900 text-sm truncate max-w-xs uppercase';
   return (
     <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg px-4 py-3">
