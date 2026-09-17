@@ -241,6 +241,7 @@ tags: [padrões, código, convenções]
 > Detalhe de entidade (membro, integrante, ministério, congregação, turma) usa **página** `/{recurso}/[id]`, não modal de visualização. Create/Edit/Delete/Export de lista continuam em `Modal`.
 - **Nível:** 🔴 em novos detalhes de entidade · **Enforcement:** 👁️
 - ✅ `EntityDetailLayout` + `EntityDetailPageHeader` + `useEntityTab` em `frontend/src/components/entity-detail/`; abas via `?tab=`; tab inválida limpa da URL; default sem query
+- ✅ Contatos no aside de Membros/Integração: `ContactRow` + `getNameInitials` (`frontend/src/components/ui/ContactRow.tsx`, `frontend/src/utils/getNameInitials.ts`)
 - ❌ Novo `View*Modal` só para leitura; tabs sem sincronizar URL; aninhar `<a>`/`Link` dentro de outro link do card
 
 ---

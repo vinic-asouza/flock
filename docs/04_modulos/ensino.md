@@ -3,8 +3,8 @@ type: modulo
 nome: ensino
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-09-15
-versao: "1.4"
+ultima_atualizacao: 2026-09-17
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, ensino, teaching]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -254,7 +254,7 @@ flowchart LR
 | `/public/teaching/[token]` | Form público brand full-bleed |
 
 Nav: label **Ensino**, ícone `GraduationCap`, entre Calendário e Configurações.  
-UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Aba **Aulas** cobre calendário/lista, detalhe e chamada (`?tab=aulas&lessonId=`). Aba **Materiais** (`?tab=materiais`). Aba **Certificados** (`?tab=certificados`): emissão PDF após Encerrada. Materiais permanece placeholder (DEV-112).
+UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Inscritos `kind=member` usam `MemberCardCompact` (paridade visual com Ministérios/Congregações); convidados mantêm card próprio. Aba **Aulas** cobre calendário/lista, detalhe e chamada (`?tab=aulas&lessonId=`). Aba **Materiais** (`?tab=materiais`). Aba **Certificados** (`?tab=certificados`): emissão PDF após Encerrada. Materiais permanece placeholder (DEV-112).
 
 ---
 

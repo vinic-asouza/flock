@@ -2,6 +2,7 @@
 
 import { Clipboard, Info, Loader2, Trash2, User, UserPlus, XCircle } from 'lucide-react';
 import { EntityDetailLayout, useEntityTab } from '@/components/entity-detail';
+import { ContactRowsList } from '@/components/ui/ContactRow';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
@@ -9,6 +10,7 @@ import { IntegrationMember } from '@/types';
 import { formatPhone } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { getNameInitials } from '@/utils/getNameInitials';
 import {
   admissionLabels,
   buildEcclesiasticalItems,
@@ -28,6 +30,8 @@ const TAB_ITEMS = [
   { id: 'acompanhamento', label: 'Acompanhamento', panelId: 'acompanhamento-panel' }
 ];
 
+const DETAIL_GRID = 'grid grid-cols-1 gap-6 min-[1920px]:grid-cols-2';
+
 interface IntegrationDetailViewProps {
   member: IntegrationMember;
   readOnly?: boolean;
@@ -46,7 +50,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// Datas do backend chegam como YYYY-MM-DD; converter com new Date() desloca o dia em fusos negativos.
 function formatDateSafe(date?: string | null): string {
   if (!date) return '—';
   if (date.includes('/')) return date;
@@ -94,17 +97,23 @@ export function IntegrationDetailView({
   const { activeTab, setActiveTab } = useEntityTab(INTEGRATION_TABS, 'ficha');
   const age = calculateAgeSafe(member.birth);
   const ecclesiasticalItems = buildEcclesiasticalItems(member);
-  const initial = formatMemberName(member.name).charAt(0) || '?';
+  const initials = getNameInitials(member.name);
   const inProgress = member.status === 'em_progresso';
   const integrated = member.status === 'integrado';
+  const admissionLabel = member.expected_admission_type
+    ? admissionLabels[member.expected_admission_type] || member.expected_admission_type
+    : null;
 
   return (
     <EntityDetailLayout
       aside={
         <Card className="space-y-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
-              {initial}
+            <span
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
+              aria-hidden
+            >
+              {initials}
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-medium uppercase text-gray-900">
@@ -124,13 +133,10 @@ export function IntegrationDetailView({
             <Field label="Congregação prevista">
               {getCongregationDisplayName(member.expected_congregation) || 'Não definida'}
             </Field>
-            <Field label="Tipo de recebimento previsto">
-              {member.expected_admission_type
-                ? admissionLabels[member.expected_admission_type] || member.expected_admission_type
-                : '—'}
-            </Field>
             <Field label="Atualizado em">{formatDateSafe(member.updated_at)}</Field>
           </dl>
+
+          <ContactRowsList phone={member.phone} whatsapp={member.whatsapp} />
 
           {inProgress || integrated ? (
             <div className="flex flex-col gap-2 border-t border-gray-200 pt-4">
@@ -198,7 +204,7 @@ export function IntegrationDetailView({
         className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         {activeTab === 'ficha' ? (
-          <div className="space-y-6">
+          <div className={DETAIL_GRID}>
             <Card className="space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
                 <User className="h-4 w-4 text-gray-400" />
@@ -215,6 +221,7 @@ export function IntegrationDetailView({
                     ? maritalLabels[member.marital_status] || member.marital_status
                     : '—'}
                 </Field>
+                <Field label="Tipo de recebimento previsto">{admissionLabel || '—'}</Field>
                 <Field label="Telefone">
                   {member.phone ? (
                     <a

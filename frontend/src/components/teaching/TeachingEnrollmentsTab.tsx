@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
+import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -605,6 +606,44 @@ export function TeachingEnrollmentsTab({
                         ? item.member?.name || item.display_name || 'Membro'
                         : item.full_name || item.display_name || 'Convidado';
                     const contact = item.whatsapp || item.member?.whatsapp || null;
+                    const memberId = item.member?.id || item.member_id;
+
+                    if (item.kind === 'member' && item.member) {
+                      return (
+                        <li key={item.id} className="group relative min-w-0">
+                          <MemberCardCompact
+                            href={memberId ? `/members/${memberId}` : undefined}
+                            member={{
+                              id: item.member.id,
+                              name: item.member.name,
+                              birth: item.member.birth || item.birth_date || null,
+                              active: true,
+                              congregation: item.member.congregations || null,
+                              whatsapp: item.member.whatsapp || item.whatsapp || null,
+                              email: item.email || null,
+                            }}
+                          />
+                          {!readOnly ? (
+                            <Button
+                              variant="ghost"
+                              className="absolute right-2 top-2 min-h-11 min-w-11 text-gray-500 opacity-100 hover:text-red-600 sm:opacity-0 sm:group-hover:opacity-100"
+                              aria-label={`Remover inscrição de ${name}`}
+                              onClick={async () => {
+                                try {
+                                  await apiService.deleteTeachingEnrollment(item.id);
+                                  toast.success('Inscrição removida');
+                                  await loadEnrollments();
+                                } catch (error) {
+                                  toast.error(formatApiError(error));
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          ) : null}
+                        </li>
+                      );
+                    }
 
                     return (
                       <li

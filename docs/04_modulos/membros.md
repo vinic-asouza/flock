@@ -4,7 +4,7 @@ nome: membros
 status: Ativo
 complexidade: Alta
 ultima_atualizacao: 2026-09-17
-versao: "1.7"
+versao: "1.8"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -237,11 +237,10 @@ Fonte de labels: `memberCsvFieldLabels` em `utils/pdf/listFields.ts`. Modelo: `f
 
 Hub `/members` abre o detalhe em **página** (não modal). Shell: `EntityDetailLayout` + `useEntityTab` (`frontend/src/components/entity-detail/`). Create/Edit/Delete/Export de lista permanecem em `Modal`.
 
-- **Aside:** identidade (avatar/iniciais, nome, ativo/inativo), congregação, contatos rápidos, ações no header (voltar, export PDF da ficha, editar, excluir / status).
-- **Abas** (`?tab=`; inválido é limpo da URL; default sem query):
-  1. **Dados** (`dados`) — pessoais, contato, endereço (paridade com PDF de perfil).
-  2. **Família** (`familia`) — cônjuge, pai, mãe, filhos; conteúdo vazio se não houver dados.
-  3. **Vínculos** (`vinculos`) — congregação, batismo, recebimento, ministérios. Sem questionário eclesiástico (fonte: Integrante, [[BR-INT-016]]).
+- **Aside:** identidade (avatar circular com 2 iniciais via `getNameInitials`, nome, ativo/inativo), congregação e contatos (`ContactRow`: valor + copiar). Sem tipo de recebimento, batismo nem chip de ministérios no aside. Ações no header (voltar, export PDF da ficha, editar, excluir / status).
+- **Abas** (`?tab=`; inválido é limpo da URL → default; `?tab=familia` legado cai em **Dados**):
+  1. **Dados** (`dados`) — pessoais, endereço, recebimento/batismo (quando houver) e família (cônjuge, pai, mãe, filhos; empty se vazio). Cards em 2 colunas só em `min-width: 1920px`.
+  2. **Vínculos** (`vinculos`) — ministérios (+ congregação se aplicável). Sem questionário eclesiástico (fonte: Integrante, [[BR-INT-016]]). Mesmo breakpoint de grid.
 
 > Create/Edit (`MemberForm`) continuam em modal; alinhamento fino form ↔ abas do detalhe é follow-up separado.
 
@@ -576,6 +575,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-17 | 1.8 | Aside enxuto (contatos valor+copiar); tab Família fundida em Dados; grid ≥1920px | DEV-124 |
 | 2026-09-17 | 1.7 | Detalhe em página `/members/[id]` (aside + abas Dados/Família/Vínculos); remove modal de view | DEV-119 |
 | 2026-08-31 | 1.6 | Questionário eclesiástico sai de membros (BR-MEM-004 / BR-INT-016); ficha: **Vínculo na igreja** | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |

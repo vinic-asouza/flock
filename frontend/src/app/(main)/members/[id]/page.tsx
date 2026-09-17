@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
@@ -33,6 +33,7 @@ function MemberDetailContent() {
   const router = useRouter();
   const params = useParams();
   const memberId = String(params.id || '');
+  const hasDataRef = useRef(false);
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<MemberDetail | null>(null);
@@ -46,12 +47,14 @@ function MemberDetailContent() {
   const loadMember = useCallback(async () => {
     if (!memberId) return;
     try {
-      setLoading(true);
+      if (!hasDataRef.current) setLoading(true);
       setNotFound(false);
       const data = await apiService.getMember(memberId);
+      hasDataRef.current = true;
       setMember(data as MemberDetail);
     } catch (err) {
       toast.error(formatApiError(err));
+      hasDataRef.current = false;
       setMember(null);
       setNotFound(true);
     } finally {
@@ -60,6 +63,8 @@ function MemberDetailContent() {
   }, [memberId]);
 
   useEffect(() => {
+    hasDataRef.current = false;
+    setMember(null);
     loadMember();
   }, [loadMember]);
 

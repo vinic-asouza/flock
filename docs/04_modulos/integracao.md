@@ -4,7 +4,7 @@ nome: integracao
 status: Ativo
 complexidade: Alta
 ultima_atualizacao: 2026-09-17
-versao: "1.3"
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, integracao]
 depende_de: [auth, igreja-config, membros, congregacoes]
@@ -378,11 +378,11 @@ stateDiagram-v2
 
 **Form público (`PublicIntegrationForm`):** duas seções — pessoais e eclesiásticas (questionário + congregação prevista). Sem mentor, tipo de recebimento previsto, observações nem status. Copy de `time_attending` usa o nome da igreja do link.
 
-**Detalhe (`IntegrationDetailView`):** página com `EntityDetailLayout` + `useEntityTab`. Aside (identidade, status, congregação prevista, mentor, ações: export PDF, editar, integrar, descartar/excluir). Abas (`?tab=`):
+**Detalhe (`IntegrationDetailView`):** página com `EntityDetailLayout` + `useEntityTab`. Aside (identidade com 2 iniciais, status, congregação prevista, contatos valor+copiar via `ContactRow`, CTAs por status: integrar/descartar). Tipo de recebimento previsto fica na **Ficha**, não no aside. Export PDF / editar no header. Abas (`?tab=`):
 
 | Tab | Default | Conteúdo |
 | --- | --- | --- |
-| **Ficha** (`ficha`) | sim | Pessoais + eclesiásticas em leitura; questionário só com valores preenchidos |
+| **Ficha** (`ficha`) | sim | Pessoais + eclesiásticas (incl. tipo de recebimento previsto) em leitura; questionário só com valores preenchidos. Cards em 2 colunas só em `min-width: 1920px` quando aplicável. |
 | **Acompanhamento** (`acompanhamento`) | — | Mentor, status, observações (preparada para timeline futura) |
 
 | Ação (hub) | Visibilidade | Descrição |
@@ -519,6 +519,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-17 | 1.4 | Aside alinhado a Membros (ContactRow); admission type na Ficha; grid ≥1920px | DEV-124 |
 | 2026-09-17 | 1.3 | Detalhe em página `/integration/[id]` (aside + abas Ficha/Acompanhamento); remove modal de view | DEV-120 |
 | 2026-08-31 | 1.2 | Questionário eclesiástico no Integrante (BR-INT-016); form 3 seções; público inclui questionário | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo integração | — |

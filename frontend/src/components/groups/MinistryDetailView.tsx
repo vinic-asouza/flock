@@ -67,10 +67,10 @@ export function MinistryDetailView({
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  const loadRoster = useCallback(async () => {
+  const loadRoster = useCallback(async (opts?: { silent?: boolean }) => {
     if (!groupId) return;
     try {
-      setLoadingRoster(true);
+      if (!opts?.silent) setLoadingRoster(true);
       setErrorRoster(null);
       const members = (await apiService.getGroupMembers(groupId)) as RosterMember[];
       const sorted = [...members].sort((a, b) => {
@@ -83,7 +83,7 @@ export function MinistryDetailView({
       setErrorRoster(formatApiError(err));
       setRoster([]);
     } finally {
-      setLoadingRoster(false);
+      if (!opts?.silent) setLoadingRoster(false);
     }
   }, [groupId]);
 
@@ -148,11 +148,18 @@ export function MinistryDetailView({
 
   const handleAddMember = async () => {
     if (!selectedMemberId) return;
+    const selected = churchMembers.find((m) => m.id === selectedMemberId);
     try {
       setAddingMember(true);
       await apiService.addMemberToGroup(groupId, selectedMemberId);
       setSelectedMemberId('');
-      await loadRoster();
+      if (selected) {
+        setRoster((prev) => [
+          { id: selected.id, name: selected.name, active: true, birth: '', gender: '', marital_status: '' } as RosterMember,
+          ...prev.filter((m) => m.id !== selected.id),
+        ]);
+      }
+      await loadRoster({ silent: true });
       onRosterChange?.();
       toast.success('Membro adicionado ao ministério');
     } catch (err) {
@@ -173,11 +180,13 @@ export function MinistryDetailView({
     try {
       setRemovingMemberId(memberId);
       await apiService.removeMemberFromGroup(groupId, memberId);
-      await loadRoster();
+      setRoster((prev) => prev.filter((m) => m.id !== memberId));
+      await loadRoster({ silent: true });
       onRosterChange?.();
       toast.success('Membro removido do ministério');
     } catch (err) {
       toast.error(formatApiError(err));
+      await loadRoster({ silent: true });
     } finally {
       setRemovingMemberId(null);
     }
@@ -414,7 +423,7 @@ export function MinistryDetailView({
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={loadRoster}
+                  onClick={() => loadRoster()}
                   disabled={loadingRoster}
                   className="min-h-11"
                 >
