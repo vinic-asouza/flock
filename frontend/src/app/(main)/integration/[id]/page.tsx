@@ -11,6 +11,7 @@ import { statusClasses, statusLabels } from '@/components/integration/integratio
 import { EditIntegrationModal } from '@/components/integration/EditIntegrationModal';
 import { ConvertIntegrationModal } from '@/components/integration/ConvertIntegrationModal';
 import { DeleteIntegrationModal } from '@/components/integration/DeleteIntegrationModal';
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
 import { IntegrationMember } from '@/types';
@@ -31,8 +32,10 @@ function IntegrationDetailContent() {
   const [notFound, setNotFound] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [discarding, setDiscarding] = useState(false);
+  const [discardError, setDiscardError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
 
   const loadMember = useCallback(async () => {
@@ -75,23 +78,21 @@ function IntegrationDetailContent() {
     }
   };
 
-  const handleDiscard = async () => {
+  const handleDiscardConfirm = async () => {
     if (!member) return;
-    const confirmed = window.confirm(
-      `Tem certeza de que deseja descartar ${formatMemberName(member.name)}? Essa ação não poderá ser desfeita.`
-    );
-    if (!confirmed) return;
 
     try {
       setDiscarding(true);
+      setDiscardError(null);
       const updated = await apiService.updateIntegrationMember(member.id, {
         name: member.name,
         status: 'descartado'
       });
       setMember(updated);
+      setDiscardOpen(false);
       toast.success('Integrante descartado');
     } catch (err) {
-      toast.error(formatApiError(err));
+      setDiscardError(formatApiError(err));
     } finally {
       setDiscarding(false);
     }
@@ -150,16 +151,18 @@ function IntegrationDetailContent() {
                 )}
                 Exportar PDF
               </Button>
-              <Button
-                variant="secondary"
-                className="min-h-11"
-                disabled={readOnly}
-                title={readOnly ? READER_TOOLTIP : undefined}
-                onClick={() => setEditOpen(true)}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar
-              </Button>
+              {member.status !== 'integrado' ? (
+                <Button
+                  variant="secondary"
+                  className="min-h-11"
+                  disabled={readOnly}
+                  title={readOnly ? READER_TOOLTIP : undefined}
+                  onClick={() => setEditOpen(true)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Editar
+                </Button>
+              ) : null}
             </>
           ) : null
         }
@@ -176,7 +179,10 @@ function IntegrationDetailContent() {
           readOnly={readOnly}
           discarding={discarding}
           onConvert={() => setConvertOpen(true)}
-          onDiscard={handleDiscard}
+          onDiscard={() => {
+            setDiscardError(null);
+            setDiscardOpen(true);
+          }}
           onRemove={() => setRemoveOpen(true)}
         />
       )}
@@ -201,6 +207,24 @@ function IntegrationDetailContent() {
               setMember(result.integrationMember);
               setConvertOpen(false);
             }}
+          />
+
+          <ConfirmDeleteModal
+            isOpen={discardOpen}
+            onClose={() => {
+              if (!discarding) {
+                setDiscardOpen(false);
+                setDiscardError(null);
+              }
+            }}
+            onConfirm={handleDiscardConfirm}
+            title="Descartar integrante"
+            message={`Tem certeza de que deseja descartar ${formatMemberName(member.name)}? Essa ação não poderá ser desfeita.`}
+            confirmLabel="Descartar"
+            isLoading={discarding}
+            error={discardError}
+            variant="danger"
+            size="md"
           />
 
           <DeleteIntegrationModal

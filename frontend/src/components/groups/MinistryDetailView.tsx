@@ -27,6 +27,7 @@ import { apiService, formatApiError } from '@/services/api';
 import { GroupWithMembers } from '@/types';
 import { Member } from '@/types/reports';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { formatMemberName } from '@/utils/formatMemberName';
 
 const MEMBERS_PER_PAGE = 10;
 
@@ -351,6 +352,7 @@ export function MinistryDetailView({
                     onClick={() => handleRemoveMember(member.id)}
                     className="absolute right-2 top-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                     title="Remover do ministério"
+                    aria-label={`Remover ${formatMemberName(member.name)} do ministério`}
                     disabled={removingMemberId === member.id}
                   >
                     {removingMemberId === member.id ? (

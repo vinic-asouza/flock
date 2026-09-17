@@ -179,7 +179,9 @@ export function CongregationDetailView({ congregation }: CongregationDetailViewP
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="shrink-0 text-sm font-medium text-gray-900">
-            Membros ({activeMembersCount})
+            {searchDebounced
+              ? `Resultados (${pagination?.total ?? 0})`
+              : `Membros (${activeMembersCount})`}
           </h3>
           <div className="relative w-full min-w-0 sm:max-w-sm">
             <Search
@@ -258,9 +260,22 @@ export function CongregationDetailView({ congregation }: CongregationDetailViewP
             <Users size={48} className="mx-auto mb-2 text-gray-300" />
             <p className="text-sm text-gray-600">
               {searchDebounced
-                ? 'Nenhum membro encontrado para esta busca'
+                ? `Nenhum membro encontrado para “${searchDebounced}”.`
                 : 'Nenhum membro vinculado a esta congregação'}
             </p>
+            {searchDebounced ? (
+              <Button
+                variant="secondary"
+                className="mt-4 min-h-11"
+                onClick={() => {
+                  setSearch('');
+                  setSearchDebounced('');
+                  setPage(1);
+                }}
+              >
+                Limpar busca
+              </Button>
+            ) : null}
           </Card>
         )}
       </section>

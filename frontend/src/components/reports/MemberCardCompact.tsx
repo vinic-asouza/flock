@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Mail, MessageCircle, Phone } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { calculateAge } from '@/utils';
 
 interface MemberCardCompactProps {
   href?: string;
@@ -26,21 +27,8 @@ interface MemberCardCompactProps {
   };
 }
 
-function calcularIdade(birth: string): number | null {
-  if (!birth) return null;
-  const birthDate = new Date(birth);
-  if (isNaN(birthDate.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
-}
-
 export function MemberCardCompact({ member, href }: MemberCardCompactProps) {
-  const idade = calcularIdade(member.birth);
+  const idade = calculateAge(member.birth);
   const nameClassName = 'font-medium text-gray-900 text-sm truncate max-w-xs uppercase';
   return (
     <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg px-4 py-3">
