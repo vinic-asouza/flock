@@ -250,7 +250,7 @@ flowchart LR
 | --- | --- |
 | `/teaching` | Hub (programas / turmas + seletor congregação) |
 | `/teaching/[programId]` | Contexto do programa |
-| `/teaching/[programId]/[classId]` | Detalhe da turma: aside (Sobre / Equipe / Link) + abas **Inscritos**, **Aulas**, **Materiais**, **Certificados** (`?tab=`) |
+| `/teaching/[programId]/[classId]` | Detalhe da turma: `EntityDetailLayout` — aside (Sobre / Equipe / Link) + abas **Inscritos**, **Aulas**, **Materiais**, **Certificados** (`?tab=`) |
 | `/public/teaching/[token]` | Form público brand full-bleed |
 
 Nav: label **Ensino**, ícone `GraduationCap`, entre Calendário e Configurações.  

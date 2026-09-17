@@ -3,8 +3,8 @@ type: modulo
 nome: congregacoes
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-08-25
-versao: "1.3"
+ultima_atualizacao: 2026-09-17
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, congregacoes]
 depende_de: [auth, igreja-config]
@@ -71,8 +71,10 @@ backend/src/
 │   └── auditLogger.ts
 └── types/index.ts                 → interface Congregation (inclui is_primary)
 
-frontend/src/app/(main)/congregations/  → UI (badge Principal; delete bloqueado)
-frontend/src/components/congregations/ → hub, cards, CongregationModal, ExportCongregationMembersModal
+frontend/src/app/(main)/congregations/  → hub (+ badge Principal; delete bloqueado)
+frontend/src/app/(main)/congregations/[id]/ → detalhe (`CongregationDetailView`)
+frontend/src/components/congregations/ → hub, cards, form modal, `CongregationDetailView`, `ExportCongregationMembersModal`
+frontend/src/components/entity-detail/ → shell aside + tabs compartilhado
 frontend/src/utils/congregation.ts     → getPrimaryCongregationId + getCongregationDisplayName
 
 Testes: `backend/src/validators/__tests__/congregationValidator.test.ts` (schema do export de membros).
@@ -274,13 +276,13 @@ stateDiagram-v2
   Existente --> [*]: DELETE (não primary, não última, sem membros ativos)
 ```
 
-### UI — hub e modais (`/congregations`)
+### UI — hub e detalhe (`/congregations`, `/congregations/[id]`)
 
 Hub autenticado em `frontend/src/app/(main)/congregations/page.tsx` + `components/congregations/*`.
 
-**Responsividade (mobile/tablet):** header com label curta em `<sm`; summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/View/Delete usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
+**Responsividade (mobile/tablet):** header com label curta em `<sm`; summary bar e cards com wrap/`min-w-0` e alvos touch `min-h-11`. Create/Edit/Delete usam o `Modal` compartilhado em sheet inferior no mobile. Detalhe é **página** (`CongregationDetailView` + `EntityDetailLayout`).
 
-- **View (`CongregationModal`):** empilha info + lista de membros em `<md`; restaura layout 2 colunas (info ~30% + membros) em `md+`. Ações: **Exportar lista** (reader+, não gated por `canEdit`; disabled se 0 ativos) + Editar/Excluir. No mobile o `footer` sticky existe sempre que o modal carregou (reader também vê o export). Nested modal de campos (`ExportCongregationMembersModal`); o PDF ignora busca/paginação da lista (BR-REL-012).
+- **Detalhe:** aside (nome/abreviação, endereço, telefone, líder, qtd. membros) + aba **Membros** (`?tab=membros`, default). Ações no header: **Exportar lista** (reader+, disabled se 0 ativos) + Editar/Excluir. Nested modal de campos (`ExportCongregationMembersModal`); o PDF ignora busca/paginação da lista (BR-REL-012). Aside empilha acima do painel em `<md`.
 - **Create/Edit:** CTAs no `footer` do Modal (fora do scroll do formulário), mitigando teclado virtual.
 - **Export PDF do hub:** botão **Exportar PDF** na summary bar gera a **lista de congregações** (não o rol de uma unidade; BR-CON-014 nome completo). Sem CTA de membros nos cards.
 
@@ -386,8 +388,8 @@ graph LR
 3. Formúlaris públicos às vezes filtram `.eq('active', true)` em congregations — **coluna não existe**; bug potencial nos módulos consumidores, não neste CRUD.  
 4. DELETE seta FKs SET NULL em members/groups/etc. — só após passar o gate de ativos.  
 5. Unicidade de **nome** é **aplicacional** (não UNIQUE DB composto church_id+name) — race possível sob concorrência. Unicidade de **abreviação** tem unique parcial no banco.  
-6. Export PDF de congregações (hub) e de membros da unidade (modal) não vivem neste CRUD; PDFs usam **nome completo** (não abreviação).  
-7. **Modal view:** layout 2 colunas em `md+`; no mobile Exportar lista / Editar / Excluir estão no footer sticky — não duplicar CTAs na coluna info (`md:hidden` / `hidden md:flex`). Footer existe também para reader (não depende de Editar/Excluir).
+6. Export PDF de congregações (hub) e de membros da unidade (detalhe) não vivem neste CRUD; PDFs usam **nome completo** (não abreviação).  
+7. **Página de detalhe:** Exportar lista / Editar / Excluir no header; lista de membros na aba. Não duplicar CTAs no aside. Reader também vê export.
 
 ---
 
@@ -395,6 +397,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-17 | 1.4 | Detalhe em página `/congregations/[id]` (aside + aba Membros); remove modal de view | DEV-122 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo congregações | — |
 | 2026-07-16 | 1.1 | Campo `abbreviation` + regras BR-CON-013/014 + display compacto | DEV-20 |
 | 2026-07-31 | 1.2 | UX mobile/tablet: hub, view stack, Modal footer sticky Create/Edit/View | DEV-30 |

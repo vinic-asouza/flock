@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-09-16
-versao: "1.24"
+ultima_atualizacao: 2026-09-17
+versao: "1.25"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -28,10 +28,14 @@ tags: [produto, UX, fluxos, jornadas]
 ├── (main)/                    → Shell: Header + nav (Sidebar ≥ md / drawer < md) + Footer
 │   ├── /                      → Painel / Relatórios
 │   ├── /members
+│   ├── /members/[id]            → detalhe do membro (aside + abas)
 │   ├── /integration
+│   ├── /integration/[id]        → detalhe do integrante
 │   ├── /ministries              → Ministérios (hub)
+│   ├── /ministries/[id]         → detalhe do ministério
 │   ├── /groups                  → redirect → /ministries
 │   ├── /congregations
+│   ├── /congregations/[id]      → detalhe da congregação
 │   ├── /calendar
 │   ├── /teaching
 │   │   ├── /teaching/[programId]
@@ -154,35 +158,37 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 ### J6 — Ciclo de vida do membro (core)
 
 1. `/members` → listar / filtrar / grid|lista
-2. Criar (modal/form) ou importar CSV _(multi-step)_ ou link público — cadastro operacional + recebimento; **sem** questionário eclesiástico
-3. Editar / alterar status / exportar PDF (ficha: **Vínculo na igreja**)
-4. Soft delete
+2. Abrir detalhe `/members/[id]` (aside + abas Dados / Família / Vínculos; `?tab=`)
+3. Criar (modal/form) ou importar CSV _(multi-step)_ ou link público — cadastro operacional + recebimento; **sem** questionário eclesiástico
+4. Editar / alterar status / exportar PDF da ficha (ações no detalhe; Create/Edit/Delete em modal)
+5. Hard delete (confirmação)
 
 **Bloqueios:** role `reader`; limite de plano / `past_due`.
 
-**Mobile:** hub e modais CRUD usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Autocadastro público: ver J11.
+**Mobile:** hub e modais CRUD usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Detalhe é página full (aside empilha acima das abas). Autocadastro público: ver J11.
 
 ### J7 — Integração → membro
 
-1. `/integration` ou link `/public/integration/[token]` — form com pessoais + questionário eclesiástico (Painel também: Acompanhamento)
-2. Acompanhar status (`em_progresso` / etc.)
-3. Editor converte integrante → membro oficial (**não** copia o questionário)
-4. Continua na jornada J6
+1. `/integration` ou link `/public/integration/[token]` — form com pessoais + questionário eclesiástico
+2. Abrir detalhe `/integration/[id]` (abas **Ficha** / **Acompanhamento**)
+3. Acompanhar status (`em_progresso` / etc.)
+4. Editor converte integrante → membro oficial (**não** copia o questionário) via modal no detalhe
+5. Continua na jornada J6
 
-**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo (wrap de toolbar/filtros, sheet do `Modal` base, CTAs touch). Botão **Ficha** (rótulo curto) na toolbar. Autointegração pública: ver J11.
+**Mobile:** hub e modais (CRUD, Convert, export, links) usam layout responsivo. Detalhe é página. Botão **Ficha** (rótulo curto) na toolbar do hub. Autointegração pública: ver J11.
 
 ### J8 — Estrutura e agenda
 
-- Congregações: CRUD + vínculos de membros + export PDF da lista de unidades (hub) e da lista de membros ativos (modal de visualização)  
+- Congregações: CRUD + detalhe `/congregations/[id]` (aba Membros) + export PDF da lista de unidades (hub) e da lista de membros ativos (detalhe)  
 
-- Ministérios: CRUD + membros do ministério (hub `/ministries`; `/groups` redireciona)  
+- Ministérios: CRUD + detalhe `/ministries/[id]` (aba Membros); hub `/ministries`; `/groups` redireciona  
 - Calendário: itens + participantes + export PDF (mês ao lado das setas / por seção; ano no header das duas abas; recorte no modal, sem alterar a listagem)
 
 Readers só consultam; writers mutam.
 
-**Mobile (Congregações):** hub `/congregations` e modais (Create/Edit/View/Delete) usam layout responsivo (cards/summary wrap, sheet do `Modal` base, CTAs touch). No view, info + lista de membros empilham em `<md` (2 colunas em `md+`); **Exportar lista** / Editar / Excluir ficam no footer sticky do modal no mobile (footer também para reader). Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
+**Mobile (Congregações):** hub `/congregations` e modais Create/Edit/Delete usam layout responsivo. Detalhe é página (aside + aba Membros); **Exportar lista** / Editar / Excluir no header. Create/Edit usam footer sticky do Modal.
 
-**Mobile (Ministérios):** hub `/ministries` e modais (CRUD, view com membros, delete, exports) usam layout responsivo (wrap de busca/filtros/summary, sheet do `Modal` base, CTAs touch). Sem filtro/modal de tipos. No view, info + gestão de membros empilham em `<md` (2 colunas em `md+`); Export/Editar/Excluir ficam no footer sticky do modal no mobile. Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
+**Mobile (Ministérios):** hub `/ministries` e modais CRUD/delete/exports usam layout responsivo. Detalhe é página (aside + aba Membros); ações no header. Create/Edit usam footer sticky do Modal.
 
 **Mobile (Calendário):** hub `/calendar` (filtros, tabs Calendário/Listas, visão mês e lista anual) e modais (CRUD, view, delete, aniversariantes, recorte do PDF) usam layout responsivo (wrap de filtros, sheet do `Modal` base, CTAs touch). No mobile, o grid mensal densifica (dots + contagem); tap no dia abre modal leve “Itens do dia”; em `md+` os chips com título permanecem. Create/Edit/View/Delete e export PDF usam footer sticky do Modal (CTAs fora do scroll / teclado).
 
@@ -308,10 +314,10 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 8. Billing é jornada de admin/owner; editor/reader não devem ser bloqueados no uso operacional salvo pelo limite de membros do tenant.
 9. Adaptação mobile de **conteúdo** de módulos autenticados é Issue própria; o shell (hamburger/drawer) é foundation compartilhada (breakpoint canônico do shell: `md`).
 10. Funil de cadastro/planos (J1/J2) usa layout `(auth)` — responsividade própria (`lg` para marketing sidebar); não depender do drawer do shell.
-11. Módulo **Membros** (J6/J11 register): hub `/members`, modais CRUD/import/export/links e `/public/register/[token]` são operáveis em ~375px via `Modal` sheet + form responsivo — sem migrar CRUD para rotas full-page.
-12. Módulo **Integração** (J7/J11 integration): hub `/integration`, modais CRUD/Convert/export/links e `/public/integration/[token]` seguem o mesmo padrão mobile (~375px) — sem migrar Convert/CRUD para rotas full-page.
-13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete, export PDF da lista de unidades e **Exportar lista** de membros no modal de visualização são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
-14. Módulo **Ministérios** (J8): hub `/ministries` (`/groups` → redirect), modais CRUD/view (add/remove membros), delete e exports PDF são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
+11. Módulo **Membros** (J6/J11 register): hub `/members`, detalhe `/members/[id]`, modais CRUD/import/export/links e `/public/register/[token]` são operáveis em ~375px — Create/Edit/Delete permanecem em modal; **view** é página (aside + abas).
+12. Módulo **Integração** (J7/J11 integration): hub `/integration`, detalhe `/integration/[id]`, modais CRUD/Convert/export/links e `/public/integration/[token]` — Convert/CRUD em modal; **view** é página (abas Ficha / Acompanhamento).
+13. Módulo **Congregações** (J8): hub `/congregations`, detalhe `/congregations/[id]`, modais CRUD/delete, export PDF da lista de unidades e **Exportar lista** de membros no detalhe — view empilhada (aside + aba); sem migrar CRUD para rotas full-page.
+14. Módulo **Ministérios** (J8): hub `/ministries` (`/groups` → redirect), detalhe `/ministries/[id]`, modais CRUD/delete e exports PDF — view empilhada (aside + aba Membros); sem migrar CRUD para rotas full-page.
 15. Módulo **Calendário** (J8): hub `/calendar`, visão mês densificada (dots + modal do dia), lista anual, modais CRUD/view/delete, aniversariantes e recorte do PDF (mês/ano) são operáveis em ~375px — footer sticky nos CTAs; sem migrar CRUD para rotas full-page.
 16. Módulo **Relatórios** (J9): hub `/`, seções do painel e modais de drill-down são operáveis em ~375px — CTAs touch, sheet/`dvh`, sideLayout com chips no mobile; sem migrar drill-downs para rotas full-page; `ReportsFilters` não está montado na Home.
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.

@@ -301,14 +301,14 @@ CSV de lista de membros (`POST /api/export/members/list/csv`):
 // }  // campos PDF fixos: name, congregation, responsible_name, member_count
 // POST /congregations/list { } // lista do tenant (hub /congregations)
 // POST /congregation/members/list { congregationId: uuid, fields: string[] }
-//   — só active=true; busca do modal não entra (BR-REL-012)
+//   — só active=true; busca da lista no detalhe não entra (BR-REL-012)
 //   — 404 congregação inexistente ≠ 404 sem membros ativos
 //   — filename: congregacao-{slug}-membros-{YYYY-MM-DD}.pdf
 //   — título: "Lista de membros da congregação"; nome completo (BR-CON-014)
 ```
 
 UI: modal `ExportGroupsTypesModal` na tela `/groups` — multi-seleção de tipos antes do PDF (pré-seleciona o tipo do filtro da listagem, se houver).  
-UI congregação: `CongregationModal` → **Exportar lista** → `ExportCongregationMembersModal` (picker `ExportMemberFieldsModal`, compartilhado com o grupo). Hub permanece **Exportar PDF** da lista de unidades.
+UI congregação: detalhe `/congregations/[id]` (`CongregationDetailView`) → **Exportar lista** → `ExportCongregationMembersModal` (picker `ExportMemberFieldsModal`, compartilhado com o ministério). Hub permanece **Exportar PDF** da lista de unidades.
 
 ---
 

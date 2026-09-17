@@ -156,12 +156,12 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** [[BR-REL-006]]
 
 ### BR-REL-012: Export membros da congregação
-- **Declaração:** `POST /api/export/congregation/members/list` gera o PDF do rol **ativo** de uma congregação (reader+, tenant + escopo DEV-15). Body `{ congregationId, fields[] }`. Só `active=true`; a busca/paginação do modal **não** entram no arquivo. O PDF usa o **nome completo** da unidade (BR-CON-014), kit Flock Print landscape. UI: botão no modal de visualização (não no card nem no hub). Hub `/congregations` continua exportando a **lista de congregações**. Sem ativos: botão desabilitado; API com lista vazia → 404 (BR-REL-008). Não reutilizar `POST /export/members/list` (título/filename/404 de recurso distintos).
+- **Declaração:** `POST /api/export/congregation/members/list` gera o PDF do rol **ativo** de uma congregação (reader+, tenant + escopo DEV-15). Body `{ congregationId, fields[] }`. Só `active=true`; a busca/paginação da lista no detalhe **não** entram no arquivo. O PDF usa o **nome completo** da unidade (BR-CON-014), kit Flock Print landscape. UI: botão no detalhe `/congregations/[id]` (não no card nem no hub). Hub `/congregations` continua exportando a **lista de congregações**. Sem ativos: botão desabilitado; API com lista vazia → 404 (BR-REL-008). Não reutilizar `POST /export/members/list` (título/filename/404 de recurso distintos).
 - **Tipo:** Restrição
-- **Gatilho:** Export no modal da congregação / POST dedicado
+- **Gatilho:** Export no detalhe da congregação / POST dedicado
 - **Comportamento esperado:** PDF contextual da unidade; 400 fields/UUID; 403 escopo; 404 congregação vs 404 sem ativos
 - **Comportamento em violação:** 400 / 403 / 404; UI não dispara se `activeMembersCount === 0`
-- **Implementado em:** `exportController.exportCongregationMembersList` + `congregationValidator.exportCongregationMembersListSchema` + `CongregationModal` / `ExportCongregationMembersModal`
+- **Implementado em:** `exportController.exportCongregationMembersList` + `congregationValidator.exportCongregationMembersListSchema` + `CongregationDetailView` / `ExportCongregationMembersModal`
 - **Testado em:** `validators/__tests__/congregationValidator.test.ts`; smoke DEV-47
 - **Depende de:** [[BR-REL-001]], [[BR-REL-006]], [[BR-REL-007]], [[BR-REL-008]], [[BR-REL-011]], [[BR-CON-008]], [[BR-CON-009]], [[BR-CON-014]]
 
