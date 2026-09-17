@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
 ultima_atualizacao: 2026-09-17
-versao: "1.25"
+versao: "1.26"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -158,7 +158,7 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 ### J6 — Ciclo de vida do membro (core)
 
 1. `/members` → listar / filtrar / grid|lista
-2. Abrir detalhe `/members/[id]` (aside + abas Dados / Família / Vínculos; `?tab=`)
+2. Abrir detalhe `/members/[id]` (aside + abas Dados / Vínculos; família e recebimento em Dados; `?tab=`)
 3. Criar (modal/form) ou importar CSV _(multi-step)_ ou link público — cadastro operacional + recebimento; **sem** questionário eclesiástico
 4. Editar / alterar status / exportar PDF da ficha (ações no detalhe; Create/Edit/Delete em modal)
 5. Hard delete (confirmação)
