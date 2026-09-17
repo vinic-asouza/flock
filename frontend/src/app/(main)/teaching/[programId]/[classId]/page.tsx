@@ -1,10 +1,10 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Pencil, Trash2 } from 'lucide-react';
+import { EntityDetailPageHeader } from '@/components/entity-detail';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { ClassFormModal } from '@/components/teaching/TeachingModals';
@@ -105,13 +105,11 @@ function TeachingClassContent() {
   if (!loading && (notFound || !teachingClass)) {
     return (
       <div className="space-y-4">
-        <Link
-          href={backHref}
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary min-h-11"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar às turmas
-        </Link>
+        <EntityDetailPageHeader
+          backHref={backHref}
+          backLabel="Voltar às turmas"
+          title="Turma"
+        />
         <TeachingEmptyState text="Turma não encontrada ou não pertence a este programa." />
       </div>
     );
@@ -119,28 +117,14 @@ function TeachingClassContent() {
 
   return (
     <div className="space-y-4">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-primary min-h-11"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Turmas do programa
-      </Link>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {teachingClass?.name || 'Turma'}
-            </h1>
-            {teachingClass ? <StatusBadge status={teachingClass.status} /> : null}
-          </div>
-          <p className="text-sm text-gray-600 mt-1">
-            {loading ? 'Carregando…' : subtitle || ' '}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0">
-          {!readOnly && teachingClass ? (
+      <EntityDetailPageHeader
+        backHref={backHref}
+        backLabel="Turmas do programa"
+        title={teachingClass?.name || 'Turma'}
+        badge={teachingClass ? <StatusBadge status={teachingClass.status} /> : null}
+        subtitle={loading ? 'Carregando…' : subtitle || ' '}
+        actions={
+          !readOnly && teachingClass ? (
             <>
               <Button
                 variant="secondary"
@@ -163,9 +147,9 @@ function TeachingClassContent() {
             <span title={READER_TOOLTIP} className="text-sm text-gray-500">
               Somente leitura
             </span>
-          ) : null}
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
       {loading || !teachingClass ? (
         <div className="flex items-center justify-center py-16 text-gray-500">

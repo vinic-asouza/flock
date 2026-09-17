@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { Mail, MessageCircle, Phone } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface MemberCardCompactProps {
+  href?: string;
   member: {
     id: string;
     name: string;
@@ -37,16 +39,27 @@ function calcularIdade(birth: string): number | null {
   return age;
 }
 
-export function MemberCardCompact({ member }: MemberCardCompactProps) {
+export function MemberCardCompact({ member, href }: MemberCardCompactProps) {
   const idade = calcularIdade(member.birth);
+  const nameClassName = 'font-medium text-gray-900 text-sm truncate max-w-xs uppercase';
   return (
     <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg px-4 py-3">
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e selos */}
         <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="font-medium text-gray-900 text-sm truncate max-w-xs uppercase" title={member.name}>
-            {formatMemberName(member.name)}
-          </span>
+          {href ? (
+            <Link
+              href={href}
+              className={`${nameClassName} hover:text-primary hover:underline`}
+              title={member.name}
+            >
+              {formatMemberName(member.name)}
+            </Link>
+          ) : (
+            <span className={nameClassName} title={member.name}>
+              {formatMemberName(member.name)}
+            </span>
+          )}
           {/* <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}>
             {member.active ? 'Ativo' : 'Inativo'}
           </span> */}

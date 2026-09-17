@@ -4,12 +4,11 @@ import { MemberList } from '@/components/members/MemberList';
 import { MemberSearchInput } from '@/components/members/MemberSearchInput';
 import { ViewModeSelector } from '@/components/members/ViewModeSelector';
 import { useState, useCallback, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MemberFiltersBar } from '@/components/members/MemberFiltersBar';
 import { MemberFiltersAdvanced } from '@/components/members/MemberFiltersAdvanced';
 import { ActiveFiltersChips } from '@/components/members/ActiveFiltersChips';
 import { CreateMemberModal } from '@/components/members/CreateMemberModal';
-import { ViewMemberModal } from '@/components/members/ViewMemberModal';
 import { EditMemberModal } from '@/components/members/EditMemberModal';
 import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
 import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
@@ -78,6 +77,7 @@ const initialSorting = {
 };
 
 function MembersPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   // const [total, setTotal] = useState<number | null>(null);
   const [filters, setFilters] = useState<MemberFilters>(initialFilters);
@@ -88,7 +88,6 @@ function MembersPageContent() {
   
   // Estados dos modais
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
@@ -221,11 +220,9 @@ function MembersPageContent() {
   }, []);
 
   // Handlers dos modais
-  const handleViewMember = useCallback((id: string, name: string) => {
-    setSelectedMemberId(id);
-    setSelectedMemberName(name);
-    setViewModalOpen(true);
-  }, []);
+  const handleViewMember = useCallback((id: string) => {
+    router.push(`/members/${id}`);
+  }, [router]);
 
   const handleEditMember = useCallback((id: string) => {
     setSelectedMemberId(id);
@@ -597,29 +594,6 @@ function MembersPageContent() {
         onClose={() => setCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
       />
-
-        <ViewMemberModal
-          isOpen={viewModalOpen}
-          onClose={() => setViewModalOpen(false)}
-          memberId={selectedMemberId}
-          canEdit={canEdit}
-          onEdit={() => {
-            setViewModalOpen(false);
-            setEditModalOpen(true);
-          }}
-          onDeactivate={() => {
-            setViewModalOpen(false);
-            setDeactivateModalOpen(true);
-          }}
-          onReactivate={() => {
-            setViewModalOpen(false);
-            setReactivateModalOpen(true);
-          }}
-          onDeletePermanently={() => {
-            setViewModalOpen(false);
-            setDeleteModalOpen(true);
-          }}
-        />
 
       <EditMemberModal
         isOpen={editModalOpen}

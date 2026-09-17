@@ -23,6 +23,7 @@ import type { TeachingClass, TeachingPublicLink } from '@/types';
 import { formatDate } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 import { formatClassPeriod } from './dates';
+import { EntityDetailLayout } from '@/components/entity-detail';
 import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
 import { TeachingLessonsTab } from './TeachingLessonsTab';
 import { TeachingMaterialsTab } from './TeachingMaterialsTab';
@@ -114,271 +115,273 @@ export function TeachingClassDetailView({
   }, [teachingClass.id]);
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
-      <aside className="flex w-full shrink-0 flex-col gap-4 md:sticky md:top-4 md:w-[340px] lg:w-[360px]">
-        <Card className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-900">Sobre a turma</h3>
-          <dl className="space-y-3">
-            <div>
-              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
-                <Church className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
-                Congregação
-              </dt>
-              <dd className="text-sm text-gray-900">
-                {teachingClass.congregations
-                  ? getCongregationDisplayName(teachingClass.congregations)
-                  : '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
-                <MapPin className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
-                Local
-              </dt>
-              <dd className="text-sm text-gray-900">{teachingClass.location || '—'}</dd>
-            </div>
-            <div>
-              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
-                <Clock className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
-                Horário
-              </dt>
-              <dd className="text-sm text-gray-900">{teachingClass.schedule || '—'}</dd>
-            </div>
-            <div>
-              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
-                <CalendarDays className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
-                Período
-              </dt>
-              <dd className="text-sm text-gray-900">
-                {teachingClass.start_date ? (
-                  <>
-                    {formatClassPeriod(teachingClass.start_date, teachingClass.end_date)}
-                    {!teachingClass.end_date ? (
-                      <span className="text-gray-500"> · sem término</span>
-                    ) : null}
-                  </>
-                ) : (
-                  '—'
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
-                Criada em
-              </dt>
-              <dd className="text-sm text-gray-900">
-                {formatDate(teachingClass.created_at) || '—'}
-              </dd>
-            </div>
-          </dl>
-        </Card>
-
-        <Card className="space-y-3">
-          <SectionTitle icon={Users}>Equipe</SectionTitle>
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                Responsável
-              </p>
-              {teachingClass.responsible?.name ? (
-                <PersonChip name={teachingClass.responsible.name} />
-              ) : (
-                <p className="text-sm text-gray-500">Sem responsável.</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                Professores
-              </p>
-              {teachers.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {teachers.map((teacher) => (
-                    <PersonChip key={teacher.id} name={teacher.name} />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Nenhum professor adicional.</p>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        <Card className="space-y-3">
-          <SectionTitle
-            icon={Link2}
-            extra={
-              link ? (
-                <span
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
-                    link.is_active
-                      ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
-                      : 'bg-gray-100 text-gray-600 ring-gray-500/20'
-                  }`}
-                >
-                  {link.is_active ? 'Ativo' : 'Inativo'}
-                </span>
-              ) : null
-            }
-          >
-            Link público
-          </SectionTitle>
-          {link ? (
-            <div className="flex items-end gap-2">
-              <div className="min-w-0 flex-1">
-                <Input
-                  value={link.url}
-                  readOnly
-                  className="text-base"
-                  aria-label="URL do link público"
-                />
+    <EntityDetailLayout
+      aside={
+        <>
+          <Card className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-900">Sobre a turma</h3>
+            <dl className="space-y-3">
+              <div>
+                <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <Church className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                  Congregação
+                </dt>
+                <dd className="text-sm text-gray-900">
+                  {teachingClass.congregations
+                    ? getCongregationDisplayName(teachingClass.congregations)
+                    : '—'}
+                </dd>
               </div>
-              <Button
-                variant="secondary"
-                className="min-h-11 min-w-11 shrink-0 px-0"
-                aria-label={linkCopied ? 'Link copiado' : 'Copiar link'}
-                title={linkCopied ? 'Link copiado' : 'Copiar link'}
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(link.url);
-                    setLinkCopied(true);
-                    toast.success('Link copiado');
-                    window.setTimeout(() => setLinkCopied(false), 2000);
-                  } catch {
-                    toast.error('Não foi possível copiar o link');
-                  }
-                }}
-              >
-                {linkCopied ? (
-                  <Check className="h-4 w-4 text-emerald-600" />
+              <div>
+                <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <MapPin className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                  Local
+                </dt>
+                <dd className="text-sm text-gray-900">{teachingClass.location || '—'}</dd>
+              </div>
+              <div>
+                <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <Clock className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                  Horário
+                </dt>
+                <dd className="text-sm text-gray-900">{teachingClass.schedule || '—'}</dd>
+              </div>
+              <div>
+                <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  <CalendarDays className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+                  Período
+                </dt>
+                <dd className="text-sm text-gray-900">
+                  {teachingClass.start_date ? (
+                    <>
+                      {formatClassPeriod(teachingClass.start_date, teachingClass.end_date)}
+                      {!teachingClass.end_date ? (
+                        <span className="text-gray-500"> · sem término</span>
+                      ) : null}
+                    </>
+                  ) : (
+                    '—'
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt className="mb-1 flex items-center gap-2 text-sm font-medium text-gray-500">
+                  Criada em
+                </dt>
+                <dd className="text-sm text-gray-900">
+                  {formatDate(teachingClass.created_at) || '—'}
+                </dd>
+              </div>
+            </dl>
+          </Card>
+
+          <Card className="space-y-3">
+            <SectionTitle icon={Users}>Equipe</SectionTitle>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Responsável
+                </p>
+                {teachingClass.responsible?.name ? (
+                  <PersonChip name={teachingClass.responsible.name} />
                 ) : (
-                  <Copy className="h-4 w-4" />
+                  <p className="text-sm text-gray-500">Sem responsável.</p>
                 )}
-              </Button>
-              {!readOnly ? (
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                  Professores
+                </p>
+                {teachers.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {teachers.map((teacher) => (
+                      <PersonChip key={teacher.id} name={teacher.name} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhum professor adicional.</p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="space-y-3">
+            <SectionTitle
+              icon={Link2}
+              extra={
+                link ? (
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${
+                      link.is_active
+                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20'
+                        : 'bg-gray-100 text-gray-600 ring-gray-500/20'
+                    }`}
+                  >
+                    {link.is_active ? 'Ativo' : 'Inativo'}
+                  </span>
+                ) : null
+              }
+            >
+              Link público
+            </SectionTitle>
+            {link ? (
+              <div className="flex items-end gap-2">
+                <div className="min-w-0 flex-1">
+                  <Input
+                    value={link.url}
+                    readOnly
+                    className="text-base"
+                    aria-label="URL do link público"
+                  />
+                </div>
                 <Button
                   variant="secondary"
                   className="min-h-11 min-w-11 shrink-0 px-0"
-                  aria-label={link.is_active ? 'Desativar link' : 'Ativar link'}
-                  title={link.is_active ? 'Desativar link' : 'Ativar link'}
+                  aria-label={linkCopied ? 'Link copiado' : 'Copiar link'}
+                  title={linkCopied ? 'Link copiado' : 'Copiar link'}
                   onClick={async () => {
                     try {
-                      const updated = await apiService.updateTeachingPublicLink(
-                        teachingClass.id,
-                        { is_active: !link.is_active }
-                      );
-                      setLink(updated);
-                      toast.success(updated.is_active ? 'Link ativado' : 'Link desativado');
-                    } catch (error) {
-                      toast.error(formatApiError(error));
+                      await navigator.clipboard.writeText(link.url);
+                      setLinkCopied(true);
+                      toast.success('Link copiado');
+                      window.setTimeout(() => setLinkCopied(false), 2000);
+                    } catch {
+                      toast.error('Não foi possível copiar o link');
                     }
                   }}
                 >
-                  <Power
-                    className={`h-4 w-4 ${
-                      link.is_active ? 'text-emerald-600' : 'text-gray-400'
-                    }`}
-                  />
+                  {linkCopied ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
                 </Button>
-              ) : null}
-            </div>
-          ) : !readOnly ? (
-            <Button
-              className="min-h-11 w-full"
-              onClick={async () => {
-                try {
-                  const created = await apiService.createTeachingPublicLink(
-                    teachingClass.id
-                  );
-                  setLink(created);
-                  toast.success('Link criado');
-                } catch (error) {
-                  toast.error(formatApiError(error));
-                }
-              }}
-            >
-              Gerar link
-            </Button>
-          ) : (
-            <p className="text-sm text-gray-500">Nenhum link gerado.</p>
-          )}
-          {!publicEnrollmentAllowed ? (
-            <Alert
-              variant="warning"
-              message="Inscrições públicas só são aceitas com status Aberta ou Em andamento."
-            />
-          ) : link && !link.is_active ? (
-            <p className="text-xs text-gray-500">
-              Visitantes não conseguem se inscrever enquanto o link estiver inativo.
-            </p>
-          ) : null}
-        </Card>
-      </aside>
+                {!readOnly ? (
+                  <Button
+                    variant="secondary"
+                    className="min-h-11 min-w-11 shrink-0 px-0"
+                    aria-label={link.is_active ? 'Desativar link' : 'Ativar link'}
+                    title={link.is_active ? 'Desativar link' : 'Ativar link'}
+                    onClick={async () => {
+                      try {
+                        const updated = await apiService.updateTeachingPublicLink(
+                          teachingClass.id,
+                          { is_active: !link.is_active }
+                        );
+                        setLink(updated);
+                        toast.success(
+                          updated.is_active ? 'Link ativado' : 'Link desativado'
+                        );
+                      } catch (error) {
+                        toast.error(formatApiError(error));
+                      }
+                    }}
+                  >
+                    <Power
+                      className={`h-4 w-4 ${
+                        link.is_active ? 'text-emerald-600' : 'text-gray-400'
+                      }`}
+                    />
+                  </Button>
+                ) : null}
+              </div>
+            ) : !readOnly ? (
+              <Button
+                className="min-h-11 w-full"
+                onClick={async () => {
+                  try {
+                    const created = await apiService.createTeachingPublicLink(
+                      teachingClass.id
+                    );
+                    setLink(created);
+                    toast.success('Link criado');
+                  } catch (error) {
+                    toast.error(formatApiError(error));
+                  }
+                }}
+              >
+                Gerar link
+              </Button>
+            ) : (
+              <p className="text-sm text-gray-500">Nenhum link gerado.</p>
+            )}
+            {!publicEnrollmentAllowed ? (
+              <Alert
+                variant="warning"
+                message="Inscrições públicas só são aceitas com status Aberta ou Em andamento."
+              />
+            ) : link && !link.is_active ? (
+              <p className="text-xs text-gray-500">
+                Visitantes não conseguem se inscrever enquanto o link estiver inativo.
+              </p>
+            ) : null}
+          </Card>
+        </>
+      }
+    >
+      <Tabs
+        tabs={CLASS_TABS}
+        activeTab={activeTab}
+        onTabChange={(tabId) => {
+          const nextTab = tabId as TeachingClassTab;
+          if (
+            activeTab === 'aulas' &&
+            nextTab !== 'aulas' &&
+            lessonsDirty &&
+            !window.confirm(
+              'Há alterações de presença não salvas. Deseja descartá-las?'
+            )
+          ) {
+            return;
+          }
+          if (
+            activeTab === 'certificados' &&
+            nextTab !== 'certificados' &&
+            certificatesDirty &&
+            !window.confirm(
+              'A configuração desta emissão será descartada. Deseja continuar?'
+            )
+          ) {
+            return;
+          }
+          if (nextTab !== 'aulas') setLessonsDirty(false);
+          if (nextTab !== 'certificados') setCertificatesDirty(false);
+          setActiveTab(nextTab);
+        }}
+        ariaLabel="Conteúdo da turma"
+      />
 
-      <div className="min-w-0 flex-1 space-y-4">
-        <Tabs
-          tabs={CLASS_TABS}
-          activeTab={activeTab}
-          onTabChange={(tabId) => {
-            const nextTab = tabId as TeachingClassTab;
-            if (
-              activeTab === 'aulas' &&
-              nextTab !== 'aulas' &&
-              lessonsDirty &&
-              !window.confirm(
-                'Há alterações de presença não salvas. Deseja descartá-las?'
-              )
-            ) {
-              return;
-            }
-            if (
-              activeTab === 'certificados' &&
-              nextTab !== 'certificados' &&
-              certificatesDirty &&
-              !window.confirm(
-                'A configuração desta emissão será descartada. Deseja continuar?'
-              )
-            ) {
-              return;
-            }
-            if (nextTab !== 'aulas') setLessonsDirty(false);
-            if (nextTab !== 'certificados') setCertificatesDirty(false);
-            setActiveTab(nextTab);
-          }}
-          ariaLabel="Conteúdo da turma"
-        />
-
-        <section
-          id={`${activeTab}-panel`}
-          role="tabpanel"
-          aria-labelledby={`${activeTab}-tab`}
-          tabIndex={0}
-          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          {activeTab === 'inscritos' ? (
-            <TeachingEnrollmentsTab
-              teachingClass={teachingClass}
-              readOnly={readOnly}
-            />
-          ) : activeTab === 'aulas' ? (
-            <TeachingLessonsTab
-              teachingClass={teachingClass}
-              readOnly={readOnly}
-              onDirtyChange={setLessonsDirty}
-            />
-          ) : activeTab === 'materiais' ? (
-            <TeachingMaterialsTab
-              teachingClass={teachingClass}
-              readOnly={readOnly}
-            />
-          ) : activeTab === 'certificados' ? (
-            <TeachingCertificatesTab
-              teachingClass={teachingClass}
-              readOnly={readOnly}
-              onDirtyChange={setCertificatesDirty}
-            />
-          ) : null}
-        </section>
-      </div>
-    </div>
+      <section
+        id={`${activeTab}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${activeTab}-tab`}
+        tabIndex={0}
+        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        {activeTab === 'inscritos' ? (
+          <TeachingEnrollmentsTab
+            teachingClass={teachingClass}
+            readOnly={readOnly}
+          />
+        ) : activeTab === 'aulas' ? (
+          <TeachingLessonsTab
+            teachingClass={teachingClass}
+            readOnly={readOnly}
+            onDirtyChange={setLessonsDirty}
+          />
+        ) : activeTab === 'materiais' ? (
+          <TeachingMaterialsTab
+            teachingClass={teachingClass}
+            readOnly={readOnly}
+          />
+        ) : activeTab === 'certificados' ? (
+          <TeachingCertificatesTab
+            teachingClass={teachingClass}
+            readOnly={readOnly}
+            onDirtyChange={setCertificatesDirty}
+          />
+        ) : null}
+      </section>
+    </EntityDetailLayout>
   );
 }

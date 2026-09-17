@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Plus } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { CongregationList } from '@/components/congregations/CongregationList';
-import { CongregationModal } from '@/components/congregations/CongregationModal';
 import { CreateCongregationModal } from '@/components/congregations/CreateCongregationModal';
 import { EditCongregationModal } from '@/components/congregations/EditCongregationModal';
 import { DeleteCongregationModal } from '@/components/congregations/DeleteCongregationModal';
@@ -20,12 +20,12 @@ const CREATE_DISABLED_TOOLTIP =
 
 export default function CongregationsPage() {
   const { canEdit, canCreateCongregations } = useAuth();
+  const router = useRouter();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [search, setSearch] = useState('');
   const [exporting, setExporting] = useState(false);
   
   // Estados dos modais
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -35,8 +35,7 @@ export default function CongregationsPage() {
   const [selectedCongregationIsPrimary, setSelectedCongregationIsPrimary] = useState<boolean>(false);
 
   const handleViewCongregation = (id: string) => {
-    setSelectedCongregationId(id);
-    setDetailModalOpen(true);
+    router.push(`/congregations/${id}`);
   };
 
   const handleCreateSuccess = () => {
@@ -132,23 +131,6 @@ export default function CongregationsPage() {
         onExport={handleExport}
         exporting={exporting}
         refreshTrigger={refreshTrigger}
-      />
-
-      {/* Modal de detalhes da congregação */}
-      <CongregationModal
-        isOpen={detailModalOpen}
-        onClose={() => setDetailModalOpen(false)}
-        congregationId={detailModalOpen ? selectedCongregationId : null}
-        canEdit={canEdit}
-        onEdit={(id) => {
-          setDetailModalOpen(false);
-          handleEditCongregation(id);
-        }}
-        onDelete={(id, name, activeMembersCount, isPrimary) => {
-          setDetailModalOpen(false);
-          handleDeleteCongregation(id, name, activeMembersCount, isPrimary);
-        }}
-        onRefresh={() => setRefreshTrigger((prev) => prev + 1)}
       />
 
       {canCreateCongregations && (
