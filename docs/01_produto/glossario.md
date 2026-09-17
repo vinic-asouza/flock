@@ -1,7 +1,7 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-09-14
-versao: "1.12"
+ultima_atualizacao: 2026-09-16
+versao: "1.13"
 tags: [produto, domínio, vocabulário, referência]
 total_termos: 82
 ---
@@ -30,7 +30,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 **Igreja** *(código: `Church`, tabela `churches`)*  
 > Organização religiosa cliente do Flock — o **tenant** multi-tenant. Tudo o que acontece no app autenticado pertence a uma igreja.  
 - **Atributos-chave:** `name`, `denomination`, `cnpj`, `plan_type`, `subscription_status`, endereço  
-- **Relacionamentos:** tem N usuários (`church_users`), membros, congregações, grupos, etc.; `user_id` aponta o owner legado  
+- **Relacionamentos:** tem N usuários (`church_users`), membros, congregações, ministérios (`groups`), etc.; `user_id` aponta o owner legado  
 - **Usado em:** todo o produto autenticado; isolamento por `church_id` / `X-Church-Id`  
 - **UI:** nome da igreja no Header / switcher
 
@@ -38,7 +38,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Unidade local dentro da igreja (ex.: campus, ponto, filial). Não é o tenant.  
 - **Atributos-chave:** `name` (nome completo), `abbreviation` (nome popular curto, opcional), endereço, `leader`, `phone`, `is_primary`  
 - **Relacionamentos:** pertence a 1 igreja; membros e eventos referenciam-na  
-- **Usado em:** Membros, Integração, Grupos, Ensino, Calendário, Relatórios
+- **Usado em:** Membros, Integração, Ministérios, Ensino, Calendário, Relatórios
 - **UI:** “Congregações”; em selects/chips/flags a UI prefere `abbreviation` quando existir  
 - **Nota:** cada igreja tem exatamente uma **congregação principal** (`is_primary = true`), criada no registro com o nome da igreja (sem abreviação). Não existe mais o conceito implícito “Sede” (`congregation_id` null / sentinel `sede`).
 
@@ -51,7 +51,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Pessoa no **rol oficial** da igreja. **Não** possui login no Flock por ser membro.  
 - **Atributos-chave:** `name`, `birth`, `gender`, `active`, `congregation_id`, recebimento (`admission`, `admission_date`, `baptism_date`)  
 - **Relacionamentos:** igreja; opcional congregação; N grupos (`member_groups`); pode ser mentor de integrantes; pode ser responsável/professor/aluno em Ensino  
-- **Usado em:** Membros, Relatórios, Grupos, Ensino, Calendário, limite de plano  
+- **Usado em:** Membros, Relatórios, Ministérios, Ensino, Calendário, limite de plano  
 - **UI:** “Membros” · soft delete / `active` · ficha: bloco **Vínculo na igreja** (não é o questionário pastoral)
 
 **Integrante** *(código: `IntegrationMember`, `integration_members`)*  
@@ -71,12 +71,12 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Usado em:** Integração (form, ficha, PDF do integrante)  
 - **UI:** seção “Informações eclesiásticas” do integrante · **não** confundir com **Vínculo na igreja** na ficha do membro
 
-**Grupo** *(código: `Group`, `groups`)*  
-> Estrutura interna (ministério, célula, classe, etc.) para organizar membros.  
-- **Atributos-chave:** `type` (`GroupType`), `name`, `responsible_id`, `status`, `congregation_id`  
-- **Relacionamentos:** igreja; opcional congregação; membros via `member_groups`  
-- **Usado em:** Grupos, Membros, Relatórios  
-- **Nota:** substitui o antigo conceito de “cargos” isolados documentado em FEATURES v1 legado. **Não** confundir o tipo `Classe` com **Turma** do módulo Ensino.
+**Ministério** *(código: `Group`, tabela `groups`; UI `/ministries`)*  
+> Área de serviço da igreja para organizar membros. **Não** é célula, classe ou equipe.  
+- **Atributos-chave:** `name`, `responsible_id`, `status`, `congregation_id`  
+- **Relacionamentos:** igreja; congregação (obrigatória na API); membros via `member_groups` (sem cargo/função no vínculo)  
+- **Usado em:** Ministérios, Membros, Relatórios, Calendário (`group_id`)  
+- **Nota:** API e tabelas permanecem `groups` / `Group` / `member_groups`. Coluna `type` / enum `GroupType` **removidos** (DEV-115). Substitui “cargos” e o hub legado “Grupos”. **Não** confundir com **Turma** do módulo Ensino.
 
 **Ensino** *(módulo; código: `teaching_*`)*
 > Módulo do Painel para ciclos formativos (EBD, cursos, estudos). Menu **Ensino** → `/teaching`.
@@ -93,7 +93,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Edição/ciclo letivo que recebe matrícula (local, horário, datas, responsável, professores, status). Sempre pertence a um Programa e tem congregação.  
 - **Status:** `draft` / `open` / `in_progress` / `closed` / `archived` (UI: Rascunho, Aberta, Em andamento, Encerrada, Arquivada)  
 - **Usado em:** Ensino  
-- **UI:** “Turma” · **não** confundir com GroupType **Classe**
+- **UI:** “Turma” · **não** confundir com **Ministério**
 
 **Aluno** *(matrícula; código: `TeachingEnrollment`, `teaching_enrollments`)*  
 > Matrícula na turma — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login. Soft-remove (`removed_at`) preserva histórico de chamada.
@@ -232,17 +232,17 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **`canceled`** — cancelada (pode haver `subscription_end_date`)  
 - **`unpaid` / `incomplete` / `incomplete_expired` / `paused`** — estados Stripe de cobrança interrompida ou incompleta  
 
-#### Grupo
+#### Ministério
 
-- **`status: true/false`** — grupo ativo/inativo (boolean, não enum nomeado)
+- **`status: true/false`** — ministério ativo/inativo (boolean, não enum nomeado)
 
 ---
 
 ### Tipos e Categorias de Domínio
 
-#### Tipo de grupo (`GroupType`) — UI = código em português
+#### Tipo de grupo (`GroupType`) — **obsoleto** (DEV-115)
 
-Ministério · Departamento · Equipe · Time · Comissão · Célula · Grupo de Crescimento · Pequeno Grupo · Discipulado · Classe · Núcleo · Região · Grupo
+~~Ministério · Departamento · Equipe · Time · Comissão · Célula · …~~ — enum e coluna `groups.type` removidos. A entidade de produto é só **Ministério**.
 
 #### Tipo de item de calendário (`CalendarItemType`)
 
@@ -344,17 +344,18 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 | Evitar | Usar em vez disso | Motivo |
 | --- | --- | --- |
 | Chamar Membro de “usuário” | **Membro** vs **Usuário (da igreja)** | Membro não faz login; Usuário sim |
-| “Informações Eclesiásticas” na ficha do membro | **Vínculo na igreja** (recebimento/congregação/grupos) ou **Questionário eclesiástico** (Integrante) | O questionário pastoral não vive no rol |
+| “Informações Eclesiásticas” na ficha do membro | **Vínculo na igreja** (recebimento/congregação/ministérios) ou **Questionário eclesiástico** (Integrante) | O questionário pastoral não vive no rol |
 | “Igreja” para filial local | **Congregação** | Igreja = tenant; Congregação = unidade interna |
 | “Integração” no sentido técnico (API) | Nomear o sistema externo (Stripe, …) | “Integração” no Flock = módulo de pré-membros |
-| “Cargo” como módulo atual | **Grupo** (tipo Ministério/… ) | Cargos CRUD legado; modelo vigente é Grupos |
+| “Cargo” como módulo atual | **Ministério** | Cargos CRUD legado; modelo vigente é Ministérios (código `groups`) |
+| “Grupo” na UI / copy de produto | **Ministério** | Hub `/ministries`; API ainda `/api/groups` |
 | “Customer” sem contexto | **Igreja** (cliente SaaS) ou customer Stripe | Evitar misturar billing Stripe com linguagem pastoral |
-| “Role” sem qualificar | **Papel (`ChurchUserRole`)** ou tipo de **Grupo** | “Role” no código = permissão; não cargo eclesial |
+| “Role” sem qualificar | **Papel (`ChurchUserRole`)** | “Role” no código = permissão; não cargo eclesial nem função no ministério |
 | “Admin” sem contexto | **Admin da igreja** (`ChurchUserRole`) ou **Admin OPS** | Papel do tenant ≠ operação da plataforma |
 | “Ativo” sem contexto | **Membro ativo** ou **cliente comercialmente ativo** | `members.active` ≠ `subscription_status` Stripe |
 | “Member” na UI em inglês | **Membro** | UI é em português |
 | “Workspace/Team” | **Igreja** / **Usuários da igreja** | Vocabulário do produto não usa workspace |
-| “Classe” (Grupo) como turma de EBD | **Turma** (Ensino) | GroupType `Classe` = estrutura; Turma = ciclo letivo |
+| “Classe”/célula como turma de EBD | **Turma** (Ensino) | Ministério ≠ turma formativa; Turma = ciclo letivo |
 | Chamar aluno de “usuário” ou “membro” sem vínculo | **Aluno** / badge **Convidado** ou **Possível membro** | Só `kind=member` é vínculo ao rol |
 
 ---
@@ -363,20 +364,20 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 - **A:** Admin OPS, Aluno (matrícula Ensino), Aula (Ensino), Assinatura, Assinatura pendente, Autocadastro, Autointegração, Auditoria (log), Admin/Administrador  
 - **B:** Batismo (tipo de admissão), Billing (ver Assinatura)  
-- **C:** Calendário (item), Certificado (Ensino), Chamada (Ensino), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ, Célula (tipo de grupo)  
+- **C:** Calendário (item), Certificado (Ensino), Chamada (Ensino), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Ensino, Evento (tipo calendário), Encontro  
 - **F:** Ficha de pré-cadastro  
-- **G:** Grupo, Guest/Convidado (calendário), Guest/Convidado (Ensino)  
+- **G:** Guest/Convidado (calendário), Guest/Convidado (Ensino); Grupo (termo de código/`groups` — preferir **Ministério** na UI)  
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros, Inscritos (UI Ensino)  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração, Link público de turma  
-- **M:** Membro, Mentor, Membership, Match N/W/D, Material (turma Ensino), Ministério (tipo de grupo)  
+- **M:** Membro, Mentor, Membership, Match N/W/D, Material (turma Ensino), Ministério  
 - **O:** Operador da plataforma, Owner (`dono`)  
 - **P:** Painel, Plano (`100`/`200`/`500`/`800`/`custom`), Participante, Portal (Stripe), Past due, Possível membro, Professor (turma), Programa (Ensino), Programação  
 - **Q:** Questionário eclesiástico  
 - **R:** Recebimento (tipo/data), Reader, Recorrência, Responsável (turma), Reunião  
 - **S:** Soft delete, Subscription status, Sincronizar assinatura  
-- **T:** Tenant, Tipo de grupo, Trialing, Turma (Ensino)  
+- **T:** Tenant, Trialing, Turma (Ensino)  
 - **U:** Usuário da igreja, União Estável  
 - **W:** Waitlist, Webhook (Stripe)
 

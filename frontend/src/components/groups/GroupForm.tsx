@@ -7,31 +7,15 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { Group, GroupType } from '@/types';
+import { Group } from '@/types';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useMemberOptions } from '@/hooks/useMemberOptions';
 import { getPrimaryCongregationId, getCongregationDisplayName } from '@/utils/congregation';
 
-// Schema de validação
 const groupSchema = z.object({
   name: z.string()
     .min(2, 'Nome deve ter pelo menos 2 caracteres')
     .max(100, 'Nome não pode ter mais de 100 caracteres'),
-  type: z.enum([
-    'Ministério',
-    'Departamento',
-    'Grupo',
-    'Equipe',
-    'Time',
-    'Comissão',
-    'Célula',
-    'Grupo de Crescimento',
-    'Pequeno Grupo',
-    'Discipulado',
-    'Classe',
-    'Núcleo',
-    'Região'
-  ] as const),
   description: z.string()
     .max(5000, 'A descrição não pode ter mais de 5000 caracteres')
     .optional()
@@ -51,34 +35,16 @@ interface GroupFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   mode: 'create' | 'edit';
-  selectedCongregationId?: string; // Para filtrar membros por congregação
-  /** id do <form> para submit externo via Modal footer */
+  selectedCongregationId?: string;
   formId?: string;
-  /** quando false, CTAs ficam no footer do Modal (melhor c/ teclado mobile) */
   showActions?: boolean;
 }
 
-const GROUP_TYPES: GroupType[] = [
-  'Ministério',
-  'Departamento',
-  'Grupo',
-  'Equipe',
-  'Time',
-  'Comissão',
-  'Célula',
-  'Grupo de Crescimento',
-  'Pequeno Grupo',
-  'Discipulado',
-  'Classe',
-  'Núcleo',
-  'Região'
-];
-
-export function GroupForm({ 
-  group, 
-  onSubmit, 
-  onCancel, 
-  isLoading = false, 
+export function GroupForm({
+  group,
+  onSubmit,
+  onCancel,
+  isLoading = false,
   mode,
   selectedCongregationId,
   formId,
@@ -105,10 +71,8 @@ export function GroupForm({
   const selectedCongregation = watch('congregation_id');
   const responsibleId = watch('responsible_id') ?? '';
 
-  // Determinar congregação a usar para busca de membros (vazio = buscar em todas)
   const congregationIdForSearch = selectedCongregation || selectedCongregationId || undefined;
 
-  // Hook para buscar membros com busca
   const {
     options: memberOptionsData,
     loading: loadingMembers,
@@ -117,17 +81,15 @@ export function GroupForm({
     congregationId: congregationIdForSearch,
   });
 
-  // Criar opções do select de responsável
   const responsibleSelectOptions = useMemo(() => {
     const base = [
       { value: '', label: 'Nenhum' },
       ...memberOptionsData.map(option => ({
         value: option.id,
-        label: option.name
-      }))
+        label: option.name,
+      })),
     ];
 
-    // Se há um responsável selecionado que não está na lista, adicionar
     if (responsibleId && !base.some(option => option.value === responsibleId)) {
       base.push({ value: responsibleId, label: selectedResponsibleLabel || 'Responsável selecionado' });
     }
@@ -135,7 +97,6 @@ export function GroupForm({
     return base;
   }, [memberOptionsData, responsibleId, selectedResponsibleLabel]);
 
-  // Atualizar label do responsável selecionado
   useEffect(() => {
     if (!responsibleId) {
       setSelectedResponsibleLabel('');
@@ -147,7 +108,6 @@ export function GroupForm({
     }
   }, [memberOptionsData, responsibleId]);
 
-  // Handler para mudança de responsável
   const handleResponsibleChange = (value: string) => {
     setValue('responsible_id', value || null);
     const match = memberOptionsData.find(option => option.id === value);
@@ -158,24 +118,20 @@ export function GroupForm({
     }
   };
 
-  // Resetar formulário quando group mudar (para modo edit)
   useEffect(() => {
     if (group && mode === 'edit') {
       setValue('name', group.name);
-      setValue('type', group.type);
       setValue('description', group.description || '');
       setValue('congregation_id', group.congregation_id || '');
       setValue('responsible_id', group.responsible_id || '');
       setValue('status', group.status);
-      
-      // Se há um responsável, buscar seu nome para exibir
+
       if (group.responsible_id && group.members?.name) {
         setSelectedResponsibleLabel(group.members.name);
       }
     }
   }, [group, mode, setValue]);
 
-  // Default: congregação do filtro ativo ou a principal (create)
   useEffect(() => {
     if (mode !== 'create' || filtersLoading) return;
     const current = watch('congregation_id');
@@ -210,47 +166,27 @@ export function GroupForm({
       onSubmit={handleSubmit(handleFormSubmit)}
       className="space-y-6 p-4 sm:p-6"
     >
-      {/* Informações Básicas */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Informações Básicas
         </h3>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <Select
-              label="Tipo do Grupo *"
-              value={watch('type') || ''}
-              onChange={(value) => setValue('type', value as GroupType)}
-              options={[
-                { value: '', label: 'Selecione o tipo' },
-                ...GROUP_TYPES.map((type) => ({
-                  value: type,
-                  label: type
-                }))
-              ]}
-              disabled={isLoading}
-              error={errors.type?.message}
-            />
-          </div>
-
+        <div className="grid grid-cols-1 gap-4">
           <Input
-            label="Nome do Grupo *"
-            placeholder="Digite o nome do grupo"
+            label="Nome do Ministério *"
+            placeholder="Digite o nome do ministério"
             error={errors.name?.message}
             isLoading={isLoading}
             {...register('name')}
           />
-        </div>
 
-        <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Descrição
             </label>
             <textarea
               {...register('description')}
-              placeholder="Descreva o propósito e função do grupo"
+              placeholder="Descreva o propósito e função do ministério"
               rows={3}
               className={`block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-[15px] text-[#222] placeholder-[#888] font-sans focus:border-primary focus:ring-1 focus:ring-primary/20 focus:outline-none transition-colors ${
                 errors.description ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
@@ -264,7 +200,6 @@ export function GroupForm({
         </div>
       </div>
 
-      {/* Vínculos */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Vínculos
@@ -276,13 +211,12 @@ export function GroupForm({
             value={watch('congregation_id') || ''}
             onChange={(value) => {
               setValue('congregation_id', value, { shouldValidate: true });
-              // Limpar responsável quando mudar congregação para evitar inconsistências
               setValue('responsible_id', null);
               setSelectedResponsibleLabel('');
             }}
             options={(congregations || []).map((cong) => ({
               value: cong.id,
-              label: getCongregationDisplayName(cong)
+              label: getCongregationDisplayName(cong),
             }))}
             disabled={filtersLoading || isLoading}
             error={errors.congregation_id?.message}
@@ -304,7 +238,6 @@ export function GroupForm({
         </div>
       </div>
 
-      {/* Status */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Status
@@ -320,12 +253,11 @@ export function GroupForm({
             className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
           />
           <label htmlFor="status" className="text-sm font-medium text-gray-700">
-            Grupo ativo
+            Ministério ativo
           </label>
         </div>
       </div>
 
-      {/* Botões — fallback se não houver footer sticky do Modal */}
       {showActions && (
         <div className="flex flex-col-reverse gap-2 border-t border-gray-200 pt-6 sm:flex-row sm:justify-end sm:gap-3">
           <Button
@@ -342,7 +274,7 @@ export function GroupForm({
             isLoading={isLoading}
             className="min-h-11 w-full sm:w-auto"
           >
-            {mode === 'create' ? 'Criar Grupo' : 'Salvar Alterações'}
+            {mode === 'create' ? 'Criar Ministério' : 'Salvar Alterações'}
           </Button>
         </div>
       )}

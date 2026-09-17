@@ -38,7 +38,7 @@ export async function validateResponsibleAndCongregation(
 
   return {
     isValid: false,
-    errorMessage: 'O responsável selecionado não está associado à congregação do grupo',
+    errorMessage: 'O responsável selecionado não está associado à congregação do ministério',
   };
 }
 
@@ -108,7 +108,7 @@ export async function validateMemberForGroup(
     logError('Erro ao buscar grupo:', groupError);
     return {
       isValid: false,
-      errorMessage: 'Grupo não encontrado ou não pertence a esta igreja',
+      errorMessage: 'Ministério não encontrado ou não pertence a esta igreja',
     };
   }
 
@@ -118,6 +118,6 @@ export async function validateMemberForGroup(
 
   return {
     isValid: false,
-    errorMessage: 'O membro selecionado não pertence à congregação do grupo',
+    errorMessage: 'O membro selecionado não pertence à congregação do ministério',
   };
 }

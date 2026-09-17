@@ -123,7 +123,7 @@ flowchart TB
 | --- | --- | --- |
 | Auth / Onboarding | Sessão e criação de tenant (igreja+owner) | Alta |
 | Membros / Integração | Rol oficial e funil de pré-membros | Alta |
-| Congregações / Grupos / Calendário | Estrutura e agenda | Média |
+| Congregações / Ministérios / Calendário | Estrutura e agenda | Média |
 | Relatórios | Painel e PDF | Média |
 | Igreja-config | Igreja, conta, equipe, audit | Alta |
 | Billing | Planos, Stripe, cron de assinatura | Alta |

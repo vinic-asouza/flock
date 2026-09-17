@@ -24,10 +24,10 @@ const features = [
   },
   {
     icon: UsersRound,
-    title: 'Grupos',
-    headline: 'Organize ministérios, células e equipes.',
+    title: 'Ministérios',
+    headline: 'Organize áreas de serviço da igreja.',
     description:
-      'Saiba quem participa de cada grupo e facilite o acompanhamento dos líderes.',
+      'Saiba quem participa de cada ministério e facilite o acompanhamento dos líderes.',
   },
   {
     icon: Calendar,

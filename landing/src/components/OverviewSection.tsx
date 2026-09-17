@@ -10,7 +10,7 @@ export function OverviewSection() {
               Conheça melhor a sua igreja
             </h2>
             <p className="text-base sm:text-lg text-gray-600 leading-relaxed mb-6">
-              Saiba quem são seus membros, onde estão, quais grupos participam e como a igreja está crescendo.
+              Saiba quem são seus membros, onde estão, quais ministérios participam e como a igreja está crescendo.
             </p>
             <p className="text-base sm:text-lg font-semibold text-primary">
               Tudo o que sua liderança precisa saber, em um só lugar.

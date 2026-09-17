@@ -201,7 +201,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
 
         {/* Grupo */}
         <div className="flex flex-col gap-1 w-full sm:w-auto min-w-0 sm:min-w-[160px] flex-1 basis-full sm:basis-0">
-          <label className="block text-xs font-medium text-gray-600">Grupo / Ministério</label>
+          <label className="block text-xs font-medium text-gray-600">Ministério</label>
           <div className="relative">
             <button
               type="button"
@@ -211,10 +211,8 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
             >
               <span className="truncate">
                 {filters.group_id 
-                  ? groups.find(g => g.id === filters.group_id) 
-                    ? `${groups.find(g => g.id === filters.group_id)!.type}: ${groups.find(g => g.id === filters.group_id)!.name}`
-                    : 'Grupo selecionado'
-                  : loading ? 'Carregando...' : 'Todos os grupos'
+                  ? groups.find(g => g.id === filters.group_id)?.name || 'Ministério selecionado'
+                  : loading ? 'Carregando...' : 'Todos os ministérios'
                 }
               </span>
               <ChevronDown 
@@ -237,10 +235,10 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                       !filters.group_id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                     }`}
                   >
-                    Todos os grupos
+                    Todos os ministérios
                   </button>
                   {loading ? (
-                    <div className="px-3 py-2 text-sm text-gray-500">Carregando grupos...</div>
+                    <div className="px-3 py-2 text-sm text-gray-500">Carregando ministérios...</div>
                   ) : (
                     groups.map(group => (
                       <button
@@ -254,7 +252,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
                           filters.group_id === group.id ? 'bg-gray-50 text-gray-900' : 'text-gray-700'
                         }`}
                       >
-                        {group.type}: {group.name}
+                        {group.name}
                       </button>
                     ))
                   )}
@@ -299,12 +297,12 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
           )}
           {filters.group_id && (
             <span className="inline-flex items-center gap-1 px-2.5 py-1.5 min-h-9 bg-orange-100 text-orange-800 rounded-full text-xs font-medium max-w-full">
-              <span className="truncate">{groups.find(g => g.id === filters.group_id)?.name || 'Grupo'}</span>
+              <span className="truncate">{groups.find(g => g.id === filters.group_id)?.name || 'Ministério'}</span>
               <button
                 onClick={() => onFiltersChange({ ...filters, group_id: undefined })}
                 className="hover:text-orange-900 p-0.5 min-h-6 min-w-6 inline-flex items-center justify-center shrink-0"
                 type="button"
-                aria-label="Remover filtro de grupo"
+                aria-label="Remover filtro de ministério"
               >
                 <X size={12} />
               </button>
@@ -324,7 +322,7 @@ export function CalendarFiltersHorizontal({ filters, onFiltersChange }: Calendar
 
       {groupsError && (
         <div className="rounded-md border border-amber-200 bg-amber-50 p-2">
-          <p className="text-xs text-amber-800 mb-1">Falha ao carregar grupos para filtro.</p>
+          <p className="text-xs text-amber-800 mb-1">Falha ao carregar ministérios para filtro.</p>
           <button
             type="button"
             onClick={loadGroups}

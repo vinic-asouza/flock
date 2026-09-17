@@ -83,7 +83,6 @@ export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
         groups (
           id,
           name,
-          type,
           status,
           congregation_id,
           congregations (
@@ -377,13 +376,12 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Buscar grupos da igreja (seção Grupos/Ministérios do PDF)
+    // Buscar ministérios da igreja (seção Ministérios do PDF)
     let groupsQuery = supabase
       .from('groups')
       .select(`
         id,
         name,
-        type,
         status,
         congregation_id
       `)
@@ -403,7 +401,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
 
     const { data: groups, error: groupsError } = await groupsQuery;
 
-    let groupsByType: Record<string, Array<{ name: string; count: number }>> | undefined;
+    let groupsList: Array<{ name: string; count: number }> | undefined;
 
     if (!groupsError && groups && groups.length > 0) {
       const groupIds = groups.map((g: any) => g.id as string);
@@ -419,39 +417,12 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
         memberCounts[gid] = (memberCounts[gid] || 0) + 1;
       }
 
-      const groupsWithCounts = groups.map((group: any) => ({
-        ...group,
-        memberCount: memberCounts[group.id] || 0,
-      }));
-
-      const grouped: Record<string, Array<{ name: string; count: number }>> = {};
-      groupsWithCounts.forEach((group: any) => {
-        const type = group.type || 'Outros';
-        if (!grouped[type]) {
-          grouped[type] = [];
-        }
-        grouped[type].push({ name: group.name, count: group.memberCount || 0 });
-      });
-
-      const typeOrder = [
-        'Ministério', 'Departamento', 'Grupo', 'Equipe', 'Time', 'Comissão',
-        'Célula', 'Grupo de Crescimento', 'Pequeno Grupo', 'Discipulado',
-        'Classe', 'Núcleo', 'Região'
-      ];
-
-      const sortedTypes = Object.keys(grouped).sort((a, b) => {
-        const indexA = typeOrder.indexOf(a);
-        const indexB = typeOrder.indexOf(b);
-        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
-      });
-
-      groupsByType = {};
-      sortedTypes.forEach((type) => {
-        groupsByType![type] = grouped[type].sort((a, b) => b.count - a.count);
-      });
+      groupsList = groups
+        .map((group: any) => ({
+          name: group.name as string,
+          count: memberCounts[group.id] || 0,
+        }))
+        .sort((a, b) => b.count - a.count);
     }
 
     const filename = `relatorio-${reportTitle.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
@@ -462,7 +433,7 @@ export const exportDashboardPDF = async (req: AuthRequest, res: Response) => {
       reportTitle,
       reportSubtitle,
       reportsData,
-      groupsByType,
+      groupsList,
       hideCongregations: Boolean(congregation_id),
     });
 
@@ -682,8 +653,6 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Campos fixos: tipo, nome, congregação, responsável, quantidade de membros
-
     const churchId = req.church!.churchId;
     const { data: churchData } = await supabase
       .from('churches')
@@ -709,8 +678,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
           whatsapp
         )
       `)
-      .eq('church_id', churchId)
-      .in('type', filters.types);
+      .eq('church_id', churchId);
 
     const groupsScoped = resolveScopedCongregationFilter(req.church!, filters.congregation_id, {
       includeNullAsChurchWide: false,
@@ -730,22 +698,21 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
       query = query.ilike('name', `%${filters.search}%`);
     }
 
-    // Ordenar por tipo e nome
-    query = query.order('type', { ascending: true }).order('name', { ascending: true });
+    query = query.order('name', { ascending: true });
 
     const { data: groups, error: groupsError } = await query;
 
     if (groupsError) {
       return res.status(500).json({
-        error: 'Erro ao buscar grupos',
+        error: 'Erro ao buscar ministérios',
         details: groupsError.message,
       });
     }
 
     if (!groups || groups.length === 0) {
       return res.status(404).json({
-        error: 'Nenhum grupo encontrado',
-        details: 'Não há grupos que correspondam aos filtros aplicados',
+        error: 'Nenhum ministério encontrado',
+        details: 'Não há ministérios que correspondam aos filtros aplicados',
       });
     }
 
@@ -760,7 +727,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
 
       if (membershipError) {
         return res.status(500).json({
-          error: 'Erro ao contar membros dos grupos',
+          error: 'Erro ao contar membros dos ministérios',
           details: membershipError.message,
         });
       }
@@ -772,27 +739,25 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
     }
 
     const columns = [
-      { key: 'type', label: 'Tipo', width: 1.2 },
-      { key: 'name', label: 'Nome do grupo', width: 2 },
+      { key: 'name', label: 'Nome do ministério', width: 2 },
       { key: 'congregation', label: 'Congregação', width: 1.5 },
       { key: 'responsible_name', label: 'Responsável', width: 1.5 },
       { key: 'member_count', label: 'Qtd. membros', width: 0.9 },
     ];
 
     const rows = (groups as any[]).map((group) => ({
-      type: group.type || '—',
       name: group.name || '—',
       congregation: group.congregations?.name || '—',
       responsible_name: group.members?.name || '—',
       member_count: String(memberCounts[group.id] ?? 0),
     }));
 
-    const filename = `lista-grupos-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `lista-ministerios-${new Date().toISOString().split('T')[0]}.pdf`;
     renderLandscapeListPdf(res, {
       filename,
       churchName: churchData?.name || 'Igreja',
-      title: 'Lista de Grupos',
-      metaLines: [`Total: ${groups.length} grupo(s)`],
+      title: 'Lista de Ministérios',
+      metaLines: [`Total: ${groups.length} ministério(s)`],
       columns,
       rows,
     });
@@ -801,7 +766,7 @@ export const exportGroupsList = async (req: AuthRequest, res: Response) => {
     console.error('Erro ao exportar PDF de grupos:', error);
     if (!res.headersSent) {
       res.status(500).json({
-        error: 'Erro ao exportar lista de grupos',
+        error: 'Erro ao exportar lista de ministérios',
         details: error instanceof Error ? error.message : 'Erro desconhecido',
       });
     }
@@ -936,7 +901,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     if (!groupId || !fields || !Array.isArray(fields) || fields.length === 0) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: 'É necessário informar o ID do grupo e selecionar pelo menos um campo para exportar'
+        details: 'É necessário informar o ID do ministério e selecionar pelo menos um campo para exportar'
       });
     }
 
@@ -953,7 +918,6 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
       .select(`
         id,
         name,
-        type,
         congregation_id,
         congregations ( id, name, abbreviation ),
         members!groups_responsible_id_fkey ( id, name, email, phone, whatsapp )
@@ -964,8 +928,8 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 
     if (groupError || !group) {
       return res.status(404).json({
-        error: 'Grupo não encontrado',
-        details: 'Não foi possível encontrar o grupo solicitado'
+        error: 'Ministério não encontrado',
+        details: 'Não foi possível encontrar o ministério solicitado'
       });
     }
 
@@ -984,7 +948,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     if (memberIds.length === 0) {
       return res.status(404).json({
         error: 'Nenhum membro encontrado',
-        details: 'Este grupo não possui membros para exportar',
+        details: 'Este ministério não possui membros para exportar',
       });
     }
 
@@ -1001,7 +965,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
 
     if (membersError) {
       return res.status(500).json({
-        error: 'Erro ao buscar membros do grupo',
+        error: 'Erro ao buscar membros do ministério',
         details: membersError.message
       });
     }
@@ -1010,7 +974,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     if (members.length === 0) {
       return res.status(404).json({
         error: 'Nenhum membro encontrado',
-        details: 'Este grupo não possui membros para exportar',
+        details: 'Este ministério não possui membros para exportar',
       });
     }
 
@@ -1018,8 +982,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     const congregationName = groupData.congregations?.name || '—';
     const responsible = groupData.members || null;
     const subtitleParts = [
-      `Grupo: ${groupData.name || '—'}`,
-      `Tipo: ${groupData.type || '—'}`,
+      `Ministério: ${groupData.name || '—'}`,
       `Congregação: ${congregationName}`,
     ];
     if (responsible?.name) {
@@ -1036,11 +999,11 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     const { columns } = resolved;
     const rows = rowsFromColumnKeys(members, columns, memberFieldValue);
 
-    const filename = `grupo-${(group.name || 'grupo').replace(/\s+/g, '-')}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `ministerio-${(group.name || 'ministerio').replace(/\s+/g, '-')}-membros-${new Date().toISOString().split('T')[0]}.pdf`;
     renderLandscapeListPdf(res, {
       filename,
       churchName: churchData?.name || 'Igreja',
-      title: 'Lista de membros do grupo',
+      title: 'Lista de membros do ministério',
       subtitle: subtitleParts.join(' • '),
       metaLines: [`Total: ${members.length} membro(s)`],
       columns,
@@ -1051,7 +1014,7 @@ export const exportGroupMembersList = async (req: AuthRequest, res: Response) =>
     console.error('Erro ao exportar PDF do grupo:', error);
     if (!res.headersSent) {
       res.status(500).json({
-        error: 'Erro ao exportar lista do grupo',
+        error: 'Erro ao exportar lista do ministério',
         details: error instanceof Error ? error.message : 'Erro desconhecido'
       });
     }

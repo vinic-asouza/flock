@@ -296,7 +296,7 @@ export const CalendarParticipantsManager = forwardRef<CalendarParticipantsManage
               disabled={loading || isAddingGroupMembers}
             >
               <Users size={16} />
-              {isAddingGroupMembers ? 'Adicionando...' : 'Adicionar membros do grupo'}
+              {isAddingGroupMembers ? 'Adicionando...' : 'Adicionar membros do ministério'}
             </Button>
           )}
           {/* Mostrar botão Adicionar se há calendarItemId OU se há suporte para tempParticipants */}

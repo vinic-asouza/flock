@@ -128,7 +128,7 @@ export function renderBlankRegistrationPdf(res: Response, churchName: string): v
     { label: 'Data de recebimento (DD/MM/AAAA)', flex: 1 },
     { label: 'Congregação', flex: 1 },
   ]);
-  drawTextAreaLines(ctx, 'Grupos / Ministérios de interesse', 2);
+  drawTextAreaLines(ctx, 'Ministérios de interesse', 2);
 
   endPdfResponse(ctx);
 }

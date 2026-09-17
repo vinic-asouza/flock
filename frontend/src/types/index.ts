@@ -259,27 +259,11 @@ export interface ImportResult {
   }>;
 }
 
-// Tipos para Grupos
-export type GroupType = 
-  | 'Ministério' 
-  | 'Departamento' 
-  | 'Grupo' 
-  | 'Equipe' 
-  | 'Time' 
-  | 'Comissão' 
-  | 'Célula' 
-  | 'Grupo de Crescimento' 
-  | 'Pequeno Grupo' 
-  | 'Discipulado' 
-  | 'Classe' 
-  | 'Núcleo' 
-  | 'Região';
-
+// Tipos para Ministérios (API: /groups)
 export interface Group {
   id: string;
   church_id: string;
   congregation_id?: string | null;
-  type: GroupType;
   name: string;
   description?: string | null;
   responsible_id?: string | null;
@@ -329,7 +313,6 @@ export interface GroupWithMembers extends Omit<Group, 'members'> {
 
 export interface GroupPayload {
   name: string;
-  type: GroupType;
   description?: string;
   congregation_id?: string | null;
   responsible_id?: string | null;
@@ -339,12 +322,11 @@ export interface GroupPayload {
 export interface GroupFilters {
   search: string;
   congregationId: string;
-  type: GroupType | '';
   status: 'active' | 'inactive' | 'all';
 }
 
 export interface GroupSorting {
-  sort_by: 'name' | 'type' | 'created_at' | 'updated_at' | 'status';
+  sort_by: 'name' | 'created_at' | 'updated_at' | 'status';
   sort_order: 'asc' | 'desc';
 }
 

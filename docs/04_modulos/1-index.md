@@ -35,7 +35,7 @@ graph TD
   MEM[Membros]
   INT[Integração]
   CON[Congregações]
-  GRP[Grupos]
+  GRP[Ministérios]
   ENS[Ensino]
   CAL[Calendário]
   REL[Relatórios]
@@ -106,7 +106,7 @@ graph TD
 | **membros** | Rol oficial: CRUD, status, import CSV, links/autocadastro | Alta | Ativo | auth, igreja-config, billing, congregacoes, grupos | ~18 |
 | **integracao** | Pré-membros, conversão, links públicos de integração | Alta | Ativo | auth, igreja-config, membros, congregacoes | ~14 |
 | **congregacoes** | Unidades locais (CRUD + batch) | Baixa | Ativo | auth, igreja-config | ~6 |
-| **grupos** | Ministérios/células e vínculos membro↔grupo | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
+| **grupos** | Ministérios (áreas de serviço) e vínculos membro↔ministério | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
 | **ensino** | Programas, turmas, matrículas, aulas, chamada, certificados | Alta | Ativo | auth, igreja-config, congregacoes, membros | ~25 |
 | **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo | auth, igreja-config, congregacoes, grupos, membros | ~11 |
 | **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~13 |
@@ -136,7 +136,7 @@ graph TD
 - [[04_modulos/membros]] — Rol de membros e importação
 - [[04_modulos/integracao]] — Pipeline de integração
 - [[04_modulos/congregacoes]] — Congregações
-- [[04_modulos/grupos]] — Grupos e ministérios
+- [[04_modulos/grupos]] — Ministérios (API `groups`)
 - [[04_modulos/ensino]] — Ensino (programas e turmas)
 - [[04_modulos/calendario]] — Calendário e participantes
 - [[04_modulos/relatorios]] — Relatórios e exportações

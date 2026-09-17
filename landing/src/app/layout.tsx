@@ -115,7 +115,7 @@ export default function RootLayout({
       "Gestão de Membros",
       "Integração de Pré-Membros",
       "Gestão de Congregações",
-      "Grupos (Ministérios, Células, Equipes)",
+      "Ministérios",
       "Calendário com Recorrência",
       "Relatórios Detalhados"
     ]

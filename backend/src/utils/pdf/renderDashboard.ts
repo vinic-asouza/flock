@@ -2,13 +2,10 @@ import { Response } from 'express';
 import {
   beginPdfResponse,
   drawBarList,
-  drawDivider,
   drawKpiRow,
   drawSectionTitle,
   endPdfResponse,
-  ensureSpace,
 } from './index';
-import { PdfColor, PdfFont, PdfType } from './tokens';
 
 export function renderDashboardPdf(
   res: Response,
@@ -18,7 +15,7 @@ export function renderDashboardPdf(
     reportTitle: string;
     reportSubtitle: string;
     reportsData: any;
-    groupsByType?: Record<string, Array<{ name: string; count: number }>>;
+    groupsList?: Array<{ name: string; count: number }>;
     hideCongregations?: boolean;
   }
 ): void {
@@ -113,23 +110,13 @@ export function renderDashboardPdf(
     ]);
   }
 
-  if (options.groupsByType && Object.keys(options.groupsByType).length > 0) {
-    drawSectionTitle(ctx, 'Grupos / Ministérios');
-    Object.entries(options.groupsByType).forEach(([type, groups]) => {
-      ensureSpace(ctx, 24);
-      ctx.doc
-        .font(PdfFont.bold)
-        .fontSize(PdfType.value)
-        .fillColor(PdfColor.accent)
-        .text(type, ctx.left, ctx.doc.y);
-      ctx.doc.moveDown(0.2);
-      drawBarList(
-        ctx,
-        groups.map((g) => ({ label: g.name, count: g.count })),
-        { maxBars: 20 }
-      );
-      drawDivider(ctx);
-    });
+  if (options.groupsList && options.groupsList.length > 0) {
+    drawSectionTitle(ctx, 'Ministérios');
+    drawBarList(
+      ctx,
+      options.groupsList.map((g) => ({ label: g.name, count: g.count })),
+      { maxBars: 20 }
+    );
   }
 
   endPdfResponse(ctx);

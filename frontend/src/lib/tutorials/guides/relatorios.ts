@@ -48,7 +48,7 @@ export const relatoriosGuides: TutorialGuide[] = [
       'Cards de resumo — totais rápidos (membros, batizados, etc.).',
       'Demografia — distribuição por gênero, faixa etária e estado civil.',
       'Estrutura — membros por congregação.',
-      'Grupos — participação em ministérios/células.',
+      'Ministérios — participação por área de serviço.',
       'Timeline — evolução de recebimento e batismos ao longo do tempo.',
       'Geografia — mapa por cidade/bairro.',
       'Ocupações — tabela de profissões declaradas.',
