@@ -354,22 +354,28 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     }
   }, [member, professions, setValue]);
 
-  // Carregar grupos
+  // Carregar ministérios disponíveis da congregação (não muta selectedGroups —
+  // hidratação fica no efeito do member; troca de congregação limpa no Select).
   useEffect(() => {
+    let cancelled = false;
     const loadGroups = async () => {
       try {
         setLoadingGroups(true);
         const response = await apiService.listGroups({ congregation_id: selectedCongregationId });
-        setAvailableGroups(response);
-        if (mode === 'edit' && member?.groups) {
-          const ids = response.map(g => g.id);
-          setSelectedGroups(prev => prev.filter(id => ids.includes(id)));
-        }
-      } catch { setAvailableGroups([]); }
-      finally { setLoadingGroups(false); }
+        if (!cancelled) setAvailableGroups(response);
+      } catch {
+        if (!cancelled) setAvailableGroups([]);
+      } finally {
+        if (!cancelled) setLoadingGroups(false);
+      }
     };
-    if (selectedCongregationId && (mode === 'create' || (mode === 'edit' && member))) loadGroups();
-  }, [selectedCongregationId, mode, member]);
+    if (selectedCongregationId && (mode === 'create' || (mode === 'edit' && member))) {
+      loadGroups();
+    } else {
+      setAvailableGroups([]);
+    }
+    return () => { cancelled = true; };
+  }, [selectedCongregationId, mode, member?.id]);
 
   // Carregar cidades ao selecionar estado
   useEffect(() => {
@@ -937,7 +943,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             value={watch('congregation_id') || ''}
             onChange={(value) => {
               setValue('congregation_id', value);
-              if (mode === 'create') setSelectedGroups([]);
+              // Ministérios são por congregação (BR-GRP-008); troca invalida a seleção
+              setSelectedGroups([]);
             }}
             className="col-span-full w-full min-w-0"
             options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}

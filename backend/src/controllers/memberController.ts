@@ -299,7 +299,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
           groups (
             id,
             name,
-            type,
             status,
             congregation_id,
             congregations (
@@ -311,8 +310,15 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
         `)
         .in('member_id', memberIds);
 
-      if (!memberGroupsError && memberGroups) {
-        // Agrupar grupos por member_id
+      if (memberGroupsError) {
+        logError('Erro ao buscar grupos dos membros:', memberGroupsError);
+        return res.status(500).json({
+          error: 'Erro ao buscar ministérios dos membros',
+          details: memberGroupsError.message,
+        });
+      }
+
+      if (memberGroups) {
         memberGroups.forEach((mg: any) => {
           if (mg.groups) {
             if (!memberGroupsMap[mg.member_id]) {
@@ -464,7 +470,6 @@ export const getMember = async (req: AuthRequest, res: Response) => {
         groups (
           id,
           name,
-          type,
           status,
           congregation_id,
           congregations (
@@ -478,6 +483,10 @@ export const getMember = async (req: AuthRequest, res: Response) => {
 
     if (memberGroupsError) {
       logError('Erro ao buscar grupos do membro:', memberGroupsError);
+      return res.status(500).json({
+        error: 'Erro ao buscar ministérios do membro',
+        details: memberGroupsError.message,
+      });
     }
 
     // Normalizar datas para evitar problemas de timezone (birth, baptism_date, admission_date, children.birth, etc.)
@@ -489,11 +498,11 @@ export const getMember = async (req: AuthRequest, res: Response) => {
       ...normalizedMember,
       congregation: (normalizedMember as any).congregations,
       children: (normalizedMember as any).children || [],
-      groups: memberGroups?.map((mg: any) => ({
+      groups: (memberGroups || []).map((mg: any) => ({
         ...mg.groups,
         memberGroupId: mg.id,
         addedAt: mg.created_at
-      })) || [],
+      })).filter((g: any) => g?.id),
       congregations: undefined // Remove o campo congregations da resposta
     };
 
@@ -700,7 +709,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
         *,
         congregations (id, name, abbreviation, address, city, state, leader, phone),
         member_groups (
-          groups (id, name, type, status, congregation_id, congregations (id, name, abbreviation))
+          groups (id, name, status, congregation_id, congregations (id, name, abbreviation))
         )
       `)
       .eq('id', member.id)

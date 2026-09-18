@@ -86,7 +86,6 @@ export const listPublicRegistrationGroups = async (
       .select(`
         id,
         name,
-        type,
         congregations (
           id,
           name,
@@ -95,7 +94,6 @@ export const listPublicRegistrationGroups = async (
       `)
       .eq('church_id', churchId)
       .eq('status', true)
-      .order('type')
       .order('name');
 
     if (congregation_id) {
