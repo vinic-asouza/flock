@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { MemberForm } from './MemberForm';
 import { LoaderCircle } from 'lucide-react';
-import apiService from '@/services/api';
+import apiService, { formatApiError } from '@/services/api';
 
 interface Member {
   id: string;
@@ -43,7 +43,6 @@ interface Member {
   groups?: Array<{
     id: string;
     name: string;
-    type: string;
     status: boolean;
     congregation_id?: string | null;
     memberGroupId?: string;
@@ -107,7 +106,7 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       onSuccess(updatedMember);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro ao atualizar membro';
+      const errorMessage = formatApiError(err) || 'Erro ao atualizar membro';
       setError(errorMessage);
       // Re-lançar o erro para que o MemberForm não limpe o formulário
       throw err;

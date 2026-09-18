@@ -299,7 +299,6 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
           groups (
             id,
             name,
-            type,
             status,
             congregation_id,
             congregations (
@@ -464,7 +463,6 @@ export const getMember = async (req: AuthRequest, res: Response) => {
         groups (
           id,
           name,
-          type,
           status,
           congregation_id,
           congregations (
@@ -700,7 +698,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
         *,
         congregations (id, name, abbreviation, address, city, state, leader, phone),
         member_groups (
-          groups (id, name, type, status, congregation_id, congregations (id, name, abbreviation))
+          groups (id, name, status, congregation_id, congregations (id, name, abbreviation))
         )
       `)
       .eq('id', member.id)
