@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: integracao
-ultima_atualizacao: 2026-08-31
-versao: "1.2"
+ultima_atualizacao: 2026-09-21
+versao: "1.3"
 total_regras: 16
 tags: [regras, modulo:integracao]
 ver_tambem:
@@ -53,13 +53,13 @@ Qualificar pré-membros até conversão ao rol ou descarte.
 - **Depende de:** —
 
 ### BR-INT-002: Nome único
-- **Declaração:** Nome completo único na igreja (case-insensitive).
+- **Declaração:** Nome completo único na igreja (case-insensitive). No **update**, a checagem exclui o próprio `id` do integrante (evita falso positivo quando o payload reenvia o mesmo nome).
 - **Tipo:** Restrição
 - **Gatilho:** Create/update
 - **Comportamento esperado:** OK
 - **Comportamento em violação:** 400 Nome já cadastrado
-- **Implementado em:** `integrationValidations.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Implementado em:** `integrationValidations.ts` (`validateIntegrationMemberNameUniqueness` / `validateIntegrationMemberData`); update em `integrationController.ts` passa sempre o `id` como exclude
+- **Testado em:** `utils/__tests__/integrationValidations.nameUniqueness.test.ts`
 - **Depende de:** —
 
 ### BR-INT-003: Campos validados

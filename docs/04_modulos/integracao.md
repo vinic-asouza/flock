@@ -3,8 +3,8 @@ type: modulo
 nome: integracao
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-09-17
-versao: "1.4"
+ultima_atualizacao: 2026-09-21
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, integracao]
 depende_de: [auth, igreja-config, membros, congregacoes]
@@ -87,7 +87,7 @@ frontend/src/components/integration/
 ├── PublicIntegrationForm.tsx       → 2 seções (pessoais + eclesiásticas)
 └── IntegrationDetailView.tsx       → leitura: aside + abas Ficha / Acompanhamento
 
-Testes: `validators/__tests__/integrationMemberValidator.test.ts`, `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts`. CRUD/HTTP sem suite dedicada.
+Testes: `validators/__tests__/integrationMemberValidator.test.ts`, `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts`, `utils/__tests__/integrationValidations.nameUniqueness.test.ts` (BR-INT-002). CRUD/HTTP sem suite dedicada.
 ```
 
 ---
@@ -463,10 +463,11 @@ N/A — **sem** jobs/cron específicos deste módulo. Convert e público são s�
 | Unit | `validators/__tests__/integrationMemberValidator.test.ts` | questionário | Aceita 12 campos opcionais; rejeita enum inválido |
 | Unit | `utils/__tests__/omitEcclesiasticalFromMemberPayload.test.ts` | convert | Omit do questionário no payload de membro |
 | Unit | `validators/__tests__/memberValidator.test.ts` | BR-MEM-004 | Rejeita campos do questionário no membro |
+| Unit | `utils/__tests__/integrationValidations.nameUniqueness.test.ts` | BR-INT-002 | Create duplicata; update com exclude do próprio id; colisão com outro |
 
 **Gaps:**
 
-- [ ] Nome duplicado  
+- [x] Nome duplicado (unit — DEV-127; falta HTTP do PUT)  
 - [ ] Mentor fora da congregação prevista  
 - [ ] Convert bloqueado integrado/descartado  
 - [ ] Convert sem vaga → 403  
@@ -519,6 +520,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-21 | 1.5 | Update de integrante sempre exclui o próprio id na unicidade de nome (BR-INT-002); suite unitária | DEV-127 |
 | 2026-09-17 | 1.4 | Aside alinhado a Membros (ContactRow); admission type na Ficha; grid ≥1920px | DEV-124 |
 | 2026-09-17 | 1.3 | Detalhe em página `/integration/[id]` (aside + abas Ficha/Acompanhamento); remove modal de view | DEV-120 |
 | 2026-08-31 | 1.2 | Questionário eclesiástico no Integrante (BR-INT-016); form 3 seções; público inclui questionário | DEV-91 |

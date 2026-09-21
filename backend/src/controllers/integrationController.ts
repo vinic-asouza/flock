@@ -456,14 +456,10 @@ export const updateIntegrationMember = async (req: AuthRequest, res: Response) =
       return res.status(existingAccess.status).json(existingAccess.body);
     }
 
-    // Validar todos os dados do integrante (congregação, mentor, duplicidade de nome)
-    // Só verifica duplicidade se o nome foi alterado
-    const shouldCheckName = value.name && value.name.trim() !== existing.name.trim();
-    const dataValidation = await validateIntegrationMemberData(
-      value, 
-      churchId, 
-      shouldCheckName ? id : undefined
-    );
+    // Validar todos os dados do integrante (congregação, mentor, duplicidade de nome).
+    // Sempre excluir o próprio id na unicidade de nome — sem exclude, o self-match
+    // gera falso positivo "Nome já cadastrado" quando o payload reenvia o nome.
+    const dataValidation = await validateIntegrationMemberData(value, churchId, id);
     if (!dataValidation.isValid) {
       const errorTitle = dataValidation.field === 'name' 
         ? 'Nome já cadastrado'
