@@ -3,8 +3,8 @@ type: modulo
 nome: tutoriais
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-09-21
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, tutoriais]
 depende_de: [auth]
@@ -21,7 +21,9 @@ integracoes: []
 
 ## 1. 📌 Visão Geral
 
-Orienta usuários autenticados a operar o Flock (painel, membros, integração, congregações, grupos, calendário) com passos curtos e CTA “Ir para [módulo]”.
+Orienta usuários autenticados a operar o Flock (painel, membros, integração, congregações, ministérios) com passos curtos e CTA “Ir para [módulo]”.
+
+**MVP (DEV-128):** módulo/guias de **Calendário** fora da superfície (`TUTORIAL_MODULES` / `ALL_TUTORIAL_GUIDES`); arquivo `guides/calendario.ts` permanece no repo sem import. Trilha “Primeiros passos” com **5** passos (sem criar evento no calendário).
 
 Resolve onboarding de produto sem LMS externo nem conteúdo no CMS.
 
@@ -73,10 +75,11 @@ frontend/src/
 │   ├── registry.ts                        → getters trail/module/related
 │   ├── searchGuides.ts                    → search + filterHubGuides
 │   └── guides/
-│       ├── index.ts                       → ALL_TUTORIAL_GUIDES
-│       ├── primeiros-passos.ts            → trailOrder 1..6
+│       ├── index.ts                       → ALL_TUTORIAL_GUIDES (sem calendario no MVP)
+│       ├── primeiros-passos.ts            → trailOrder 1..5
 │       ├── relatorios.ts / membros.ts / integracao.ts
-│       ├── congregacoes.ts / grupos.ts / calendario.ts
+│       ├── congregacoes.ts / grupos.ts
+│       └── calendario.ts                  → dormant (não importado; DEV-128)
 └── components/main/Sidebar.tsx            → link /tutorials
 
 backend/: N/A — zero arquivos.
@@ -328,7 +331,8 @@ Não há sanitização especial além do React escaping padrão.
 **Consome:**
 
 - [[04_modulos/auth]] — sessão + `canEdit`  
-- Rotas UI dos módulos (apenas navegação): relatorios (home `/`), membros, integração, congregações, grupos, calendário  
+- Rotas UI dos módulos (apenas navegação): relatorios (home `/`), membros, integração, congregações, ministérios (`/ministries`)  
+  - Calendário: fora da superfície MVP (DEV-128) 
 
 **Dependem deste:**
 
@@ -342,10 +346,11 @@ graph LR
   TUT -.-> MEM[[membros UI]]
   TUT -.-> INT[[integracao UI]]
   TUT -.-> CON[[congregacoes UI]]
-  TUT -.-> GRP[[grupos UI]]
-  TUT -.-> CAL[[calendario UI]]
+  TUT -.-> GRP[[ministrios UI]]
   TUT -.-> REL[[relatorios UI]]
 ```
+
+(Calendário UI não linkado na superfície MVP.)
 
 ---
 
@@ -365,6 +370,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-21 | 1.1 | Superfície sem calendário (trail 5 passos; `calendario.ts` dormant) | DEV-128 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo tutoriais | — |
 
 ---

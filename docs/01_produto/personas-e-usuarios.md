@@ -1,7 +1,7 @@
 ---
 type: personas-usuarios
-ultima_atualizacao: 2026-08-26
-versao: "1.5"
+ultima_atualizacao: 2026-09-21
+versao: "1.6"
 tags: [produto, usuários, permissões, personas]
 ---
 
@@ -113,6 +113,8 @@ Legenda: ✅ permitido · ❌ negado · 🔶 parcial / com restrição. Baseado 
 | Criar/editar/excluir membros (incl. import CSV, status) | ✅ | ✅ | 🔶 escopo | ❌ |
 | Criar/editar/excluir integração + converter | ✅ | ✅ | 🔶 escopo | ❌ |
 | CRUD grupos / calendário / participantes | ✅ | ✅ | 🔶 escopo | ❌ |
+
+> **MVP (DEV-128):** superfície de calendário oculta no Painel; permissões de API acima permanecem no código.
 | Criar congregação | ✅ | ✅ | 🔶 só se acesso a **todas** | ❌ |
 | Editar/excluir congregação (no escopo) | ✅ | ✅ | 🔶 escopo | ❌ |
 | Criar/gerir links públicos (registro e integração) | ✅ | ✅ | 🔶 escopo (`default_congregation_id`) | ❌ (só listar/ver) |

@@ -1,7 +1,7 @@
 ---
 type: jornadas-usuario
-ultima_atualizacao: 2026-09-15
-versao: "1.22"
+ultima_atualizacao: 2026-09-21
+versao: "1.23"
 tags: [produto, UX, fluxos, jornadas]
 ---
 
@@ -32,7 +32,7 @@ tags: [produto, UX, fluxos, jornadas]
 │   ├── /ministries              → Ministérios (hub)
 │   ├── /groups                  → redirect → /ministries
 │   ├── /congregations
-│   ├── /calendar
+│   ├── /calendar                → MVP: redirect → `/` (superfície oculta; DEV-128)
 │   ├── /settings?tab=…
 │   │   ├── church | payment | account | users | logs
 │   ├── /settings/subscription → redirect → /settings?tab=payment
@@ -78,7 +78,8 @@ Não usa o layout `(main)` do Painel. Sentry ainda não.
 
 ## 🧭 Arquitetura de Informação
 
-**Nav principal (shell autenticado):** Painel → Membros → Integração → Ministérios → Congregações → Calendário → _(separador)_ → Configurações → Tutoriais.  
+**Nav principal (shell autenticado):** Painel → Membros → Integração → Ministérios → Congregações → _(separador)_ → Configurações → Tutoriais.  
+(**Calendário** fora da nav no MVP — DEV-128; rethink v1 via Eventos / DEV-102.)  
 Fonte única: `NAV_ITEMS` (`frontend/src/components/main/navItems.ts`), consumida por Sidebar e drawer mobile.
 
 **Desktop (≥ `md` / 768px):** Sidebar fixa à esquerda.
@@ -172,15 +173,15 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 - Congregações: CRUD + vínculos de membros + export PDF da lista de unidades (hub) e da lista de membros ativos (modal de visualização)  
 
 - Ministérios: CRUD + membros do ministério (hub `/ministries`; `/groups` redireciona)  
-- Calendário: itens + participantes + export PDF (mês ao lado das setas / por seção; ano no header das duas abas; recorte no modal, sem alterar a listagem)
+- **Calendário (MVP):** superfície oculta — sem item na nav; `/calendar` → `/`; tutoriais sem guias de agenda. Código/API preservados (DEV-128). Aniversariantes: gap até DEV-129. Rethink v1 → DEV-102 (Eventos).
 
-Readers só consultam; writers mutam.
+Readers só consultam; writers mutam (estrutura operacional restante).
 
 **Mobile (Congregações):** hub `/congregations` e modais (Create/Edit/View/Delete) usam layout responsivo (cards/summary wrap, sheet do `Modal` base, CTAs touch). No view, info + lista de membros empilham em `<md` (2 colunas em `md+`); **Exportar lista** / Editar / Excluir ficam no footer sticky do modal no mobile (footer também para reader). Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
 
 **Mobile (Ministérios):** hub `/ministries` e modais (CRUD, view com membros, delete, exports) usam layout responsivo (wrap de busca/filtros/summary, sheet do `Modal` base, CTAs touch). Sem filtro/modal de tipos. No view, info + gestão de membros empilham em `<md` (2 colunas em `md+`); Export/Editar/Excluir ficam no footer sticky do modal no mobile. Create/Edit usam footer sticky do Modal (CTAs fora do scroll / teclado).
 
-**Mobile (Calendário):** hub `/calendar` (filtros, tabs Calendário/Listas, visão mês e lista anual) e modais (CRUD, view, delete, aniversariantes, recorte do PDF) usam layout responsivo (wrap de filtros, sheet do `Modal` base, CTAs touch). No mobile, o grid mensal densifica (dots + contagem); tap no dia abre modal leve “Itens do dia”; em `md+` os chips com título permanecem. Create/Edit/View/Delete e export PDF usam footer sticky do Modal (CTAs fora do scroll / teclado).
+**Mobile (Calendário):** UI dormente no MVP (componentes no repo; hub não alcançável).
 
 ### J9 — Inteligência (Painel)
 
@@ -256,6 +257,7 @@ Não há state machine/XState; etapas via `useState` local ou URL.
 | Não autenticado em `/` | `ProtectedRoute` → `/login` |
 | `CHURCH_SELECTION_REQUIRED` | `ChurchSelectionGate` |
 | `/settings/subscription` | redirect server → `/settings?tab=payment` |
+| `/calendar` (MVP) | redirect → `/` (superfície de agenda oculta; DEV-128) |
 | Tab sem permissão | fallback + toast de erro |
 | 401 API | interceptor → logout/login _(padrão do client)_ |
 
@@ -299,7 +301,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 12. Módulo **Integração** (J7/J11 integration): hub `/integration`, modais CRUD/Convert/export/links e `/public/integration/[token]` seguem o mesmo padrão mobile (~375px) — sem migrar Convert/CRUD para rotas full-page.
 13. Módulo **Congregações** (J8): hub `/congregations`, modais CRUD/view/delete, export PDF da lista de unidades e **Exportar lista** de membros no modal de visualização são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
 14. Módulo **Ministérios** (J8): hub `/ministries` (`/groups` → redirect), modais CRUD/view (add/remove membros), delete e exports PDF são operáveis em ~375px — view empilhada + ações sticky no mobile; sem migrar CRUD para rotas full-page.
-15. Módulo **Calendário** (J8): hub `/calendar`, visão mês densificada (dots + modal do dia), lista anual, modais CRUD/view/delete, aniversariantes e recorte do PDF (mês/ano) são operáveis em ~375px — footer sticky nos CTAs; sem migrar CRUD para rotas full-page.
+15. Módulo **Calendário** (J8): **fora da superfície MVP** (DEV-128) — sem nav, `/calendar` → `/`, sem tutoriais de agenda. Código `components/calendar/**` + API preservados; rethink v1 via Eventos (DEV-102). Aniversariantes → DEV-129.
 16. Módulo **Relatórios** (J9): hub `/`, seções do painel e modais de drill-down são operáveis em ~375px — CTAs touch, sheet/`dvh`, sideLayout com chips no mobile; sem migrar drill-downs para rotas full-page; `ReportsFilters` não está montado na Home.
 17. Módulo **Config / Igreja** (J5 + hub `/settings`): abas, perfil da igreja, conta, equipe (cards `<md`) e histórico são operáveis em ~375px — nav com scroll horizontal, footer sticky nos modais, form Igreja com CTAs sticky; sem migrar CRUD para rotas full-page.
 18. Módulo **Billing** (J10): aba **Plano** (`PaymentManagement`) é operável em ~375px — CTAs touch, footer sticky nos modais Trocar/Confirmar; portal Stripe hosted permanece em nova aba; `/checkout` é funil `(auth)` (DEV-27).

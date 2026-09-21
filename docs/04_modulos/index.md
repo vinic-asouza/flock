@@ -1,6 +1,6 @@
 ---
 type: modulos-index
-ultima_atualizacao: 2026-08-26
+ultima_atualizacao: 2026-09-21
 total_modulos: 13
 tags: [módulos, índice]
 ---
@@ -101,7 +101,7 @@ graph TD
 | **integracao** | Pré-membros, conversão, links públicos de integração | Alta | Ativo | auth, igreja-config, membros, congregacoes | ~14 |
 | **congregacoes** | Unidades locais (CRUD + batch) | Baixa | Ativo | auth, igreja-config | ~6 |
 | **grupos** | Ministérios (áreas de serviço) e vínculos membro↔ministério | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
-| **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo | auth, igreja-config, congregacoes, grupos, membros | ~11 |
+| **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo (API); superfície MVP oculta | auth, igreja-config, congregacoes, grupos, membros | ~11 |
 | **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~13 |
 | **igreja-config** | Igreja, conta do usuário, equipe (`church_users`), audit logs | Alta | Ativo | auth | ~16 |
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |

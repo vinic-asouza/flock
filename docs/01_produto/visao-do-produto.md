@@ -1,8 +1,8 @@
 ---
 type: visao-produto
 status: Rascunho
-ultima_atualizacao: 2026-08-31
-versao: "1.6"
+ultima_atualizacao: 2026-09-21
+versao: "1.7"
 tags: [produto, estratégia, contexto]
 ---
 
@@ -62,7 +62,7 @@ _(Comparação competitiva formal: não identificada no código — preencher ma
 | Membresia | Cadastro, filtros, importação CSV, status ativo/inativo | Manter o rol de membros atualizado e encontrável |
 | Integração | Pré-membros, mentor, conversão / descarte | Controlar o funil de novos membros |
 | Estrutura | Congregações e grupos (ministérios, células, etc.) | Organizar a igreja além da lista plana de nomes |
-| Agenda | Calendário de eventos/reuniões com participantes | Centralizar programação e participação |
+| Agenda | Calendário de eventos/reuniões com participantes | **Fora da superfície MVP** (código/API preservados; rethink v1 via Eventos) |
 | Inteligência | Painel e relatórios demográficos/temporais | Enxergar perfil e evolução da membership |
 | Captação | Links públicos + landing (home com FAQ, pricing e waitlist) | Captar interesses e leads sem atrito |
 | Administração | Igreja, conta, usuários, auditoria, tutoriais | Operar a conta com segurança e onboarding |
@@ -72,9 +72,9 @@ _(Comparação competitiva formal: não identificada no código — preencher ma
 
 ## 🏗️ Estado Atual do Produto
 
-**Implementado e operando (v1.0+ no monorepo):** autenticação/registro de igreja, membros (CRUD, filtros, PDF, import), integração, congregações, grupos, calendário, relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
+**Implementado e operando (v1.0+ no monorepo):** autenticação/registro de igreja, membros (CRUD, filtros, PDF, import), integração, congregações, grupos/ministérios, calendário (**código/API**; **superfície Painel oculta no MVP** — DEV-128), relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
 
-**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Auth de staff (`/api/ops`) + login/shell + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`) + **saúde agregada** (`/health`). Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher.
+**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Auth de staff (`/api/ops`) + login/shell + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`) + **saúde agregada** (`/health`). Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher. **Calendário/Eventos:** rethink na track v1 (DEV-102); aniversariantes → Membros (DEV-129).
 
 **Planejado / incompleto / dívida:** blacklist de JWT em memória (TODO de produção); plano `custom` no schema sem pricing espelhado na landing; cobertura automatizada de testes rarefeita (Jest declarado, QA predominantemente manual). Tutoriais avançaram além do “placeholder” antigo, mas maturidade do onboarding ainda pode evoluir.
 
