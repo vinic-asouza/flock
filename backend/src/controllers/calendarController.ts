@@ -108,8 +108,7 @@ export const listCalendarItems = async (req: AuthRequest, res: Response) => {
         ),
         groups (
           id,
-          name,
-          type
+          name
         ),
         members!calendar_items_responsible_member_id_fkey (
           id,
@@ -306,7 +305,6 @@ export const getCalendarItem = async (req: AuthRequest, res: Response) => {
         groups (
           id,
           name,
-          type,
           description
         ),
         members!calendar_items_responsible_member_id_fkey (
@@ -557,8 +555,7 @@ export const createCalendarItem = async (req: AuthRequest, res: Response) => {
         ),
         groups (
           id,
-          name,
-          type
+          name
         ),
         members!calendar_items_responsible_member_id_fkey (
           id,
@@ -829,8 +826,7 @@ export const updateCalendarItem = async (req: AuthRequest, res: Response) => {
         ),
         groups (
           id,
-          name,
-          type
+          name
         ),
         members!calendar_items_responsible_member_id_fkey (
           id,
@@ -1007,8 +1003,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
         ),
         groups (
           id,
-          name,
-          type
+          name
         ),
         members!calendar_items_responsible_member_id_fkey (
           id,
@@ -1120,7 +1115,7 @@ export const exportCalendarPDF = async (req: AuthRequest, res: Response) => {
       } else {
         const { data: group } = await supabase
           .from('groups')
-          .select('name, type')
+          .select('name')
           .eq('id', groupId)
           .eq('church_id', churchId)
           .maybeSingle();
@@ -1216,7 +1211,6 @@ export const listGroupsWithCalendarItems = async (req: AuthRequest, res: Respons
       `)
       .in('id', groupIds)
       .eq('church_id', churchId)
-      .order('type')
       .order('name');
 
     if (groupsError) {
