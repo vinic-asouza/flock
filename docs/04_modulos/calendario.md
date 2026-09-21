@@ -1,12 +1,12 @@
 ---
 type: modulo
 nome: calendario
-status: Ativo
+status: Ativo (código/API); superfície MVP oculta
 complexidade: Alta
-ultima_atualizacao: 2026-08-25
-versao: "1.3"
+ultima_atualizacao: 2026-09-21
+versao: "1.4"
 owner: (não identificado no código)
-tags: [módulo, calendario]
+tags: [módulo, calendario, mvp]
 depende_de: [auth, igreja-config, congregacoes, grupos, membros]
 integracoes: [Supabase PostgreSQL, PDFKit]
 ---
@@ -15,6 +15,8 @@ integracoes: [Supabase PostgreSQL, PDFKit]
 
 > Agenda da igreja: itens (`calendar_items`) com tipos Programação/Evento/Encontro/Reunião, recorrência weekly/monthly expandida na listagem, participantes (membro XOR convidado) e export PDF (mês ou ano, com recorte no confirmar).  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/calendario]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
+
+> **Release MVP (DEV-128):** a **superfície** do Painel (nav, UI `/calendar`, tutoriais) está **oculta**. Código FE (`components/calendar/**`), API `/api/calendar*` e tabelas `calendar_*` **permanecem**. Rota `/calendar` → `redirect('/')`. Rethink/substituição na **v1** via módulo Eventos (DEV-102). Aniversariantes: gap até DEV-129 (Membros).
 
 ---
 
@@ -26,6 +28,8 @@ Existe para substituir planilhas/agenda informal e alimentar visão mensal no ap
 
 No sistema, é módulo de domínio com lógica mais densa (expansão de recorrência em memória). Consome congregações, grupos e membros; é consumido por relatórios/UX.  
 Produto: [[01_produto/visao-do-produto]].
+
+**Superfície no MVP:** fora do recorte de lançamento — usuário autenticado **não** opera agenda pela UI do Painel; backend e componentes permanecem no monorepo para reativação/rethink.
 
 ---
 
@@ -76,8 +80,8 @@ backend/src/
 └── types/index.ts                       → CalendarItem*, CalendarParticipant*
 
 frontend/src/
-├── app/(main)/calendar/page.tsx         → hub + CTAs PDF (mês/ano) + modal de recorte
-└── components/calendar/                 → mês, lista, form, participantes, filtros, CalendarExportPdfModal
+├── app/(main)/calendar/page.tsx         → MVP: só `redirect('/')` (hub UI dormente)
+└── components/calendar/                 → mês, lista, form, participantes, filtros, CalendarExportPdfModal (repo; sem superfície)
 
 app.ts mounts:
   app.use('/api/calendar', calendarRoutes)
@@ -413,7 +417,11 @@ stateDiagram-v2
 
 ### UI — hub e modais (`/calendar`)
 
-Hub autenticado em `frontend/src/app/(main)/calendar/page.tsx` + `components/calendar/*`.
+**MVP (DEV-128):** `calendar/page.tsx` apenas faz `redirect('/')`. Item **Calendário** fora de `NAV_ITEMS`. Tutoriais sem módulo/guias de calendário na superfície. Componentes em `components/calendar/*` permanecem no repo (não montados).
+
+Documentação abaixo descreve a UI **dormente** (código preservado para rethink v1 / DEV-102):
+
+Hub autenticado (quando reativado) em `frontend/src/app/(main)/calendar/page.tsx` + `components/calendar/*`.
 
 **Responsividade (mobile/tablet):** header com label curta em `<sm` (“Novo”); filtros horizontais wrap/`min-h-11`; tabs tocáveis. Create/Edit/View/Delete e aniversariantes usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
 
@@ -530,7 +538,7 @@ Isolamento RLS bypassado pelo service_role — confiança no filtro aplicacional
 **Dependem deste:**
 
 - [[04_modulos/relatorios]] — visão/exports que cruzam agenda (quando aplicável)  
-- Frontend calendar + guia tutorial `calendario.ts`
+- Frontend calendar (componentes no repo; superfície MVP oculta) + guia tutorial `calendario.ts` (arquivo dormant, fora do registry)
 
 ```mermaid
 graph LR
@@ -564,6 +572,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-21 | 1.4 | Superfície MVP oculta (nav, `/calendar`→`/`, tutoriais); API/código/DB preservados; rethink v1 via Eventos | DEV-128 |
 | 2026-08-25 | 1.3 | PDF por mês/ano nas duas abas; modal de recorte (tipo/cong./grupo) independente da listagem; query `type` | DEV-48 |
 | 2026-08-20 | 1.2 | CTA Exportar PDF na UI; `period=year\|month`; renderer Flock Print | DEV-25 |
 | 2026-07-31 | 1.1 | UX mobile/tablet: mês densificado, modal do dia, Modal footer sticky CRUD/view, filtros/lista touch | DEV-32 |

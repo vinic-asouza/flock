@@ -1,19 +1,21 @@
 ---
 type: regras-modulo
 modulo: calendario
-ultima_atualizacao: 2026-08-25
-versao: "1.2"
+ultima_atualizacao: 2026-09-21
+versao: "1.3"
 total_regras: 16
-tags: [regras, modulo:calendario]
+tags: [regras, modulo:calendario, mvp]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
-  - "[[04_modulos/calendario/overview]]"
+  - "[[04_modulos/calendario]]"
 ---
 
 # Regras de Negócio — Calendário e Eventos
 
+> **Release MVP (DEV-128):** BR-CAL-001…016 continuam válidas para **API/código/DB**. A **superfície** do Painel (nav, UI, tutoriais) está oculta — regras de UI de agenda não se aplicam ao usuário final no MVP. Rethink v1 via Eventos (DEV-102).
+
 ## Responsabilidade do Módulo
-Agenda da igreja: eventos, recorrência e participantes.
+Agenda da igreja: eventos, recorrência e participantes (código/API ativos; UI fora do MVP).
 
 ## Índice de Regras
 | ID | Nome | Tipo | Status |
