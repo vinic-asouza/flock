@@ -42,7 +42,7 @@ export const primeirosPassosGuides: TutorialGuide[] = [
     ],
     details: [
       'A congregação principal é criada automaticamente com o nome da igreja — você cadastra as demais congregações conforme necessário.',
-      'Congregações aparecem depois nos formulários de membros, ministérios e calendário.',
+      'Congregações aparecem depois nos formulários de membros e ministérios.',
       'Se você ainda não tem membros, o campo líder ficará vazio — pode editar depois.',
     ],
     related: ['congregacoes-editar', 'membros-cadastrar'],
@@ -114,7 +114,7 @@ export const primeirosPassosGuides: TutorialGuide[] = [
     details: [
       'O responsável deve ser um membro já cadastrado.',
       'Ministérios inativos permanecem no histórico mas não aparecem em filtros padrão.',
-      'Ministérios alimentam relatórios e filtros do calendário.',
+      'Ministérios alimentam relatórios e filtros do Painel.',
     ],
     related: ['grupos-membros', 'grupos-filtrar'],
     trailOrder: 5,

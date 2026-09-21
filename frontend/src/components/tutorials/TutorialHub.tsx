@@ -66,7 +66,7 @@ export function TutorialHub({ moduleFilter, onOpenGuide }: TutorialHubProps) {
           <Search size={40} className="mx-auto text-gray-300 mb-4" />
           <p className="text-gray-600 font-medium">Nenhum tutorial encontrado</p>
           <p className="text-sm text-gray-500 mt-1">
-            Tente: membros, calendário, integração ou csv
+            Tente: membros, integração, ministérios ou csv
           </p>
         </div>
       ) : hasActiveSearch ? (

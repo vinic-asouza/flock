@@ -23,7 +23,7 @@ export function TrailBanner({ onStartTrail }: TrailBannerProps) {
             </h2>
           </div>
           <p className="text-sm text-gray-600">
-            Configure sua igreja em 6 passos simples
+            Configure sua igreja em {trail.length} passos simples
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {trail.map((guide, index) => (
