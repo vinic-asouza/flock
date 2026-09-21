@@ -119,27 +119,4 @@ export const primeirosPassosGuides: TutorialGuide[] = [
     related: ['grupos-membros', 'grupos-filtrar'],
     trailOrder: 5,
   },
-  {
-    slug: 'pp-06-primeiro-evento',
-    title: 'Adicionar um evento no Calendário',
-    module: 'calendario',
-    role: 'editor',
-    route: '/calendar',
-    estimatedMinutes: 3,
-    tags: ['início', 'evento', 'agenda'],
-    steps: [
-      'Clique em Calendário na barra lateral.',
-      'Clique em Novo evento ou clique em um dia vazio no calendário mensal.',
-      'Preencha título, tipo, data e, se aplicável, horário.',
-      '(Opcional) Associe congregação, ministério ou responsável.',
-      'Clique em Salvar.',
-    ],
-    details: [
-      'Use a aba Lista para ver todos os eventos do ano.',
-      'Eventos recorrentes podem ser configurados no formulário — edite com cuidado pois alterações podem afetar a série.',
-      'O contador de aniversariantes do mês aparece no topo do calendário.',
-    ],
-    related: ['calendario-filtrar', 'calendario-aniversariantes'],
-    trailOrder: 6,
-  },
 ];

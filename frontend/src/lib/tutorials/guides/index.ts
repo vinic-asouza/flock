@@ -4,8 +4,8 @@ import { membrosGuides } from './membros';
 import { integracaoGuides } from './integracao';
 import { congregacoesGuides } from './congregacoes';
 import { gruposGuides } from './grupos';
-import { calendarioGuides } from './calendario';
 
+/** Guias ativos na superfície. `calendario.ts` permanece no repo (não importado) — DEV-128. */
 export const ALL_TUTORIAL_GUIDES = [
   ...primeirosPassosGuides,
   ...relatoriosGuides,
@@ -13,7 +13,6 @@ export const ALL_TUTORIAL_GUIDES = [
   ...integracaoGuides,
   ...congregacoesGuides,
   ...gruposGuides,
-  ...calendarioGuides,
 ];
 
 export {
@@ -23,5 +22,4 @@ export {
   integracaoGuides,
   congregacoesGuides,
   gruposGuides,
-  calendarioGuides,
 };

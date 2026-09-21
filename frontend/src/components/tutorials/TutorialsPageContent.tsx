@@ -13,7 +13,6 @@ const VALID_MODULES: TutorialModuleId[] = [
   'integracao',
   'congregacoes',
   'grupos',
-  'calendario',
 ];
 
 function parseModuleFilter(value: string | null): TutorialModuleId | null {
