@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Cake, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Button } from '@/components/ui/Button';
 import { apiService } from '@/services/api';
 import { BirthdaysModal, type Birthday } from '@/components/members/BirthdaysModal';
 
@@ -87,76 +86,70 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
     <>
       <section
         aria-label="Aniversariantes"
-        className="bg-white rounded-lg border border-[#090725]/10 px-3 py-3 sm:px-4"
+        className="bg-white rounded-lg border border-[#090725]/10 px-2.5 py-1.5 sm:px-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="p-1.5 rounded-lg bg-pink-100 shrink-0" aria-hidden>
-              <Cake size={16} className="text-pink-700" />
+        <div className="flex items-center gap-2 w-max min-w-full">
+          <div className="flex items-center gap-2 shrink-0" aria-live="polite">
+            <div className="p-1 rounded-md bg-pink-100 shrink-0" aria-hidden>
+              <Cake size={14} className="text-pink-700" />
             </div>
-            <div className="min-w-0" aria-live="polite">
-              <p className="text-sm font-medium text-[#090725] leading-tight">Aniversariantes</p>
-              <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                {loading ? (
-                  <span className="inline-block h-6 w-8 rounded bg-[#090725]/10 animate-pulse" aria-hidden />
-                ) : (
-                  <span className="text-lg sm:text-xl font-bold text-[#090725] leading-none">
-                    {error ? '—' : (count ?? 0).toLocaleString('pt-BR')}
-                  </span>
-                )}
-                {!loading && error && (
-                  <span className="text-xs text-amber-700">Falha ao carregar</span>
-                )}
-                {!loading && !error && count === 0 && (
-                  <span className="text-xs text-gray-500">Nenhum neste mês</span>
-                )}
-                {showVer && (
-                  <button
-                    type="button"
-                    onClick={() => void loadList()}
-                    className="min-h-11 px-3 text-xs font-medium text-pink-700 bg-pink-100 hover:bg-pink-200 rounded inline-flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    aria-label="Ver aniversariantes"
-                    title="Ver aniversariantes"
-                  >
-                    <Eye size={14} aria-hidden />
-                    Ver
-                  </button>
-                )}
-                {!loading && error && (
-                  <button
-                    type="button"
-                    onClick={() => void loadCount()}
-                    className="min-h-11 px-3 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    Tentar
-                  </button>
-                )}
-              </div>
-            </div>
+            <span className="text-sm font-medium text-[#090725] whitespace-nowrap">Aniversariantes</span>
+            {loading ? (
+              <span className="inline-block h-4 w-6 rounded bg-[#090725]/10 animate-pulse shrink-0" aria-hidden />
+            ) : (
+              <span className="text-sm font-bold text-[#090725] tabular-nums leading-none shrink-0">
+                {error ? '—' : (count ?? 0).toLocaleString('pt-BR')}
+              </span>
+            )}
+            {!loading && error && (
+              <span className="text-xs text-amber-700 whitespace-nowrap">Falha ao carregar</span>
+            )}
+            {!loading && !error && count === 0 && (
+              <span className="text-xs text-gray-500 whitespace-nowrap">Nenhum neste mês</span>
+            )}
+            {showVer && (
+              <button
+                type="button"
+                onClick={() => void loadList()}
+                className="h-7 px-2 text-xs font-medium text-pink-700 bg-pink-100 hover:bg-pink-200 rounded inline-flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label="Ver aniversariantes"
+                title="Ver aniversariantes"
+              >
+                <Eye size={12} aria-hidden />
+                Ver
+              </button>
+            )}
+            {!loading && error && (
+              <button
+                type="button"
+                onClick={() => void loadCount()}
+                className="h-7 px-2 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                Tentar
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center justify-center gap-1 sm:gap-2">
-            <Button
+          <div className="flex items-center gap-0.5 ml-auto shrink-0">
+            <button
               type="button"
-              variant="secondary"
               onClick={() => shiftMonth(-1)}
-              className="p-2 min-h-11 min-w-11"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Mês anterior"
             >
-              <ChevronLeft size={20} />
-            </Button>
-            <span className="min-w-[9.5rem] text-center text-sm font-medium text-[#090725]">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="min-w-[7.75rem] text-center text-xs sm:text-sm font-medium text-[#090725] whitespace-nowrap">
               {monthLabel(month, year)}
             </span>
-            <Button
+            <button
               type="button"
-              variant="secondary"
               onClick={() => shiftMonth(1)}
-              className="p-2 min-h-11 min-w-11"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Próximo mês"
             >
-              <ChevronRight size={20} />
-            </Button>
+              <ChevronRight size={16} />
+            </button>
           </div>
         </div>
       </section>

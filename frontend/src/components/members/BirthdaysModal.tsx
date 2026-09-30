@@ -63,7 +63,7 @@ function calcularIdade(birth: string): number | null {
 }
 
 const contactLinkClass =
-  'inline-flex items-center gap-1 min-h-11 px-1 cursor-pointer text-gray-600 transition-colors';
+  'inline-flex items-center gap-1 h-6 px-0.5 cursor-pointer text-gray-600 transition-colors';
 
 function BirthdayCard({
   birthday,
@@ -80,47 +80,41 @@ function BirthdayCard({
     <div
       className={
         highlight
-          ? 'border rounded-lg px-3 sm:px-4 py-3 transition-all bg-pink-50 border-pink-300 shadow-md'
-          : 'border rounded-lg px-3 sm:px-4 py-3 transition-all bg-white border-gray-200'
+          ? 'border rounded-md px-2.5 py-1 bg-pink-50 border-pink-300'
+          : 'border rounded-md px-2.5 py-1 bg-white border-gray-200'
       }
     >
-      <div className="flex items-start justify-between gap-3 mb-2">
-        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-          {onOpenMember ? (
-            <button
-              type="button"
-              onClick={() => onOpenMember(birthday.id, birthday.name)}
-              className="font-medium text-gray-900 text-sm truncate uppercase min-h-11 inline-flex items-center rounded hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-left"
-              title={birthday.name}
-            >
-              {formatMemberName(birthday.name)}
-            </button>
-          ) : (
-            <span className="font-medium text-gray-900 text-sm truncate uppercase" title={birthday.name}>
-              {formatMemberName(birthday.name)}
-            </span>
-          )}
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-            {getCongregationDisplayName(birthday.congregation) || '—'}
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-0.5 min-w-0">
+        {onOpenMember ? (
+          <button
+            type="button"
+            onClick={() => onOpenMember(birthday.id, birthday.name)}
+            className="font-medium text-gray-900 text-sm uppercase leading-5 rounded hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-left min-w-0 sm:truncate sm:max-w-[14rem]"
+            title={birthday.name}
+          >
+            {formatMemberName(birthday.name)}
+          </button>
+        ) : (
+          <span className="font-medium text-gray-900 text-sm uppercase leading-5 min-w-0 sm:truncate sm:max-w-[14rem]" title={birthday.name}>
+            {formatMemberName(birthday.name)}
           </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold whitespace-nowrap bg-pink-100 text-pink-700">
-          <Cake size={14} />
+        )}
+        <span className="px-1.5 py-0 rounded-full text-[11px] leading-4 font-medium bg-gray-100 text-gray-700">
+          {getCongregationDisplayName(birthday.congregation) || '—'}
+        </span>
+        <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded text-[11px] leading-4 font-semibold whitespace-nowrap bg-pink-100 text-pink-700">
+          <Cake size={12} />
           {String(birthday.birthDay).padStart(2, '0')}/{String(birthday.birthMonth).padStart(2, '0')}
           {highlight ? ' 🎉' : null}
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-gray-600">
-        {idade !== null && <span>{idade} anos</span>}
+        </span>
+        {idade !== null && <span className="text-xs text-gray-600 whitespace-nowrap">{idade} anos</span>}
         {birthday.phone && (
           <a
             href={`tel:${birthday.phone.replace(/\D/g, '')}`}
             className={`${contactLinkClass} hover:text-blue-600`}
           >
-            <Phone size={14} className="shrink-0" />
-            <span className="truncate max-w-[140px]">{birthday.phone}</span>
+            <Phone size={12} className="shrink-0" />
+            <span className="truncate max-w-[120px]">{birthday.phone}</span>
           </a>
         )}
         {birthday.whatsapp && (
@@ -130,8 +124,8 @@ function BirthdayCard({
             rel="noopener noreferrer"
             className={`${contactLinkClass} hover:text-green-600`}
           >
-            <MessageCircle size={14} className="shrink-0" />
-            <span className="truncate max-w-[140px]">{birthday.whatsapp}</span>
+            <MessageCircle size={12} className="shrink-0" />
+            <span className="truncate max-w-[120px]">{birthday.whatsapp}</span>
           </a>
         )}
         {birthday.email && (
@@ -139,8 +133,8 @@ function BirthdayCard({
             href={`mailto:${birthday.email}`}
             className={`${contactLinkClass} hover:text-blue-600 min-w-0`}
           >
-            <Mail size={14} className="shrink-0" />
-            <span className="truncate max-w-[160px]">{birthday.email}</span>
+            <Mail size={12} className="shrink-0" />
+            <span className="truncate max-w-[180px]">{birthday.email}</span>
           </a>
         )}
       </div>
@@ -189,9 +183,9 @@ export function BirthdaysModal({
       isOpen={isOpen}
       onClose={onClose}
       title={`Aniversariantes de ${capitalizedMonthName} ${year}`}
-      size="lg"
+      size="xl"
     >
-      <div className="p-4 sm:p-6">
+      <div className="p-3 sm:p-4">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -215,11 +209,11 @@ export function BirthdaysModal({
             <p className="text-gray-600">Nenhum aniversariante em {capitalizedMonthName}</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {todayBirthdays.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <Cake size={16} className="text-pink-600" />
+              <div className="space-y-1">
+                <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                  <Cake size={14} className="text-pink-600" />
                   Aniversariantes do dia
                 </h3>
                 {todayBirthdays.map((birthday) => (
@@ -229,9 +223,9 @@ export function BirthdaysModal({
             )}
 
             {otherBirthdays.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <Cake size={16} className="text-gray-600" />
+              <div className="space-y-1">
+                <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
+                  <Cake size={14} className="text-gray-600" />
                   Aniversariantes do mês
                 </h3>
                 {otherBirthdays.map((birthday) => (
