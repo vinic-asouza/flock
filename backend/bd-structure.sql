@@ -1,7 +1,7 @@
 -- Flock — snapshot parcial de referência (módulo Ensino)
 -- Fonte de verdade: schema live no Supabase (projeto flock-app-01).
 -- Este arquivo NÃO é o dump completo do banco; espelha apenas teaching_*.
--- Atualizado: 2026-09-14 (DEV-111)
+-- Atualizado: 2026-09-30 (DEV-130)
 
 -- ---------------------------------------------------------------------------
 -- teaching_programs
@@ -318,3 +318,30 @@ CREATE INDEX IF NOT EXISTS teaching_materials_class_updated_idx
   ON public.teaching_materials (class_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS teaching_materials_class_type_idx
   ON public.teaching_materials (class_id, type);
+
+-- ---------------------------------------------------------------------------
+-- RLS (DEV-130) — mesmo padrão da DEV-111
+-- anon/authenticated sem acesso; service_role only; sem policy permissiva.
+-- teaching_lesson_series, teaching_lessons e teaching_lesson_attendance
+-- já receberam este bloco na migration 20260914130000.
+-- ---------------------------------------------------------------------------
+ALTER TABLE public.teaching_programs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teaching_classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teaching_class_teachers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teaching_enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teaching_public_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.teaching_materials ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON public.teaching_programs FROM anon, authenticated;
+REVOKE ALL ON public.teaching_classes FROM anon, authenticated;
+REVOKE ALL ON public.teaching_class_teachers FROM anon, authenticated;
+REVOKE ALL ON public.teaching_enrollments FROM anon, authenticated;
+REVOKE ALL ON public.teaching_public_links FROM anon, authenticated;
+REVOKE ALL ON public.teaching_materials FROM anon, authenticated;
+
+GRANT ALL ON public.teaching_programs TO service_role;
+GRANT ALL ON public.teaching_classes TO service_role;
+GRANT ALL ON public.teaching_class_teachers TO service_role;
+GRANT ALL ON public.teaching_enrollments TO service_role;
+GRANT ALL ON public.teaching_public_links TO service_role;
+GRANT ALL ON public.teaching_materials TO service_role;
