@@ -3,8 +3,8 @@ type: modulo
 nome: tutoriais
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-09-21
-versao: "1.1"
+ultima_atualizacao: 2026-09-30
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, tutoriais]
 depende_de: [auth]
@@ -23,7 +23,7 @@ integracoes: []
 
 Orienta usuários autenticados a operar o Flock (painel, membros, integração, congregações, ministérios) com passos curtos e CTA “Ir para [módulo]”.
 
-**MVP (DEV-128):** módulo/guias de **Calendário** fora da superfície (`TUTORIAL_MODULES` / `ALL_TUTORIAL_GUIDES`); arquivo `guides/calendario.ts` permanece no repo sem import. Trilha “Primeiros passos” com **5** passos (sem criar evento no calendário).
+**MVP (DEV-128):** módulo/guias de **Calendário** fora da superfície (`TUTORIAL_MODULES` / `ALL_TUTORIAL_GUIDES`); arquivo `guides/calendario.ts` permanece no repo sem import. Trilha “Primeiros passos” com **5** passos (sem criar evento no calendário). Guia ativo de aniversariantes: `membros-aniversariantes` no módulo Membros, rota `/members` (DEV-129), fora da trilha.
 
 Resolve onboarding de produto sem LMS externo nem conteúdo no CMS.
 
@@ -127,11 +127,11 @@ Modelo de domínio **em memória / código** (TypeScript):
 | --- | --- |
 | primeiros-passos | pp-01…pp-06 (trail) |
 | relatorios | filtrar, exportar, interpretar |
-| membros | cadastrar, editar, desativar, filtrar, importar, exportar |
+| membros | cadastrar, editar, desativar, filtrar, importar, exportar, aniversariantes |
 | integracao | cadastrar, converter, filtrar, descartar |
 | congregacoes | cadastrar, editar, exportar |
 | grupos | cadastrar, membros, filtrar |
-| calendario | criar, filtrar, aniversariantes |
+| calendario | criar, filtrar, aniversariantes (arquivo dormant; não na superfície) |
 
 **Soft delete / auditoria:** N/A.
 
@@ -370,6 +370,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-30 | 1.2 | Guia `membros-aniversariantes` no módulo Membros; calendário continua fora da superfície | DEV-129 |
 | 2026-09-21 | 1.1 | Superfície sem calendário (trail 5 passos; `calendario.ts` dormant) | DEV-128 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo tutoriais | — |
 

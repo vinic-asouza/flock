@@ -1,8 +1,8 @@
 ---
 type: visao-produto
 status: Rascunho
-ultima_atualizacao: 2026-09-21
-versao: "1.7"
+ultima_atualizacao: 2026-09-30
+versao: "1.8"
 tags: [produto, estratégia, contexto]
 ---
 
@@ -72,9 +72,9 @@ _(Comparação competitiva formal: não identificada no código — preencher ma
 
 ## 🏗️ Estado Atual do Produto
 
-**Implementado e operando (v1.0+ no monorepo):** autenticação/registro de igreja, membros (CRUD, filtros, PDF, import), integração, congregações, grupos/ministérios, calendário (**código/API**; **superfície Painel oculta no MVP** — DEV-128), relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
+**Implementado e operando (v1.0+ no monorepo):** autenticação/registro de igreja, membros (CRUD, filtros, PDF, import, **aniversariantes do mês no hub** — DEV-129), integração, congregações, grupos/ministérios, calendário (**código/API**; **superfície Painel oculta no MVP** — DEV-128), relatórios no painel, configurações, billing Stripe, links públicos, landing com pricing e waitlist, tutoriais com guias.
 
-**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Auth de staff (`/api/ops`) + login/shell + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`) + **saúde agregada** (`/health`). Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher. **Calendário/Eventos:** rethink na track v1 (DEV-102); aniversariantes → Membros (DEV-129).
+**Em evolução:** **Admin OPS** (`admin-ops/`, local `:3002`) — 4º app do monorepo, centro operacional interno (não é o Painel). Auth de staff (`/api/ops`) + login/shell + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`) + **saúde agregada** (`/health`). Sem Mintlify. Billing com estados e edge cases complexos; alertas de limite de membros; multi-igreja via switcher. **Calendário/Eventos:** rethink na track v1 (DEV-102).
 
 **Planejado / incompleto / dívida:** blacklist de JWT em memória (TODO de produção); plano `custom` no schema sem pricing espelhado na landing; cobertura automatizada de testes rarefeita (Jest declarado, QA predominantemente manual). Tutoriais avançaram além do “placeholder” antigo, mas maturidade do onboarding ainda pode evoluir.
 

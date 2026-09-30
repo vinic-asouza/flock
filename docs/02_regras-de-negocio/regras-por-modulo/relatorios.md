@@ -1,8 +1,8 @@
 ---
 type: regras-modulo
 modulo: relatorios
-ultima_atualizacao: 2026-09-15
-versao: "1.8"
+ultima_atualizacao: 2026-09-30
+versao: "1.9"
 total_regras: 13
 tags: [regras, modulo:relatorios]
 ver_tambem:
@@ -73,7 +73,7 @@ Oferecer indicadores demográficos/operacionais e exportações.
 - **Depende de:** —
 
 ### BR-REL-004: Aniversariantes
-- **Declaração:** Birthdays: active=true, birth não nulo; mês 1–12; filtro opcional por `congregation_id` (UUID). Sentinel `sede` rejeitado.
+- **Declaração:** Birthdays: active=true, birth não nulo; mês 1–12; filtro opcional por `congregation_id` (UUID). Sentinel `sede` rejeitado. No MVP a consulta fica no hub `/members`, não no Calendário.
 - **Tipo:** Derivação
 - **Gatilho:** birthdays endpoints
 - **Comportamento esperado:** Lista/count
