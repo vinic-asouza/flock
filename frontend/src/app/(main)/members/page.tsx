@@ -20,6 +20,7 @@ import { MemberImportModal } from '@/components/members/MemberImportModal';
 import { MembersSkeleton } from '@/components/members/MembersSkeleton';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { MembersBirthdaysBar } from '@/components/members/MembersBirthdaysBar';
 import { Plus, Upload, Link as LinkIcon, FileText } from 'lucide-react';
 import { RegistrationLinksModal } from '@/components/members/RegistrationLinksModal';
 import { MembersProvider, useMembers } from '@/context/MembersContext';
@@ -537,6 +538,10 @@ function MembersPageContent() {
           )}
           </div>
         }
+      />
+      <MembersBirthdaysBar
+        congregationId={filters.congregationId}
+        onOpenMember={handleViewMember}
       />
       <div className="flex flex-col gap-3 w-full min-w-0 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="w-full min-w-0 sm:min-w-[200px] sm:flex-1 flex flex-col gap-1">

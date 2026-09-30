@@ -116,6 +116,27 @@ export const membrosGuides: TutorialGuide[] = [
     ],
     related: ['membros-filtrar', 'membros-importar'],
   },
+  {
+    slug: 'membros-aniversariantes',
+    title: 'Ver aniversariantes do mês',
+    module: 'membros',
+    role: 'reader',
+    route: '/members',
+    estimatedMinutes: 2,
+    tags: ['aniversário', 'membro'],
+    steps: [
+      'Clique em Membros na barra lateral.',
+      'Localize a faixa Aniversariantes, acima da busca.',
+      'Use as setas para ver outro mês.',
+      'Se houver aniversariantes, clique em Ver.',
+      'Clique no nome para abrir a ficha do membro.',
+    ],
+    details: [
+      'A lista mostra apenas membros ativos.',
+      'O filtro de congregação da lista também restringe os aniversariantes. Busca e status da lista não alteram essa faixa.',
+    ],
+    related: ['membros-filtrar', 'membros-cadastrar'],
+  },
 ];
 
 export { cadastrarMembroSteps, cadastrarMembroDetails };
