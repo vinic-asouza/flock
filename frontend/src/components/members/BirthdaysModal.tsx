@@ -76,66 +76,74 @@ function BirthdayCard({
 }) {
   const idade = calcularIdade(birthday.birth);
 
+  const hasDetails = idade !== null || Boolean(birthday.phone || birthday.whatsapp || birthday.email);
+
   return (
     <div
       className={
         highlight
-          ? 'border rounded-md px-2.5 py-1 bg-pink-50 border-pink-300'
-          : 'border rounded-md px-2.5 py-1 bg-white border-gray-200'
+          ? 'border rounded-md px-2.5 py-1.5 bg-pink-50 border-pink-300'
+          : 'border rounded-md px-2.5 py-1.5 bg-white border-gray-200'
       }
     >
-      <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-0.5 min-w-0">
-        {onOpenMember ? (
-          <button
-            type="button"
-            onClick={() => onOpenMember(birthday.id, birthday.name)}
-            className="font-medium text-gray-900 text-sm uppercase leading-5 rounded hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-left min-w-0 sm:truncate sm:max-w-[14rem]"
-            title={birthday.name}
-          >
-            {formatMemberName(birthday.name)}
-          </button>
-        ) : (
-          <span className="font-medium text-gray-900 text-sm uppercase leading-5 min-w-0 sm:truncate sm:max-w-[14rem]" title={birthday.name}>
-            {formatMemberName(birthday.name)}
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {onOpenMember ? (
+            <button
+              type="button"
+              onClick={() => onOpenMember(birthday.id, birthday.name)}
+              className="font-medium text-gray-900 text-sm uppercase leading-5 rounded hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary text-left min-w-0 flex-1 truncate"
+              title={birthday.name}
+            >
+              {formatMemberName(birthday.name)}
+            </button>
+          ) : (
+            <span className="font-medium text-gray-900 text-sm uppercase leading-5 min-w-0 flex-1 truncate" title={birthday.name}>
+              {formatMemberName(birthday.name)}
+            </span>
+          )}
+          <span className="px-1.5 py-0 rounded-full text-[11px] leading-4 font-medium bg-gray-100 text-gray-700 shrink-0 max-w-[9rem] truncate">
+            {getCongregationDisplayName(birthday.congregation) || '—'}
           </span>
-        )}
-        <span className="px-1.5 py-0 rounded-full text-[11px] leading-4 font-medium bg-gray-100 text-gray-700">
-          {getCongregationDisplayName(birthday.congregation) || '—'}
-        </span>
-        <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded text-[11px] leading-4 font-semibold whitespace-nowrap bg-pink-100 text-pink-700">
-          <Cake size={12} />
-          {String(birthday.birthDay).padStart(2, '0')}/{String(birthday.birthMonth).padStart(2, '0')}
-          {highlight ? ' 🎉' : null}
-        </span>
-        {idade !== null && <span className="text-xs text-gray-600 whitespace-nowrap">{idade} anos</span>}
-        {birthday.phone && (
-          <a
-            href={`tel:${birthday.phone.replace(/\D/g, '')}`}
-            className={`${contactLinkClass} hover:text-blue-600`}
-          >
-            <Phone size={12} className="shrink-0" />
-            <span className="truncate max-w-[120px]">{birthday.phone}</span>
-          </a>
-        )}
-        {birthday.whatsapp && (
-          <a
-            href={`https://wa.me/${birthday.whatsapp.replace(/\D/g, '')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${contactLinkClass} hover:text-green-600`}
-          >
-            <MessageCircle size={12} className="shrink-0" />
-            <span className="truncate max-w-[120px]">{birthday.whatsapp}</span>
-          </a>
-        )}
-        {birthday.email && (
-          <a
-            href={`mailto:${birthday.email}`}
-            className={`${contactLinkClass} hover:text-blue-600 min-w-0`}
-          >
-            <Mail size={12} className="shrink-0" />
-            <span className="truncate max-w-[180px]">{birthday.email}</span>
-          </a>
+          <span className="inline-flex items-center gap-1 px-1.5 py-0 rounded text-[11px] leading-4 font-semibold whitespace-nowrap bg-pink-100 text-pink-700 shrink-0">
+            <Cake size={12} />
+            {String(birthday.birthDay).padStart(2, '0')}/{String(birthday.birthMonth).padStart(2, '0')}
+            {highlight ? ' 🎉' : null}
+          </span>
+        </div>
+        {hasDetails && (
+          <div className="flex flex-nowrap items-center gap-x-2.5 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {idade !== null && <span className="text-xs text-gray-500 whitespace-nowrap">{idade} anos</span>}
+            {birthday.phone && (
+              <a
+                href={`tel:${birthday.phone.replace(/\D/g, '')}`}
+                className={`${contactLinkClass} hover:text-blue-600`}
+              >
+                <Phone size={12} className="shrink-0" />
+                <span className="truncate max-w-[120px]">{birthday.phone}</span>
+              </a>
+            )}
+            {birthday.whatsapp && (
+              <a
+                href={`https://wa.me/${birthday.whatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${contactLinkClass} hover:text-green-600`}
+              >
+                <MessageCircle size={12} className="shrink-0" />
+                <span className="truncate max-w-[120px]">{birthday.whatsapp}</span>
+              </a>
+            )}
+            {birthday.email && (
+              <a
+                href={`mailto:${birthday.email}`}
+                className={`${contactLinkClass} hover:text-blue-600 min-w-0`}
+              >
+                <Mail size={12} className="shrink-0" />
+                <span className="truncate max-w-[180px]">{birthday.email}</span>
+              </a>
+            )}
+          </div>
         )}
       </div>
     </div>
