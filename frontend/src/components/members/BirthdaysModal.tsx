@@ -63,7 +63,7 @@ function calcularIdade(birth: string): number | null {
 }
 
 const contactLinkClass =
-  'inline-flex items-center gap-1 h-6 px-0.5 cursor-pointer text-gray-600 transition-colors';
+  'inline-flex items-center gap-1 h-5 px-0.5 cursor-pointer text-[11px] leading-4 text-gray-600 transition-colors';
 
 function BirthdayCard({
   birthday,
@@ -119,7 +119,7 @@ function BirthdayCard({
                 href={`tel:${birthday.phone.replace(/\D/g, '')}`}
                 className={`${contactLinkClass} hover:text-blue-600`}
               >
-                <Phone size={12} className="shrink-0" />
+                <Phone size={11} className="shrink-0" />
                 <span className="truncate max-w-[120px]">{birthday.phone}</span>
               </a>
             )}
@@ -130,7 +130,7 @@ function BirthdayCard({
                 rel="noopener noreferrer"
                 className={`${contactLinkClass} hover:text-green-600`}
               >
-                <MessageCircle size={12} className="shrink-0" />
+                <MessageCircle size={11} className="shrink-0" />
                 <span className="truncate max-w-[120px]">{birthday.whatsapp}</span>
               </a>
             )}
@@ -139,7 +139,7 @@ function BirthdayCard({
                 href={`mailto:${birthday.email}`}
                 className={`${contactLinkClass} hover:text-blue-600 min-w-0`}
               >
-                <Mail size={12} className="shrink-0" />
+                <Mail size={11} className="shrink-0" />
                 <span className="truncate max-w-[180px]">{birthday.email}</span>
               </a>
             )}
@@ -219,7 +219,7 @@ export function BirthdaysModal({
         ) : (
           <div className="space-y-2">
             {todayBirthdays.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
                   <Cake size={14} className="text-pink-600" />
                   Aniversariantes do dia
@@ -231,7 +231,7 @@ export function BirthdaysModal({
             )}
 
             {otherBirthdays.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <h3 className="text-xs font-semibold text-gray-900 flex items-center gap-1.5">
                   <Cake size={14} className="text-gray-600" />
                   Aniversariantes do mês
