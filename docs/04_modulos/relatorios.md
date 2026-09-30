@@ -3,8 +3,8 @@ type: modulo
 nome: relatorios
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-31
-versao: "1.8"
+ultima_atualizacao: 2026-09-30
+versao: "1.9"
 owner: (não identificado no código)
 tags: [módulo, relatorios]
 depende_de: [auth, igreja-config, membros, integracao, congregacoes, grupos]
@@ -43,7 +43,7 @@ Desktop (`md+`/`sm` conforme componente) permanece equivalente. Sem rota públic
 ### ✅ Este módulo É responsável por:
 
 - Agregar indicadores de membros + integração (`getMemberReports`)
-- Endpoints de aniversariantes (count/list) no escopo de reports de UX
+- Endpoints de aniversariantes (count/list); a superfície do Painel é a faixa do hub de [[04_modulos/membros]], não o Calendário nem este painel de relatórios
 - Rate limit específico em `GET /members/reports` (10/IP/min)
 - Export PDF: ficha membro (preenchida), **ficha de cadastro em branco** (membro), **ficha de pré-cadastro em branco** (integrante), ficha integração preenchida, dashboard, listas (membros / integração / grupo / grupos / congregações / **membros da congregação**)
 - Export CSV de lista de membros (único CSV do produto; campos selecionáveis alinhados ao cadastro operacional)
@@ -574,6 +574,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-30 | 1.9 | Superfície de aniversariantes no hub de Membros; endpoints count/list permanecem | DEV-129 |
 | 2026-08-31 | 1.8 | Ficha em branco e ficha de membro sem questionário; ficha de integrante inclui o bloco | DEV-91 |
 | 2026-08-25 | 1.7 | POST `/export/congregation/members/list` + BR-REL-012 (rol ativo no modal) | DEV-47 |
 | 2026-08-25 | 1.6 | CSV de membros: catálogo operacional, flags de família, BR-REL-007 no CSV; grupos só PDF | DEV-49 |

@@ -3,8 +3,8 @@ type: modulo
 nome: calendario
 status: Ativo (código/API); superfície MVP oculta
 complexidade: Alta
-ultima_atualizacao: 2026-09-21
-versao: "1.4"
+ultima_atualizacao: 2026-09-30
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, calendario, mvp]
 depende_de: [auth, igreja-config, congregacoes, grupos, membros]
@@ -16,7 +16,7 @@ integracoes: [Supabase PostgreSQL, PDFKit]
 > Agenda da igreja: itens (`calendar_items`) com tipos Programação/Evento/Encontro/Reunião, recorrência weekly/monthly expandida na listagem, participantes (membro XOR convidado) e export PDF (mês ou ano, com recorte no confirmar).  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/calendario]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
 
-> **Release MVP (DEV-128):** a **superfície** do Painel (nav, UI `/calendar`, tutoriais) está **oculta**. Código FE (`components/calendar/**`), API `/api/calendar*` e tabelas `calendar_*` **permanecem**. Rota `/calendar` → `redirect('/')`. Rethink/substituição na **v1** via módulo Eventos (DEV-102). Aniversariantes: gap até DEV-129 (Membros).
+> **Release MVP (DEV-128):** a **superfície** do Painel (nav, UI `/calendar`, tutoriais) está **oculta**. Código FE (`components/calendar/**`), API `/api/calendar*` e tabelas `calendar_*` **permanecem**. Rota `/calendar` → `redirect('/')`. Rethink/substituição na **v1** via módulo Eventos (DEV-102). Aniversariantes do mês ficam no hub de Membros (DEV-129), não nesta superfície.
 
 ---
 
@@ -53,7 +53,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Lembretes por e-mail/WhatsApp ou sync Google/Outlook
 - Jobs de geração prévia de ocorrências (expansão é **on-read**)
 - Mudança efetiva para `cancelled`/`postponed` pela API atual (valores no schema/CHECK, mas write path força/ignora)
-- Aniversários (UI `BirthdaysModal` usa dados de membros, não endpoints deste módulo)
+- Aniversários (consulta no hub de [[04_modulos/membros]]; `components/calendar/BirthdaysModal.tsx` só reexporta o modal de membros)
 - Relatórios agregados gerais (→ [[04_modulos/relatorios]]); PDF mensal de agenda **é** deste módulo
 
 ---
@@ -417,13 +417,13 @@ stateDiagram-v2
 
 ### UI — hub e modais (`/calendar`)
 
-**MVP (DEV-128):** `calendar/page.tsx` apenas faz `redirect('/')`. Item **Calendário** fora de `NAV_ITEMS`. Tutoriais sem módulo/guias de calendário na superfície. Componentes em `components/calendar/*` permanecem no repo (não montados).
+**MVP (DEV-128):** `calendar/page.tsx` apenas faz `redirect('/')`. Item **Calendário** fora de `NAV_ITEMS`. Tutoriais sem módulo/guias de calendário na superfície. Componentes em `components/calendar/*` permanecem no repo (não montados). Aniversariantes não entram nesta UI: a faixa vive em `/members` (DEV-129).
 
 Documentação abaixo descreve a UI **dormente** (código preservado para rethink v1 / DEV-102):
 
 Hub autenticado (quando reativado) em `frontend/src/app/(main)/calendar/page.tsx` + `components/calendar/*`.
 
-**Responsividade (mobile/tablet):** header com label curta em `<sm` (“Novo”); filtros horizontais wrap/`min-h-11`; tabs tocáveis. Create/Edit/View/Delete e aniversariantes usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
+**Responsividade (mobile/tablet):** header com label curta em `<sm` (“Novo”); filtros horizontais wrap/`min-h-11`; tabs tocáveis. Create/Edit/View/Delete usam o `Modal` compartilhado (`frontend/src/components/ui/Modal.tsx`) em sheet inferior no mobile (`dvh`, safe-area, scroll interno; prop `footer` para CTAs sticky).
 
 - **Visão mês (`CalendarMonth`):** em `<md`, grid densificado (weekdays abreviados, dots coloridos + `+N`); tap no dia abre modal leve “Itens do dia”; “+” sempre visível no touch. Em `md+`, chips com título (layout desktop) e “+” no hover.
 - **Visão lista (`CalendarListView`):** cards responsivos; FAB de navegação compacto com safe-area no mobile.
@@ -572,6 +572,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-30 | 1.5 | Aniversariantes saem desta superfície; consulta no hub de Membros | DEV-129 |
 | 2026-09-21 | 1.4 | Superfície MVP oculta (nav, `/calendar`→`/`, tutoriais); API/código/DB preservados; rethink v1 via Eventos | DEV-128 |
 | 2026-08-25 | 1.3 | PDF por mês/ano nas duas abas; modal de recorte (tipo/cong./grupo) independente da listagem; query `type` | DEV-48 |
 | 2026-08-20 | 1.2 | CTA Exportar PDF na UI; `period=year\|month`; renderer Flock Print | DEV-25 |

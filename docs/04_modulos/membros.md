@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-31
-versao: "1.6"
+ultima_atualizacao: 2026-09-30
+versao: "1.7"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -213,6 +213,7 @@ Capability de autocadastro.
 | Ação | Visibilidade | Descrição |
 | --- | --- | --- |
 | **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 para impressão: pessoais, família, contato/endereço, **Informações de Recebimento** (sem questionário eclesiástico). |
+| **Aniversariantes** | reader+ | Faixa acima da busca no hub `/members`. Mês corrente, setas (inclui virada de ano) e **Ver** quando a contagem é maior que zero. Recorte: [[BR-REL-004]] (só ativos). O filtro de congregação da lista restringe a faixa; busca, status e filtros avançados não. Nome abre o `ViewMemberModal`. |
 
 Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
 
@@ -570,6 +571,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-09-30 | 1.7 | Aniversariantes do mês no hub `/members` (faixa + modal); não na superfície do Calendário | DEV-129 |
 | 2026-08-31 | 1.6 | Questionário eclesiástico sai de membros (BR-MEM-004 / BR-INT-016); ficha: **Vínculo na igreja** | DEV-91 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo membros | — |
 | 2026-07-15 | 1.1 | Ação UI **Ficha de Cadastro** (export PDF em branco) | DEV-10 |
