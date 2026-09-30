@@ -37,6 +37,7 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
   }, [month, year, congregationId]);
 
   const countRequest = useRef(0);
+  const listRequest = useRef(0);
 
   const loadCount = useCallback(async () => {
     const requestId = ++countRequest.current;
@@ -60,17 +61,20 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
   }, [loadCount]);
 
   const loadList = useCallback(async () => {
+    const requestId = ++listRequest.current;
     setModalOpen(true);
     setListLoading(true);
     setListError(false);
     try {
       const response = await apiService.getBirthdaysList(query());
+      if (requestId !== listRequest.current) return;
       setBirthdays(response.data || []);
     } catch {
+      if (requestId !== listRequest.current) return;
       setBirthdays([]);
       setListError(true);
     } finally {
-      setListLoading(false);
+      if (requestId === listRequest.current) setListLoading(false);
     }
   }, [query]);
 
@@ -93,7 +97,7 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
             <div className="p-1 rounded-md bg-pink-100 shrink-0" aria-hidden>
               <Cake size={14} className="text-pink-700" />
             </div>
-            <span className="text-sm font-medium text-[#090725] whitespace-nowrap">Aniversariantes</span>
+            <span className="text-sm font-medium text-[#090725] whitespace-nowrap">Aniversariantes:</span>
             {loading ? (
               <span className="inline-block h-4 w-6 rounded bg-[#090725]/10 animate-pulse shrink-0" aria-hidden />
             ) : (
