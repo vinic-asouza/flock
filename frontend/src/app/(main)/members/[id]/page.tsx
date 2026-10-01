@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
+  Church,
   Download,
   Loader2,
   Pencil,
@@ -137,12 +138,16 @@ function MemberDetailContent() {
             </span>
           ) : null
         }
+        subtitleClassName="mt-3"
         subtitle={
-          loading
-            ? 'Carregando…'
-            : member
-              ? member.congregation?.name || undefined
-              : undefined
+          loading ? (
+            'Carregando…'
+          ) : member?.congregation?.name ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Church className="h-4 w-4 shrink-0 text-gray-400" aria-hidden />
+              {member.congregation.name}
+            </span>
+          ) : undefined
         }
         actions={
           member ? (
