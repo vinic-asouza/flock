@@ -90,10 +90,10 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
     <>
       <section
         aria-label="Aniversariantes"
-        className="bg-white rounded-lg border border-[#090725]/10 px-2.5 py-1.5 sm:px-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="bg-white rounded-lg border border-[#090725]/10 px-3 py-2 sm:px-4"
       >
-        <div className="flex items-center gap-2 w-max min-w-full">
-          <div className="flex items-center gap-2 shrink-0" aria-live="polite">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap" aria-live="polite">
             <div className="p-1 rounded-md bg-pink-100 shrink-0" aria-hidden>
               <Cake size={14} className="text-pink-700" />
             </div>
@@ -115,7 +115,7 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
               <button
                 type="button"
                 onClick={() => void loadList()}
-                className="h-7 px-2 text-xs font-medium text-pink-700 bg-pink-100 hover:bg-pink-200 rounded inline-flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="min-h-11 px-3 text-xs font-medium text-pink-700 bg-pink-100 hover:bg-pink-200 rounded inline-flex items-center gap-1 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 aria-label="Ver aniversariantes"
                 title="Ver aniversariantes"
               >
@@ -127,21 +127,21 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
               <button
                 type="button"
                 onClick={() => void loadCount()}
-                className="h-7 px-2 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="min-h-11 px-3 text-xs font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 Tentar
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-0.5 ml-auto shrink-0">
+          <div className="flex items-center justify-center gap-1 md:ml-auto md:justify-end shrink-0">
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Mês anterior"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={20} />
             </button>
             <span className="min-w-[7.75rem] text-center text-xs sm:text-sm font-medium text-[#090725] whitespace-nowrap">
               {monthLabel(month, year)}
@@ -149,10 +149,10 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
             <button
               type="button"
               onClick={() => shiftMonth(1)}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               aria-label="Próximo mês"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={20} />
             </button>
           </div>
         </div>
