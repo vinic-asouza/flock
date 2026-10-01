@@ -112,35 +112,36 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
     Boolean(member.children?.length);
 
   return (
-    <div className="space-y-4">
-    <section className="space-y-4">
-      <SectionTitle>Informações Eclesiásticas</SectionTitle>
-      <Card>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Igreja">{churchName}</Field>
-          <Field label="Tipo de recebimento">{member.admission || '—'}</Field>
-          <Field label="Data de recebimento">
-            {formatDate(member.admission_date) || '—'}
-          </Field>
-        </dl>
-      </Card>
-    </section>
     <EntityDetailLayout
       aside={
         <>
-          <SectionTitle>Contatos</SectionTitle>
-          <Card>
-            {hasContact ? (
-              <ContactRowsList
-                labeled
-                phone={member.phone}
-                whatsapp={member.whatsapp}
-                email={member.email}
-              />
-            ) : (
-              <p className="text-sm text-gray-600">Nenhum contato informado.</p>
-            )}
-          </Card>
+          <section className="space-y-4">
+            <SectionTitle>Informações Eclesiásticas</SectionTitle>
+            <Card>
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1">
+                <Field label="Igreja">{churchName}</Field>
+                <Field label="Tipo de recebimento">{member.admission || '—'}</Field>
+                <Field label="Data de recebimento">
+                  {formatDate(member.admission_date) || '—'}
+                </Field>
+              </dl>
+            </Card>
+          </section>
+          <section className="space-y-4">
+            <SectionTitle>Contatos</SectionTitle>
+            <Card>
+              {hasContact ? (
+                <ContactRowsList
+                  labeled
+                  phone={member.phone}
+                  whatsapp={member.whatsapp}
+                  email={member.email}
+                />
+              ) : (
+                <p className="text-sm text-gray-600">Nenhum contato informado.</p>
+              )}
+            </Card>
+          </section>
         </>
       }
     >
@@ -329,6 +330,5 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
         ) : null}
       </section>
     </EntityDetailLayout>
-    </div>
   );
 }
