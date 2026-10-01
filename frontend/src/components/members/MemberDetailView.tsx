@@ -116,13 +116,12 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
     <section className="space-y-4">
       <SectionTitle>Informações Eclesiásticas</SectionTitle>
       <Card>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Igreja">{churchName}</Field>
           <Field label="Tipo de recebimento">{member.admission || '—'}</Field>
           <Field label="Data de recebimento">
             {formatDate(member.admission_date) || '—'}
           </Field>
-          <Field label="Batismo">{formatDate(member.baptism_date) || '—'}</Field>
         </dl>
       </Card>
     </section>
