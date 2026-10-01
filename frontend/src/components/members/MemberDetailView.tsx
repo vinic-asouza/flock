@@ -69,6 +69,16 @@ const TAB_ITEMS = [
 const DETAIL_GRID =
   'grid grid-cols-1 gap-6 min-[1920px]:grid-cols-2';
 
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <div className="min-w-0 overflow-hidden border-b border-gray-200">
+      <h2 className="-mb-px inline-flex min-h-11 items-center border-b-2 border-primary py-2 text-sm font-medium text-primary">
+        {children}
+      </h2>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -91,22 +101,35 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
   const activeGroups = (member.groups || []).filter((g) => g.status);
   const inactiveGroups = (member.groups || []).filter((g) => !g.status);
   const hasContact = Boolean(member.phone || member.whatsapp || member.email);
+  const churchName =
+    member.congregation?.name?.trim() ||
+    getCongregationDisplayName(member.congregation) ||
+    '—';
   const hasFamily =
     Boolean(member.spouse) ||
     Boolean(member.father_name) ||
     Boolean(member.mother_name) ||
     Boolean(member.children?.length);
-  const hasRecebimento = Boolean(member.admission || member.admission_date || member.baptism_date);
 
   return (
+    <div className="space-y-4">
+    <section className="space-y-4">
+      <SectionTitle>Informações Eclesiásticas</SectionTitle>
+      <Card>
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Field label="Igreja">{churchName}</Field>
+          <Field label="Tipo de recebimento">{member.admission || '—'}</Field>
+          <Field label="Data de recebimento">
+            {formatDate(member.admission_date) || '—'}
+          </Field>
+          <Field label="Batismo">{formatDate(member.baptism_date) || '—'}</Field>
+        </dl>
+      </Card>
+    </section>
     <EntityDetailLayout
       aside={
         <>
-          <div className="min-w-0 overflow-hidden border-b border-gray-200">
-            <h2 className="-mb-px inline-flex min-h-11 items-center border-b-2 border-primary py-2 text-sm font-medium text-primary">
-              Contatos
-            </h2>
-          </div>
+          <SectionTitle>Contatos</SectionTitle>
           <Card>
             {hasContact ? (
               <ContactRowsList
@@ -198,30 +221,6 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
                 {member.cep ? <p>CEP: {member.cep}</p> : null}
               </div>
             </Card>
-
-            {hasRecebimento ? (
-              <Card className="space-y-4">
-                <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                  <Church className="h-4 w-4 text-gray-400" />
-                  Recebimento
-                </h3>
-                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {member.admission ? (
-                    <Field label="Tipo de recebimento">{member.admission}</Field>
-                  ) : null}
-                  {member.admission_date ? (
-                    <Field label="Data de recebimento">
-                      {formatDate(member.admission_date) || '—'}
-                    </Field>
-                  ) : null}
-                  {member.baptism_date ? (
-                    <Field label="Batismo">
-                      {formatDate(member.baptism_date) || '—'}
-                    </Field>
-                  ) : null}
-                </dl>
-              </Card>
-            ) : null}
 
             {hasFamily ? (
               <Card className="space-y-4">
@@ -331,5 +330,6 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
         ) : null}
       </section>
     </EntityDetailLayout>
+    </div>
   );
 }
