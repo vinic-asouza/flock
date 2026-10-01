@@ -3,8 +3,8 @@ type: modulo
 nome: calendario
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-25
-versao: "1.3"
+ultima_atualizacao: 2026-10-01
+versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, calendario]
 depende_de: [auth, igreja-config, congregacoes, grupos, membros]
@@ -49,7 +49,7 @@ Produto: [[01_produto/visao-do-produto]].
 - Lembretes por e-mail/WhatsApp ou sync Google/Outlook
 - Jobs de geração prévia de ocorrências (expansão é **on-read**)
 - Mudança efetiva para `cancelled`/`postponed` pela API atual (valores no schema/CHECK, mas write path força/ignora)
-- Aniversários (UI `BirthdaysModal` usa dados de membros, não endpoints deste módulo)
+- Aniversários (card e modal do Calendário leem endpoints de membros; a mesma consulta existe na faixa do hub `/members` — [[04_modulos/membros]])
 - Relatórios agregados gerais (→ [[04_modulos/relatorios]]); PDF mensal de agenda **é** deste módulo
 
 ---
@@ -564,6 +564,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-10-01 | 1.4 | Aniversariantes permanecem no Calendário; a consulta também existe no hub de Membros | DEV-131 |
 | 2026-08-25 | 1.3 | PDF por mês/ano nas duas abas; modal de recorte (tipo/cong./grupo) independente da listagem; query `type` | DEV-48 |
 | 2026-08-20 | 1.2 | CTA Exportar PDF na UI; `period=year\|month`; renderer Flock Print | DEV-25 |
 | 2026-07-31 | 1.1 | UX mobile/tablet: mês densificado, modal do dia, Modal footer sticky CRUD/view, filtros/lista touch | DEV-32 |

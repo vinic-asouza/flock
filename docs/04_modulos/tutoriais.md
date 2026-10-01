@@ -3,8 +3,8 @@ type: modulo
 nome: tutoriais
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-07-14
-versao: "1.0"
+ultima_atualizacao: 2026-10-01
+versao: "1.1"
 owner: (não identificado no código)
 tags: [módulo, tutoriais]
 depende_de: [auth]
@@ -124,7 +124,7 @@ Modelo de domínio **em memória / código** (TypeScript):
 | --- | --- |
 | primeiros-passos | pp-01…pp-06 (trail) |
 | relatorios | filtrar, exportar, interpretar |
-| membros | cadastrar, editar, desativar, filtrar, importar, exportar |
+| membros | cadastrar, editar, desativar, filtrar, importar, exportar, aniversariantes |
 | integracao | cadastrar, converter, filtrar, descartar |
 | congregacoes | cadastrar, editar, exportar |
 | grupos | cadastrar, membros, filtrar |
@@ -365,6 +365,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-10-01 | 1.1 | Guia `membros-aniversariantes` no inventário de Membros | DEV-131 |
 | 2026-07-14 | 1.0 | Documentação inicial do módulo tutoriais | — |
 
 ---

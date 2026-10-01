@@ -3,8 +3,8 @@ type: modulo
 nome: membros
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-09-17
-versao: "1.8"
+ultima_atualizacao: 2026-10-01
+versao: "1.9"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -217,6 +217,16 @@ Capability de autocadastro.
 | Ação | Visibilidade | Descrição |
 | --- | --- | --- |
 | **Ficha de Cadastro** | reader+ | Baixa PDF em branco via `GET /api/export/members/registration-form/pdf` (handler em [[04_modulos/relatorios]]). Template A4 para impressão: pessoais, família, contato/endereço, **Informações de Recebimento** (sem questionário eclesiástico). |
+
+### Faixa de aniversariantes (`/members`)
+
+Entre o título da página e a busca. Visível para reader+ (quem já abre o hub).
+
+- Mês corrente ao entrar; setas trocam mês e ano.
+- Contagem e lista usam `GET /api/members/birthdays/count` e `/list` ([[BR-REL-004]]): só membros ativos com data de nascimento.
+- `congregation_id` enviado = filtro de congregação da lista. Busca, status e filtros avançados da lista não entram na consulta.
+- Contagem maior que zero: **Ver** abre o modal do mês. Clique no nome vai para `/members/[id]`.
+- O Calendário mantém o próprio card e modal ([[04_modulos/calendario]]).
 
 Demais exports (ficha preenchida de um membro, listas PDF/CSV) permanecem nos fluxos de detalhe/lista e módulo relatórios.
 
@@ -575,6 +585,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-10-01 | 1.9 | Faixa de aniversariantes no hub `/members` (mês, congregação da lista, nome abre a ficha). Calendário permanece | DEV-131 |
 | 2026-09-17 | 1.8 | Aside enxuto (contatos valor+copiar); tab Família fundida em Dados; grid ≥1920px | DEV-124 |
 | 2026-09-17 | 1.7 | Detalhe em página `/members/[id]` (aside + abas Dados/Família/Vínculos); remove modal de view | DEV-119 |
 | 2026-08-31 | 1.6 | Questionário eclesiástico sai de membros (BR-MEM-004 / BR-INT-016); ficha: **Vínculo na igreja** | DEV-91 |
