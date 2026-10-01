@@ -14,8 +14,6 @@ import {
 import { ContactRowsList } from '@/components/ui/ContactRow';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
-import { formatMemberName } from '@/utils/formatMemberName';
-import { getNameInitials } from '@/utils/getNameInitials';
 import { calculateAge, formatDate } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -92,7 +90,7 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
   const idade = calculateAge(member.birth);
   const activeGroups = (member.groups || []).filter((g) => g.status);
   const inactiveGroups = (member.groups || []).filter((g) => !g.status);
-  const initials = getNameInitials(member.name);
+  const hasContact = Boolean(member.phone || member.whatsapp || member.email);
   const hasFamily =
     Boolean(member.spouse) ||
     Boolean(member.father_name) ||
@@ -103,40 +101,24 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
   return (
     <EntityDetailLayout
       aside={
-        <Card className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
-              aria-hidden
-            >
-              {initials}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium uppercase text-gray-900">
-                {formatMemberName(member.name)}
-              </p>
-              <span
-                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                  member.active
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {member.active ? 'Ativo' : 'Inativo'}
-              </span>
-            </div>
+        <>
+          <div className="min-w-0 overflow-hidden border-b border-gray-200">
+            <h2 className="-mb-px flex min-h-11 items-center border-b-2 border-primary py-2 pl-1 pr-4 text-sm font-medium text-primary">
+              Contatos
+            </h2>
           </div>
-          <dl className="space-y-3">
-            <Field label="Congregação">
-              {getCongregationDisplayName(member.congregation) || '—'}
-            </Field>
-          </dl>
-          <ContactRowsList
-            phone={member.phone}
-            whatsapp={member.whatsapp}
-            email={member.email}
-          />
-        </Card>
+          <Card>
+            {hasContact ? (
+              <ContactRowsList
+                phone={member.phone}
+                whatsapp={member.whatsapp}
+                email={member.email}
+              />
+            ) : (
+              <p className="text-sm text-gray-600">Nenhum contato informado.</p>
+            )}
+          </Card>
+        </>
       }
     >
       <Tabs

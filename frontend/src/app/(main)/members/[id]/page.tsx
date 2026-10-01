@@ -24,6 +24,7 @@ import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateMo
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { getNameInitials } from '@/utils/getNameInitials';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -109,7 +110,19 @@ function MemberDetailContent() {
         backHref="/members"
         backLabel="Voltar aos membros"
         title={
-          member ? formatMemberName(member.name) : 'Membro'
+          member ? (
+            <span className="inline-flex min-w-0 items-center gap-3">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700"
+                aria-hidden
+              >
+                {getNameInitials(member.name)}
+              </span>
+              <span className="min-w-0">{formatMemberName(member.name)}</span>
+            </span>
+          ) : (
+            'Membro'
+          )
         }
         badge={
           member ? (
