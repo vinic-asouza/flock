@@ -103,13 +103,14 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
       aside={
         <>
           <div className="min-w-0 overflow-hidden border-b border-gray-200">
-            <h2 className="-mb-px flex min-h-11 items-center border-b-2 border-primary py-2 pl-1 pr-4 text-sm font-medium text-primary">
+            <h2 className="-mb-px inline-flex min-h-11 items-center border-b-2 border-primary py-2 text-sm font-medium text-primary">
               Contatos
             </h2>
           </div>
           <Card>
             {hasContact ? (
               <ContactRowsList
+                labeled
                 phone={member.phone}
                 whatsapp={member.whatsapp}
                 email={member.email}
