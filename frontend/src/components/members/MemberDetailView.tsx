@@ -295,9 +295,7 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
                 <Church className="h-4 w-4 text-gray-400" />
                 Congregação
               </h3>
-              <p className="text-sm text-gray-900">
-                {getCongregationDisplayName(member.congregation) || '—'}
-              </p>
+              <p className="text-sm text-gray-900">{churchName}</p>
             </Card>
             <Card className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900">Ministérios</h3>

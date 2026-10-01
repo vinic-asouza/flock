@@ -11,7 +11,6 @@ export function EntityDetailPageHeader({
   title,
   badge,
   subtitle,
-  subtitleClassName = 'mt-1',
   actions,
   className,
 }: {
@@ -20,7 +19,6 @@ export function EntityDetailPageHeader({
   title: ReactNode;
   badge?: ReactNode;
   subtitle?: ReactNode;
-  subtitleClassName?: string;
   actions?: ReactNode;
   className?: string;
 }) {
@@ -41,7 +39,7 @@ export function EntityDetailPageHeader({
             {badge}
           </div>
           {subtitle ? (
-            <div className={clsx('text-sm text-gray-600', subtitleClassName)}>{subtitle}</div>
+            <div className="mt-1 text-sm text-gray-600">{subtitle}</div>
           ) : null}
         </div>
         {actions ? (
