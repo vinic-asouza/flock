@@ -14,8 +14,6 @@ import {
 import { ContactRowsList } from '@/components/ui/ContactRow';
 import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
-import { formatMemberName } from '@/utils/formatMemberName';
-import { getNameInitials } from '@/utils/getNameInitials';
 import { calculateAge, formatDate } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -71,6 +69,16 @@ const TAB_ITEMS = [
 const DETAIL_GRID =
   'grid grid-cols-1 gap-6 min-[1920px]:grid-cols-2';
 
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <div className="min-w-0 overflow-hidden border-b border-gray-200">
+      <h2 className="-mb-px inline-flex min-h-11 items-center border-b-2 border-primary py-2 text-sm font-medium text-primary">
+        {children}
+      </h2>
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
@@ -92,51 +100,49 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
   const idade = calculateAge(member.birth);
   const activeGroups = (member.groups || []).filter((g) => g.status);
   const inactiveGroups = (member.groups || []).filter((g) => !g.status);
-  const initials = getNameInitials(member.name);
+  const hasContact = Boolean(member.phone || member.whatsapp || member.email);
+  const churchName =
+    member.congregation?.name?.trim() ||
+    getCongregationDisplayName(member.congregation) ||
+    '—';
   const hasFamily =
     Boolean(member.spouse) ||
     Boolean(member.father_name) ||
     Boolean(member.mother_name) ||
     Boolean(member.children?.length);
-  const hasRecebimento = Boolean(member.admission || member.admission_date || member.baptism_date);
 
   return (
     <EntityDetailLayout
       aside={
-        <Card className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
-              aria-hidden
-            >
-              {initials}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium uppercase text-gray-900">
-                {formatMemberName(member.name)}
-              </p>
-              <span
-                className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                  member.active
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {member.active ? 'Ativo' : 'Inativo'}
-              </span>
-            </div>
-          </div>
-          <dl className="space-y-3">
-            <Field label="Congregação">
-              {getCongregationDisplayName(member.congregation) || '—'}
-            </Field>
-          </dl>
-          <ContactRowsList
-            phone={member.phone}
-            whatsapp={member.whatsapp}
-            email={member.email}
-          />
-        </Card>
+        <>
+          <section className="space-y-4">
+            <SectionTitle>Informações Eclesiásticas</SectionTitle>
+            <Card>
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-1">
+                <Field label="Igreja">{churchName}</Field>
+                <Field label="Tipo de recebimento">{member.admission || '—'}</Field>
+                <Field label="Data de recebimento">
+                  {formatDate(member.admission_date) || '—'}
+                </Field>
+              </dl>
+            </Card>
+          </section>
+          <section className="space-y-4">
+            <SectionTitle>Contatos</SectionTitle>
+            <Card>
+              {hasContact ? (
+                <ContactRowsList
+                  labeled
+                  phone={member.phone}
+                  whatsapp={member.whatsapp}
+                  email={member.email}
+                />
+              ) : (
+                <p className="text-sm text-gray-600">Nenhum contato informado.</p>
+              )}
+            </Card>
+          </section>
+        </>
       }
     >
       <Tabs
@@ -216,30 +222,6 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
               </div>
             </Card>
 
-            {hasRecebimento ? (
-              <Card className="space-y-4">
-                <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
-                  <Church className="h-4 w-4 text-gray-400" />
-                  Recebimento
-                </h3>
-                <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {member.admission ? (
-                    <Field label="Tipo de recebimento">{member.admission}</Field>
-                  ) : null}
-                  {member.admission_date ? (
-                    <Field label="Data de recebimento">
-                      {formatDate(member.admission_date) || '—'}
-                    </Field>
-                  ) : null}
-                  {member.baptism_date ? (
-                    <Field label="Batismo">
-                      {formatDate(member.baptism_date) || '—'}
-                    </Field>
-                  ) : null}
-                </dl>
-              </Card>
-            ) : null}
-
             {hasFamily ? (
               <Card className="space-y-4">
                 <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
@@ -313,9 +295,7 @@ export function MemberDetailView({ member }: { member: MemberDetail }) {
                 <Church className="h-4 w-4 text-gray-400" />
                 Congregação
               </h3>
-              <p className="text-sm text-gray-900">
-                {getCongregationDisplayName(member.congregation) || '—'}
-              </p>
+              <p className="text-sm text-gray-900">{churchName}</p>
             </Card>
             <Card className="space-y-3">
               <h3 className="text-sm font-medium text-gray-900">Ministérios</h3>

@@ -16,22 +16,31 @@ interface ContactRowProps {
 
 const KIND_META: Record<
   ContactRowKind,
-  { label: string; Icon: typeof Phone; href: (value: string) => string; display: (value: string) => string }
+  {
+    label: string;
+    fieldLabel: string;
+    Icon: typeof Phone;
+    href: (value: string) => string;
+    display: (value: string) => string;
+  }
 > = {
   phone: {
     label: 'telefone',
+    fieldLabel: 'Telefone',
     Icon: Phone,
     href: (value) => `tel:${value.replace(/\D/g, '')}`,
     display: (value) => formatPhone(value) || value,
   },
   whatsapp: {
     label: 'WhatsApp',
+    fieldLabel: 'WhatsApp',
     Icon: MessageCircle,
     href: (value) => `https://wa.me/${value.replace(/\D/g, '')}`,
     display: (value) => formatPhone(value) || value,
   },
   email: {
     label: 'e-mail',
+    fieldLabel: 'E-mail',
     Icon: Mail,
     href: (value) => `mailto:${value}`,
     display: (value) => value,
@@ -96,11 +105,13 @@ export function ContactRowsList({
   phone,
   whatsapp,
   email,
+  labeled = false,
   className,
 }: {
   phone?: string | null;
   whatsapp?: string | null;
   email?: string | null;
+  labeled?: boolean;
   className?: string;
 }): ReactNode {
   const rows: Array<{ kind: ContactRowKind; value: string }> = [];
@@ -110,9 +121,14 @@ export function ContactRowsList({
   if (rows.length === 0) return null;
 
   return (
-    <div className={clsx('flex flex-col gap-2', className)}>
+    <div className={clsx('flex flex-col', labeled ? 'gap-3' : 'gap-2', className)}>
       {rows.map((row) => (
-        <ContactRow key={row.kind} kind={row.kind} value={row.value} />
+        <div key={row.kind} className={labeled ? 'space-y-1' : undefined}>
+          {labeled ? (
+            <p className="text-sm font-medium text-gray-500">{KIND_META[row.kind].fieldLabel}</p>
+          ) : null}
+          <ContactRow kind={row.kind} value={row.value} />
+        </div>
       ))}
     </div>
   );

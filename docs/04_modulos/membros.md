@@ -4,7 +4,7 @@ nome: membros
 status: Ativo
 complexidade: Alta
 ultima_atualizacao: 2026-10-01
-versao: "1.9"
+versao: "1.10"
 owner: (não identificado no código)
 tags: [módulo, membros]
 depende_de: [auth, igreja-config, billing, congregacoes, grupos]
@@ -247,10 +247,13 @@ Fonte de labels: `memberCsvFieldLabels` em `utils/pdf/listFields.ts`. Modelo: `f
 
 Hub `/members` abre o detalhe em **página** (não modal). Shell: `EntityDetailLayout` + `useEntityTab` (`frontend/src/components/entity-detail/`). Create/Edit/Delete/Export de lista permanecem em `Modal`.
 
-- **Aside:** identidade (avatar circular com 2 iniciais via `getNameInitials`, nome, ativo/inativo), congregação e contatos (`ContactRow`: valor + copiar). Sem tipo de recebimento, batismo nem chip de ministérios no aside. Ações no header (voltar, export PDF da ficha, editar, excluir / status).
+- **Header:** círculo com 2 iniciais (`getNameInitials`) à esquerda do nome e badge ativo/inativo. Sem subtítulo de congregação. Ações: voltar, export PDF da ficha, editar, excluir / status.
+- **Coluna esquerda** (não entra em `MEMBER_TABS`):
+  1. **Informações Eclesiásticas** — nome completo da igreja, tipo de recebimento e data de recebimento. Batismo não aparece na ficha (o campo segue no cadastro/API). Sem questionário eclesiástico (fonte: Integrante, [[BR-INT-016]]).
+  2. **Contatos** — telefone, WhatsApp e e-mail com rótulo, valor e copiar (`ContactRowsList` `labeled`). Sem os três: “Nenhum contato informado.”
 - **Abas** (`?tab=`; inválido é limpo da URL → default; `?tab=familia` legado cai em **Dados**):
-  1. **Dados** (`dados`) — pessoais, endereço, recebimento/batismo (quando houver) e família (cônjuge, pai, mãe, filhos; empty se vazio). Cards em 2 colunas só em `min-width: 1920px`.
-  2. **Vínculos** (`vinculos`) — ministérios (+ congregação se aplicável). Sem questionário eclesiástico (fonte: Integrante, [[BR-INT-016]]). Mesmo breakpoint de grid.
+  1. **Dados** (`dados`) — pessoais, endereço e família (cônjuge, pai, mãe, filhos; empty se vazio). Sem card de recebimento. Cards em 2 colunas só em `min-width: 1920px`.
+  2. **Vínculos** (`vinculos`) — congregação (mesmo nome completo do bloco eclesiástico) e ministérios. Mesmo breakpoint de grid.
 
 > Create/Edit (`MemberForm`) continuam em modal; alinhamento fino form ↔ abas do detalhe é follow-up separado.
 
@@ -585,6 +588,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-10-01 | 1.10 | Ficha: iniciais no header; coluna esquerda com Informações Eclesiásticas e Contatos; recebimento sai de Dados; batismo fora da UI | DEV-132 |
 | 2026-10-01 | 1.9 | Faixa de aniversariantes no hub `/members` (mês, congregação da lista, nome abre a ficha). Calendário permanece | DEV-131 |
 | 2026-09-17 | 1.8 | Aside enxuto (contatos valor+copiar); tab Família fundida em Dados; grid ≥1920px | DEV-124 |
 | 2026-09-17 | 1.7 | Detalhe em página `/members/[id]` (aside + abas Dados/Família/Vínculos); remove modal de view | DEV-119 |
