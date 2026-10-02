@@ -6,6 +6,7 @@ import { LineChart } from '@/components/reports/charts/LineChart';
 import { Select } from '@/components/ui/Select';
 import { Droplets, UserPlus, TrendingUp, ChevronLeft, ChevronRight, ExternalLink, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
+import { formatDate } from '@/utils';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -336,9 +337,7 @@ export function TimelineCharts({
 
   const formatAdmissionDate = (isoDate?: string) => {
     if (!isoDate) return null;
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString('pt-BR');
+    return formatDate(isoDate) || null;
   };
 
   if (loading) {

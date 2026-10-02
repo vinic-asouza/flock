@@ -3,8 +3,8 @@ type: modulo
 nome: ensino
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-09-17
-versao: "1.5"
+ultima_atualizacao: 2026-10-02
+versao: "1.6"
 owner: (não identificado no código)
 tags: [módulo, ensino, teaching]
 depende_de: [auth, igreja-config, congregacoes, membros]
@@ -13,14 +13,14 @@ integracoes: [Supabase PostgreSQL]
 
 # Módulo — Ensino
 
-> Programas → Turmas → Inscritos → Aulas/Chamada → Materiais → Certificados (PDF efêmero), com match N/W/D ao rol, fila de possível membro e link público da turma.  
+> Programas → Turmas → Inscritos → Aulas/Chamada → Estatísticas → Materiais → Certificados (PDF efêmero), com match N/W/D ao rol, fila de possível membro e link público da turma.  
 > Regras: [[02_regras-de-negocio/regras-por-modulo/ensino]] · Índice: [[04_modulos/index]] · Schema: [[03_arquitetura/banco-de-dados]].
 
 ---
 
 ## 1. 📌 Visão Geral
 
-Organiza ciclos formativos da igreja (**EBD**, cursos, estudos, treinamentos): catálogo de **Programas**, **Turmas** por congregação, **matrículas** (membro, convidado ou possível membro), **cronograma de aulas** (avulsas e séries), **chamada** por encontro, **materiais da turma** (links e anotações) e **certificados** em PDF ao encerrar a turma.
+Organiza ciclos formativos da igreja (**EBD**, cursos, estudos, treinamentos): catálogo de **Programas**, **Turmas** por congregação, **matrículas** (membro, convidado ou possível membro), **cronograma de aulas** (avulsas e séries), **chamada** por encontro, **estatísticas de frequência da turma**, **materiais da turma** (links e anotações) e **certificados** em PDF ao encerrar a turma.
 
 Resolve o problema de gerenciar ofertas formativas, inscrição e presença sem planilha — e sem misturar com **Grupos** (estrutura permanente, tipo `Classe`) nem com **Calendário** (agenda global; Ensino tem calendário próprio da turma).
 
@@ -42,6 +42,7 @@ Produto: [[01_produto/visao-do-produto]] · Glossário: Programa / Turma / Aluno
 - Link público da turma (`teaching_public_links`) + GET/POST `/api/public/teaching/:token`
 - Cronograma de aulas (`teaching_lessons` / `teaching_lesson_series`) com recorrência materializada e escopos `single` \| `following`
 - Chamada por aula (`teaching_lesson_attendance`) com elegibilidade temporal da matrícula
+- Estatísticas de frequência de uma turma (sem tabela nova; agrega matrículas, aulas e chamada)
 - Materiais da turma (`teaching_materials`: `link` | `note`) — referência rápida da equipe no Painel
 - Emissão de certificados PDF multipágina (efêmera; sem storage/histórico) para turma `closed`
 - Listagens autenticadas com filtros/paginação (classes, enrollments, lessons, attendance) e seletor de visão por congregação
@@ -71,6 +72,7 @@ backend/src/
 │   ├── teachingEnrollmentController.ts
 │   ├── teachingMaterialController.ts
 │   ├── teachingCertificateController.ts
+│   ├── teachingStatisticsController.ts
 │   └── teachingPublicLinkController.ts
 ├── middlewares/
 │   └── uploadCertificateImages.ts  → multer memória (PNG/JPEG, ≤2 MB, ≤3 arquivos)
@@ -79,6 +81,7 @@ backend/src/
 │   ├── teachingEnrollmentPolicy.ts
 │   ├── teachingLessonRecurrenceService.ts
 │   ├── teachingAttendanceEligibility.ts
+│   ├── teachingStatisticsService.ts
 │   └── teachingCertificateService.ts
 ├── utils/pdf/
 │   └── renderTeachingCertificate.ts
@@ -94,7 +97,7 @@ frontend/src/
 ├── app/public/teaching/[token]/page.tsx
 └── components/teaching/            → UI, filtros, detalhe (abas), inscritos, aulas/chamada, materiais, certificados, modais
 
-Testes: match, enrollment policy, validators (incl. materiais/URL), recurrence, attendance eligibility, certificate service/PDF
+Testes: match, enrollment policy, validators (incl. materiais/URL), recurrence, attendance eligibility, statistics, certificate service/PDF
 Schema: Supabase live + espelho parcial em `backend/bd-structure.sql` (seção Ensino)
 RPCs (service_role): create/update/delete lesson series scope, save attendance
 ```
@@ -190,6 +193,7 @@ Router autenticado: `authMiddleware` + `requireRole('reader')`; mutações `edit
 | GET/POST | `/api/teaching/programs` | reader / editor | Lista (+ `class_count`) / cria |
 | GET/PATCH/DELETE | `/api/teaching/programs/:id` | reader / editor | Detalhe / atualiza / remove (cascade) |
 | GET/POST | `/api/teaching/classes` | reader / editor | Lista paginada / cria |
+| GET | `/api/teaching/classes/:id/statistics` | reader | Frequência da turma (rota registrada antes de `GET /classes/:id`) |
 | GET/PATCH/DELETE | `/api/teaching/classes/:id` | reader / editor | Detalhe (+ teachers) / atualiza / remove |
 | PUT | `/api/teaching/classes/:id/teachers` | editor | Substitui conjunto de professores |
 | GET/POST | `/api/teaching/classes/:id/enrollments` | reader / editor | Lista `{ data, queue, pagination }` / cria |
@@ -228,9 +232,11 @@ Router autenticado: `authMiddleware` + `requireRole('reader')`; mutações `edit
 3. **Link público** — visitante preenche form único → match → `confirmed` ou `submitted`.
 4. **Fila** — editor+ vê candidatos (contato completo + máscara auxiliar), Vincular ou Manter convidado; skip/dismiss se já inscrito.
 5. **Aulas** — criar avulsa ou série (prévia obrigatória); editar/excluir `single` \| `following`; calendário/lista mensal na aba Aulas.
-6. **Chamada** — estados Não registrada / Presente / Ausente; marcar todos presentes (sobrescrita de ausentes com confirmação); dirty guard na UI.
-7. **Materiais** — aba `?tab=materiais`: CRUD de links e anotações da turma (reader consulta; editor+ mantém); sem upload.
-8. **Certificados** — só com turma `closed`; editor+ configura logos/cores (efêmero), seleciona elegíveis e gera PDF multipágina; reader consulta sem gerar; sem histórico no servidor.
+6. **Chamada** — estados Não registrada / Presente / Ausente; o estado ativo volta a Não registrada; marcar todos presentes (sobrescrita de ausentes com confirmação); dirty guard na UI; reader com controles desabilitados.
+7. **Estatísticas** — aba `?tab=estatisticas`: taxa ignora não registrada; lista da menor frequência à maior; sem cruzar turmas (BR-ENS-028).
+8. **Materiais** — aba `?tab=materiais`: CRUD de links e anotações da turma (reader consulta; editor+ mantém); sem upload.
+9. **Certificados** — só com turma `closed`; editor+ configura logos/cores (efêmero), seleciona elegíveis (com a frequência da turma) e gera PDF multipágina; reader consulta sem gerar; sem histórico no servidor.
+10. **Status** — editor+ troca pelo controle do cabeçalho; confirmação ao encerrar, arquivar ou sair de Encerrada.
 
 ```mermaid
 flowchart LR
@@ -250,11 +256,11 @@ flowchart LR
 | --- | --- |
 | `/teaching` | Hub (programas / turmas + seletor congregação) |
 | `/teaching/[programId]` | Contexto do programa |
-| `/teaching/[programId]/[classId]` | Detalhe da turma: `EntityDetailLayout` — aside (Sobre / Equipe / Link) + abas **Inscritos**, **Aulas**, **Materiais**, **Certificados** (`?tab=`) |
+| `/teaching/[programId]/[classId]` | Detalhe da turma: `EntityDetailLayout` — aside (Sobre / Equipe / Link) + abas **Inscritos**, **Aulas**, **Estatísticas**, **Materiais**, **Certificados** (`?tab=`) |
 | `/public/teaching/[token]` | Form público brand full-bleed |
 
 Nav: label **Ensino**, ícone `GraduationCap`, entre Calendário e Configurações.  
-UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Inscritos `kind=member` usam `MemberCardCompact` (paridade visual com Ministérios/Congregações); convidados mantêm card próprio. Aba **Aulas** cobre calendário/lista, detalhe e chamada (`?tab=aulas&lessonId=`). Aba **Materiais** (`?tab=materiais`). Aba **Certificados** (`?tab=certificados`): emissão PDF após Encerrada. Materiais permanece placeholder (DEV-112).
+UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** = matrícula; ver glossário). Inscritos `kind=member` usam `MemberCardCompact` (paridade visual com Ministérios/Congregações); convidados mantêm card próprio. Aba **Aulas** cobre calendário/lista, detalhe e chamada (`?tab=aulas&lessonId=`). Aba **Estatísticas** (`?tab=estatisticas`) mostra a frequência da turma. Aba **Materiais** (`?tab=materiais`). Aba **Certificados** (`?tab=certificados`): emissão PDF após Encerrada, com a frequência de cada elegível. Status da turma no cabeçalho (editor+); a lista do programa mantém badge estático.
 
 ---
 
@@ -277,6 +283,7 @@ UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** =
 | `teachingValidator.test.ts` | Status, datas, nomes, aulas/presença, materiais (tipo/URL) |
 | `teachingLessonRecurrenceService.test.ts` | Expand weekly/monthly/interval + teto |
 | `teachingAttendanceEligibility.test.ts` | Lifecycle + filtro PostgREST same-day |
+| `teachingStatisticsService.test.ts` | Taxa (não registrada fora do denominador), removidos, possível membro |
 | `teachingCertificateService.test.ts` | Parse IDs, hex, magic bytes PNG/JPEG, rejeição WebP, elegibilidade |
 | `renderTeachingCertificate.test.ts` | Stream PDF multipágina |
 
@@ -284,7 +291,7 @@ UI: matrículas e fila ficam na aba **Inscritos** (termo de negócio **Aluno** =
 
 ## 10. 📝 Notas para Agentes
 
-- Código EN (`teaching_*`); UI PT (**Ensino / Programa / Turma / Inscritos / Aulas / Chamada / Materiais / Certificados**).
+- Código EN (`teaching_*`); UI PT (**Ensino / Programa / Turma / Inscritos / Aulas / Chamada / Estatísticas / Materiais / Certificados**).
 - Não confundir Turma com GroupType **Classe**.
 - Convidado **nunca** vira `members` neste módulo.
 - Calendário de Ensino **não** sincroniza com o módulo Calendário global.

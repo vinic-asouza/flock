@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal';
 import { ClassFormModal } from '@/components/teaching/TeachingModals';
 import { TeachingClassDetailView } from '@/components/teaching/TeachingClassDetailView';
-import { StatusBadge, TeachingEmptyState } from '@/components/teaching/TeachingUi';
+import { ClassStatusControl } from '@/components/teaching/ClassStatusControl';
+import { TeachingEmptyState } from '@/components/teaching/TeachingUi';
+import type { TeachingClassStatus } from '@/types';
 import { READER_TOOLTIP } from '@/components/teaching/constants';
 import { useTeachingViewParams } from '@/components/teaching/useTeachingViewParams';
 import { useAuth } from '@/context/AuthContext';
@@ -121,7 +123,18 @@ function TeachingClassContent() {
         backHref={backHref}
         backLabel="Turmas do programa"
         title={teachingClass?.name || 'Turma'}
-        badge={teachingClass ? <StatusBadge status={teachingClass.status} /> : null}
+        badge={
+          teachingClass ? (
+            <ClassStatusControl
+              status={teachingClass.status}
+              readOnly={readOnly}
+              onChange={async (next: TeachingClassStatus) => {
+                await apiService.updateTeachingClass(teachingClass.id, { status: next });
+                setTeachingClass((current) => (current ? { ...current, status: next } : current));
+              }}
+            />
+          ) : null
+        }
         subtitle={loading ? 'Carregando…' : subtitle || ' '}
         actions={
           !readOnly && teachingClass ? (

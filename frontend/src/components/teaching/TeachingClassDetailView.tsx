@@ -28,6 +28,7 @@ import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
 import { TeachingLessonsTab } from './TeachingLessonsTab';
 import { TeachingMaterialsTab } from './TeachingMaterialsTab';
 import { TeachingCertificatesTab } from './TeachingCertificatesTab';
+import { TeachingStatisticsTab } from './TeachingStatisticsTab';
 import {
   type TeachingClassTab,
   useTeachingClassTab,
@@ -40,6 +41,7 @@ const CLASS_TABS: Array<{
 }> = [
   { id: 'inscritos', label: 'Inscritos', panelId: 'inscritos-panel' },
   { id: 'aulas', label: 'Aulas', panelId: 'aulas-panel' },
+  { id: 'estatisticas', label: 'Estatísticas', panelId: 'estatisticas-panel' },
   { id: 'materiais', label: 'Materiais', panelId: 'materiais-panel' },
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
 ];
@@ -380,6 +382,8 @@ export function TeachingClassDetailView({
             readOnly={readOnly}
             onDirtyChange={setCertificatesDirty}
           />
+        ) : activeTab === 'estatisticas' ? (
+          <TeachingStatisticsTab teachingClass={teachingClass} />
         ) : null}
       </section>
     </EntityDetailLayout>

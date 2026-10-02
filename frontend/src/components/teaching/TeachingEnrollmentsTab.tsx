@@ -24,6 +24,7 @@ import { useMemberOptions } from '@/hooks/useMemberOptions';
 import apiService, { formatApiError } from '@/services/api';
 import type { TeachingClass, TeachingEnrollment } from '@/types';
 import { formatPhone, maskPhoneInput } from '@/utils';
+import { getNameInitials } from '@/utils/getNameInitials';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 const ENROLLMENTS_PER_PAGE = 8;
@@ -33,6 +34,19 @@ function formatBirthDate(value?: string | null) {
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return value;
   return `${day}/${month}/${year}`;
+}
+
+function ProfileAvatar({ name, kind }: { name: string; kind: 'member' | 'guest' }) {
+  return (
+    <span
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+        kind === 'member' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'
+      }`}
+      aria-hidden
+    >
+      {getNameInitials(name)}
+    </span>
+  );
 }
 
 function EnrollmentKindBadge({ kind }: { kind: TeachingEnrollment['kind'] }) {
@@ -281,6 +295,7 @@ export function TeachingEnrollmentsTab({
   const [guestWhatsapp, setGuestWhatsapp] = useState('');
   const [guestBirth, setGuestBirth] = useState('');
   const [addMode, setAddMode] = useState<'member' | 'guest'>('member');
+  const [memberLinkError, setMemberLinkError] = useState('');
   const [enrollmentsPage, setEnrollmentsPage] = useState(1);
   const [enrollmentQuery, setEnrollmentQuery] = useState('');
   const { options: memberOptionsData, setSearch } = useMemberOptions({
@@ -288,16 +303,42 @@ export function TeachingEnrollmentsTab({
     enabled: !readOnly,
   });
 
+  const enrolledMemberIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of enrollments) {
+      if (row.kind === 'member' && row.member_id && !row.removed_at) ids.add(row.member_id);
+    }
+    return ids;
+  }, [enrollments]);
+
+  const takenWhatsapps = useMemo(() => {
+    const digits = new Set<string>();
+    for (const row of enrollments) {
+      if (row.removed_at) continue;
+      const value = (row.whatsapp || row.member?.whatsapp || '').replace(/\D/g, '');
+      if (value.length >= 10) digits.add(value);
+    }
+    return digits;
+  }, [enrollments]);
+
+  const memberAlreadyEnrolled = Boolean(memberId && enrolledMemberIds.has(memberId));
+  const guestDigits = guestWhatsapp.replace(/\D/g, '');
+  const guestWhatsappTaken = guestDigits.length >= 10 && takenWhatsapps.has(guestDigits);
+
   const memberSelectOptions = useMemo(() => {
     const base = memberOptionsData.map((member) => ({
       value: member.id,
-      label: member.name,
+      label: enrolledMemberIds.has(member.id) ? `${member.name} · Já inscrito` : member.name,
     }));
     if (memberId && !base.some((option) => option.value === memberId)) {
-      base.unshift({ value: memberId, label: memberLabel || 'Membro selecionado' });
+      const label = memberLabel || 'Membro selecionado';
+      base.unshift({
+        value: memberId,
+        label: enrolledMemberIds.has(memberId) ? `${label} · Já inscrito` : label,
+      });
     }
     return base;
-  }, [memberOptionsData, memberId, memberLabel]);
+  }, [memberOptionsData, memberId, memberLabel, enrolledMemberIds]);
 
   const loadEnrollments = useCallback(async () => {
     try {
@@ -375,6 +416,7 @@ export function TeachingEnrollmentsTab({
   const resetAddForm = () => {
     setMemberId('');
     setMemberLabel('');
+    setMemberLinkError('');
     setGuestName('');
     setGuestWhatsapp('');
     setGuestBirth('');
@@ -417,12 +459,14 @@ export function TeachingEnrollmentsTab({
             ))}
           </div>
           {addMode === 'member' ? (
+            <div className="space-y-2">
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <Select
                 label="Membro"
                 value={memberId}
                 onChange={(value) => {
                   setMemberId(value);
+                  setMemberLinkError('');
                   const match = memberOptionsData.find((member) => member.id === value);
                   setMemberLabel(match?.name || '');
                 }}
@@ -443,16 +487,25 @@ export function TeachingEnrollmentsTab({
                     toast.success('Membro inscrito');
                     await loadEnrollments();
                   } catch (error) {
-                    toast.error(formatApiError(error));
+                    const message = formatApiError(error);
+                    setMemberLinkError(message);
+                    toast.error(message);
                   }
                 }}
-                disabled={!memberId}
+                disabled={!memberId || memberAlreadyEnrolled}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Vincular
               </Button>
             </div>
+              {memberAlreadyEnrolled ? (
+                <p className="text-sm text-amber-800">Este membro já está inscrito nesta turma.</p>
+              ) : memberLinkError ? (
+                <p className="text-sm text-red-600">{memberLinkError}</p>
+              ) : null}
+            </div>
           ) : (
+            <div className="space-y-2">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1.8fr)_minmax(10rem,1fr)_minmax(8.5rem,0.85fr)_auto] sm:items-end">
               <Input
                 label="Nome"
@@ -464,10 +517,16 @@ export function TeachingEnrollmentsTab({
                 label="WhatsApp"
                 value={guestWhatsapp}
                 onChange={(event) => setGuestWhatsapp(maskPhoneInput(event.target.value))}
-                className="text-base"
+                className={`text-base ${
+                  guestWhatsappTaken
+                    ? '!border-red-500 focus:!border-red-500 focus:!ring-red-500/20'
+                    : ''
+                }`}
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder="(11) 99999-9999"
+                aria-invalid={guestWhatsappTaken || undefined}
+                aria-describedby={guestWhatsappTaken ? 'guest-whatsapp-taken' : undefined}
               />
               <Input
                 label="Nascimento"
@@ -495,12 +554,19 @@ export function TeachingEnrollmentsTab({
                 }}
                 disabled={
                   guestName.trim().length < 2 ||
-                  guestWhatsapp.replace(/\D/g, '').length < 10 ||
-                  !guestBirth
+                  guestDigits.length < 10 ||
+                  !guestBirth ||
+                  guestWhatsappTaken
                 }
               >
                 Adicionar
               </Button>
+            </div>
+            {guestWhatsappTaken ? (
+              <p id="guest-whatsapp-taken" className="text-sm text-red-600">
+                Já existe um inscrito com este WhatsApp.
+              </p>
+            ) : null}
             </div>
           )}
         </Card>
@@ -613,6 +679,7 @@ export function TeachingEnrollmentsTab({
                         <li key={item.id} className="group relative min-w-0">
                           <MemberCardCompact
                             href={memberId ? `/members/${memberId}` : undefined}
+                            leading={<ProfileAvatar name={name} kind="member" />}
                             member={{
                               id: item.member.id,
                               name: item.member.name,
@@ -648,22 +715,13 @@ export function TeachingEnrollmentsTab({
                     return (
                       <li
                         key={item.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3"
+                        className="group relative flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3"
                       >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div
-                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                              item.kind === 'member'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-sky-50 text-sky-700'
-                            }`}
-                          >
-                            {item.kind === 'member' ? (
-                              <UserRound className="h-4 w-4" />
-                            ) : (
-                              <User className="h-4 w-4" />
-                            )}
-                          </div>
+                        <div className="flex min-w-0 flex-1 items-center gap-3 pr-12">
+                          <ProfileAvatar
+                            name={name}
+                            kind={item.kind === 'member' ? 'member' : 'guest'}
+                          />
                           <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="truncate text-sm font-medium text-gray-900">
@@ -677,7 +735,7 @@ export function TeachingEnrollmentsTab({
                         {!readOnly ? (
                           <Button
                             variant="ghost"
-                            className="min-h-11 min-w-11 shrink-0 text-gray-500 hover:text-red-600"
+                            className="absolute right-2 top-1/2 z-10 min-h-11 min-w-11 -translate-y-1/2 text-gray-500 opacity-100 hover:text-red-600 sm:pointer-events-none sm:opacity-0 sm:group-hover:pointer-events-auto sm:group-hover:opacity-100 sm:group-focus-within:pointer-events-auto sm:group-focus-within:opacity-100"
                             aria-label={`Remover inscrição de ${name}`}
                             onClick={async () => {
                               try {

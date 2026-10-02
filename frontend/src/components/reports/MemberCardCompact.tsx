@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Mail, MessageCircle, Phone } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
@@ -8,6 +9,7 @@ import { calculateAge } from '@/utils';
 
 interface MemberCardCompactProps {
   href?: string;
+  leading?: ReactNode;
   member: {
     id: string;
     name: string;
@@ -27,11 +29,16 @@ interface MemberCardCompactProps {
   };
 }
 
-export function MemberCardCompact({ member, href }: MemberCardCompactProps) {
+export function MemberCardCompact({ member, href, leading }: MemberCardCompactProps) {
   const idade = member.birth ? calculateAge(member.birth) : null;
   const nameClassName = 'font-medium text-gray-900 text-sm truncate max-w-xs uppercase';
   return (
-    <div className="flex flex-col gap-1 bg-white border border-gray-200 rounded-lg px-4 py-3">
+    <div
+      className={`bg-white border border-gray-200 rounded-lg px-4 py-3 ${
+        leading ? 'flex items-center gap-3' : 'flex flex-col gap-1'
+      }`}
+    >
+      {leading}
       <div className="flex-1 min-w-0">
         {/* Linha 1: Nome e selos */}
         <div className="flex flex-wrap items-center gap-2 mb-1">

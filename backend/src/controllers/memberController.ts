@@ -4,7 +4,7 @@ import { AuthRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
 import { reportFiltersSchema } from '../validators/reportValidator';
 import { logAudit } from '../utils/auditLogger';
-import { normalizeMemberDates } from '../utils/dateNormalizer';
+import { normalizeDateForDatabase, normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
 import { error as logError } from '../utils/logger';
 import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
@@ -15,6 +15,15 @@ import {
   resolveScopedCongregationFilter,
 } from '../utils/congregationScope';
 import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
+
+/** Ano e mês civis de uma data só com dia, sem deslocar o fuso. */
+function civilYearMonth(value: string | Date): { year: string; month: string } | null {
+  const iso = normalizeDateForDatabase(value);
+  if (!iso) return null;
+  const [year, month] = iso.split('-');
+  if (!year || !month) return null;
+  return { year, month };
+}
 
 /**
  * Lista todos os membros da igreja com paginação e filtros avançados
@@ -1486,8 +1495,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Análise de batismos por período (membros com admission = "Batismo" ou "Batismo Infantil")
     const baptismByYear = allMembers.reduce((acc, member) => {
       if ((member.admission === 'Batismo' || member.admission === 'Batismo Infantil') && member.admission_date) {
-        const year = new Date(member.admission_date).getFullYear();
-        acc[year] = (acc[year] || 0) + 1;
+        const parts = civilYearMonth(member.admission_date);
+        if (!parts) return acc;
+        acc[parts.year] = (acc[parts.year] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
@@ -1495,8 +1505,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Análise de admissões por período (membros com admission diferente de "Batismo" e "Batismo Infantil")
     const admissionByYear = allMembers.reduce((acc, member) => {
       if (member.admission && member.admission !== 'Batismo' && member.admission !== 'Batismo Infantil' && member.admission_date) {
-        const year = new Date(member.admission_date).getFullYear();
-        acc[year] = (acc[year] || 0) + 1;
+        const parts = civilYearMonth(member.admission_date);
+        if (!parts) return acc;
+        acc[parts.year] = (acc[parts.year] || 0) + 1;
       }
       return acc;
     }, {} as Record<string, number>);
@@ -1504,10 +1515,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Análise de batismos por mês (membros com admission = "Batismo" ou "Batismo Infantil")
     const baptismByMonth = allMembers.reduce((acc, member) => {
       if ((member.admission === 'Batismo' || member.admission === 'Batismo Infantil') && member.admission_date) {
-        const date = new Date(member.admission_date);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const key = `${year}-${month}`;
+        const parts = civilYearMonth(member.admission_date);
+        if (!parts) return acc;
+        const key = `${parts.year}-${parts.month}`;
         acc[key] = (acc[key] || 0) + 1;
       }
       return acc;
@@ -1516,10 +1526,9 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Análise de admissões por mês (membros com admission diferente de "Batismo" e "Batismo Infantil")
     const admissionByMonth = allMembers.reduce((acc, member) => {
       if (member.admission && member.admission !== 'Batismo' && member.admission !== 'Batismo Infantil' && member.admission_date) {
-        const date = new Date(member.admission_date);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const key = `${year}-${month}`;
+        const parts = civilYearMonth(member.admission_date);
+        if (!parts) return acc;
+        const key = `${parts.year}-${parts.month}`;
         acc[key] = (acc[key] || 0) + 1;
       }
       return acc;
@@ -1535,12 +1544,12 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Membros por ano (batizados ou admitidos)
     const membersByYear = formattedMembers.reduce((acc, member) => {
       if (!member.admission_date) return acc;
-      
-      const admissionYear = new Date(member.admission_date).getFullYear();
-      
+      const parts = civilYearMonth(member.admission_date);
+      if (!parts) return acc;
+
       // Adiciona o membro ao ano do recebimento (seja batismo ou outro tipo)
-      if (!acc[admissionYear]) acc[admissionYear] = [];
-      acc[admissionYear].push(member);
+      if (!acc[parts.year]) acc[parts.year] = [];
+      acc[parts.year].push(member);
       
       return acc;
     }, {} as Record<string, any[]>);
@@ -1548,12 +1557,11 @@ export const getMemberReports = async (req: AuthRequest, res: Response) => {
     // Membros por mês (batizados ou admitidos)
     const membersByMonth = formattedMembers.reduce((acc, member) => {
       if (!member.admission_date) return acc;
-      
+      const parts = civilYearMonth(member.admission_date);
+      if (!parts) return acc;
+
       // Adiciona o membro ao mês do recebimento (seja batismo ou outro tipo)
-      const admissionDate = new Date(member.admission_date);
-      const year = admissionDate.getFullYear();
-      const month = String(admissionDate.getMonth() + 1).padStart(2, '0');
-      const key = `${year}-${month}`;
+      const key = `${parts.year}-${parts.month}`;
       
       if (!acc[key]) acc[key] = [];
       acc[key].push(member);

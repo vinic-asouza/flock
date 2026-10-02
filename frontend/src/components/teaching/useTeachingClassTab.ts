@@ -5,6 +5,7 @@ import { useEntityTab } from '@/components/entity-detail';
 export const TEACHING_CLASS_TABS = [
   'inscritos',
   'aulas',
+  'estatisticas',
   'materiais',
   'certificados',
 ] as const;

@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: ensino
-ultima_atualizacao: 2026-09-15
-versao: "1.3"
-total_regras: 27
+ultima_atualizacao: 2026-10-02
+versao: "1.4"
+total_regras: 28
 tags: [regras, modulo:ensino]
 ver_tambem:
   - "[[04_modulos/ensino]]"
@@ -15,7 +15,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada**, **materiais da turma** (links e anotações) e **certificados PDF** ao encerrar a turma — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
+Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrículas (membro / convidado / possível membro), match ao rol, link público, **cronograma de aulas**, **chamada**, **estatísticas de frequência da turma**, **materiais da turma** (links e anotações) e **certificados PDF** ao encerrar a turma — sem confundir com Grupos (`Classe`), sem sync com Calendário global e sem consumir cota de membros para convidados.
 
 ## Índice de Regras
 
@@ -44,6 +44,7 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 | BR-ENS-021 | Escopos single / following | Gatilho | Ativo |
 | BR-ENS-022 | Chamada aula × matrícula | Restrição | Ativo |
 | BR-ENS-023 | Elegibilidade temporal da chamada | Política | Ativo |
+| BR-ENS-028 | Frequência da turma | Política | Ativo |
 | BR-ENS-024 | Emissão de certificado só com turma encerrada | Restrição | Ativo |
 | BR-ENS-025 | Conteúdo e template efêmero do certificado | Política | Ativo |
 | BR-ENS-026 | Materiais da turma (link / anotação) | Restrição | Ativo |
@@ -96,12 +97,12 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Depende de:** BR-ENS-002, BR-ENS-003
 
 ### BR-ENS-005: Status da turma
-- **Declaração:** `status` ∈ `draft` | `open` | `in_progress` | `closed` | `archived` (UI: rascunho / aberta / em andamento / encerrada / arquivada). Default create: `draft`.
+- **Declaração:** `status` ∈ `draft` | `open` | `in_progress` | `closed` | `archived` (UI: rascunho / aberta / em andamento / encerrada / arquivada). Default create: `draft`. No detalhe da turma, editor+ altera o status pelo controle do cabeçalho (`PATCH` só `{ status }`); reader vê o status sem menu. Confirmação ao ir para Encerrada ou Arquivada, ou ao sair de Encerrada. Escolher o status atual não grava. A lista de turmas do programa mantém o badge estático.
 - **Tipo:** Restrição
 - **Gatilho:** Create/update
 - **Comportamento esperado:** Status válido
 - **Comportamento em violação:** 400
-- **Implementado em:** `teachingValidator.ts` + CHECK `teaching_classes_status_check`
+- **Implementado em:** `teachingValidator.ts` + CHECK `teaching_classes_status_check` + `ClassStatusControl.tsx`
 - **Testado em:** `teachingValidator.test.ts`
 - **Depende de:** —
 
@@ -276,7 +277,7 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Depende de:** BR-ENS-020
 
 ### BR-ENS-022: Chamada aula × matrícula
-- **Declaração:** Presença é por combinação aula × inscrição, com estados **Não registrada**, **Presente** e **Ausente**. “Marcar todos presentes” promove não registradas; sobrescrever Ausente exige confirmação explícita (`overwrite_absent`).
+- **Declaração:** Presença é por combinação aula × inscrição, com estados **Não registrada**, **Presente** e **Ausente**. Clicar de novo no estado ativo volta a Não registrada. “Marcar todos presentes” promove não registradas; sobrescrever Ausente exige confirmação explícita (`overwrite_absent`). Reader consulta com os controles desabilitados.
 - **Tipo:** Restrição
 - **Gatilho:** GET/PUT attendance
 - **Comportamento esperado:** Persistência idempotente; UI com dirty guard
@@ -294,6 +295,16 @@ Gerenciar **Programas** e **Turmas** formativas (EBD, cursos, estudos), matrícu
 - **Implementado em:** `teachingAttendanceEligibility.ts` + RPC save attendance
 - **Testado em:** `teachingAttendanceEligibility.test.ts`
 - **Depende de:** BR-ENS-008, BR-ENS-022
+
+### BR-ENS-028: Frequência da turma
+- **Declaração:** A aba Estatísticas (`?tab=estatisticas`) agrega uma turma, sem cruzar turmas e sem migration. Taxa = `round(presentes / (presentes + ausentes) × 100)`. Não registrada fica fora do denominador e aparece à parte. Sem presente nem ausente, a taxa é nula (“Sem presenças registradas”). Possível membro não entra na chamada nem na lista de frequência. Quem foi removido continua nos totais da aula se era elegível naquele dia e sai da lista de inscritos. A lista ordena a menor taxa primeiro; taxa nula por último. A lista de elegíveis do certificado reusa essa taxa por inscrição.
+- **Tipo:** Política
+- **Gatilho:** `GET /api/teaching/classes/:id/statistics` (reader+; rota antes de `GET /classes/:id`)
+- **Comportamento esperado:** Um JSON com contagens, taxa, `by_lesson` e `by_enrollment`
+- **Comportamento em violação:** 403/404
+- **Implementado em:** `teachingStatisticsService.ts` + `teachingStatisticsController.ts`
+- **Testado em:** `teachingStatisticsService.test.ts`
+- **Depende de:** BR-ENS-016, BR-ENS-022, BR-ENS-023
 
 ### 📜 Certificados
 

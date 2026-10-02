@@ -7,8 +7,16 @@
  */
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '';
-  
+
   try {
+    if (typeof date === 'string') {
+      const dateOnly = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dateOnly) {
+        const [, year, month, day] = dateOnly;
+        return `${day}/${month}/${year}`;
+      }
+    }
+
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return '';
     return d.toLocaleDateString('pt-BR');

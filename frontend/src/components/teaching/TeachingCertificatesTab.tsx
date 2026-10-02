@@ -66,6 +66,7 @@ export function TeachingCertificatesTab({
   const [loading, setLoading] = useState(false);
   const [eligible, setEligible] = useState<TeachingEnrollment[]>([]);
   const [queue, setQueue] = useState<TeachingEnrollment[]>([]);
+  const [attendanceRates, setAttendanceRates] = useState<Map<string, number | null>>(new Map());
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [primaryColor, setPrimaryColor] = useState('#1E3A5F');
@@ -142,6 +143,15 @@ export function TeachingCertificatesTab({
 
       setEligible(rows);
       setQueue((first.queue || []) as TeachingEnrollment[]);
+
+      try {
+        const stats = await apiService.getTeachingClassStatistics(teachingClass.id);
+        setAttendanceRates(
+          new Map(stats.by_enrollment.map((row) => [row.enrollment_id, row.rate]))
+        );
+      } catch {
+        setAttendanceRates(new Map());
+      }
     } catch (err) {
       toast.error(formatApiError(err));
     } finally {
@@ -515,27 +525,53 @@ export function TeachingCertificatesTab({
         ) : filteredEligible.length === 0 ? (
           <TeachingEmptyState text="Não há membros ou convidados elegíveis nesta turma." />
         ) : (
-          <ul className="divide-y divide-gray-100 rounded-lg border border-gray-100">
-            {filteredEligible.map((row) => {
-              const checked = selected.has(row.id);
-              return (
-                <li key={row.id}>
-                  <label className="flex min-h-11 cursor-pointer items-center gap-3 px-3 py-2 hover:bg-slate-50">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      checked={checked}
-                      onChange={() => toggleId(row.id)}
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm text-gray-900">
-                      {enrollmentName(row)}
-                    </span>
-                    <KindBadge kind={row.kind} />
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="overflow-x-auto rounded-lg border border-gray-100">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-xs text-gray-500">
+                  <th className="w-11 px-3 py-2 font-medium">
+                    <span className="sr-only">Selecionar</span>
+                  </th>
+                  <th className="px-3 py-2 font-medium">Nome</th>
+                  <th className="px-3 py-2 font-medium">Tipo</th>
+                  <th className="px-3 py-2 text-right font-medium">Frequência</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEligible.map((row, index) => {
+                  const checked = selected.has(row.id);
+                  const rate = attendanceRates.get(row.id);
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`cursor-pointer ${index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}`}
+                      onClick={() => toggleId(row.id)}
+                    >
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                          checked={checked}
+                          aria-label={enrollmentName(row)}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={() => toggleId(row.id)}
+                        />
+                      </td>
+                      <td className="max-w-[16rem] px-3 py-2 text-gray-900">
+                        <span className="block truncate">{enrollmentName(row)}</span>
+                      </td>
+                      <td className="px-3 py-2">
+                        <KindBadge kind={row.kind} />
+                      </td>
+                      <td className="px-3 py-2 text-right text-gray-900">
+                        {rate === undefined || rate === null ? '—' : `${rate}%`}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {queue.length > 0 ? (

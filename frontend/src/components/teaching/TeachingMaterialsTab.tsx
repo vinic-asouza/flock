@@ -324,7 +324,7 @@ export function TeachingMaterialsTab({
         title={editing ? 'Editar material' : 'Adicionar material'}
         size="md"
         footer={
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <div className="flex flex-col-reverse gap-2 px-4 py-3 sm:flex-row sm:justify-end sm:px-6">
             <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>
               Cancelar
             </Button>
@@ -334,7 +334,7 @@ export function TeachingMaterialsTab({
           </div>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-5 px-4 py-5 sm:p-6">
           {editing ? (
             <div>
               <p className="mb-1 text-sm font-medium text-gray-700">Tipo</p>
