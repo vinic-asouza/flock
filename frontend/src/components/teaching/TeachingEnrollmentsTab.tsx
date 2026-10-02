@@ -24,6 +24,7 @@ import { useMemberOptions } from '@/hooks/useMemberOptions';
 import apiService, { formatApiError } from '@/services/api';
 import type { TeachingClass, TeachingEnrollment } from '@/types';
 import { formatPhone, maskPhoneInput } from '@/utils';
+import { getNameInitials } from '@/utils/getNameInitials';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 const ENROLLMENTS_PER_PAGE = 8;
@@ -33,6 +34,19 @@ function formatBirthDate(value?: string | null) {
   const [year, month, day] = value.split('-');
   if (!year || !month || !day) return value;
   return `${day}/${month}/${year}`;
+}
+
+function ProfileAvatar({ name, kind }: { name: string; kind: 'member' | 'guest' }) {
+  return (
+    <span
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+        kind === 'member' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'
+      }`}
+      aria-hidden
+    >
+      {getNameInitials(name)}
+    </span>
+  );
 }
 
 function EnrollmentKindBadge({ kind }: { kind: TeachingEnrollment['kind'] }) {
@@ -665,6 +679,7 @@ export function TeachingEnrollmentsTab({
                         <li key={item.id} className="group relative min-w-0">
                           <MemberCardCompact
                             href={memberId ? `/members/${memberId}` : undefined}
+                            leading={<ProfileAvatar name={name} kind="member" />}
                             member={{
                               id: item.member.id,
                               name: item.member.name,
@@ -700,22 +715,13 @@ export function TeachingEnrollmentsTab({
                     return (
                       <li
                         key={item.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3"
+                        className="group relative flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3"
                       >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div
-                            className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                              item.kind === 'member'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-sky-50 text-sky-700'
-                            }`}
-                          >
-                            {item.kind === 'member' ? (
-                              <UserRound className="h-4 w-4" />
-                            ) : (
-                              <User className="h-4 w-4" />
-                            )}
-                          </div>
+                        <div className="flex min-w-0 flex-1 items-center gap-3 pr-12">
+                          <ProfileAvatar
+                            name={name}
+                            kind={item.kind === 'member' ? 'member' : 'guest'}
+                          />
                           <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="truncate text-sm font-medium text-gray-900">
@@ -729,7 +735,7 @@ export function TeachingEnrollmentsTab({
                         {!readOnly ? (
                           <Button
                             variant="ghost"
-                            className="min-h-11 min-w-11 shrink-0 text-gray-500 hover:text-red-600"
+                            className="absolute right-2 top-1/2 z-10 min-h-11 min-w-11 -translate-y-1/2 text-gray-500 opacity-100 hover:text-red-600 sm:pointer-events-none sm:opacity-0 sm:group-hover:pointer-events-auto sm:group-hover:opacity-100 sm:group-focus-within:pointer-events-auto sm:group-focus-within:opacity-100"
                             aria-label={`Remover inscrição de ${name}`}
                             onClick={async () => {
                               try {
