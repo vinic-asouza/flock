@@ -1,9 +1,9 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-09-16
-versao: "1.13"
+ultima_atualizacao: 2026-10-02
+versao: "1.14"
 tags: [produto, domínio, vocabulário, referência]
-total_termos: 82
+total_termos: 83
 ---
 
 # Glossário do Domínio — Flock
@@ -107,12 +107,17 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **UI:** “Aula” / “Nova aula”
 
 **Chamada** *(código: `TeachingLessonAttendance`, `teaching_lesson_attendance`)*  
-> Presença por aula × matrícula. Estados: **Não registrada**, **Presente**, **Ausente**.
+> Presença por aula × matrícula. Estados: **Não registrada**, **Presente**, **Ausente**. O estado ativo volta a Não registrada.
 - **Usado em:** Ensino (detalhe da aula)  
 - **UI:** “Chamada”
 
+**Frequência (Ensino)** *(código: `GET …/classes/:id/statistics`; sem tabela)*  
+> Taxa de presença da turma: presentes sobre presentes + ausentes. Não registrada fica de fora da conta e aparece à parte. Sem presença marcada, a taxa não existe.
+- **Usado em:** Ensino — aba **Estatísticas** (`?tab=estatisticas`); coluna na lista de elegíveis do certificado  
+- **UI:** “Estatísticas” / “Frequência”
+
 **Certificado (Ensino)** *(código: export PDF; sem tabela)*  
-> Documento PDF multipágina emitido na aba **Certificados** após a turma **Encerrada**. Template efêmero (logos PNG/JPEG + cores no request); campos mínimos: aluno, Turma, Programa, Igreja, data. Sem histórico/storage no produto.
+> Documento PDF multipágina emitido na aba **Certificados** após a turma **Encerrada**. Template efêmero (logos PNG/JPEG + cores no request); campos mínimos: aluno, Turma, Programa, Igreja, data. A lista de elegíveis mostra a frequência da turma. Sem histórico/storage no produto.
 - **Elegíveis:** matrículas Membro e Convidado (não Possível membro)  
 - **Usado em:** Ensino (`?tab=certificados`)  
 - **UI:** “Certificados” / “Gerar certificados”
@@ -367,7 +372,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 - **C:** Calendário (item), Certificado (Ensino), Chamada (Ensino), Checkout, Cliente comercialmente ativo, Congregação, Conta, Converter, CNPJ  
 - **D:** Dono (`owner`), Downgrade, Descartado (`descartado`)  
 - **E:** Editor, Em progresso (`em_progresso`), Ensino, Evento (tipo calendário), Encontro  
-- **F:** Ficha de pré-cadastro  
+- **F:** Ficha de pré-cadastro, Frequência (Ensino)  
 - **G:** Guest/Convidado (calendário), Guest/Convidado (Ensino); Grupo (termo de código/`groups` — preferir **Ministério** na UI)  
 - **I:** Igreja, Integrante, Integração (módulo), Integrado (`integrado`), Importar membros, Inscritos (UI Ensino)  
 - **L:** Leitor (`reader`), Limite de membros, Lista de espera, Link de registro, Link de integração, Link público de turma  
@@ -385,7 +390,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## Contagem e arquivos analisados
 
-**Total de termos documentados:** 82 _(frontmatter `total_termos`)_.
+**Total de termos documentados:** 83 _(frontmatter `total_termos`)_.
 
 **Arquivos analisados:**
 
