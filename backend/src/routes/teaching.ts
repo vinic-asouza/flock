@@ -44,6 +44,7 @@ import {
   deleteTeachingMaterial,
 } from '../controllers/teachingMaterialController';
 import { exportTeachingCertificates } from '../controllers/teachingCertificateController';
+import { getTeachingClassStatistics } from '../controllers/teachingStatisticsController';
 import { uploadCertificateImages } from '../middlewares/uploadCertificateImages';
 
 const router = Router();
@@ -60,6 +61,7 @@ router.delete('/programs/:id', requireRole('editor'), deleteTeachingProgram);
 
 // Turmas
 router.get('/classes', listTeachingClasses);
+router.get('/classes/:id/statistics', getTeachingClassStatistics);
 router.get('/classes/:id', getTeachingClass);
 router.post('/classes', requireRole('editor'), createTeachingClass);
 router.patch('/classes/:id', requireRole('editor'), updateTeachingClass);

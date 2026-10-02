@@ -10,9 +10,11 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  const mimeOk = ALLOWED_MIME.has(file.mimetype);
+  const mimeOk = ALLOWED_MIME.has(file.mimetype) || file.mimetype === 'image/jpg';
   const extOk = ALLOWED_EXT.test(file.originalname || '');
-  if (mimeOk && extOk) {
+  // Magic bytes no controller decidem o arquivo. Aqui basta mime ou extensão,
+  // porque fotos do celular às vezes chegam sem um dos dois.
+  if (mimeOk || extOk) {
     cb(null, true);
     return;
   }
