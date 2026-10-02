@@ -491,6 +491,7 @@ export function TeachingEnrollmentsTab({
               ) : null}
             </div>
           ) : (
+            <div className="space-y-2">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1.8fr)_minmax(10rem,1fr)_minmax(8.5rem,0.85fr)_auto] sm:items-end">
               <Input
                 label="Nome"
@@ -502,11 +503,16 @@ export function TeachingEnrollmentsTab({
                 label="WhatsApp"
                 value={guestWhatsapp}
                 onChange={(event) => setGuestWhatsapp(maskPhoneInput(event.target.value))}
-                className="text-base"
+                className={`text-base ${
+                  guestWhatsappTaken
+                    ? '!border-red-500 focus:!border-red-500 focus:!ring-red-500/20'
+                    : ''
+                }`}
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder="(11) 99999-9999"
-                error={guestWhatsappTaken ? 'Já existe um inscrito com este WhatsApp.' : undefined}
+                aria-invalid={guestWhatsappTaken || undefined}
+                aria-describedby={guestWhatsappTaken ? 'guest-whatsapp-taken' : undefined}
               />
               <Input
                 label="Nascimento"
@@ -541,6 +547,12 @@ export function TeachingEnrollmentsTab({
               >
                 Adicionar
               </Button>
+            </div>
+            {guestWhatsappTaken ? (
+              <p id="guest-whatsapp-taken" className="text-sm text-red-600">
+                Já existe um inscrito com este WhatsApp.
+              </p>
+            ) : null}
             </div>
           )}
         </Card>

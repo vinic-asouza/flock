@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { CalendarDays, Percent, UserSearch, Users } from 'lucide-react';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +16,35 @@ function shortDate(value: string): string {
 
 function rateLabel(rate: number | null): string {
   return rate === null ? '—' : `${rate}%`;
+}
+
+function StatCard({
+  icon: Icon,
+  iconClass,
+  value,
+  label,
+  hint,
+}: {
+  icon: typeof Users;
+  iconClass: string;
+  value: string | number;
+  label: string;
+  hint?: string;
+}) {
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-2xl font-semibold text-gray-900">{value}</p>
+          <p className="text-sm font-medium text-gray-900">{label}</p>
+          {hint ? <p className="mt-1 text-xs text-gray-500">{hint}</p> : null}
+        </div>
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconClass}`}>
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+      </div>
+    </Card>
+  );
 }
 
 export function TeachingStatisticsTab({ teachingClass }: { teachingClass: TeachingClass }) {
@@ -65,32 +95,36 @@ export function TeachingStatisticsTab({ teachingClass }: { teachingClass: Teachi
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Card>
-          <p className="text-2xl font-semibold text-gray-900">{activeTotal}</p>
-          <p className="text-sm font-medium text-gray-900">Inscritos ativos</p>
-          <p className="mt-1 text-xs text-gray-500">
-            {stats.enrollments.active_members} membros · {stats.enrollments.active_guests} convidados
-          </p>
-        </Card>
-        <Card>
-          <p className="text-2xl font-semibold text-gray-900">{stats.enrollments.queue}</p>
-          <p className="text-sm font-medium text-gray-900">Para revisar</p>
-        </Card>
-        <Card>
-          <p className="text-2xl font-semibold text-gray-900">{stats.lessons_count}</p>
-          <p className="text-sm font-medium text-gray-900">Aulas</p>
-        </Card>
-        <Card>
-          <p className="text-2xl font-semibold text-gray-900">{rateLabel(stats.rate)}</p>
-          <p className="text-sm font-medium text-gray-900">Presença</p>
-          {stats.rate === null ? (
-            <p className="mt-1 text-xs text-gray-500">Sem presenças registradas</p>
-          ) : null}
-        </Card>
+        <StatCard
+          icon={Users}
+          iconClass="bg-emerald-50 text-emerald-700"
+          value={activeTotal}
+          label="Inscritos ativos"
+          hint={`${stats.enrollments.active_members} membros · ${stats.enrollments.active_guests} convidados`}
+        />
+        <StatCard
+          icon={UserSearch}
+          iconClass="bg-amber-50 text-amber-800"
+          value={stats.enrollments.queue}
+          label="Para revisar"
+        />
+        <StatCard
+          icon={CalendarDays}
+          iconClass="bg-sky-50 text-sky-700"
+          value={stats.lessons_count}
+          label="Aulas"
+        />
+        <StatCard
+          icon={Percent}
+          iconClass="bg-primary/10 text-primary"
+          value={rateLabel(stats.rate)}
+          label="Presença"
+          hint={stats.rate === null ? 'Sem presenças registradas' : undefined}
+        />
       </div>
       <p className="text-sm text-gray-600">Não registradas: {stats.attendance.unregistered}</p>
 
-      <section className="space-y-3">
+      <Card className="space-y-3">
         <h3 className="text-sm font-medium text-gray-900">Presença por aula</h3>
         {!hasLessons ? (
           <p className="rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500">
@@ -149,9 +183,9 @@ export function TeachingStatisticsTab({ teachingClass }: { teachingClass: Teachi
             </ul>
           </>
         )}
-      </section>
+      </Card>
 
-      <section className="space-y-3">
+      <Card className="space-y-3">
         <h3 className="text-sm font-medium text-gray-900">Frequência dos inscritos</h3>
         {!hasLessons ? (
           <p className="rounded-xl border border-dashed border-gray-200 px-4 py-10 text-center text-sm text-gray-500">
@@ -162,8 +196,13 @@ export function TeachingStatisticsTab({ teachingClass }: { teachingClass: Teachi
         ) : (
           <>
             <ul className="space-y-2 md:hidden">
-              {stats.by_enrollment.map((row) => (
-                <li key={row.enrollment_id} className="rounded-xl border border-gray-200 p-3">
+              {stats.by_enrollment.map((row, index) => (
+                <li
+                  key={row.enrollment_id}
+                  className={`rounded-xl border border-gray-200 p-3 ${
+                    index % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <p className="min-w-0 truncate text-sm font-medium text-gray-900">
                       {row.display_name}
@@ -180,21 +219,24 @@ export function TeachingStatisticsTab({ teachingClass }: { teachingClass: Teachi
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-xs text-gray-500">
-                    <th className="py-2 pr-3 font-medium">Nome</th>
-                    <th className="py-2 pr-3 font-medium">Presentes</th>
-                    <th className="py-2 pr-3 font-medium">Ausentes</th>
-                    <th className="py-2 pr-3 font-medium">Não registradas</th>
-                    <th className="py-2 font-medium">Frequência</th>
+                    <th className="px-3 py-2 font-medium">Nome</th>
+                    <th className="px-3 py-2 font-medium">Presentes</th>
+                    <th className="px-3 py-2 font-medium">Ausentes</th>
+                    <th className="px-3 py-2 font-medium">Não registradas</th>
+                    <th className="px-3 py-2 font-medium">Frequência</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.by_enrollment.map((row) => (
-                    <tr key={row.enrollment_id} className="border-b border-gray-100">
-                      <td className="py-2 pr-3 text-gray-900">{row.display_name}</td>
-                      <td className="py-2 pr-3">{row.present}</td>
-                      <td className="py-2 pr-3">{row.absent}</td>
-                      <td className="py-2 pr-3">{row.unregistered}</td>
-                      <td className="py-2">{rateLabel(row.rate)}</td>
+                  {stats.by_enrollment.map((row, index) => (
+                    <tr
+                      key={row.enrollment_id}
+                      className={index % 2 === 1 ? 'bg-gray-50' : 'bg-white'}
+                    >
+                      <td className="px-3 py-2 text-gray-900">{row.display_name}</td>
+                      <td className="px-3 py-2">{row.present}</td>
+                      <td className="px-3 py-2">{row.absent}</td>
+                      <td className="px-3 py-2">{row.unregistered}</td>
+                      <td className="px-3 py-2">{rateLabel(row.rate)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -202,7 +244,7 @@ export function TeachingStatisticsTab({ teachingClass }: { teachingClass: Teachi
             </div>
           </>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

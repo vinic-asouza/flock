@@ -41,9 +41,9 @@ const CLASS_TABS: Array<{
 }> = [
   { id: 'inscritos', label: 'Inscritos', panelId: 'inscritos-panel' },
   { id: 'aulas', label: 'Aulas', panelId: 'aulas-panel' },
+  { id: 'estatisticas', label: 'Estatísticas', panelId: 'estatisticas-panel' },
   { id: 'materiais', label: 'Materiais', panelId: 'materiais-panel' },
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
-  { id: 'estatisticas', label: 'Estatísticas', panelId: 'estatisticas-panel' },
 ];
 
 function PersonChip({ name }: { name: string }) {
