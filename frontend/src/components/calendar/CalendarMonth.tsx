@@ -139,8 +139,14 @@ export function CalendarMonth({
     const grouped: Record<string, CalendarItem[]> = {};
 
     items.forEach(item => {
-      const startDate = startOfDay(new Date(item.start_date));
-      const endDate = item.end_date ? endOfDay(new Date(item.end_date)) : startDate;
+      const startDate = item.start_date.includes('T')
+        ? startOfDay(new Date(item.start_date))
+        : startOfDay(getCalendarItemDisplayDate(item));
+      const endDate = item.end_date
+        ? item.end_date.includes('T')
+          ? endOfDay(new Date(item.end_date))
+          : endOfDay(getCalendarItemDisplayDate({ ...item, start_date: item.end_date }))
+        : startDate;
 
       if (!item.is_recurring && item.end_date) {
         const days = eachDayOfInterval({

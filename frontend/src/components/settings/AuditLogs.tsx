@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { apiService, formatApiError } from '@/services/api';
+import { formatDate as formatCivilDate } from '@/utils';
 import { formatMemberName } from '@/utils/formatMemberName';
 import toast from 'react-hot-toast';
 import {
@@ -274,8 +275,11 @@ export default function AuditLogs() {
   const formatFieldValue = (value: unknown, field: string) => {
     if (value === null || value === undefined || value === '') return 'Não informado';
     if (field === 'active') return value ? 'Ativo' : 'Inativo';
+    if (field === 'birth' && (typeof value === 'string' || value instanceof Date)) {
+      return formatCivilDate(value) || 'Não informado';
+    }
     if (
-      (field === 'birth' || field === 'start_at' || field === 'end_at') &&
+      (field === 'start_at' || field === 'end_at') &&
       (typeof value === 'string' || typeof value === 'number' || value instanceof Date)
     ) {
       return new Date(value).toLocaleString('pt-BR');

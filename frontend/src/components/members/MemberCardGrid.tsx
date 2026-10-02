@@ -1,6 +1,7 @@
 'use client';
 
 import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle, Phone, MapPin, Briefcase, Church, Users } from 'lucide-react';
+import { calculateAge } from '@/utils';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -40,19 +41,6 @@ interface MemberCardGridProps {
   onReactivate?: () => void;
 }
 
-function calcularIdade(birth: string): number | null {
-  if (!birth) return null;
-  const birthDate = new Date(birth);
-  if (isNaN(birthDate.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age;
-}
-
 function formatPhone(phone: string): string {
   const numbers = phone.replace(/\D/g, '');
   if (numbers.length === 10) {
@@ -64,7 +52,7 @@ function formatPhone(phone: string): string {
 }
 
 export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onDeactivate, onReactivate }: MemberCardGridProps) {
-  const idade = calcularIdade(member.birth);
+  const idade = calculateAge(member.birth);
   const readOnly = canEdit === false;
 
   return (

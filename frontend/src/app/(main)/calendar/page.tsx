@@ -22,6 +22,7 @@ import { Plus, Loader2, Calendar as CalendarIcon, Edit, Trash2, List, Clock, Map
 import toast from 'react-hot-toast';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatDate } from '@/utils';
 import { parseCalendarDateForDisplay } from '@/utils/calendarDate';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -673,7 +674,7 @@ export default function CalendarPage() {
 
                     {selectedItem.recurrence_end_date && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Até {format(new Date(selectedItem.recurrence_end_date), "dd/MM/yyyy", { locale: ptBR })}
+                        Até {formatDate(selectedItem.recurrence_end_date.slice(0, 10))}
                       </p>
                     )}
                   </div>

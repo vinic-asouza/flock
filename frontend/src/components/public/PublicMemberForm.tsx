@@ -12,7 +12,7 @@ import { useProfessions } from '@/hooks/useProfessions';
 import { apiService } from '@/services/api';
 import { Group } from '@/types';
 import { validateDateFormat } from '@/utils/validations';
-import { formatDateToISO } from '@/utils';
+import { calculateAge, formatDateToISO } from '@/utils';
 import { memberSchema, MemberFormData } from '@/components/members/memberFormSchema';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -54,17 +54,6 @@ const applyDateMask = (value: string): string => {
   if (n.length <= 2) return n;
   if (n.length <= 4) return `${n.slice(0, 2)}/${n.slice(2)}`;
   return `${n.slice(0, 2)}/${n.slice(2, 4)}/${n.slice(4)}`;
-};
-
-const calcularIdade = (birth: string): number | null => {
-  if (!birth) return null;
-  const birthDate = new Date(birth);
-  if (isNaN(birthDate.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-  return age;
 };
 
 function RadioSimNao({ label, value, onChange, disabled }: { label: string; value?: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
@@ -504,7 +493,7 @@ export function PublicMemberForm({
                     />
                     {child.birth && (() => {
                       const iso = formatDateToISO(child.birth);
-                      const age = iso ? calcularIdade(iso) : null;
+                      const age = iso ? calculateAge(iso) : null;
                       return age !== null ? <p className="text-xs text-gray-500 mt-1">{age} {age === 1 ? 'ano' : 'anos'}</p> : null;
                     })()}
                   </div>
