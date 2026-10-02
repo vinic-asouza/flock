@@ -281,6 +281,7 @@ export function TeachingEnrollmentsTab({
   const [guestWhatsapp, setGuestWhatsapp] = useState('');
   const [guestBirth, setGuestBirth] = useState('');
   const [addMode, setAddMode] = useState<'member' | 'guest'>('member');
+  const [memberLinkError, setMemberLinkError] = useState('');
   const [enrollmentsPage, setEnrollmentsPage] = useState(1);
   const [enrollmentQuery, setEnrollmentQuery] = useState('');
   const { options: memberOptionsData, setSearch } = useMemberOptions({
@@ -288,16 +289,42 @@ export function TeachingEnrollmentsTab({
     enabled: !readOnly,
   });
 
+  const enrolledMemberIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const row of enrollments) {
+      if (row.kind === 'member' && row.member_id && !row.removed_at) ids.add(row.member_id);
+    }
+    return ids;
+  }, [enrollments]);
+
+  const takenWhatsapps = useMemo(() => {
+    const digits = new Set<string>();
+    for (const row of enrollments) {
+      if (row.removed_at) continue;
+      const value = (row.whatsapp || row.member?.whatsapp || '').replace(/\D/g, '');
+      if (value.length >= 10) digits.add(value);
+    }
+    return digits;
+  }, [enrollments]);
+
+  const memberAlreadyEnrolled = Boolean(memberId && enrolledMemberIds.has(memberId));
+  const guestDigits = guestWhatsapp.replace(/\D/g, '');
+  const guestWhatsappTaken = guestDigits.length >= 10 && takenWhatsapps.has(guestDigits);
+
   const memberSelectOptions = useMemo(() => {
     const base = memberOptionsData.map((member) => ({
       value: member.id,
-      label: member.name,
+      label: enrolledMemberIds.has(member.id) ? `${member.name} · Já inscrito` : member.name,
     }));
     if (memberId && !base.some((option) => option.value === memberId)) {
-      base.unshift({ value: memberId, label: memberLabel || 'Membro selecionado' });
+      const label = memberLabel || 'Membro selecionado';
+      base.unshift({
+        value: memberId,
+        label: enrolledMemberIds.has(memberId) ? `${label} · Já inscrito` : label,
+      });
     }
     return base;
-  }, [memberOptionsData, memberId, memberLabel]);
+  }, [memberOptionsData, memberId, memberLabel, enrolledMemberIds]);
 
   const loadEnrollments = useCallback(async () => {
     try {
@@ -375,6 +402,7 @@ export function TeachingEnrollmentsTab({
   const resetAddForm = () => {
     setMemberId('');
     setMemberLabel('');
+    setMemberLinkError('');
     setGuestName('');
     setGuestWhatsapp('');
     setGuestBirth('');
@@ -417,12 +445,14 @@ export function TeachingEnrollmentsTab({
             ))}
           </div>
           {addMode === 'member' ? (
+            <div className="space-y-2">
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <Select
                 label="Membro"
                 value={memberId}
                 onChange={(value) => {
                   setMemberId(value);
+                  setMemberLinkError('');
                   const match = memberOptionsData.find((member) => member.id === value);
                   setMemberLabel(match?.name || '');
                 }}
@@ -443,14 +473,22 @@ export function TeachingEnrollmentsTab({
                     toast.success('Membro inscrito');
                     await loadEnrollments();
                   } catch (error) {
-                    toast.error(formatApiError(error));
+                    const message = formatApiError(error);
+                    setMemberLinkError(message);
+                    toast.error(message);
                   }
                 }}
-                disabled={!memberId}
+                disabled={!memberId || memberAlreadyEnrolled}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Vincular
               </Button>
+            </div>
+              {memberAlreadyEnrolled ? (
+                <p className="text-sm text-amber-800">Este membro já está inscrito nesta turma.</p>
+              ) : memberLinkError ? (
+                <p className="text-sm text-red-600">{memberLinkError}</p>
+              ) : null}
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1.8fr)_minmax(10rem,1fr)_minmax(8.5rem,0.85fr)_auto] sm:items-end">
@@ -468,6 +506,7 @@ export function TeachingEnrollmentsTab({
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder="(11) 99999-9999"
+                error={guestWhatsappTaken ? 'Já existe um inscrito com este WhatsApp.' : undefined}
               />
               <Input
                 label="Nascimento"
@@ -495,8 +534,9 @@ export function TeachingEnrollmentsTab({
                 }}
                 disabled={
                   guestName.trim().length < 2 ||
-                  guestWhatsapp.replace(/\D/g, '').length < 10 ||
-                  !guestBirth
+                  guestDigits.length < 10 ||
+                  !guestBirth ||
+                  guestWhatsappTaken
                 }
               >
                 Adicionar

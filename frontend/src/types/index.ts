@@ -390,6 +390,7 @@ export interface TeachingEnrollment {
   class_id: string;
   kind: TeachingEnrollmentKind;
   member_id?: string | null;
+  removed_at?: string | null;
   full_name?: string | null;
   whatsapp?: string | null;
   birth_date?: string | null;
@@ -453,6 +454,38 @@ export interface TeachingMaterial {
 export type TeachingRecurrenceType = 'weekly' | 'monthly' | 'interval_days';
 export type TeachingLessonScope = 'single' | 'following';
 export type TeachingAttendanceStatus = 'unregistered' | 'present' | 'absent';
+
+export interface TeachingClassStatistics {
+  enrollments: {
+    active_members: number;
+    active_guests: number;
+    queue: number;
+  };
+  lessons_count: number;
+  attendance: {
+    present: number;
+    absent: number;
+    unregistered: number;
+  };
+  rate: number | null;
+  by_lesson: Array<{
+    lesson_id: string;
+    lesson_date: string;
+    start_time: string | null;
+    title: string | null;
+    present: number;
+    absent: number;
+  }>;
+  by_enrollment: Array<{
+    enrollment_id: string;
+    display_name: string;
+    kind: 'member' | 'guest';
+    present: number;
+    absent: number;
+    unregistered: number;
+    rate: number | null;
+  }>;
+}
 
 export interface TeachingLessonSeries {
   id: string;

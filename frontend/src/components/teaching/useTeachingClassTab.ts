@@ -7,6 +7,7 @@ export const TEACHING_CLASS_TABS = [
   'aulas',
   'materiais',
   'certificados',
+  'estatisticas',
 ] as const;
 
 export type TeachingClassTab = (typeof TEACHING_CLASS_TABS)[number];

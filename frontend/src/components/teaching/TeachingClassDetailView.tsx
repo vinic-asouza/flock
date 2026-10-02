@@ -28,6 +28,7 @@ import { TeachingEnrollmentsTab } from './TeachingEnrollmentsTab';
 import { TeachingLessonsTab } from './TeachingLessonsTab';
 import { TeachingMaterialsTab } from './TeachingMaterialsTab';
 import { TeachingCertificatesTab } from './TeachingCertificatesTab';
+import { TeachingStatisticsTab } from './TeachingStatisticsTab';
 import {
   type TeachingClassTab,
   useTeachingClassTab,
@@ -42,6 +43,7 @@ const CLASS_TABS: Array<{
   { id: 'aulas', label: 'Aulas', panelId: 'aulas-panel' },
   { id: 'materiais', label: 'Materiais', panelId: 'materiais-panel' },
   { id: 'certificados', label: 'Certificados', panelId: 'certificados-panel' },
+  { id: 'estatisticas', label: 'Estatísticas', panelId: 'estatisticas-panel' },
 ];
 
 function PersonChip({ name }: { name: string }) {
@@ -380,6 +382,8 @@ export function TeachingClassDetailView({
             readOnly={readOnly}
             onDirtyChange={setCertificatesDirty}
           />
+        ) : activeTab === 'estatisticas' ? (
+          <TeachingStatisticsTab teachingClass={teachingClass} />
         ) : null}
       </section>
     </EntityDetailLayout>

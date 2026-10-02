@@ -2,26 +2,19 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Loader2, Search, UserCheck, Users } from 'lucide-react';
+import { Check, Loader2, Search, UserCheck, Users, X } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
-import { Select } from '@/components/ui/Select';
 import apiService, { formatApiError } from '@/services/api';
 import type {
   TeachingAttendanceItem,
   TeachingAttendanceStatus,
   TeachingLesson,
 } from '@/types';
-import { ATTENDANCE_LABELS } from './teachingLessonUtils';
-
-const ATTENDANCE_OPTIONS = [
-  { value: 'unregistered', label: ATTENDANCE_LABELS.unregistered },
-  { value: 'present', label: ATTENDANCE_LABELS.present },
-  { value: 'absent', label: ATTENDANCE_LABELS.absent },
-];
+import { READER_TOOLTIP } from './constants';
 
 interface TeachingLessonAttendanceProps {
   lesson: TeachingLesson;
@@ -227,7 +220,7 @@ export function TeachingLessonAttendance({
           {displayedItems.map((item) => (
             <li
               key={item.enrollment_id}
-              className="grid gap-2 rounded-xl border border-gray-200 p-3 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-center"
+              className="grid gap-2 rounded-xl border border-gray-200 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-gray-900">{item.display_name}</p>
@@ -236,17 +229,69 @@ export function TeachingLessonAttendance({
                   {item.removed_from_class ? ' · Removido da turma' : ''}
                 </p>
               </div>
-              <Select
-                value={item.status}
-                disabled={readOnly}
-                onChange={(value) =>
-                  setChanges((current) => ({
-                    ...current,
-                    [item.enrollment_id]: value as TeachingAttendanceStatus,
-                  }))
-                }
-                options={ATTENDANCE_OPTIONS}
-              />
+              <div className="flex flex-col gap-1 sm:items-end">
+                {item.status === 'unregistered' ? (
+                  <span className="text-xs text-gray-500">Não registrada</span>
+                ) : null}
+                <div
+                  role="group"
+                  aria-label={`Presença de ${item.display_name}`}
+                  className="flex flex-wrap gap-2"
+                >
+                  {(
+                    [
+                      {
+                        value: 'present' as const,
+                        label: 'Presente',
+                        icon: Check,
+                        active: 'bg-emerald-50 text-emerald-700 ring-emerald-600/30',
+                      },
+                      {
+                        value: 'absent' as const,
+                        label: 'Ausente',
+                        icon: X,
+                        active: 'bg-rose-50 text-rose-700 ring-rose-600/30',
+                      },
+                    ] as const
+                  ).map((option) => {
+                    const Icon = option.icon;
+                    const pressed = item.status === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={pressed}
+                        disabled={readOnly || saving}
+                        title={readOnly ? READER_TOOLTIP : undefined}
+                        className={`inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm font-medium ring-1 ring-inset focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 ${
+                          pressed
+                            ? option.active
+                            : 'bg-white text-gray-600 ring-gray-200 hover:bg-gray-50'
+                        }`}
+                        onClick={() => {
+                          const next: TeachingAttendanceStatus = pressed
+                            ? 'unregistered'
+                            : option.value;
+                          setChanges((current) => {
+                            const original = items.find(
+                              (row) => row.enrollment_id === item.enrollment_id
+                            )?.status;
+                            if (original === next) {
+                              const rest = { ...current };
+                              delete rest[item.enrollment_id];
+                              return rest;
+                            }
+                            return { ...current, [item.enrollment_id]: next };
+                          });
+                        }}
+                      >
+                        <Icon className="h-4 w-4" aria-hidden />
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </li>
           ))}
         </ul>

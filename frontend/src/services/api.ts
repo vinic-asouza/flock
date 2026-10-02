@@ -124,12 +124,20 @@ class ApiService {
 
           // Quando responseType é 'blob' (ex.: exportação PDF), erros HTTP chegam como Blob.
           // Precisamos ler o Blob como texto para extrair o JSON de erro do backend.
-          if (responseData instanceof Blob && responseData.type === 'application/json') {
-            try {
-              const text = await responseData.text();
-              responseData = JSON.parse(text);
-            } catch {
-              // Blob não é JSON válido — manter mensagem genérica
+          if (responseData instanceof Blob) {
+            const blobType = responseData.type || '';
+            const maybeJson =
+              blobType.includes('json') ||
+              blobType === '' ||
+              blobType === 'text/plain' ||
+              blobType === 'application/octet-stream';
+            if (maybeJson) {
+              try {
+                const text = await responseData.text();
+                responseData = JSON.parse(text);
+              } catch {
+                // Blob não é JSON válido — manter mensagem genérica
+              }
             }
           }
 
@@ -1328,6 +1336,11 @@ class ApiService {
     return response.data;
   }
 
+  async getTeachingClassStatistics(id: string) {
+    const response = await this.api.get(`/teaching/classes/${id}/statistics`);
+    return response.data as import('@/types').TeachingClassStatistics;
+  }
+
   async createTeachingClass(data: Record<string, unknown>) {
     const response = await this.api.post('/teaching/classes', data);
     return response.data;
@@ -1533,6 +1546,8 @@ class ApiService {
     const response = await this.api.post(`/teaching/classes/${classId}/certificates/export`, form, {
       responseType: 'blob',
       timeout: 60000,
+      // O default application/json faz o axios serializar o FormData e o logo não chega.
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
 
     const filename =

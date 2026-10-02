@@ -21,7 +21,7 @@ export function TeachingEmptyState({
   );
 }
 
-const STATUS_BADGE_STYLES: Record<TeachingClassStatus, string> = {
+export const STATUS_BADGE_STYLES: Record<TeachingClassStatus, string> = {
   draft: 'bg-slate-100 text-slate-700 ring-slate-600/20',
   open: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   in_progress: 'bg-sky-50 text-sky-700 ring-sky-600/20',
