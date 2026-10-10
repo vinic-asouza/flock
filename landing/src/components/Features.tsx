@@ -1,4 +1,4 @@
-import { Users, UserPlus, Building2, UsersRound, Calendar, BarChart3 } from 'lucide-react';
+import { Users, UserPlus, Building2, UsersRound, BarChart3 } from 'lucide-react';
 
 const features = [
   {
@@ -28,13 +28,6 @@ const features = [
     headline: 'Organize áreas de serviço da igreja.',
     description:
       'Saiba quem participa de cada ministério e facilite o acompanhamento dos líderes.',
-  },
-  {
-    icon: Calendar,
-    title: 'Agenda',
-    headline: 'Tudo que acontece na igreja, organizado.',
-    description:
-      'Cultos, reuniões e eventos em uma agenda compartilhada com a liderança.',
   },
   {
     icon: BarChart3,
