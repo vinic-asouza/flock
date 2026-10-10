@@ -41,7 +41,9 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, isLoading, isOperationLoading, router, pathname, searchParams]);
 
-  if (authInitFailed && !isLoading) {
+  const isSessionForm = pathname === '/login' || pathname === '/register';
+
+  if (authInitFailed && !isLoading && !isSessionForm) {
     return (
       <SessionInitError
         variant={pathname === '/checkout' ? 'checkout' : 'session'}

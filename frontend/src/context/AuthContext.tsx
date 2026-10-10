@@ -212,6 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         congregationIds: loginRes.congregationIds,
       });
       setChurchSelectionRequired(false);
+      setAuthInitFailed(false);
       const userEmail = response.email || data.email;
 
       // ACHADO 17: expires_at fictício removido — o valor real está no cookie session_id
