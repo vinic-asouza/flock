@@ -4,13 +4,14 @@ import { useEffect, memo, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Spinner } from '@/components/ui/Spinner';
+import { SessionInitError } from '@/components/auth/SessionInitError';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 function AuthGuardContent({ children }: AuthGuardProps) {
-  const { isAuthenticated, isLoading, isOperationLoading } = useAuth();
+  const { isAuthenticated, isLoading, isOperationLoading, authInitFailed, retryAuth } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -39,6 +40,18 @@ function AuthGuardContent({ children }: AuthGuardProps) {
       router.push('/');
     }
   }, [isAuthenticated, isLoading, isOperationLoading, router, pathname, searchParams]);
+
+  if (authInitFailed && !isLoading) {
+    return (
+      <SessionInitError
+        variant={pathname === '/checkout' ? 'checkout' : 'session'}
+        isAuthenticated={isAuthenticated}
+        onRetry={() => {
+          void retryAuth();
+        }}
+      />
+    );
+  }
 
   if (isLoading) {
     return (

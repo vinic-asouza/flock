@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { 
   AuthContextType, 
   Church,
@@ -43,6 +43,9 @@ const preserveErrorProperties = (error: unknown): Error => {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/** Teto da checagem inicial. O axios já corta em 10s; isto cobre request que não settle. */
+const SESSION_INIT_TIMEOUT_MS = 12_000;
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Church | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -53,7 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessAllCongregations, setAccessAllCongregations] = useState(true);
   const [congregationIds, setCongregationIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [authInitFailed, setAuthInitFailed] = useState(false);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
+  const initGenerationRef = useRef(0);
 
   const applyCongregationScope = useCallback((payload: {
     accessAllCongregations?: boolean;
@@ -70,91 +75,118 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCongregationIds(Array.isArray(payload.congregationIds) ? payload.congregationIds : []);
   }, []);
 
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const auth = await apiService.getCheckAuth();
+  const clearUnauthenticatedSession = useCallback(() => {
+    setUser(null);
+    setSession(null);
+    setCurrentRole(null);
+    setMemberships([]);
+    setActiveChurchId(null);
+    setChurchSelectionRequired(false);
+    setAccessAllCongregations(true);
+    setCongregationIds([]);
+  }, []);
 
-        if (auth.authenticated && auth.code === 'CHURCH_SELECTION_REQUIRED') {
-          setMemberships(auth.memberships || []);
-          setChurchSelectionRequired(true);
-          setUser(null);
-          setCurrentRole(null);
-          setActiveChurchId(auth.activeChurchId ?? null);
-        } else if (auth.authenticated && auth.church) {
-          setUser(auth.church);
-          const role = (auth.role as ChurchUserRole) ?? 'reader';
-          setCurrentRole(role);
-          setMemberships(auth.memberships || []);
-          setActiveChurchId(auth.activeChurchId ?? auth.church.id);
-          setChurchSelectionRequired(false);
-          applyCongregationScope({
-            role,
-            accessAllCongregations: auth.accessAllCongregations,
-            congregationIds: auth.congregationIds,
-          });
-          if (auth.activeChurchId) {
-            apiService.setActiveChurchIdClient(auth.activeChurchId);
-          }
+  const initializeAuth = useCallback(async () => {
+    const generation = initGenerationRef.current + 1;
+    initGenerationRef.current = generation;
+    setIsLoading(true);
+    setAuthInitFailed(false);
 
-          let userEmail = '';
-          try {
-            const accountData = await apiService.getAccountData();
-            userEmail = accountData.email || '';
-          } catch {
-            // ACHADO 18: email não está disponível aqui (sem data.email), mas a falha
-            // não é crítica. O email será exibido vazio na UI até que o usuário recarregue.
-            console.warn('[AuthContext] getAccountData falhou na inicialização. Email pode ficar vazio na UI.');
-          }
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      if (initGenerationRef.current !== generation) return;
+      timedOut = true;
+      clearUnauthenticatedSession();
+      setAuthInitFailed(true);
+      setIsLoading(false);
+    }, SESSION_INIT_TIMEOUT_MS);
 
-          // ACHADO 17: expires_at=0 — o valor real de expiração está no cookie session_id
-          // gerenciado pelo backend. Não calcular localmente para evitar inconsistência.
-          setSession({
-            access_token: 'stored_in_cookie',
-            token_type: 'bearer',
-            expires_in: 900,
-            expires_at: 0,
-            refresh_token: 'stored_in_cookie',
-            user: {
-              id: auth.church.user_id,
-              email: userEmail,
-              aud: 'authenticated',
-              role: 'authenticated',
-              email_confirmed_at: new Date().toISOString(),
-              phone: '',
-              confirmed_at: new Date().toISOString(),
-              last_sign_in_at: new Date().toISOString(),
-              app_metadata: { provider: 'email', providers: ['email'] },
-              user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: auth.church.user_id },
-              identities: [],
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              is_anonymous: false
-            }
-          });
-        } else {
-          setUser(null);
-          setSession(null);
-          setCurrentRole(null);
-          setMemberships([]);
-          setActiveChurchId(null);
-          setChurchSelectionRequired(false);
-          setAccessAllCongregations(true);
-          setCongregationIds([]);
-        }
-      } catch {
+    const stillCurrent = () => !timedOut && initGenerationRef.current === generation;
+
+    try {
+      const auth = await apiService.getCheckAuth();
+      if (!stillCurrent()) return;
+
+      if (auth.authenticated && auth.code === 'CHURCH_SELECTION_REQUIRED') {
+        setMemberships(auth.memberships || []);
+        setChurchSelectionRequired(true);
         setUser(null);
-        setSession(null);
         setCurrentRole(null);
-        setAccessAllCongregations(true);
-        setCongregationIds([]);
-      } finally {
+        setActiveChurchId(auth.activeChurchId ?? null);
+      } else if (auth.authenticated && auth.church) {
+        setUser(auth.church);
+        const role = (auth.role as ChurchUserRole) ?? 'reader';
+        setCurrentRole(role);
+        setMemberships(auth.memberships || []);
+        setActiveChurchId(auth.activeChurchId ?? auth.church.id);
+        setChurchSelectionRequired(false);
+        applyCongregationScope({
+          role,
+          accessAllCongregations: auth.accessAllCongregations,
+          congregationIds: auth.congregationIds,
+        });
+        if (auth.activeChurchId) {
+          apiService.setActiveChurchIdClient(auth.activeChurchId);
+        }
+
+        let userEmail = '';
+        try {
+          const accountData = await apiService.getAccountData();
+          userEmail = accountData.email || '';
+        } catch {
+          // ACHADO 18: email não está disponível aqui (sem data.email), mas a falha
+          // não é crítica. O email será exibido vazio na UI até que o usuário recarregue.
+          console.warn('[AuthContext] getAccountData falhou na inicialização. Email pode ficar vazio na UI.');
+        }
+
+        if (!stillCurrent()) return;
+
+        // ACHADO 17: expires_at=0 — o valor real de expiração está no cookie session_id
+        // gerenciado pelo backend. Não calcular localmente para evitar inconsistência.
+        setSession({
+          access_token: 'stored_in_cookie',
+          token_type: 'bearer',
+          expires_in: 900,
+          expires_at: 0,
+          refresh_token: 'stored_in_cookie',
+          user: {
+            id: auth.church.user_id,
+            email: userEmail,
+            aud: 'authenticated',
+            role: 'authenticated',
+            email_confirmed_at: new Date().toISOString(),
+            phone: '',
+            confirmed_at: new Date().toISOString(),
+            last_sign_in_at: new Date().toISOString(),
+            app_metadata: { provider: 'email', providers: ['email'] },
+            user_metadata: { email: userEmail, email_verified: true, phone_verified: false, sub: auth.church.user_id },
+            identities: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_anonymous: false
+          }
+        });
+      } else {
+        clearUnauthenticatedSession();
+      }
+      if (stillCurrent()) {
+        setAuthInitFailed(false);
+      }
+    } catch {
+      if (!stillCurrent()) return;
+      clearUnauthenticatedSession();
+      setAuthInitFailed(true);
+    } finally {
+      clearTimeout(timer);
+      if (stillCurrent()) {
         setIsLoading(false);
       }
-    };
+    }
+  }, [applyCongregationScope, clearUnauthenticatedSession]);
 
-    initializeAuth();
-  }, [applyCongregationScope]);
+  useEffect(() => {
+    void initializeAuth();
+  }, [initializeAuth]);
 
   const login = useCallback(async (data: LoginData): Promise<void> => {
     try {
@@ -357,6 +389,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     canCreateCongregations,
     isLoading,
     isOperationLoading,
+    authInitFailed,
+    retryAuth: initializeAuth,
     isAuthenticated,
     login,
     register,
@@ -370,7 +404,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     activeChurchId,
     churchSelectionRequired,
     switchChurch,
-  }), [user, session, currentRole, canEdit, accessAllCongregations, congregationIds, canCreateCongregations, isLoading, isOperationLoading, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
+  }), [user, session, currentRole, canEdit, accessAllCongregations, congregationIds, canCreateCongregations, isLoading, isOperationLoading, authInitFailed, initializeAuth, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
 
   return (
     <AuthContext.Provider value={value}>

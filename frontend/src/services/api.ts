@@ -284,8 +284,14 @@ class ApiService {
         message: data.message,
         user: data.user,
       };
-    } catch {
-      return { authenticated: false, church: undefined };
+    } catch (error) {
+      const status = error instanceof Error ? (error as Error & { status?: number }).status : undefined;
+      const message = error instanceof Error ? error.message : '';
+      // 401 na checagem é sessão ausente, não falha de rede.
+      if (status === 401 || message === 'Não autenticado') {
+        return { authenticated: false, church: undefined };
+      }
+      throw error;
     }
   }
 
