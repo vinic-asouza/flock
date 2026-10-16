@@ -145,6 +145,10 @@ export function AccountManagement() {
   };
 
   const handleSyncSubscription = async () => {
+    if (!user?.stripe_customer_id) {
+      return;
+    }
+
     try {
       setIsSyncing(true);
       setDeleteError(null);

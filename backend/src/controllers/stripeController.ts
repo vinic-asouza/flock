@@ -278,9 +278,19 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     }
 
     if (!church.stripe_customer_id) {
-      return res.status(400).json({
-        error: 'Cliente não possui customer_id',
-        details: 'Não foi possível encontrar o customer_id do Stripe para esta conta',
+      // Conta free / nunca fez checkout: nada a alinhar no Stripe (não é erro)
+      billingLog({
+        event: 'sync_subscription',
+        church_id: church.id,
+        outcome: 'skipped',
+        reason: 'no_stripe_customer',
+        request_id: req.requestId,
+      });
+      recordSyncSubscription('skipped');
+
+      return res.json({
+        message: 'Nenhum customer Stripe vinculado a esta conta',
+        synced: false,
       });
     }
 
