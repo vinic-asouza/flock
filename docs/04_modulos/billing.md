@@ -3,8 +3,8 @@ type: modulo
 nome: billing
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-26
-versao: "1.1"
+ultima_atualizacao: 2026-10-16
+versao: "1.2"
 owner: (não identificado no código)
 tags: [módulo, billing]
 depende_de: [auth, config]
@@ -197,7 +197,7 @@ Telemetria dos crons (`runTrackedJob`).
 | POST | `/webhook` | Stripe sig | — | Webhook (raw body, RL 300/min) |
 | POST | `/create-checkout-session` | optional | admin+ se authed | Checkout 200/500/800 |
 | POST | `/create-portal-session` | ✅ | ≥ admin | Customer Portal |
-| POST | `/sync-subscription` | ✅ | ≥ admin | Sync Stripe→DB |
+| POST | `/sync-subscription` | ✅ | ≥ admin | Sync Stripe→DB (sem customer → 200 `synced: false`) |
 | POST | `/change-plan` | ✅ | ≥ admin | Troca preço subscription |
 | POST | `/activate-free-plan` | ✅ | ≥ admin | Cancela pago → 100 |
 | GET | `/checkout-status` | ✅ | ≥ admin | Status pós-checkout |
@@ -258,7 +258,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**16** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**17** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -278,6 +278,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**16** regras).
 | BR-BILL-014 | Avisos e-mail 7/3/1 dias antes do fim |
 | BR-BILL-015 | Purge pending expiradas (7d) |
 | BR-BILL-016 | Purge webhooks >90d |
+| BR-BILL-017 | Sync sem `stripe_customer_id` → 200 `synced: false` (não cria customer) |
 
 Extras de código: `plan_type` null/`custom` → limite Infinity; avisos de quota 80/90/100%.
 
@@ -451,7 +452,8 @@ Tracking: `job_runs` via `runTrackedJob`.
 | --- | --- | --- |
 | Plano inválido | 400 | checkout/change |
 | Assinatura já ativa | 409 | checkout authed |
-| Sem customer | 400 | portal |
+| Sem customer | 400 | portal (`create-portal-session`) |
+| Sem customer | 200 `synced: false` | sync (`sync-subscription`) — BR-BILL-017; UI não auto-sincroniza |
 | Downgrade não cabe | 400 | change / activate-free |
 | Cancel Stripe fail | 500 | activate-free |
 | Admin required | 403 | rotas billing / checkout authed |

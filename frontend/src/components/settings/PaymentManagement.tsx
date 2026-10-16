@@ -191,8 +191,14 @@ export function PaymentManagement() {
   }, [activeChurchId, user?.id]);
 
   // Auto-sync ao abrir aba (uma vez por igreja; respeita cache de 5 min — FB06)
+  // Sem stripe_customer_id (plano free sem checkout) não há o que sincronizar — DEV-136
   useEffect(() => {
     if (hasSyncedRef.current || !user || !canManagePlan) {
+      return;
+    }
+
+    if (!user.stripe_customer_id) {
+      hasSyncedRef.current = true;
       return;
     }
 
@@ -286,6 +292,10 @@ export function PaymentManagement() {
 
   const handleSyncSubscription = async (force: boolean = false) => {
     const churchKey = activeChurchId ?? user?.id;
+
+    if (!user?.stripe_customer_id) {
+      return;
+    }
 
     if (!force && churchKey && getCachedStripeSync(churchKey)) {
       setSyncMessage('Dados já sincronizados recentemente. Use "Sincronizar agora" no aviso acima ou aguarde alguns minutos.');
