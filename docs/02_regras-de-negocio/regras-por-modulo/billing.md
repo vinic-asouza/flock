@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: billing
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
-total_regras: 16
+ultima_atualizacao: 2026-10-16
+versao: "1.1"
+total_regras: 17
 tags: [regras, modulo:billing]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -35,6 +35,7 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 | BR-BILL-014 | Avisos expiração 7/3/1 | Gatilho | Ativo |
 | BR-BILL-015 | Cleanup pending 7d | Gatilho | Ativo |
 | BR-BILL-016 | Cleanup webhooks 90d | Gatilho | Ativo |
+| BR-BILL-017 | Sync sem customer = noop | Fato | Ativo |
 
 ---
 
@@ -92,6 +93,16 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Comportamento em violação:** 400
 - **Implementado em:** `stripeController.ts`
 - **Testado em:** N/A — sem suite dedicada
+- **Depende de:** —
+
+### BR-BILL-017: Sync sem customer = noop
+- **Declaração:** `POST /sync-subscription` sem `stripe_customer_id` responde 200 com `synced: false` (nada a alinhar). Não cria customer Stripe. Conta free que nunca fez checkout não trata ausência de customer como erro. Distinto de [[BR-BILL-005]] (portal continua exigindo customer).
+- **Tipo:** Fato
+- **Gatilho:** sync-subscription (API ou auto-sync UI)
+- **Comportamento esperado:** 200 `{ synced: false }`; UI não dispara sync sem customer
+- **Comportamento em violação:** —
+- **Implementado em:** `stripeController.ts` (`syncSubscription`); `PaymentManagement.tsx` / `AccountManagement.tsx` (guards)
+- **Testado em:** Smoke QA DEV-136
 - **Depende de:** —
 
 ### 🔄 Regras de Upgrade / Downgrade
@@ -217,4 +228,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Gerado em 2026-07-13.*
+*Atualizado em 2026-10-16 (BR-BILL-017).*
