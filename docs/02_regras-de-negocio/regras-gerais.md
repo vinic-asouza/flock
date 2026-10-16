@@ -109,7 +109,7 @@ tags: [regras, transversal, global]
 - **Comportamento esperado:** Login só após confirmação.
 - **Comportamento em violação:** `401` “Email não confirmado”.
 - **Implementado em:** `backend/src/controllers/authController.ts` (`login`)
-- **Exceções conhecidas:** —
+- **Exceções conhecidas:** O funil de cadastro (`/register` → auto-login → `/checkout`) **não** mostra tela de “confirme seu e-mail” no caminho feliz. Se o projeto Auth não exigir confirmação, o login segue. Se exigir e recusar, a UI mostra o erro real (sem afirmar que um link foi enviado).
 - **Regras relacionadas:** BR-GEN-005
 
 ### BR-GEN-005: Login exige vínculo com igreja
