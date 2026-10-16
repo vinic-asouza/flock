@@ -93,27 +93,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthInitFailed(false);
 
     let timedOut = false;
+    // Igreja (ou seleção de igreja) já reconhecida: o teto não pode limpar a sessão
+    // só porque getAccountData demorou.
+    let authResolved = false;
     const timer = setTimeout(() => {
       if (initGenerationRef.current !== generation) return;
       timedOut = true;
+      if (authResolved) {
+        setIsLoading(false);
+        return;
+      }
       clearUnauthenticatedSession();
       setAuthInitFailed(true);
       setIsLoading(false);
     }, SESSION_INIT_TIMEOUT_MS);
 
     const stillCurrent = () => !timedOut && initGenerationRef.current === generation;
+    const sameGeneration = () => initGenerationRef.current === generation;
 
     try {
       const auth = await apiService.getCheckAuth();
       if (!stillCurrent()) return;
 
       if (auth.authenticated && auth.code === 'CHURCH_SELECTION_REQUIRED') {
+        authResolved = true;
         setMemberships(auth.memberships || []);
         setChurchSelectionRequired(true);
         setUser(null);
         setCurrentRole(null);
         setActiveChurchId(auth.activeChurchId ?? null);
       } else if (auth.authenticated && auth.church) {
+        authResolved = true;
         setUser(auth.church);
         const role = (auth.role as ChurchUserRole) ?? 'reader';
         setCurrentRole(role);
@@ -130,16 +140,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         let userEmail = '';
-        try {
-          const accountData = await apiService.getAccountData();
-          userEmail = accountData.email || '';
-        } catch {
-          // ACHADO 18: email não está disponível aqui (sem data.email), mas a falha
-          // não é crítica. O email será exibido vazio na UI até que o usuário recarregue.
-          console.warn('[AuthContext] getAccountData falhou na inicialização. Email pode ficar vazio na UI.');
+        if (!timedOut) {
+          try {
+            const accountData = await apiService.getAccountData();
+            userEmail = accountData.email || '';
+          } catch {
+            // ACHADO 18: email não está disponível aqui (sem data.email), mas a falha
+            // não é crítica. O email será exibido vazio na UI até que o usuário recarregue.
+            console.warn('[AuthContext] getAccountData falhou na inicialização. Email pode ficar vazio na UI.');
+          }
         }
 
-        if (!stillCurrent()) return;
+        if (!sameGeneration()) return;
 
         // ACHADO 17: expires_at=0 — o valor real de expiração está no cookie session_id
         // gerenciado pelo backend. Não calcular localmente para evitar inconsistência.
@@ -169,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         clearUnauthenticatedSession();
       }
-      if (stillCurrent()) {
+      if (sameGeneration()) {
         setAuthInitFailed(false);
       }
     } catch {
@@ -178,7 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthInitFailed(true);
     } finally {
       clearTimeout(timer);
-      if (stillCurrent()) {
+      if (sameGeneration()) {
         setIsLoading(false);
       }
     }

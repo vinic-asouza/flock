@@ -41,9 +41,15 @@ function AuthGuardContent({ children }: AuthGuardProps) {
     }
   }, [isAuthenticated, isLoading, isOperationLoading, router, pathname, searchParams]);
 
-  const isSessionForm = pathname === '/login' || pathname === '/register';
+  // Formulários públicos: não esconder atrás da falha da checagem de sessão.
+  const isPublicAuthForm =
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password' ||
+    pathname === '/create-password';
 
-  if (authInitFailed && !isLoading && !isSessionForm) {
+  if (authInitFailed && !isLoading && !isPublicAuthForm) {
     return (
       <SessionInitError
         variant={pathname === '/checkout' ? 'checkout' : 'session'}
