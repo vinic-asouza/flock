@@ -108,16 +108,17 @@ Para cada jornada: objetivo, atores, passos felizes, desvios relevantes.
 
 1. Landing → **Começar grátis** → `/register?plan=100`
 2. Preenche conta + igreja → `POST /api/auth/register`
-3. Mensagem de confirmar e-mail → link → `/auth/callback` → app (`/`)
-4. Plano free ativável via checkout/settings conforme estado da subscription
+3. Auto-login → `/checkout?plan=100` (sem tela de “confirme seu e-mail” no caminho feliz)
+4. **Acessar Sistema** ativa o plano free; se a escolha de plano não carregar, erro com tentar de novo / painel ou login
 
-**Atores:** visitante → owner. **Crítico:** confirmação de e-mail bloqueia uso pleno.
+**Atores:** visitante → owner.  
+**Desvio:** se o Auth recusar e-mail não confirmado no auto-login (BR-AUTH-003), a UI mostra o erro real + link para `/login` — não afirma que um e-mail de confirmação foi enviado.
 
 ### J2 — Cadastro pago (landing → Stripe → registro)
 
 1. Landing pricing → plano pago → `/register?plan=200|500|800` (ou login com `redirect=/checkout?plan=…`)
 2. Registro cria igreja + pending subscription
-3. Confirma e-mail → `/checkout` → Stripe Checkout
+3. Auto-login → `/checkout?plan=…` → Stripe Checkout (mesmo funil do free; sem tela de confirmação de e-mail no caminho feliz)
 4. Retorno `/subscription/success` (polling status) ou `/subscription/cancel`
 5. Acesso ao app com plano ativo
 
@@ -239,7 +240,7 @@ Não faz parte de J1–J12 nem do Mintlify. Ator: **Operador da plataforma**. Ap
 | Fluxo | Onde | Etapas |
 | --- | --- | --- |
 | Importação CSV de membros | `MemberImportModal` | `upload` → `validation` → `importing` → `result` |
-| Funil de plano | Landing → register → callback → checkout → success/cancel | sessionStorage `flock_selected_plan` |
+| Funil de plano | Landing → register → auto-login → checkout → success/cancel (pago) | sessionStorage `flock_selected_plan` |
 | Settings | Abas por query `tab` | church / payment / account / users / logs |
 | Formulários longos | Membro, igreja, registro | seções em um form (sem stepper visual global) |
 | Tutoriais | Guias | lista ordenada de steps (educacional, não wizard de dados) |

@@ -50,7 +50,7 @@ owner  >  admin  >  editor  >  reader
 - **Descrição:** Conta que criou / possui a igreja (`churches.user_id` + registro em `church_users`). Responsável legal/administrativo do tenant.
 - **Casos de uso principais:** Onboarding da igreja, billing, gestão da equipe, dados da igreja, exclusão de conta (com regras de assinatura).
 - **Acesso típico:** Tudo que admin tem + proteção especial (papel owner não é alterável pela rota de usuários; UI de exclusão de conta enfatiza owner).
-- **Onboarding específico:** Auto-registro em `/register` (plano free ou pós-checkout Stripe) cria igreja + `church_users` como `owner`; confirmação de e-mail obrigatória.
+- **Onboarding específico:** Auto-registro em `/register` (plano free ou pago via `?plan=`) cria igreja + `church_users` como `owner` e segue para `/checkout` após auto-login. Se o Auth recusar e-mail não confirmado, o login falha (BR-AUTH-003); a UI do funil não apresenta etapa de “confirme o e-mail” no caminho feliz.
 
 ### Admin (Administrador)
 
