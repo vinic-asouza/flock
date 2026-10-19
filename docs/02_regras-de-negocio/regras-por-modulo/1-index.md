@@ -19,7 +19,7 @@ tags: [regras, índice, módulos]
 | Autenticação e Sessão | [[02_regras-de-negocio/regras-por-modulo/auth]] | AUTH | 14 | Login, sessão, senha, confirmação |
 | Admin OPS | [[02_regras-de-negocio/regras-por-modulo/admin-ops]] | OPS | 8 | Allowlist + leitura GET de Igrejas + Lista de espera + saúde agregada |
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
-| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 18 | Rol oficial, import, autocadastro |
+| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 19 | Rol oficial, import, autocadastro |
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 16 | Pré-membros e conversão |
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 9 | Unidades locais |
 | Ministérios | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 13 | Áreas de serviço (API `groups`) |

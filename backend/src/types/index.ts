@@ -187,7 +187,7 @@ export interface PublicRegistrationLink {
 export interface CreateRegistrationLinkData {
   expires_at: string; // ISO date string
   max_uses?: number | null;
-  default_congregation_id?: string | null;
+  default_congregation_id: string;
   notes?: string | null;
 }
 

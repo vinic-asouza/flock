@@ -15,7 +15,8 @@ type LinkInfo = {
   max_uses?: number | null;
   current_uses: number;
   remaining_uses?: number | null;
-  congregations?: { id: string; name: string; abbreviation?: string | null }[];
+  default_congregation_id?: string;
+  default_congregation?: { id: string; name: string; abbreviation?: string | null };
   blocked_reason?: string;
 };
 
@@ -278,7 +279,7 @@ export default function PublicRegisterPage() {
               isLoading={isSubmitting}
               churchName={linkInfo?.church_name}
               error={error && errorType === 'submission' ? error : null}
-              congregations={linkInfo?.congregations ?? []}
+              fixedCongregationId={linkInfo?.default_congregation_id ?? ''}
               registrationToken={token}
               submitDisabled={linkExhausted}
             />

@@ -1165,7 +1165,7 @@ class ApiService {
   async createRegistrationLink(data: {
     expires_at: string;
     max_uses?: number | null;
-    default_congregation_id?: string | null;
+    default_congregation_id: string;
     notes?: string | null;
   }) {
     const response = await this.api.post('/registration-links', data);

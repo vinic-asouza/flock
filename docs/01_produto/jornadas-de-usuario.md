@@ -204,10 +204,10 @@ Estado vazio: “Nenhum dado disponível” quando não há membros.
 
 ### J11 — Captação pública
 
-1. Editor cria link (modais em Membros / Integração)
+1. Editor cria link (modais em Membros / Integração). No link de **membros**, a congregação é obrigatória na criação (BR-MEM-019).
 2. Visitante abre `/public/register|[integration]/[token]`
-3. Submit cria membro (cadastro operacional, **sem** questionário) ou integrante (pessoais + questionário + congregação prevista)
-4. Rate limit e validade/usos do token
+3. Submit cria membro (cadastro operacional, **sem** questionário e **sem** escolher congregação — usa a do link) ou integrante (pessoais + questionário + congregação prevista opcional)
+4. Rate limit e validade/usos do token; ministérios no form de membros = da congregação do link
 
 **Mobile:**
 - `/public/register/[token]`: header com safe-area, formulário scrollável (`PublicMemberForm`) e CTAs full-width.
