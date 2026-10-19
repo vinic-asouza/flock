@@ -278,7 +278,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**17** regras).
 | BR-BILL-014 | Avisos e-mail 7/3/1 dias antes do fim |
 | BR-BILL-015 | Purge pending expiradas (7d) |
 | BR-BILL-016 | Purge webhooks >90d |
-| BR-BILL-017 | Sync sem `stripe_customer_id` → 200 `synced: false` (não cria customer) |
+| BR-BILL-017 | Sync sem `stripe_customer_id` → 200 `synced: false`; UI free (`plan_type` 100) sem Sync (mesmo com customer residual) |
 
 Extras de código: `plan_type` null/`custom` → limite Infinity; avisos de quota 80/90/100%.
 
@@ -378,7 +378,8 @@ Conteúdo autenticado em `frontend/src/components/settings/PaymentManagement.tsx
 **Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+` / `sm+` conforme bloco) permanece equivalente. Sem migrar troca de plano para rota full-page.
 
 - **Cards:** status, plano atual, datas, `past_due`, sync falho, vazia, expirada — `p-4 sm:p-6`, `min-w-0` / `overflow-x-hidden`; nome e preço do plano empilham no mobile.
-- **CTAs:** Gerenciar Assinatura / Trocar de Plano / Sincronizar / Assinar / Reativar / Atualizar pagamento — empilham em `<sm`, full-width; row em `sm+`.
+- **Estado vazio (sem assinatura ativa):** classificado por **plano Grátis** (`plan_type === '100'`), não só por ausência de `stripe_customer_id`. Conta free (mesmo com customer residual de checkout abandonado) mostra copy do plano gratuito + limite 100 e um único CTA **Assinar Plano**; não mostra “assinatura não encontrada” nem **Sincronizar Assinatura**. Auto-sync on mount e sync manual também ignoram plano 100 (DEV-158; complementa DEV-136 / [[BR-BILL-017]]).
+- **CTAs:** Gerenciar Assinatura / Trocar de Plano / Sincronizar / Assinar / Reativar / Atualizar pagamento — empilham em `<sm`, full-width; row em `sm+`. Sync só fora do plano Grátis.
 - **Modais Trocar de Plano e Confirmar:** `footer` sticky do `Modal` compartilhado (`flex-col-reverse` no mobile). Alerta de downgrade (BR-BILL-006) permanece no body scrollável. Overlay `visualViewport` (teclado iOS) já no `Modal` (DEV-34).
 - **Histórico de assinatura:** wrap `flex-col sm:flex-row`; `min-w-0`.
 - **Retorno Stripe:** `/subscription/success` e `/subscription/cancel` já usam `min-h-dvh`, safe-area e CTAs `min-h-11` (funil / P1).

@@ -35,7 +35,7 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 | BR-BILL-014 | Avisos expiração 7/3/1 | Gatilho | Ativo |
 | BR-BILL-015 | Cleanup pending 7d | Gatilho | Ativo |
 | BR-BILL-016 | Cleanup webhooks 90d | Gatilho | Ativo |
-| BR-BILL-017 | Sync sem customer = noop | Fato | Ativo |
+| BR-BILL-017 | Sync sem customer = noop; UI free sem Sync | Fato | Ativo |
 
 ---
 
@@ -95,14 +95,14 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** —
 
-### BR-BILL-017: Sync sem customer = noop
-- **Declaração:** `POST /sync-subscription` sem `stripe_customer_id` responde 200 com `synced: false` (nada a alinhar). Não cria customer Stripe. Conta free que nunca fez checkout não trata ausência de customer como erro. Distinto de [[BR-BILL-005]] (portal continua exigindo customer).
+### BR-BILL-017: Sync sem customer = noop; UI free sem Sync
+- **Declaração:** `POST /sync-subscription` sem `stripe_customer_id` responde 200 com `synced: false` (nada a alinhar). Não cria customer Stripe. Conta free que nunca fez checkout não trata ausência de customer como erro. Na aba Plano, conta no plano Grátis (`plan_type` 100) **não** oferece Sync (auto nem botão), mesmo com `stripe_customer_id` residual de checkout abandonado — o estado vazio é o do plano gratuito. Distinto de [[BR-BILL-005]] (portal continua exigindo customer).
 - **Tipo:** Fato
-- **Gatilho:** sync-subscription (API ou auto-sync UI)
-- **Comportamento esperado:** 200 `{ synced: false }`; UI não dispara sync sem customer
-- **Comportamento em violação:** —
-- **Implementado em:** `stripeController.ts` (`syncSubscription`); `PaymentManagement.tsx` / `AccountManagement.tsx` (guards)
-- **Testado em:** Smoke QA DEV-136
+- **Gatilho:** sync-subscription (API ou auto-sync UI); render do estado vazio da aba Plano
+- **Comportamento esperado:** 200 `{ synced: false }` sem customer; UI não dispara sync sem customer **nem** em `plan_type` 100; free vê copy de plano gratuito + único CTA de upgrade
+- **Comportamento em violação:** free com customer residual tratado como “pago sem assinatura” (mensagem + Sync)
+- **Implementado em:** `stripeController.ts` (`syncSubscription`); `PaymentManagement.tsx` (guards + empty state); `AccountManagement.tsx` (guard sem customer)
+- **Testado em:** Smoke QA DEV-136; smoke DEV-158 (free local)
 - **Depende de:** —
 
 ### 🔄 Regras de Upgrade / Downgrade
@@ -228,4 +228,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Atualizado em 2026-10-16 (BR-BILL-017).*
+*Atualizado em 2026-10-19 (BR-BILL-017 — UI free / DEV-158).*
