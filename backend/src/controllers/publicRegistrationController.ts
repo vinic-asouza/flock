@@ -52,12 +52,12 @@ export const validateRegistrationLink = async (
       });
     }
 
+    // Nota: congregations não tem coluna `active` (só members/groups usam flags)
     const { data: congregation } = await supabase
       .from('congregations')
       .select('id, name, abbreviation')
       .eq('id', registrationLink.default_congregation_id)
       .eq('church_id', churchId)
-      .eq('active', true)
       .single();
 
     if (!congregation) {
