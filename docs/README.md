@@ -40,7 +40,7 @@ Os templates em [`00_meta/templates/`](00_meta/templates/) definem a **estrutura
 
 Decisões bloqueantes (escopo, aceite, risco de review/QA, etc.): perguntar no **chat do Cursor**, registrar no Linear, e só concluir a etapa depois da resposta — ver workflow §15.1.
 
-Avanço entre etapas (`Todo` → `In Progress` → `Review` → `Document` → `Done`) exige **comando no chat** (Gate de Avanço, workflow §15.2), exceto `Backlog` → `Todo` após Product Analyst, UX/UI Designer **quando houver impacto visual** (workflow §8.3) e Software Architect. O PR da Issue abre em `In Progress` (§15.6). Ao autorizar `Done`, o agente pergunta se deseja **mergear** o PR (§15.3).
+A execução da Issue é **contínua até `Done`** (workflow §15.2): um comando no chat dispara PA → UX/UI (se §8.3) → SA → Engineers → Review (com loop automático de correções obrigatórias) → Document → Done. Única pausa intermediária: Gate de Decisão (§15.1). O PR abre em `In Progress` (§15.6). Em `Done`, o agente entrega resumo + PR e pergunta se deseja **validação manual** ou **merge** (§15.3).
 
 A etapa `Document` **avalia** se `docs/` ou Mintlify precisam mudar. Ajustes visuais finos e polimento de CSS **não** entram na knowledge base — só impacto técnico ou de usabilidade reutilizável (workflow §15.5).
 
