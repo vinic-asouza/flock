@@ -568,6 +568,15 @@ export function PaymentManagement() {
                 <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
                   Sua assinatura foi cancelada e já expirou. Agora você está usando o plano gratuito (Limite de 100 membros). Reative a assinatura para voltar ao plano pago.
                 </p>
+                <div className="mb-6 text-left max-w-md mx-auto">
+                  <MemberQuotaUsage
+                    canManagePlan={canManagePlan}
+                    variant="settings"
+                    onUpgradeClick={
+                      canManagePlan ? () => router.push('/checkout?plan=200') : undefined
+                    }
+                  />
+                </div>
                 {planType && (planType === '200' || planType === '500' || planType === '800') && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-700 mb-2">
@@ -786,7 +795,14 @@ export function PaymentManagement() {
           )}
         </>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0 space-y-4">
+          <MemberQuotaUsage
+            canManagePlan={canManagePlan}
+            variant="settings"
+            onUpgradeClick={
+              canManagePlan ? () => { window.location.href = '/checkout?plan=200'; } : undefined
+            }
+          />
           <div className="text-center py-8">
             <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
