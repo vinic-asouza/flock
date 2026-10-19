@@ -8,6 +8,7 @@ import { Droplets, UserPlus, TrendingUp, ChevronLeft, ChevronRight, ExternalLink
 import Link from 'next/link';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { formatDate } from '@/utils';
 
 interface TimelineChartsProps {
   data: Timeline;
@@ -329,16 +330,12 @@ export function TimelineCharts({
 
   const formatIntegrationDate = (isoDate?: string) => {
     if (!isoDate) return '-';
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('pt-BR');
+    return formatDate(isoDate) || '-';
   };
 
   const formatAdmissionDate = (isoDate?: string) => {
     if (!isoDate) return null;
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toLocaleDateString('pt-BR');
+    return formatDate(isoDate) || null;
   };
 
   if (loading) {

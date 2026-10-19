@@ -19,6 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import apiService, { formatApiError } from '@/services/api';
+import { dateTimeLocalToISO, formatDateTime, toDateTimeLocalValue } from '@/utils';
 
 interface IntegrationLink {
   id: string;
@@ -87,7 +88,7 @@ export function IntegrationLinksModal({ isOpen, onClose, canEdit = true }: Integ
   const handleEdit = (link: IntegrationLink) => {
     setEditingLink(link);
     setShowCreateForm(true);
-    setExpiresAt(new Date(link.expires_at).toISOString().slice(0, 16));
+    setExpiresAt(toDateTimeLocalValue(link.expires_at));
     setMaxUses(link.max_uses?.toString() || '');
     setNotes(link.notes || '');
   };
@@ -95,7 +96,7 @@ export function IntegrationLinksModal({ isOpen, onClose, canEdit = true }: Integ
   const resetForm = () => {
     const defaultDate = new Date();
     defaultDate.setDate(defaultDate.getDate() + 30); // 30 dias por padrão
-    setExpiresAt(defaultDate.toISOString().slice(0, 16));
+    setExpiresAt(toDateTimeLocalValue(defaultDate));
     setMaxUses('');
     setNotes('Link para cadastro de novos integrantes.');
   };
@@ -108,7 +109,7 @@ export function IntegrationLinksModal({ isOpen, onClose, canEdit = true }: Integ
       setError(null);
 
       const data = {
-        expires_at: new Date(expiresAt).toISOString(),
+        expires_at: dateTimeLocalToISO(expiresAt),
         max_uses: maxUses ? parseInt(maxUses) : null,
         notes: notes || null,
       };
@@ -189,15 +190,7 @@ export function IntegrationLinksModal({ isOpen, onClose, canEdit = true }: Integ
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatDate = (dateString: string) => formatDateTime(dateString);
 
   const handleClose = () => {
     setShowCreateForm(false);

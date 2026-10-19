@@ -22,6 +22,7 @@ import {
 import apiService, { formatApiError } from '@/services/api';
 import { Congregation } from '@/types/congregation';
 import { getCongregationDisplayName, getPrimaryCongregationId } from '@/utils/congregation';
+import { dateTimeLocalToISO, formatDateTime, toDateTimeLocalValue } from '@/utils';
 
 interface RegistrationLink {
   id: string;
@@ -114,7 +115,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
   const handleEdit = (link: RegistrationLink) => {
     setEditingLink(link);
     setShowCreateForm(true);
-    setExpiresAt(new Date(link.expires_at).toISOString().slice(0, 16));
+    setExpiresAt(toDateTimeLocalValue(link.expires_at));
     setMaxUses(link.max_uses?.toString() || '');
     setNotes(link.notes || '');
     setDefaultCongregationId(link.default_congregation_id || getPrimaryCongregationId(congregations));
@@ -124,7 +125,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
   const resetForm = () => {
     const defaultDate = new Date();
     defaultDate.setDate(defaultDate.getDate() + 30); // 30 dias por padrão
-    setExpiresAt(defaultDate.toISOString().slice(0, 16));
+    setExpiresAt(toDateTimeLocalValue(defaultDate));
     setMaxUses('');
     setNotes('Link para cadastro de novos membros.');
     setDefaultCongregationId(getPrimaryCongregationId(congregations));
@@ -145,7 +146,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
       setCongregationError(null);
 
       const data = {
-        expires_at: new Date(expiresAt).toISOString(),
+        expires_at: dateTimeLocalToISO(expiresAt),
         max_uses: maxUses ? parseInt(maxUses) : null,
         default_congregation_id: defaultCongregationId,
         notes: notes || null,
@@ -227,15 +228,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatDate = (dateString: string) => formatDateTime(dateString);
 
   const handleClose = () => {
     setShowCreateForm(false);
