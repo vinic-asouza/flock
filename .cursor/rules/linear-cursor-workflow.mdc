@@ -1,5 +1,5 @@
 ---
-description: "Workflow Linear + Cursor: Linear é fonte de verdade; docs/ só para KB permanente; orquestra etapas por status + comando no chat (Gate de Avanço); decisões bloqueantes no chat (Gate de Decisão); PR abre em In Progress; commit por passo; merge de PR só com confirmação ao Done. Aplica-se a toda sessão."
+description: "Workflow Linear + Cursor: Linear é fonte de verdade; docs/ só para KB permanente; execução contínua ponta a ponta até Done (sem gates de avanço no chat); decisões bloqueantes no chat (Gate de Decisão); PR abre em In Progress; commit por passo; em Done: resumo + PR + merge só com confirmação. Aplica-se a toda sessão."
 alwaysApply: true
 ---
 
@@ -26,36 +26,35 @@ Antes de atuar sobre demandas do Flock, leia e siga:
 1. Com Issue associada: **ler e atualizar no Linear via MCP** — não depender só do chat.
 2. **Nunca** criar arquivos temporários por Issue (`refinamento-*`, `qa-report-*`, `analise-tecnica-*`, pastas `docs/refinamentos/`, etc.).
 3. Atualizar `docs/` ou Mintlify **somente** quando houver mudança permanente **com impacto técnico ou de usabilidade** (produto, regra, arquitetura, módulo, integração, padrão, ADR, fluxo/tela). Ajustes visuais finos e polimento de CSS **não** entram em docs — detalhe fica no Linear (workflow §15.5). A etapa `Document` avalia; **escrever** não é automático.
-4. Respeitar o papel solicitado; **não pular etapas**. Pares da mesma etapa (PA→UX/UI se §8.3→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão.
-5. Não fazer deploy automático sem pedido explícito do usuário. Autorizar `Done` ou mergear PR **não** é autorização de deploy.
-6. **Gate de Avanço (workflow §15.2):** o usuário comanda no chat; o agente move o status. Não mover sem o comando correspondente — **exceto** `Backlog` → `Todo` após Product Analyst + UX/UI Designer (se §8.3) + Software Architect. Ao fim da etapa: aviso no chat e **parar**.
-7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir a etapa, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **só então** conclua. Não invente a decisão; não feche a etapa com perguntas bloqueantes só no Linear.
+4. Respeitar o papel solicitado; **não pular etapas com escopo**. Pares da mesma etapa (PA→UX/UI se §8.3→SA, BE/FE, TL→QA, TW→DW) rodam na mesma sessão. Papéis sem escopo podem ser omitidos (ex.: sem FE em Issue só-API).
+5. Não fazer deploy automático sem pedido explícito do usuário. Chegar em `Done` ou mergear PR **não** é autorização de deploy.
+6. **Execução Contínua (workflow §15.2):** um comando de início/retomada no chat dispara o pipeline até `Done`. **Não** parar entre etapas pedindo “iniciar review”, “seguir para docs” ou “concluir”. Transições de status são automáticas. Única pausa intermediária: Gate de Decisão (§15.1).
+7. **Gate de Decisão (workflow §15.1):** se precisar de decisão importante para concluir um passo, **pergunte no chat do Cursor**, registre o bloqueio no Linear, **aguarde a resposta**, atualize o Linear com a decisão e **retome o pipeline até Done**. Não invente a decisão; não feche o passo com perguntas bloqueantes só no Linear.
 8. **Status vs GitHub (workflow §15.6 / §11.1):** abrir o **primeiro** PR da Issue em `In Progress` (um por Issue; depois só push). Não abrir o primeiro PR em `Review`, `Document` ou `Done`. Em `save_issue`, omitir `state` (exceto restaurar o status da etapa ou concluir para `Done`); nunca usar tipo genérico `started`. Se a automação Git/PR regressar o status, restaurar o **nome exato** da etapa imediatamente (`In Progress` / `Review` / `Document` / `Done`).
 9. **Commit por passo (workflow §15.4):** cada atuação que alterar código ou `docs/` permanentes gera **um commit** ao final daquele papel (BE, FE, correção pós-review, Technical Writer), seguido de **push**.
-10. **Gate de merge ao `Done` (workflow §15.3):** o PR já deve estar aberto. Ao autorizar `Done`, perguntar se deseja **mergear**. Só mergear com “sim” inequívoco. Sem PR: informar o desvio; não abrir PR em `Done` salvo pedido explícito + restaurar `Done`.
+10. **Fechamento em `Done` (workflow §15.3):** ao terminar Writers, mover para `Done` e entregar no chat **resumo + URL do PR** + opções (validação manual ou merge). Só mergear com “sim” inequívoco. Sem PR: informar o desvio; não abrir PR em `Done` salvo pedido explícito + restaurar `Done`.
 11. **Release tracks (workflow §15.7 / GIT-025):** milestone `v1` (ou filha de DEV-108) → feature e PR com base `major-v1` (nunca `main`); milestone MVP (e demais ≠ `v1`) → base `main`. Done em `major-v1` ≠ produção. Cutover `major-v1` → `main` só via épica DEV-108 com liberação explícita. Ao iniciar Issue v1, atualizar `major-v1` com `main` antes da feature branch.
+12. **Loop de Review (workflow §10.3):** correções **obrigatórias** → voltar automaticamente a `In Progress` → Engineers → `Review` (máx. 2 ciclos); depois disso, Gate de Decisão. Opcionais não bloqueiam.
 
 O nome do status de review no Linear é **`Review`** (não “In Review”).
 
 ## Orquestração (sem papel explícito)
 
-Se o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o agente**, leia o status Linear e roteie:
+Se o usuário pedir para desenvolver / atuar em uma Issue **sem nomear o agente**, leia o status Linear, **retome do ponto atual** e execute o restante do pipeline **até `Done`**:
 
-| Status | Comando no chat | Ação |
-| --- | --- | --- |
-| `Backlog` | Iniciar desenvolvimento / refinar | `product-analyst.mdc` → `ux-ui-designer.mdc` **se** impacto visual (nenhum/menor/maior, workflow §8.3) → `software-architect.mdc` → `Todo` → aviso e parar |
-| `Todo` | Sem comando de execução | Não implementar. Avisar que está em `Todo` e aguardar “iniciar execução” |
-| `Todo` | Iniciar execução | Mover para `In Progress` → Engineers |
-| `In Progress` | Iniciar execução / voltar ajustes | Engineers (não iniciar Review) |
-| `In Progress` | Iniciar review | Mover para `Review` → Tech Lead → QA |
-| `Review` | Iniciar review / revalidar | Tech Lead → QA (não mover sozinho) |
-| `Review` | Voltar ajustes | Mover para `In Progress` → Engineers |
-| `Review` | Seguir para documentação | Mover para `Document` → Writers |
-| `Document` | Seguir para documentação | Writers (permanece `Document`) |
-| `Document` | Concluir / `Done` | Mover para `Done` + perguntar merge do PR |
-| Qualquer | Deploy | Só se o pedido for explícito |
+| Status | Ação (continua até Done) |
+| --- | --- |
+| `Backlog` | `product-analyst.mdc` → `ux-ui-designer.mdc` **se** impacto visual (§8.3) → `software-architect.mdc` → `Todo` → `In Progress` → Engineers → `Review` → (loop se obrigatórios) → `Document` → Writers → `Done` + resumo/PR |
+| `Todo` | `In Progress` → Engineers → … → `Done` |
+| `In Progress` | Engineers (pendente) → `Review` → … → `Done` |
+| `Review` | Tech Lead → QA → loop automático se obrigatórios → `Document` → … → `Done` |
+| `Document` | Writers (pendente) → `Done` + resumo/PR |
+| `Done` | Só merge (se pedido) ou deploy (se pedido explícito) |
+| Qualquer | Deploy: só se o pedido for explícito |
 
-Após Review, o aviso no chat **deve** listar apontamentos do Linear (obrigatórios vs. opcionais).
+Pedido com papel explícito: executar o papel e **continuar o pipeline** até `Done`, salvo o usuário pedir para parar ali.
+
+**Não** emitir avisos de “etapa concluída / aguarde comando” no chat. Progresso intermediário fica no Linear.
 
 ## Gate de UX/UI (orquestração)
 
@@ -89,7 +88,7 @@ Toda atuação em Issue termina com seção estruturada + handoff:
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado
-**Próximo agente recomendado:** [par da mesma etapa | usuário no chat]
+**Próximo agente recomendado:** [próximo do pipeline]
 **Motivo:** …
 **Pontos de atenção:**
 - …
@@ -113,4 +112,5 @@ Templates: `docs/00_meta/templates/`.
 
 Se houver conflito entre um MDC de papel e este workflow, **priorize o workflow**.
 
-Gate de UX/UI: `docs/00_meta/linear-cursor-workflow.md` §8.3.
+Gate de UX/UI: `docs/00_meta/linear-cursor-workflow.md` §8.3.  
+Execução Contínua: `docs/00_meta/linear-cursor-workflow.md` §15.2.

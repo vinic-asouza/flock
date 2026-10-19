@@ -41,7 +41,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 9. Garantir o PR da Issue (abrir se ainda não houver; se houver, o push já atualiza — workflow §15.6). Relê o Linear e restaure `In Progress` se a automação GitHub tiver mudado o status.
 10. Atualizar a Issue no Linear com o que foi implementado (incluir URL do PR).
 11. Registrar telas, componentes, estados tratados, integrações e testes.
-12. Fazer handoff para Backend Engineer (se o backend ainda faltar) ou **usuário no chat** se a execução da etapa acabou. Não acionar Tech Lead.
+12. Fazer handoff para Backend Engineer (se o backend ainda faltar) ou orquestrador para **Review** se a implementação acabou.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -584,7 +584,7 @@ Use este formato:
 
 **Status:** [concluído / parcial / bloqueado]
 
-**Próximo agente recomendado:** [Backend Engineer / usuário no chat / Software Architect]
+**Próximo agente recomendado:** [Backend Engineer / Tech Lead (Review) / Software Architect]
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -632,9 +632,9 @@ Neste caso (obrigatório — workflow §15.1):
 
 ## 9.1 Movimentação de Status no Linear
 
-- Se a Issue estiver em `Todo` e o usuário **comandou iniciar execução**, mova para `In Progress` e então implemente.
-- **Não** mova para `Review`, `Document` ou `Done`.
-- Ao terminar: commit + push; abrir PR se ainda não houver (§15.6); relê o Linear e restaure `In Progress` se necessário. Aviso no chat para verificação manual (com URL do PR); **parar**.
+- Se a Issue estiver em `Todo` (pipeline contínuo), mova para `In Progress` e então implemente.
+- Ao terminar: commit + push; abrir PR se ainda não houver (§15.6); relê o Linear e restaure `In Progress` se necessário.
+- Handoff ao orquestrador para `Review` — **não** parar pedindo verificação manual no chat.
 - **Não** mergear o PR.
 
 ---
@@ -660,7 +660,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Garantir o PR da Issue (§15.6): um por Issue, aberto em `In Progress`; depois só push.
 - Relê o Linear após push/PR; restaurar `In Progress` se a automação GitHub tiver regressado.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante.
-- Respeitar o Gate de Avanço (§15.2): não iniciar Review.
+- Respeitar a Execução Contínua (§15.2): handoff ao Review após implementação.
 
 ### Nunca
 
@@ -743,10 +743,10 @@ Interface depende de backend/endpoint/contrato ainda não implementado ou ajusta
 ### Se frontend e backend estiverem concluídos
 
 ```markdown
-Próximo agente recomendado: usuário no chat
+Próximo agente recomendado: Tech Lead (Review)
 
 Motivo:
-Implementação concluída. Aguardar verificação manual e comando para iniciar review.
+Implementação concluída. Orquestrador segue para Review na mesma sessão.
 ```
 
 ### Se houver bloqueio de produto
@@ -769,28 +769,9 @@ Foi identificado bloqueio técnico ou decisão arquitetural não prevista.
 
 ---
 
-## 14. Exemplo de Resposta Final no Chat
+## 14. Comunicação no chat
 
-Após atualizar a Issue no Linear, responda ao usuário de forma breve:
-
-```markdown
-Execução frontend concluída na Issue [ID]. Status: `In Progress`.
-
-Resumo:
-- [item implementado 1]
-- [item implementado 2]
-
-Commit: [hash ou mensagem]
-PR: [url]
-
-Faça a verificação manual. O review **não** começa agora.
-
-Comandos para continuar:
-- Apontar ajustes (permanece In Progress)
-- Iniciar review
-```
-
-O detalhe da execução permanece no Linear.
+No pipeline contínuo (§15.2), **não** emita aviso de etapa concluída pedindo verificação manual ou comando de review. Atualize o Linear, faça handoff e deixe o orquestrador seguir. O usuário recebe resumo + PR só em `Done` (ou Gate de Decisão §15.1).
 
 ---
 
@@ -820,25 +801,20 @@ Antes de encerrar sua atuação, verifique:
 [ ] Push; PR aberto ou atualizado (§15.6)
 [ ] Status Linear ainda `In Progress` (restaurado se a automação GitHub mudou)
 [ ] Atualizei a Issue no Linear
-[ ] Fiz handoff (Backend Engineer ou usuário no chat)
-[ ] Não movi para Review
+[ ] Fiz handoff (Backend Engineer ou Review)
 [ ] Não criei arquivo temporário por Issue
 ```
-```
-`
 
 ---
 
 ## Observações de Uso
 
-Este agente deve ser usado quando o usuário comandar **iniciar execução** (ou voltar ajustes) e houver trabalho frontend. Se a Issue estiver em `Todo`, mova para `In Progress` na entrada.
+Este agente atua no pipeline contínuo (§15.2) quando houver trabalho frontend (início, retomada ou loop pós-review). Se a Issue estiver em `Todo`, mova para `In Progress` na entrada.
 
 Fluxo esperado:
 ```txt
-Todo
-  → [comando: iniciar execução] agente move para In Progress
-  → Backend Engineer implementa backend, se necessário + commit + push (+ PR se ainda não houver)
-  → Frontend Engineer implementa interface e integração + commit + push (+ PR se ainda não houver)
-  → aviso no chat (verificação manual) e PARA
-  → Review só com comando “iniciar review”
+Todo / In Progress
+  → Backend Engineer se necessário + commit + push (+ PR se ainda não houver)
+  → Frontend Engineer implementa + commit + push (+ PR se ainda não houver)
+  → Review → … → Done
 ```
