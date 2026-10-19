@@ -829,8 +829,9 @@ class ApiService {
 
   async getMemberLimit(): Promise<{
     currentCount: number;
-    limit: number;
-    remaining: number;
+    /** Pode ser `null` quando o backend serializa Infinity (plano ilimitado/custom). */
+    limit: number | null;
+    remaining: number | null;
     planType?: string | null;
     subscriptionStatus?: string | null;
     hasActiveSubscription: boolean;
