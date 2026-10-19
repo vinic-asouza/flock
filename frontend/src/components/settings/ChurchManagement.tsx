@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
 import { Church } from '@/types';
-import { DENOMINATIONS, formatPhone } from '@/utils';
+import { DENOMINATIONS, formatPhone, maskPhoneInput } from '@/utils';
 import { validateCNPJ, validatePhone } from '@/utils/validations';
 import { Building2, MapPin, Mail, Phone, FileText, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -508,7 +508,7 @@ export function ChurchManagement() {
                     Telefone da Igreja
                   </label>
                   <Input
-                    value={formatPhone(formData.phone_church)}
+                    value={maskPhoneInput(formData.phone_church || '')}
                     onChange={(e) => handlePhoneChange('phone_church', e.target.value)}
                     placeholder="(11) 99999-9999"
                   />

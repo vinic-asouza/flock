@@ -2,7 +2,7 @@
 
 import { Edit, Trash2, MapPin, Phone, User, Eye } from 'lucide-react';
 import { Congregation } from '@/types/congregation';
-import { formatDate } from '@/utils';
+import { formatDate, formatPhone } from '@/utils';
 import { InfoRow } from '@/components/ui/InfoRow';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
@@ -24,8 +24,8 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
     : readOnly
       ? READER_TOOLTIP
       : 'Excluir';
-  const displayName = getCongregationDisplayName(congregation);
-  const hasAbbreviation = Boolean(congregation.abbreviation?.trim());
+  const displayName = congregation.name?.trim() || getCongregationDisplayName(congregation);
+  const abbreviation = congregation.abbreviation?.trim();
 
   return (
     <div
@@ -60,9 +60,9 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
           )}
         </div>
 
-        {hasAbbreviation && (
-          <p className="text-sm text-gray-500 truncate mb-2" title={congregation.name}>
-            {congregation.name}
+        {abbreviation && (
+          <p className="text-sm text-gray-500 truncate mb-2" title={abbreviation}>
+            {abbreviation}
           </p>
         )}
 
@@ -87,7 +87,7 @@ export function CongregationCard({ congregation, canEdit = true, onView, onEdit,
         {congregation.phone && (
           <InfoRow
             icon={Phone}
-            value={congregation.phone}
+            value={formatPhone(congregation.phone)}
             className="mb-4"
           />
         )}

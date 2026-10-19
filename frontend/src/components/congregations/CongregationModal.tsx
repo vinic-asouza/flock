@@ -9,6 +9,7 @@ import { apiService, formatApiError } from '@/services/api';
 import { MemberCardCompact } from '@/components/reports/MemberCardCompact';
 import type { Member } from '@/types/reports';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { formatPhone } from '@/utils';
 import { ExportCongregationMembersModal } from '@/components/congregations/ExportCongregationMembersModal';
 import toast from 'react-hot-toast';
 
@@ -290,7 +291,7 @@ export function CongregationModal({
                       href={`tel:${congregation.phone.replace(/\D/g, '')}`}
                       className="text-primary hover:underline"
                     >
-                      {congregation.phone}
+                      {formatPhone(congregation.phone)}
                     </a>
                   ) : (
                     '-'

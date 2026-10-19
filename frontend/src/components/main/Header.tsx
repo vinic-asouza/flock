@@ -220,8 +220,8 @@ export function Header() {
           <div className="hidden md:flex items-center gap-1 text-sm text-gray-600">
             <User size={16} className="text-gray-600" />
             <div className="flex items-center gap-2">
-              <span className="truncate max-w-48" title={session?.user?.email}>
-                {session?.user?.email || 'usuario@igreja.com'}
+              <span className="truncate max-w-48" title={session?.user?.email || undefined}>
+                {session?.user?.email || ''}
               </span>
               {currentRole && (
                 <span

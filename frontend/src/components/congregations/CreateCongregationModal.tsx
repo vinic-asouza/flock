@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import toast from 'react-hot-toast';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { CongregationForm } from './CongregationForm';
@@ -29,6 +30,7 @@ export function CreateCongregationModal({ isOpen, onClose, onSuccess }: CreateCo
       setError(null);
       
       const response = await apiService.createCongregation(data);
+      toast.success('Congregação criada com sucesso');
       onSuccess(response);
       onClose();
     } catch (err: unknown) {

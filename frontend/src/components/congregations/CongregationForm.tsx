@@ -306,7 +306,7 @@ export function CongregationForm({
           <Select
             label="Cidade *"
             value={watch('city') || ''}
-            onChange={(value) => setValue('city', value)}
+            onChange={(value) => setValue('city', value, { shouldValidate: true, shouldDirty: true })}
             options={[
               { 
                 value: '', 

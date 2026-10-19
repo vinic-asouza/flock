@@ -882,7 +882,7 @@ export function PaymentManagement() {
                           : evt.old_plan
                           ? `Plano ${evt.old_plan}`
                           : '—'}
-                        {evt.old_status || evt.new_status
+                        {evt.event_type !== 'activate_free' && (evt.old_status || evt.new_status)
                           ? ` · ${evt.old_status ?? '—'} → ${evt.new_status ?? '—'}`
                           : ''}
                       </p>
