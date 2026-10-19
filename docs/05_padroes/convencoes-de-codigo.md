@@ -237,6 +237,12 @@ tags: [padrões, código, convenções]
 > Ex.: alinhamento mentor/responsável/membro à congregação em group/calendar/integrations; `resolveCongregationFilter` (rejeita `sede`).
 - **Nível:** 🟡 · **Enforcement:** 👁️
 
+### CONV-034: Datas civis vs timestamps (fuso)
+> MVP: exibição e defaults de UI em `America/Sao_Paulo`. Datas sem horário (nascimento, recebimento etc.) são calendário civil — não usar `new Date('YYYY-MM-DD').toLocaleDateString()` sem proteção (desloca −1 dia em BRT). Timestamps: `toLocale*` com `timeZone: 'America/Sao_Paulo'`. Inputs `datetime-local`: nunca `toISOString().slice(0, 16)` — usar helpers `toDateTimeLocalValue` / `dateTimeLocalToISO` (frontend) ou equivalente.
+- **Nível:** 🔴 · **Enforcement:** 👁️
+- ✅ `formatDate` / `formatDateSafe` para só-data; `formatDateTime` / `formatGeneratedAt` com TZ
+- ❌ `toISOString().slice(0, 16)` no valor de `datetime-local`; `toLocaleDateString('pt-BR')` sem TZ em data civil
+
 ---
 
 ## 6. 🔧 Configurações de Tooling

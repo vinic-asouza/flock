@@ -29,7 +29,7 @@ tags: [arquitetura, banco-de-dados, schema, ERD]
 | Estratégia de IDs | **UUID**; default `gen_random_uuid()` ou `extensions.uuid_generate_v4()` |
 | Nomenclatura | Tabelas/colunas em **snake_case** (inglês); enums misturam PT/EN |
 | Soft delete | **Não há `deleted_at`**. Flags: `members.active`, links `is_active`, grupos `status` (bool), calendário `status` text. Muitos recursos usam **DELETE físico**. |
-| Timezone | `timestamptz` (UTC); vários defaults `now()` ou `timezone('utc', now())` |
+| Timezone | **Armazenamento:** `timestamptz` em UTC (`now()` / `timezone('utc', now())`). Colunas **só-data** (`date` / `YYYY-MM-DD`) são calendário civil — sem deslocar o dia na leitura. **Exibição (MVP):** horários no painel, PDFs e defaults de UI usam `America/Sao_Paulo`; não há fuso por igreja/usuário. |
 | Multi-tenant | Coluna `church_id` nas tabelas de domínio; isolamento **aplicacional** (service_role) |
 | RLS | Habilitado em todas as tabelas `public`; policies restritivas `deny_anon` — escrita/leitura via backend service_role |
 
