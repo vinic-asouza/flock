@@ -145,12 +145,15 @@ export function PaymentManagement() {
   const subscriptionStatus = user?.subscription_status;
   const isPastDue = subscriptionStatus === 'past_due';
   const planType = user?.plan_type;
+  const isFreePlan = planType === '100';
   const subscriptionStartDate = user?.subscription_start_date;
   const subscriptionEndDate = user?.subscription_end_date;
   const hasSubscription = !!(
     user?.stripe_subscription_id ||
     (user?.stripe_customer_id && planType && planType !== '100')
   );
+  // Conta Grátis (mesmo com stripe_customer_id residual de checkout abandonado) — DEV-158
+  const showFreePlanEmptyState = isFreePlan || !user?.stripe_customer_id;
 
   // Verificar se a assinatura está realmente expirada
   const isSubscriptionExpired = () => {
@@ -192,12 +195,13 @@ export function PaymentManagement() {
 
   // Auto-sync ao abrir aba (uma vez por igreja; respeita cache de 5 min — FB06)
   // Sem stripe_customer_id (plano free sem checkout) não há o que sincronizar — DEV-136
+  // Plano Grátis (100) não sincroniza mesmo com customer residual — DEV-158
   useEffect(() => {
     if (hasSyncedRef.current || !user || !canManagePlan) {
       return;
     }
 
-    if (!user.stripe_customer_id) {
+    if (!user.stripe_customer_id || user.plan_type === '100') {
       hasSyncedRef.current = true;
       return;
     }
@@ -235,7 +239,7 @@ export function PaymentManagement() {
 
     syncOnMount();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.stripe_customer_id, activeChurchId, canManagePlan]);
+  }, [user?.stripe_customer_id, user?.plan_type, activeChurchId, canManagePlan]);
 
   useEffect(() => {
     if (!canManagePlan || !activeChurchId) return;
@@ -293,7 +297,8 @@ export function PaymentManagement() {
   const handleSyncSubscription = async (force: boolean = false) => {
     const churchKey = activeChurchId ?? user?.id;
 
-    if (!user?.stripe_customer_id) {
+    // Plano Grátis: Sync não é ação da conta (DEV-158); sem customer: noop (DEV-136)
+    if (!user?.stripe_customer_id || user.plan_type === '100') {
       return;
     }
 
@@ -776,12 +781,12 @@ export function PaymentManagement() {
               Nenhuma Assinatura Ativa
             </h3>
             <p className="text-sm text-gray-500 mb-6">
-              {user?.stripe_customer_id 
-                ? 'Não foi encontrada uma assinatura ativa no sistema. Se você acabou de fazer o pagamento, tente sincronizar.'
-                : 'Você está usando o plano gratuito (Limite de 100 membros). Faça uma assinatura para ativar um dos planos pagos.'}
+              {showFreePlanEmptyState
+                ? 'Você está usando o plano gratuito (Limite de 100 membros). Faça uma assinatura para ativar um dos planos pagos.'
+                : 'Não foi encontrada uma assinatura ativa no sistema. Se você acabou de fazer o pagamento, tente sincronizar.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {user?.stripe_customer_id && (
+              {!showFreePlanEmptyState && user?.stripe_customer_id && (
                 <Button
                   onClick={() => handleSyncSubscription(false)}
                   disabled={isSyncing || !canManagePlan}
