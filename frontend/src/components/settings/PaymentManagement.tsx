@@ -23,6 +23,7 @@ import {
   setCachedStripeSync,
 } from '@/utils/stripeSyncCache';
 import { captureBillingError } from '@/utils/billingTelemetry';
+import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
@@ -567,6 +568,15 @@ export function PaymentManagement() {
                 <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
                   Sua assinatura foi cancelada e já expirou. Agora você está usando o plano gratuito (Limite de 100 membros). Reative a assinatura para voltar ao plano pago.
                 </p>
+                <div className="mb-6 text-left max-w-md mx-auto">
+                  <MemberQuotaUsage
+                    canManagePlan={canManagePlan}
+                    variant="settings"
+                    onUpgradeClick={
+                      canManagePlan ? () => router.push('/checkout?plan=200') : undefined
+                    }
+                  />
+                </div>
                 {planType && (planType === '200' || planType === '500' || planType === '800') && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                     <p className="text-sm text-gray-700 mb-2">
@@ -666,22 +676,33 @@ export function PaymentManagement() {
 
           {/* Plano Atual */}
           {planType && (
-            <div className="min-w-0">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Plano Atual</h3>
-              <div className="flex items-start gap-2 min-w-0">
-                <Package className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-lg font-semibold text-gray-900 break-words">
-                    {planNamesState[planType] || planType}
-                  </p>
-                  {planPricesState[planType] && (
-                    <p className="text-sm text-gray-600 mt-0.5">
-                      {planPricesState[planType]}
-                      {planType && planType !== '100' && <span className="text-gray-500">/mês</span>}
+            <div className="min-w-0 space-y-3">
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Plano Atual</h3>
+                <div className="flex items-start gap-2 min-w-0">
+                  <Package className="w-5 h-5 text-gray-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-semibold text-gray-900 break-words">
+                      {planNamesState[planType] || planType}
                     </p>
-                  )}
+                    {planPricesState[planType] && (
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        {planPricesState[planType]}
+                        {planType && planType !== '100' && <span className="text-gray-500">/mês</span>}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
+              <MemberQuotaUsage
+                canManagePlan={canManagePlan}
+                variant="settings"
+                onUpgradeClick={
+                  canManagePlan && !subscriptionEndDate
+                    ? () => setShowChangePlanModal(true)
+                    : undefined
+                }
+              />
             </div>
           )}
 
@@ -774,7 +795,14 @@ export function PaymentManagement() {
           )}
         </>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0 space-y-4">
+          <MemberQuotaUsage
+            canManagePlan={canManagePlan}
+            variant="settings"
+            onUpgradeClick={
+              canManagePlan ? () => { window.location.href = '/checkout?plan=200'; } : undefined
+            }
+          />
           <div className="text-center py-8">
             <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">

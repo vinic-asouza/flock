@@ -182,7 +182,7 @@ Sem tabela local dedicada — `auth.users` + user_metadata.phone. GET `/account`
 | GET | `/api/church/memberships` | ✅ user-only | — | Lista igrejas do user + activeId |
 | POST | `/api/church/active` | ✅ user-only | — | Define igreja ativa (membership) |
 | GET | `/api/church/` | ✅ | ≥ reader | Dados igreja (sanitizados) |
-| GET | `/api/church/member-limit` | ✅ | ≥ reader | Quota membros |
+| GET | `/api/church/member-limit` | ✅ | ≥ reader | Quota membros — UI: Header (≥80%), Painel e aba Plano (`MemberQuotaUsage`, DEV-159) |
 | PUT | `/api/church/` | ✅ | ≥ admin | Atualiza cadastro |
 
 ```typescript
