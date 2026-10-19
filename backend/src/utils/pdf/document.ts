@@ -86,6 +86,14 @@ export function ensureSpace(ctx: PdfContext, needed: number): void {
   }
 }
 
+const APP_TIMEZONE = 'America/Sao_Paulo';
+
 export function formatGeneratedAt(date: Date): string {
-  return `Gerado em ${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR')}`;
+  const datePart = date.toLocaleDateString('pt-BR', { timeZone: APP_TIMEZONE });
+  const timePart = date.toLocaleTimeString('pt-BR', {
+    timeZone: APP_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `Gerado em ${datePart} às ${timePart}`;
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { apiService, formatApiError } from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
+import { formatDate, formatDateTime } from '@/utils';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -203,14 +204,7 @@ export default function AuditLogs() {
     });
   };
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const formatDate = (dateString: string) => formatDateTime(dateString);
 
   const isActivationChange = (log: AuditLog) => {
     if (log.action !== 'update') return false;
@@ -275,10 +269,16 @@ export default function AuditLogs() {
     if (value === null || value === undefined || value === '') return 'Não informado';
     if (field === 'active') return value ? 'Ativo' : 'Inativo';
     if (
-      (field === 'birth' || field === 'start_at' || field === 'end_at') &&
+      (field === 'birth' || field === 'admission_date' || field === 'wedding_date' || field === 'baptism_date') &&
+      (typeof value === 'string' || value instanceof Date)
+    ) {
+      return formatDate(value) || String(value);
+    }
+    if (
+      (field === 'start_at' || field === 'end_at') &&
       (typeof value === 'string' || typeof value === 'number' || value instanceof Date)
     ) {
-      return new Date(value).toLocaleString('pt-BR');
+      return formatDateTime(value);
     }
     return String(value);
   };

@@ -25,8 +25,11 @@ function dayKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+const APP_TIMEZONE = 'America/Sao_Paulo';
+
 function dayLabel(date: Date): string {
   return date.toLocaleDateString('pt-BR', {
+    timeZone: APP_TIMEZONE,
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -102,11 +105,16 @@ export function renderCalendarMonthPdf(
       const start = new Date(item.start_date);
       const end = item.end_date ? new Date(item.end_date) : null;
       const startTime = start.toLocaleTimeString('pt-BR', {
+        timeZone: APP_TIMEZONE,
         hour: '2-digit',
         minute: '2-digit',
       });
       const endTime = end
-        ? end.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        ? end.toLocaleTimeString('pt-BR', {
+            timeZone: APP_TIMEZONE,
+            hour: '2-digit',
+            minute: '2-digit',
+          })
         : null;
 
       const timeLabel = endTime ? `${startTime} – ${endTime}` : startTime;

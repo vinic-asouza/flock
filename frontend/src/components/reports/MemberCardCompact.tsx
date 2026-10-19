@@ -26,7 +26,18 @@ interface MemberCardCompactProps {
 
 function calcularIdade(birth: string): number | null {
   if (!birth) return null;
-  const birthDate = new Date(birth);
+  const raw = birth.includes('T') ? birth.split('T')[0]! : birth;
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  let birthDate: Date;
+  if (match) {
+    birthDate = new Date(
+      parseInt(match[1], 10),
+      parseInt(match[2], 10) - 1,
+      parseInt(match[3], 10)
+    );
+  } else {
+    birthDate = new Date(birth);
+  }
   if (isNaN(birthDate.getTime())) return null;
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();

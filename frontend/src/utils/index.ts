@@ -1,20 +1,140 @@
 // Utilitários gerais da aplicação
 
+/** Fuso padrão do produto (MVP). */
+export const APP_TIMEZONE = 'America/Sao_Paulo';
+
+type TzParts = {
+  year: string;
+  month: string;
+  day: string;
+  hour: string;
+  minute: string;
+};
+
+function getTimeZoneParts(date: Date, timeZone: string): TzParts {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? '';
+
+  return {
+    year: get('year'),
+    month: get('month'),
+    day: get('day'),
+    hour: get('hour'),
+    minute: get('minute'),
+  };
+}
+
 /**
- * Formata uma data para o formato brasileiro (dd/MM/yyyy)
- * @param date - Data em formato string ISO, Date object, ou null/undefined
- * @returns Data formatada ou string vazia se inválida
+ * Data civil (nascimento, recebimento etc.): sem deslocamento de fuso.
+ * YYYY-MM-DD → DD/MM/YYYY; timestamps com hora usam America/Sao_Paulo.
  */
 export function formatDate(date: string | Date | null | undefined): string {
   if (!date) return '';
-  
+
   try {
+    if (typeof date === 'string') {
+      if (date.includes('/')) return date;
+
+      // Data civil pura: nunca passar por Date() (UTC meia-noite desloca o dia em BRT)
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        const [year, month, day] = date.split('-');
+        return `${day}/${month}/${year}`;
+      }
+    }
+
     const d = typeof date === 'string' ? new Date(date) : date;
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleDateString('pt-BR');
+
+    // Date-only ISO com T (ex.: 2015-03-01T00:00:00.000Z) → calendário UTC = dia civil
+    if (typeof date === 'string' && /T00:00:00(\.\d+)?(Z|[+-]00:00)?$/.test(date)) {
+      return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+    }
+
+    return d.toLocaleDateString('pt-BR', { timeZone: APP_TIMEZONE });
   } catch {
     return '';
   }
+}
+
+/**
+ * Data e hora no fuso America/Sao_Paulo (timestamps do painel).
+ */
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return '';
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: APP_TIMEZONE,
+    });
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Valor para input datetime-local no fuso do produto (não usar toISOString().slice).
+ */
+export function toDateTimeLocalValue(
+  date: Date | string,
+  timeZone: string = APP_TIMEZONE
+): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+  const p = getTimeZoneParts(d, timeZone);
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+/**
+ * Interpreta YYYY-MM-DDTHH:mm como relógio de parede em America/Sao_Paulo → ISO UTC.
+ */
+export function dateTimeLocalToISO(
+  value: string,
+  timeZone: string = APP_TIMEZONE
+): string {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) {
+    const fallback = new Date(value);
+    return isNaN(fallback.getTime()) ? value : fallback.toISOString();
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+
+  // Converge UTC instant cujo wall-clock em `timeZone` = valor informado
+  let utcMs = Date.UTC(year, month - 1, day, hour, minute);
+  for (let i = 0; i < 3; i++) {
+    const parts = getTimeZoneParts(new Date(utcMs), timeZone);
+    const asUtc = Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute)
+    );
+    const desired = Date.UTC(year, month - 1, day, hour, minute);
+    utcMs += desired - asUtc;
+  }
+
+  return new Date(utcMs).toISOString();
 }
 
 /**

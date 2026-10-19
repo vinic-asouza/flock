@@ -17,6 +17,7 @@ import { GeographySection } from '@/components/reports/GeographySection';
 import { OccupationsTable } from '@/components/reports/OccupationsTable';
 import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
 import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
+import { formatDateTime } from '@/utils';
 
 export default function HomePage() {
   const { isLoading: isAuthLoading, isAuthenticated } = useAuth();
@@ -51,7 +52,7 @@ export default function HomePage() {
         return;
       }
       setReportsData(data);
-      setLastUpdated(new Date().toLocaleString('pt-BR'));
+      setLastUpdated(formatDateTime(new Date()));
     } catch (err: unknown) {
       if (requestId !== loadReportsRequestIdRef.current) {
         return;
