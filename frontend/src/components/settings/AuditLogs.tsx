@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { apiService, formatApiError } from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
-import { formatDateTime } from '@/utils';
+import { formatDate, formatDateTime } from '@/utils';
 import toast from 'react-hot-toast';
 import {
   FileText,
@@ -204,8 +204,6 @@ export default function AuditLogs() {
     });
   };
 
-  const formatDate = (dateString: string) => formatDateTime(dateString);
-
   const isActivationChange = (log: AuditLog) => {
     if (log.action !== 'update') return false;
     const before = log.changes_before;
@@ -278,7 +276,7 @@ export default function AuditLogs() {
       (field === 'start_at' || field === 'end_at') &&
       (typeof value === 'string' || typeof value === 'number' || value instanceof Date)
     ) {
-      return formatDateTime(value);
+      return formatDateTime(typeof value === 'number' ? new Date(value) : value);
     }
     return String(value);
   };
@@ -486,7 +484,7 @@ export default function AuditLogs() {
                         <User className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">{getActorLabel(log)}</span>
                       </span>
-                      <span>{formatDate(log.created_at)}</span>
+                      <span>{formatDateTime(log.created_at)}</span>
                       {preview && !isExpanded && (
                         <span className="text-gray-400">Alterou: {preview}</span>
                       )}
