@@ -45,10 +45,15 @@ export const getAccount = async (req: AuthRequest, res: Response) => {
       try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
         if (!error && user) {
+          const metadataPhone =
+            typeof user.user_metadata?.phone === 'string' && user.user_metadata.phone.trim()
+              ? user.user_metadata.phone.trim()
+              : null;
           userData = {
             id: user.id,
             email: user.email || '',
-            phone: user.phone || null,
+            // Preferir phone do Auth; fallback para metadata gravada no registro
+            phone: user.phone || metadataPhone || null,
             email_confirmed_at: user.email_confirmed_at || null,
             phone_confirmed_at: user.phone_confirmed_at || null,
             created_at: user.created_at || null,
@@ -318,9 +323,20 @@ export const changePhone = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Atualizar telefone
-    const { error: updateError } = await supabase.auth.updateUser({
-      phone: newPhone
+    // Persistir telefone de contato em user_metadata (campo Auth phone exige OTP)
+    const phoneDigits = String(newPhone).replace(/\D/g, '');
+    const { data: currentUserData, error: getUserError } = await supabaseAdmin.auth.admin.getUserById(req.user.id);
+    if (getUserError || !currentUserData.user) {
+      return res.status(400).json({
+        error: 'Erro ao alterar telefone',
+        details: getUserError?.message || 'Usuário não encontrado'
+      });
+    }
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(req.user.id, {
+      user_metadata: {
+        ...(currentUserData.user.user_metadata || {}),
+        phone: phoneDigits,
+      },
     });
 
     if (updateError) {

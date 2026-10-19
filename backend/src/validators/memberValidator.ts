@@ -51,10 +51,10 @@ const memberSchema = Joi.object({
     }),
 
   gender: Joi.string()
-    .valid('Masculino', 'Feminino')
+    .valid('Masculino', 'Feminino', 'Não informado')
     .required()
     .messages({
-      'any.only': 'Gênero deve ser Masculino ou Feminino',
+      'any.only': 'Gênero deve ser Masculino, Feminino ou Não informado',
       'any.required': 'Gênero é obrigatório'
     }),
 

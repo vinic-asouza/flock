@@ -139,14 +139,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           apiService.setActiveChurchIdClient(auth.activeChurchId);
         }
 
-        let userEmail = '';
-        if (!timedOut) {
+        // Preferir email do /refresh/check (já vem do JWT/Auth) para o Header
+        // não cair no placeholder após reload. getAccountData só como reforço.
+        let userEmail = auth.user?.email || '';
+        if (!userEmail && !timedOut) {
           try {
             const accountData = await apiService.getAccountData();
             userEmail = accountData.email || '';
           } catch {
-            // ACHADO 18: email não está disponível aqui (sem data.email), mas a falha
-            // não é crítica. O email será exibido vazio na UI até que o usuário recarregue.
             console.warn('[AuthContext] getAccountData falhou na inicialização. Email pode ficar vazio na UI.');
           }
         }

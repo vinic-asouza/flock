@@ -918,7 +918,8 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       event_type: 'activate_free',
       old_plan: church.plan_type ?? null,
       new_plan: '100',
-      new_status: 'canceled',
+      // Status da assinatura Stripe cancelada não descreve o plano free ativo.
+      new_status: 'active',
       source: 'api',
       payload: { old_plan: church.plan_type, subscription_id: church.stripe_subscription_id },
     });

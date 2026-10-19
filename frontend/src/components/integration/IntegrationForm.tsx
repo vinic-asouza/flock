@@ -98,6 +98,23 @@ interface IntegrationFormProps {
   onCancel: () => void;
 }
 
+const formatBirthFromISO = (value: string | null | undefined): string => {
+  if (!value) return '';
+  if (value.includes('/')) return value;
+  const datePart = value.includes('T') ? value.split('T')[0] : value;
+  const match = datePart.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return '';
+  const [, year, month, day] = match;
+  return `${day}/${month}/${year}`;
+};
+
+const applyBirthMask = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
 const genderOptions: { value: '' | IntegrationGender; label: string }[] = [
   { value: '', label: 'Não informado' },
   { value: 'masculino', label: 'Masculino' },
@@ -152,18 +169,21 @@ export function IntegrationForm({
   const [selectedMentorLabel, setSelectedMentorLabel] = useState<string>('');
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [whatsappDisplay, setWhatsappDisplay] = useState('');
+  const [birthDisplay, setBirthDisplay] = useState(() => formatBirthFromISO(initialData?.birth));
 
   const {
     register,
     handleSubmit,
     setValue,
+    setError,
+    clearErrors,
     watch,
     formState: { errors }
   } = useForm<IntegrationFormData>({
     resolver: zodResolver(integrationSchema),
     defaultValues: {
       name: initialData?.name ?? '',
-      birth: initialData?.birth ? initialData.birth.slice(0, 10) : '',
+      birth: formatBirthFromISO(initialData?.birth),
       gender: initialData?.gender ?? '',
       marital_status: initialData?.marital_status ?? '',
       phone: initialData?.phone ?? '',
@@ -192,6 +212,7 @@ export function IntegrationForm({
   const mentorId = watch('mentor_id') ?? '';
 
   useEffect(() => {
+    register('birth');
     register('gender');
     register('marital_status');
     register('expected_admission_type');
@@ -209,7 +230,9 @@ export function IntegrationForm({
   useEffect(() => {
     if (initialData) {
       setValue('name', initialData.name ?? '');
-      setValue('birth', initialData.birth ? initialData.birth.slice(0, 10) : '');
+      const birthFormatted = formatBirthFromISO(initialData.birth);
+      setValue('birth', birthFormatted);
+      setBirthDisplay(birthFormatted);
       setValue('gender', initialData.gender ?? '');
       setValue('marital_status', initialData.marital_status ?? '');
       setValue('phone', initialData.phone ?? '');
@@ -243,8 +266,20 @@ export function IntegrationForm({
     } else {
       setPhoneDisplay('');
       setWhatsappDisplay('');
+      setBirthDisplay('');
     }
   }, [initialData, setValue]);
+
+  const handleBirthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = applyBirthMask(e.target.value);
+    setBirthDisplay(formatted);
+    setValue('birth', formatted, { shouldValidate: formatted.length === 10 });
+    if (formatted.length === 10 && !validateDateFormat(formatted)) {
+      setError('birth', { type: 'manual', message: 'Data inválida. Use DD/MM/YYYY' });
+    } else if (formatted.length === 10) {
+      clearErrors('birth');
+    }
+  };
 
   const congregationOptions = useMemo(() => {
     return [
@@ -307,7 +342,7 @@ export function IntegrationForm({
   const handleFormSubmit = async (data: IntegrationFormData) => {
     const payload: IntegrationMemberPayload = {
       name: data.name.trim(),
-      birth: data.birth ? data.birth : null,
+      birth: data.birth ? (formatDateToISO(data.birth) || data.birth) : null,
       gender: data.gender ? (data.gender as IntegrationGender) : null,
       marital_status: data.marital_status ? (data.marital_status as IntegrationMaritalStatus) : null,
       phone: data.phone && data.phone.trim() !== '' ? data.phone.trim() : null,
@@ -343,8 +378,9 @@ export function IntegrationForm({
 
           <Input
             label="Data de nascimento"
-            type="date"
-            {...register('birth')}
+            placeholder="DD/MM/AAAA"
+            value={birthDisplay}
+            onChange={handleBirthChange}
             error={errors.birth?.message}
             disabled={isLoading}
           />

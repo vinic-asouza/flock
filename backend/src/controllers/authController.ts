@@ -77,12 +77,15 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
     }
 
     // Criar usuário no Supabase Auth
+    // Telefone de contato vai em user_metadata (confiável). O campo phone do Auth
+    // exige provedor/OTP e costuma não persistir no signUp só-email.
+    const phoneDigits = phone ? String(phone).replace(/\D/g, '') : '';
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
-      phone,
       options: {
-        emailRedirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/callback`
+        emailRedirectTo: `${process.env.FRONTEND_URL || 'http://localhost:3001'}/auth/callback`,
+        data: phoneDigits ? { phone: phoneDigits } : undefined,
       }
     });
 
@@ -105,6 +108,19 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
         error: 'Erro ao criar usuário',
         details: 'Não foi possível criar o usuário'
       });
+    }
+
+    // Garantir metadata do telefone mesmo se o signUp não propagou `data`
+    if (phoneDigits) {
+      const { error: phoneMetaError } = await supabaseAdmin.auth.admin.updateUserById(authData.user.id, {
+        user_metadata: {
+          ...(authData.user.user_metadata || {}),
+          phone: phoneDigits,
+        },
+      });
+      if (phoneMetaError) {
+        console.error('Falha ao gravar telefone no user_metadata:', phoneMetaError);
+      }
     }
 
     // Inserir dados da igreja

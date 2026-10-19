@@ -16,12 +16,13 @@ export function getPrimaryCongregationId(congregations: Congregation[] | undefin
 }
 
 /**
- * Nome para contextos compactos (selects, chips, filtros).
- * Prefere abreviação quando existir; senão o nome completo.
+ * Nome para selects, chips, filtros e cards.
+ * Sempre inclui o nome completo; se houver sigla, anexa entre parênteses.
  */
 export function getCongregationDisplayName(congregation: CongregationNameSource): string {
   if (!congregation) return '';
+  const name = congregation.name?.trim() || '';
   const abbreviation = congregation.abbreviation?.trim();
-  if (abbreviation) return abbreviation;
-  return congregation.name?.trim() || '';
+  if (name && abbreviation) return `${name} (${abbreviation})`;
+  return name || abbreviation || '';
 }
