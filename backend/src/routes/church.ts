@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import {
   getChurch,
   getMemberLimit,
@@ -9,34 +8,9 @@ import {
 } from '../controllers/churchController';
 import authMiddleware, { authUserOnly } from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
+import { churchReadLimiter, churchWriteLimiter } from './churchRateLimit';
 
 const router = Router();
-
-const churchWindowMs = 15 * 60 * 1000;
-
-const churchReadLimiter = rateLimit({
-  windowMs: churchWindowMs,
-  max: 600,
-  skip: (req) => req.method !== 'GET' && req.method !== 'HEAD',
-  message: {
-    error: 'Muitas consultas na igreja',
-    details: 'Você excedeu o limite de consultas. Tente novamente em 15 minutos.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const churchWriteLimiter = rateLimit({
-  windowMs: churchWindowMs,
-  max: 40,
-  skip: (req) => req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS',
-  message: {
-    error: 'Muitas operações na igreja',
-    details: 'Você excedeu o limite de operações. Tente novamente em 15 minutos.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 router.use(churchReadLimiter);
 router.use(churchWriteLimiter);
