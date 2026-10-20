@@ -249,7 +249,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 //                 mesma regra de capacidade vs 100
 ```
 
-Cancelamento ao fim do período grava `cancellation_scheduled` e um audit do dono. Um segundo cancelamento no mesmo período, depois de renovar, gera outra linha: a chave inclui `canceled_at` quando o Stripe envia o instante do pedido. A chave antiga, sem esse instante, não gera segunda linha se ainda não houve renovação. Renovar grava `subscription_renewed`. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync. Troca de plano grava um audit `plan_changed`. O histórico da UI lista cancelamento, renovação e pagamento confirmado; `subscription_updated` continua de fora. O indicador de membros usa o limite do plano assim que a troca responde.
+Cancelamento ao fim do período grava `cancellation_scheduled` e um audit do dono. Um segundo cancelamento no mesmo período, depois de renovar, gera outra linha: a chave inclui `canceled_at` quando o Stripe envia o instante do pedido. A chave antiga, sem esse instante, não gera segunda linha se ainda não houve renovação. Renovar grava `subscription_renewed`. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync. A hora é a do pagamento, não a de um sync atrasado; o histórico mostra data e hora, do mais recente para o mais antigo, e o log diz que o dono confirmou o pagamento. Troca de plano grava um audit `plan_changed`. O histórico da UI lista cancelamento, renovação e pagamento confirmado; `subscription_updated` continua de fora. O indicador de membros usa o limite do plano assim que a troca responde.
 
 ### Webhook
 
