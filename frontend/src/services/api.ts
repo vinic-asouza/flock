@@ -191,7 +191,7 @@ class ApiService {
   }
 
   async syncSubscription(): Promise<{ synced: boolean; message?: string }> {
-    const response = await this.api.post('/stripe/sync-subscription', {});
+    const response = await this.api.post('/stripe/sync-subscription', {}, { timeout: 30000 });
     return response.data;
   }
 
@@ -200,8 +200,18 @@ class ApiService {
     return response.data;
   }
 
-  async changePlan(plan: string): Promise<{ message?: string; [key: string]: unknown }> {
-    const response = await this.api.post('/stripe/change-plan', { plan });
+  async changePlan(plan: string): Promise<{
+    message?: string;
+    requires_action?: boolean;
+    payment_confirmation_url?: string | null;
+    [key: string]: unknown;
+  }> {
+    const response = await this.api.post('/stripe/change-plan', { plan }, { timeout: 30000 });
+    return response.data;
+  }
+
+  async getPaymentConfirmation(): Promise<{ url: string | null }> {
+    const response = await this.api.get('/stripe/payment-confirmation', { timeout: 30000 });
     return response.data;
   }
 

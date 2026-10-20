@@ -234,6 +234,11 @@ export default function AuditLogs() {
       const title = log.changes_after?.title ?? log.changes_before?.title;
       return title ? String(title) : 'Evento';
     }
+    if (log.entity === 'public_registration_link' || log.entity === 'public_integration_link') {
+      const notes = log.changes_after?.notes ?? log.changes_before?.notes;
+      if (notes && String(notes).trim()) return String(notes);
+      return 'Link de cadastro';
+    }
 
     const name =
       log.changes_after?.name ??
@@ -295,6 +300,9 @@ export default function AuditLogs() {
     const actionLabel = ACTION_LABELS[action] || 'Alterou';
     const entityLabel = ENTITY_LABELS[log.entity] || 'registro';
     const target = getTargetName(log);
+    if (log.changes_after?.event === 'cancellation_scheduled') {
+      return `Agendou o cancelamento da igreja “${target}”`;
+    }
     return `${actionLabel} ${entityLabel} “${target}”`;
   };
 
@@ -328,6 +336,18 @@ export default function AuditLogs() {
     }
 
     const realAction = getRealAction(log);
+
+    if (log.changes_after?.event === 'cancellation_scheduled') {
+      const endDate = log.changes_after.subscription_end_date;
+      return (
+        <p className="text-sm text-gray-700">
+          Cancelamento agendado
+          {typeof endDate === 'string' && endDate
+            ? ` até ${formatDate(endDate)}.`
+            : '.'}
+        </p>
+      );
+    }
 
     if (realAction === 'create') {
       const after = log.changes_after;

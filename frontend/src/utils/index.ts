@@ -70,6 +70,18 @@ export function formatDate(date: string | Date | null | undefined): string {
  * Data e hora no fuso America/Sao_Paulo (timestamps do painel).
  */
 export function formatDateTime(date: string | Date | null | undefined): string {
+  return formatDateTimeParts(date, false);
+}
+
+/** Data e hora com segundos, para o relógio do Painel mudar no mesmo minuto. */
+export function formatDateTimeWithSeconds(date: string | Date | null | undefined): string {
+  return formatDateTimeParts(date, true);
+}
+
+function formatDateTimeParts(
+  date: string | Date | null | undefined,
+  withSeconds: boolean
+): string {
   if (!date) return '';
   try {
     const d = typeof date === 'string' ? new Date(date) : date;
@@ -80,6 +92,7 @@ export function formatDateTime(date: string | Date | null | undefined): string {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      ...(withSeconds ? { second: '2-digit' as const } : {}),
       timeZone: APP_TIMEZONE,
     });
   } catch {

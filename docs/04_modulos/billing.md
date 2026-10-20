@@ -3,8 +3,8 @@ type: modulo
 nome: billing
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-10-16
-versao: "1.2"
+ultima_atualizacao: 2026-10-20
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, billing]
 depende_de: [auth, config]
@@ -35,7 +35,7 @@ Produto: [[01_produto/visao-do-produto]].
 ### ✅ Este módulo É responsável por:
 
 - Catálogo hardcoded `PLAN_CONFIG` + rotas `/api/plans`
-- Checkout Session autenticado (admin+) e público (landing, rate limit)
+- Checkout Session autenticado (admin+) e público (landing, rate limit). A sessão nasce com `locale: pt-BR` e `adaptive_pricing.enabled: false`, para cobrar na moeda do Price (BRL).
 - Portal do cliente, change-plan, activate-free (cancela Stripe → plan 100)
 - Sync manual Stripe → DB; histórico `church_subscription_events`
 - Webhook assinado (`constructEvent`) com claim idempotente + stale skip
@@ -198,10 +198,11 @@ Telemetria dos crons (`runTrackedJob`).
 | POST | `/create-checkout-session` | optional | admin+ se authed | Checkout 200/500/800 |
 | POST | `/create-portal-session` | ✅ | ≥ admin | Customer Portal |
 | POST | `/sync-subscription` | ✅ | ≥ admin | Sync Stripe→DB (sem customer → 200 `synced: false`) |
-| POST | `/change-plan` | ✅ | ≥ admin | Troca preço subscription |
+| POST | `/change-plan` | ✅ | ≥ admin | Troca preço; se a fatura ficar aberta, devolve `payment_confirmation_url` |
 | POST | `/activate-free-plan` | ✅ | ≥ admin | Cancela pago → 100 |
 | GET | `/checkout-status` | ✅ | ≥ admin | Status pós-checkout |
-| GET | `/subscription-events` | ✅ | ≥ admin | Histórico UI |
+| GET | `/payment-confirmation` | ✅ | ≥ admin | URL da fatura hospedada em aberto, ou `url: null` |
+| GET | `/subscription-events` | ✅ | ≥ admin | Histórico UI (inclui `cancellation_scheduled`) |
 
 Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout`.
 
@@ -241,10 +242,14 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 
 ```typescript
 // change-plan: { plan: '200'|'500'|'800' }
+// 200: { requires_action, payment_confirmation_url, subscription }
+// requires_action true → fatura de proração aberta; a UI abre hosted_invoice_url
 // Downgrade: exige count(active members) ≤ limite destino → senão 400
 // activate-free: cancela subscription no Stripe (immediate) + plan_type=100
 //                 mesma regra de capacidade vs 100
 ```
+
+Cancelamento ao fim do período no portal grava `cancellation_scheduled` uma vez por `subscriptionId:cancel_at` e um audit log da igreja. O histórico da UI lista esse tipo; `subscription_updated` continua de fora.
 
 ### Webhook
 
@@ -258,7 +263,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**17** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**20** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -279,6 +284,9 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**17** regras).
 | BR-BILL-015 | Purge pending expiradas (7d) |
 | BR-BILL-016 | Purge webhooks >90d |
 | BR-BILL-017 | Sync sem `stripe_customer_id` → 200 `synced: false`; UI free (`plan_type` 100) sem Sync (mesmo com customer residual) |
+| BR-BILL-018 | Checkout da sessão sem Adaptive Pricing; locale `pt-BR` |
+| BR-BILL-019 | Fatura de proração aberta expõe URL hospedada; `past_due` segue sem troca de plano |
+| BR-BILL-020 | Cancelamento agendado entra no histórico na hora |
 
 Extras de código: `plan_type` null/`custom` → limite Infinity; avisos de quota 80/90/100%.
 
@@ -486,9 +494,9 @@ Tracking: `job_runs` via `runTrackedJob`.
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| — | — | 0% | Nenhum teste dedicado no repo |
+| — | `utils/__tests__/billingPresentation.test.ts` | helpers | URL de fatura aberta, chave de cancelamento agendado, telefone de contato |
 
-**Gaps:** constructEvent + claim race; stale event; downgrade capacity; past_due canAdd; pending→link onboarding; cron eligibility; change-plan proration.
+**Gaps:** constructEvent + claim race; stale event; downgrade capacity; past_due canAdd; pending→link onboarding; cron eligibility.
 
 ---
 

@@ -6,6 +6,7 @@ import { logAudit } from '../utils/auditLogger';
 import { sendEmail } from '../services/emailService';
 import { getEmailChangeNotificationTemplate, getAccountDeletedTemplate, getPasswordChangedTemplate } from '../templates/emailTemplates';
 import { logError } from '../utils/logger';
+import { contactPhoneFromAuthUser } from '../utils/billingPresentation';
 
 /**
  * Buscar dados da conta do usuário
@@ -19,9 +20,7 @@ export const getAccount = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Buscar dados completos do usuário usando o token do middleware
-    const token = req.cookies?.access_token || req.headers.authorization?.split(' ')[1];
-    
+    // Telefone de contato fica em user_metadata; a API admin enxerga o valor gravado no cadastro.
     let userData: {
       id: string;
       email: string;
@@ -40,20 +39,15 @@ export const getAccount = async (req: AuthRequest, res: Response) => {
       last_sign_in_at: null
     };
 
-    // Tentar buscar dados adicionais se o token estiver disponível
-    if (token) {
+    if (req.user?.id) {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(req.user.id);
+        const user = data?.user;
         if (!error && user) {
-          const metadataPhone =
-            typeof user.user_metadata?.phone === 'string' && user.user_metadata.phone.trim()
-              ? user.user_metadata.phone.trim()
-              : null;
           userData = {
             id: user.id,
-            email: user.email || '',
-            // Preferir phone do Auth; fallback para metadata gravada no registro
-            phone: user.phone || metadataPhone || null,
+            email: user.email || req.user.email || '',
+            phone: contactPhoneFromAuthUser(user),
             email_confirmed_at: user.email_confirmed_at || null,
             phone_confirmed_at: user.phone_confirmed_at || null,
             created_at: user.created_at || null,
@@ -61,7 +55,6 @@ export const getAccount = async (req: AuthRequest, res: Response) => {
           };
         }
       } catch (error) {
-        // Se falhar, usar dados básicos do req.user
         console.log('Usando dados básicos do usuário:', error);
       }
     }

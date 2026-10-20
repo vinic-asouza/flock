@@ -8,6 +8,7 @@ import {
   createCheckoutSession,
   createCustomerPortalSession,
   updateSubscription,
+  getSubscription,
 } from '../services/stripe';
 import { getStripeHealthSnapshot } from '../services/stripeHealth';
 import { setPendingLinkToken } from '../utils/cookieUtils';
@@ -25,6 +26,7 @@ import { recordCheckoutCreated, recordSyncSubscription } from '../utils/billingM
 import { sendEmail } from '../services/emailService';
 import { getPlanChangedTemplate } from '../templates/stripeEmailTemplates';
 import { checkMemberLimit } from '../utils/planLimits';
+import { openInvoiceConfirmationUrl } from '../utils/billingPresentation';
 
 /**
  * Criar sessão de checkout
@@ -663,8 +665,14 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const paymentConfirmationUrl = openInvoiceConfirmationUrl(updatedSubscription.latest_invoice);
+
     res.json({
-      message: 'Plano alterado com sucesso',
+      message: paymentConfirmationUrl
+        ? 'Plano alterado. Confirme o pagamento da diferença.'
+        : 'Plano alterado com sucesso',
+      requires_action: Boolean(paymentConfirmationUrl),
+      payment_confirmation_url: paymentConfirmationUrl,
       subscription: {
         id: updatedSubscription.id,
         status: updatedSubscription.status,
@@ -935,13 +943,45 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/** Tipos exibidos no histórico da UI (criação + mudanças de plano; sem sync/pagamentos). */
+/** Tipos exibidos no histórico da UI (criação, plano e cancelamento agendado; sem sync/pagamentos). */
 const SUBSCRIPTION_HISTORY_EVENT_TYPES = [
   'subscription_created',
   'plan_changed',
   'activate_free',
   'downgrade_job',
+  'cancellation_scheduled',
 ] as const;
+
+/**
+ * Fatura em aberto da assinatura da igreja ativa.
+ * GET /api/stripe/payment-confirmation
+ */
+export const getPaymentConfirmation = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || !req.church) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+
+    const { data: church, error } = await supabase
+      .from('churches')
+      .select('stripe_subscription_id')
+      .eq('id', req.church.churchId)
+      .single();
+
+    if (error || !church?.stripe_subscription_id) {
+      return res.json({ url: null });
+    }
+
+    const subscription = await getSubscription(church.stripe_subscription_id, ['latest_invoice']);
+    return res.json({ url: openInvoiceConfirmationUrl(subscription.latest_invoice) });
+  } catch (err: unknown) {
+    logError('Erro ao buscar confirmação de pagamento:', err);
+    return res.status(500).json({
+      error: 'Erro ao buscar confirmação de pagamento',
+      details: err instanceof Error ? err.message : 'Erro desconhecido',
+    });
+  }
+};
 
 /**
  * Histórico de eventos de assinatura da igreja ativa

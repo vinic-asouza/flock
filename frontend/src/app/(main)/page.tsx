@@ -18,7 +18,7 @@ import { OccupationsTable } from '@/components/reports/OccupationsTable';
 import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
 import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
 import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
-import { formatDateTime } from '@/utils';
+import { formatDateTimeWithSeconds } from '@/utils';
 
 export default function HomePage() {
   const { isLoading: isAuthLoading, isAuthenticated, currentRole } = useAuth();
@@ -54,7 +54,7 @@ export default function HomePage() {
         return;
       }
       setReportsData(data);
-      setLastUpdated(formatDateTime(new Date()));
+      setLastUpdated(formatDateTimeWithSeconds(new Date()));
     } catch (err: unknown) {
       if (requestId !== loadReportsRequestIdRef.current) {
         return;

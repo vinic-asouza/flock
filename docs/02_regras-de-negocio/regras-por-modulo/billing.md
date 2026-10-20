@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: billing
-ultima_atualizacao: 2026-10-16
-versao: "1.1"
-total_regras: 17
+ultima_atualizacao: 2026-10-20
+versao: "1.2"
+total_regras: 20
 tags: [regras, modulo:billing]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -36,6 +36,9 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 | BR-BILL-015 | Cleanup pending 7d | Gatilho | Ativo |
 | BR-BILL-016 | Cleanup webhooks 90d | Gatilho | Ativo |
 | BR-BILL-017 | Sync sem customer = noop; UI free sem Sync | Fato | Ativo |
+| BR-BILL-018 | Checkout na moeda do preço | Restrição | Ativo |
+| BR-BILL-019 | Fatura aberta confirma no Stripe | Gatilho | Ativo |
+| BR-BILL-020 | Cancelamento agendado no histórico | Gatilho | Ativo |
 
 ---
 
@@ -219,6 +222,36 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** [[BR-POL-016]]
 
+### BR-BILL-018: Checkout na moeda do preço
+- **Declaração:** A Checkout Session nasce com Adaptive Pricing desligado e locale `pt-BR`, para apresentar a moeda do Price (BRL).
+- **Tipo:** Restrição
+- **Gatilho:** Criação da sessão de checkout
+- **Comportamento esperado:** O checkout não oferece USD como moeda padrão da sessão.
+- **Comportamento em violação:** —
+- **Implementado em:** `services/stripe.ts` (`createCheckoutSession`)
+- **Testado em:** N/A — parâmetro da API Stripe
+- **Depende de:** [[BR-BILL-002]]
+
+### BR-BILL-019: Fatura aberta confirma no Stripe
+- **Declaração:** Se a troca de plano deixar fatura com valor em aberto, a API devolve a URL hospedada. `past_due` continua sem troca de plano; o caminho é confirmar essa fatura.
+- **Tipo:** Gatilho
+- **Gatilho:** `POST /change-plan` ou `GET /payment-confirmation`
+- **Comportamento esperado:** Botão Confirmar pagamento só com URL. Sem 3DS dentro do app.
+- **Comportamento em violação:** —
+- **Implementado em:** `stripeController.ts`, `PaymentManagement.tsx`
+- **Testado em:** `billingPresentation.test.ts` (`openInvoiceConfirmationUrl`)
+- **Depende de:** [[BR-BILL-008]]
+
+### BR-BILL-020: Cancelamento agendado no histórico
+- **Declaração:** `cancel_at_period_end` grava `cancellation_scheduled` na hora do agendamento, uma vez por assinatura e instante de `cancel_at`, e um audit log da igreja.
+- **Tipo:** Gatilho
+- **Gatilho:** Webhook `customer.subscription.updated`
+- **Comportamento esperado:** Histórico do Plano e aba Logs mostram o agendamento junto com o status já exibido na aba.
+- **Comportamento em violação:** —
+- **Implementado em:** `stripeWebhookService.ts`
+- **Testado em:** `billingPresentation.test.ts` (`scheduledCancellationStripeEventId`)
+- **Depende de:** —
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -228,4 +261,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Atualizado em 2026-10-19 (BR-BILL-017 — UI free / DEV-158).*
+*Atualizado em 2026-10-20 (BR-BILL-018 a 020 — DEV-164).*

@@ -2142,8 +2142,8 @@ export const setMemberStatus = async (req: AuthRequest, res: Response) => {
       entity: 'member',
       entityId: id,
       action: 'update',
-      changesBefore: { active: existing.active },
-      changesAfter: { active }
+      changesBefore: { name: existing.name, active: existing.active },
+      changesAfter: { name: updated.name, active }
     });
 
     res.json({
