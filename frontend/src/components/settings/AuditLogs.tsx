@@ -286,8 +286,13 @@ export default function AuditLogs() {
     return String(value);
   };
 
-  const getActorLabel = (log: AuditLog) =>
-    log.actor?.displayName || log.actor?.email || 'Usuário indisponível';
+  const getActorLabel = (log: AuditLog) => {
+    if (log.changes_after?.event === 'public_registration') {
+      const linkName = log.changes_after.link_name;
+      return typeof linkName === 'string' && linkName.trim() ? linkName.trim() : 'Link público';
+    }
+    return log.actor?.displayName || log.actor?.email || 'Usuário indisponível';
+  };
 
   const getSummaryLine = (log: AuditLog) => {
     if (isMemberListTransfer(log)) {
@@ -313,7 +318,12 @@ export default function AuditLogs() {
       return `Alterou o plano${shift} da igreja “${target}”`;
     }
     if (log.changes_after?.event === 'public_registration') {
-      return `Cadastrou o membro “${target}” pelo link público`;
+      const linkName = log.changes_after.link_name;
+      const via =
+        typeof linkName === 'string' && linkName.trim()
+          ? ` pelo link “${linkName.trim()}”`
+          : ' pelo link público';
+      return `Cadastrou o membro “${target}”${via}`;
     }
     return `${actionLabel} ${entityLabel} “${target}”`;
   };

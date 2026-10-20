@@ -381,6 +381,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const applyPlanType = useCallback((planType: string) => {
+    if (planType !== '100' && planType !== '200' && planType !== '500' && planType !== '800') {
+      return;
+    }
+    setUser((current) => (current ? { ...current, plan_type: planType } : current));
+  }, []);
+
   const isAuthenticated = useMemo(
     () => !!user || churchSelectionRequired,
     [user, churchSelectionRequired]
@@ -413,11 +420,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updateChurch,
     refreshChurch,
+    applyPlanType,
     memberships,
     activeChurchId,
     churchSelectionRequired,
     switchChurch,
-  }), [user, session, currentRole, canEdit, accessAllCongregations, congregationIds, canCreateCongregations, isLoading, isOperationLoading, authInitFailed, initializeAuth, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
+  }), [user, session, currentRole, canEdit, accessAllCongregations, congregationIds, canCreateCongregations, isLoading, isOperationLoading, authInitFailed, initializeAuth, isAuthenticated, login, register, logout, forgotPassword, changePassword, resetPassword, updateChurch, refreshChurch, applyPlanType, memberships, activeChurchId, churchSelectionRequired, switchChurch]);
 
   return (
     <AuthContext.Provider value={value}>

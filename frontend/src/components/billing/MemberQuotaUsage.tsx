@@ -27,6 +27,13 @@ function isFiniteLimit(limit: number | null | undefined): limit is number {
   return typeof limit === 'number' && Number.isFinite(limit) && limit > 0;
 }
 
+const KNOWN_PLAN_LIMITS: Record<string, number> = {
+  '100': 100,
+  '200': 200,
+  '500': 500,
+  '800': 800,
+};
+
 function bannerTone(percentage: number): {
   container: string;
   icon: string;
@@ -94,6 +101,17 @@ export function MemberQuotaUsage({
       setLoading(false);
     }
   }, [isAuthenticated]);
+
+  useEffect(() => {
+    const known = planType ? KNOWN_PLAN_LIMITS[planType] : undefined;
+    if (!known) return;
+    setData((current) => {
+      if (!current || current.limit === known) return current;
+      const percentage =
+        known > 0 ? Math.min(100, Math.round((current.currentCount / known) * 100)) : 0;
+      return { ...current, limit: known, percentage };
+    });
+  }, [planType]);
 
   useEffect(() => {
     setLoading(true);
