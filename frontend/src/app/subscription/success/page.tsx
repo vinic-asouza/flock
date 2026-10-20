@@ -115,6 +115,14 @@ function SubscriptionSuccessContent() {
     };
   }, [sessionId, userId, isAuthLoading, isConfirmed, refreshChurch]);
 
+  useEffect(() => {
+    if (!isConfirmed || error || missingSessionId) return;
+    const timeoutId = setTimeout(() => {
+      router.push('/');
+    }, 5000);
+    return () => clearTimeout(timeoutId);
+  }, [isConfirmed, error, missingSessionId, router]);
+
   if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -174,6 +182,9 @@ function SubscriptionSuccessContent() {
               </h1>
               <p className="text-sm sm:text-base text-gray-600">
                 Sua assinatura foi ativada com sucesso
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Você será levado ao sistema em alguns segundos.
               </p>
             </>
           )}

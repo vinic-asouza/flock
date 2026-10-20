@@ -99,6 +99,7 @@ const eventTypeLabels: Record<string, string> = {
   plan_changed: 'Plano alterado',
   activate_free: 'Plano gratuito ativado',
   downgrade_job: 'Downgrade automático',
+  cancellation_scheduled: 'Cancelamento agendado',
 };
 
 export function PaymentManagement() {
@@ -117,6 +118,7 @@ export function PaymentManagement() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [autoSyncFailed, setAutoSyncFailed] = useState(false);
+  const [paymentConfirmationUrl, setPaymentConfirmationUrl] = useState<string | null>(null);
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -262,6 +264,27 @@ export function PaymentManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeChurchId]);
 
+  useEffect(() => {
+    if (!canManagePlan || !user?.stripe_customer_id || user.plan_type === '100') {
+      setPaymentConfirmationUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    apiService
+      .getPaymentConfirmation()
+      .then((data) => {
+        if (!cancelled) setPaymentConfirmationUrl(data.url ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentConfirmationUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canManagePlan, user?.stripe_customer_id, user?.plan_type, user?.subscription_status, activeChurchId]);
+
   // FB05: atualizar dados ao voltar da aba do portal Stripe
   useEffect(() => {
     const onVisible = () => {
@@ -395,29 +418,38 @@ export function PaymentManagement() {
 
       if (selectedPlan === '100') {
         await apiService.activateFreePlan();
+        setSuccessMessage('Plano gratuito ativado com sucesso!');
+        setPaymentConfirmationUrl(null);
       } else {
-        await apiService.changePlan(selectedPlan);
+        const response = await apiService.changePlan(selectedPlan);
+        if (response.requires_action && response.payment_confirmation_url) {
+          setPaymentConfirmationUrl(response.payment_confirmation_url);
+          setSuccessMessage('Troca registrada. Confirme o pagamento da diferença para evitar atraso na assinatura.');
+        } else {
+          setPaymentConfirmationUrl(null);
+          setSuccessMessage('Plano alterado com sucesso!');
+        }
       }
 
-      setSuccessMessage(
-        selectedPlan === '100'
-          ? 'Plano gratuito ativado com sucesso!'
-          : 'Plano alterado com sucesso!'
-      );
       setSyncMessage(null);
       setShowConfirmModal(false);
       setShowChangePlanModal(false);
       setSelectedPlan(null);
 
-      try {
-        await apiService.syncSubscription();
-      } catch {
-        // fallback silencioso — dados já atualizados via refreshChurch
-      }
-
       if (refreshChurch) {
         await refreshChurch();
-      } else {
+      }
+
+      try {
+        await apiService.syncSubscription();
+        if (refreshChurch) {
+          await refreshChurch();
+        }
+      } catch {
+        // a troca já atualizou o banco; a sincronização só alinha com o Stripe
+      }
+
+      if (!refreshChurch) {
         window.location.reload();
       }
 
@@ -644,6 +676,22 @@ export function PaymentManagement() {
 
               return <span className="text-sm text-gray-500">Status não disponível</span>;
             })()}
+
+            {paymentConfirmationUrl && (
+              <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-900 mb-3">
+                  Confirme o pagamento da diferença para evitar atraso na assinatura.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => window.open(paymentConfirmationUrl, '_blank', 'noopener,noreferrer')}
+                  className="min-h-11 w-full sm:w-auto"
+                >
+                  Confirmar pagamento
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            )}
             
             {/* Alerta para assinatura cancelada (verifica subscription_end_date) */}
             {subscriptionEndDate && (() => {
