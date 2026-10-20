@@ -23,7 +23,13 @@ import {
   getSubscriptionReactivatedTemplate,
 } from '../templates/stripeEmailTemplates';
 import { getPlanConfig } from '../config/plans';
-import { planChangeDedupeKey, resolveScheduledCancellation, subscriptionRenewalEventId } from '../utils/billingPresentation';
+import {
+  legacyScheduledCancellationEventId,
+  paymentRecoveryEventId,
+  planChangeDedupeKey,
+  resolveScheduledCancellation,
+  subscriptionRenewalEventId,
+} from '../utils/billingPresentation';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // DB05: helper para registrar transições de assinatura no histórico de billing
@@ -137,7 +143,7 @@ export async function recordScheduledCancellation(input: {
 
   if (!resolved) return;
 
-  const { data: existingCancellation } = await supabaseAdmin
+  const { data: exactCancellation } = await supabaseAdmin
     .from('church_subscription_events')
     .select('id')
     .eq('church_id', input.churchId)
@@ -145,12 +151,41 @@ export async function recordScheduledCancellation(input: {
     .eq('stripe_event_id', resolved.eventId)
     .maybeSingle();
 
-  if (existingCancellation) return;
+  if (exactCancellation) return;
+
+  const legacyEventId = legacyScheduledCancellationEventId(
+    input.subscription.id,
+    resolved.cancelAt
+  );
+  if (legacyEventId !== resolved.eventId) {
+    const { data: legacyCancellation } = await supabaseAdmin
+      .from('church_subscription_events')
+      .select('id, created_at')
+      .eq('church_id', input.churchId)
+      .eq('event_type', 'cancellation_scheduled')
+      .eq('stripe_event_id', legacyEventId)
+      .maybeSingle();
+
+    if (legacyCancellation?.created_at) {
+      const { data: renewalAfterLegacy } = await supabaseAdmin
+        .from('church_subscription_events')
+        .select('id')
+        .eq('church_id', input.churchId)
+        .eq('event_type', 'subscription_renewed')
+        .gt('created_at', legacyCancellation.created_at)
+        .limit(1)
+        .maybeSingle();
+
+      if (!renewalAfterLegacy) return;
+    }
+  }
+
+  if (await auditAlreadyRecorded(input.churchId, resolved.eventId)) return;
 
   const endDateIso = new Date(resolved.cancelAt * 1000).toISOString();
   const source = input.source ?? 'webhook';
 
-  await insertSubscriptionEvent({
+  const inserted = await insertSubscriptionEvent({
     church_id: input.churchId,
     event_type: 'cancellation_scheduled',
     old_plan: input.oldPlan ?? null,
@@ -165,7 +200,8 @@ export async function recordScheduledCancellation(input: {
     },
   });
 
-  if (!input.ownerUserId) return;
+  if (!inserted || !input.ownerUserId) return;
+  if (await auditAlreadyRecorded(input.churchId, resolved.eventId)) return;
 
   const { error: auditError } = await supabaseAdmin.from('audit_logs').insert({
     user_id: input.ownerUserId,
@@ -178,6 +214,7 @@ export async function recordScheduledCancellation(input: {
       name: input.churchName,
       event: 'cancellation_scheduled',
       subscription_end_date: endDateIso,
+      dedupe_key: resolved.eventId,
     },
     ip: null,
     user_agent: source === 'api' ? 'stripe-sync' : 'stripe-webhook',
@@ -198,6 +235,98 @@ async function auditAlreadyRecorded(churchId: string, dedupeKey: string): Promis
     .maybeSingle();
 
   return Boolean(data);
+}
+
+/**
+ * Volta de past_due para active. O webhook pode ter atualizado o status
+ * antes do sync; a linha nasce se ainda houver um past_due sem recuperação.
+ */
+export async function recordPaymentRecovery(input: {
+  churchId: string;
+  churchName: string;
+  ownerUserId?: string | null;
+  subscription: Stripe.Subscription;
+  oldPlan?: string | null;
+  newPlan?: string | null;
+  source?: 'webhook' | 'api';
+}): Promise<void> {
+  if (input.subscription.status !== 'active' && input.subscription.status !== 'trialing') return;
+
+  const eventId = paymentRecoveryEventId(input.subscription.id, invoiceIdOf(input.subscription));
+  if (!eventId) return;
+
+  const { data: existing } = await supabaseAdmin
+    .from('church_subscription_events')
+    .select('id')
+    .eq('church_id', input.churchId)
+    .eq('event_type', 'payment_recovered')
+    .eq('stripe_event_id', eventId)
+    .maybeSingle();
+  if (existing) return;
+
+  const { data: pastDue } = await supabaseAdmin
+    .from('church_subscription_events')
+    .select('id, created_at')
+    .eq('church_id', input.churchId)
+    .eq('new_status', 'past_due')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!pastDue?.created_at) return;
+
+  const { data: recoveredAfter } = await supabaseAdmin
+    .from('church_subscription_events')
+    .select('id')
+    .eq('church_id', input.churchId)
+    .eq('event_type', 'payment_recovered')
+    .gt('created_at', pastDue.created_at)
+    .limit(1)
+    .maybeSingle();
+  if (recoveredAfter) return;
+
+  const source = input.source ?? 'webhook';
+  const inserted = await insertSubscriptionEvent({
+    church_id: input.churchId,
+    event_type: 'payment_recovered',
+    old_plan: input.oldPlan ?? null,
+    new_plan: input.newPlan ?? null,
+    old_status: 'past_due',
+    new_status: input.subscription.status,
+    source,
+    stripe_event_id: eventId,
+    payload: { id: input.subscription.id, invoice_id: invoiceIdOf(input.subscription) },
+  });
+  if (!inserted) return;
+
+  let ownerUserId = input.ownerUserId ?? null;
+  if (!ownerUserId) {
+    const { data: church } = await supabaseAdmin
+      .from('churches')
+      .select('user_id')
+      .eq('id', input.churchId)
+      .maybeSingle();
+    ownerUserId = church?.user_id ?? null;
+  }
+  if (!ownerUserId || (await auditAlreadyRecorded(input.churchId, eventId))) return;
+
+  const { error } = await supabaseAdmin.from('audit_logs').insert({
+    user_id: ownerUserId,
+    church_id: input.churchId,
+    entity: 'church',
+    entity_id: input.churchId,
+    action: 'update',
+    changes_before: { name: input.churchName },
+    changes_after: {
+      name: input.churchName,
+      event: 'payment_recovered',
+      dedupe_key: eventId,
+    },
+    ip: null,
+    user_agent: source === 'api' ? 'stripe-sync' : 'stripe-webhook',
+  });
+  if (error) {
+    logError('Falha ao registrar audit de pagamento confirmado', error);
+  }
 }
 
 function invoiceIdOf(subscription: Stripe.Subscription): string | null {
@@ -898,6 +1027,16 @@ export async function handleSubscriptionUpdated(
     });
   }
 
+  await recordPaymentRecovery({
+    churchId: church.id,
+    churchName: church.name || churchBeforeUpdate?.name || '',
+    ownerUserId: churchBeforeUpdate?.user_id ?? null,
+    subscription,
+    oldPlan: churchBeforeUpdate?.plan_type ?? null,
+    newPlan: finalPlanType,
+    source: 'webhook',
+  });
+
   const isNowActive = subscription.status === 'active';
   const sub = subscription as Stripe.Subscription & {
     cancel_at_period_end?: boolean;
@@ -1156,6 +1295,14 @@ export async function handlePaymentSucceeded(
     source: 'webhook',
     stripe_event_id: subscriptionId,
     payload: { subscription_id: subscriptionId, plan: finalPlanType },
+  });
+
+  await recordPaymentRecovery({
+    churchId: updateResult.id,
+    churchName: updateResult.name || '',
+    subscription,
+    newPlan: finalPlanType,
+    source: 'webhook',
   });
 
   const userEmail = await getUserEmailFromChurch(updateResult.id);

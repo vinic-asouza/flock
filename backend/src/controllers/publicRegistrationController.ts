@@ -334,6 +334,7 @@ export const createMemberViaPublicLink = async (
         changes_after: {
           name: member.name,
           event: 'public_registration',
+          link_name: registrationLink.notes?.trim() || null,
         },
         ip: null,
         user_agent: 'public-registration-link',

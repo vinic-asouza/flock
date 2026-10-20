@@ -59,6 +59,25 @@ export function resolveScheduledCancellation(
   return { eventId, cancelAt };
 }
 
+/** Chave gravada antes de `canceled_at` entrar no identificador. */
+export function legacyScheduledCancellationEventId(
+  subscriptionId: string,
+  cancelAt: number
+): string {
+  return `${subscriptionId}:${cancelAt}`;
+}
+
+/** Uma confirmação de pagamento por fatura que tirou a assinatura de past_due. */
+export function paymentRecoveryEventId(
+  subscriptionId: string | null | undefined,
+  invoiceId: string | null | undefined
+): string | null {
+  const id = subscriptionId?.trim();
+  const invoice = invoiceId?.trim();
+  if (!id || !invoice) return null;
+  return `${id}:recovered:${invoice}`;
+}
+
 /** Chave da renovação ligada ao cancelamento que ela desfez. */
 export function subscriptionRenewalEventId(
   subscriptionId: string | null | undefined,

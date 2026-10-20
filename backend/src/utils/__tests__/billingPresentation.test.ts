@@ -1,6 +1,7 @@
 import {
   contactPhoneFromAuthUser,
   openInvoiceConfirmationUrl,
+  paymentRecoveryEventId,
   planChangeDedupeKey,
   resolveScheduledCancellation,
   scheduledCancellationStripeEventId,
@@ -91,6 +92,13 @@ describe('subscriptionRenewalEventId', () => {
       'sub_1:renewed:sub_1:1760000000:1750000000'
     );
     expect(subscriptionRenewalEventId('sub_1', '  ')).toBeNull();
+  });
+});
+
+describe('paymentRecoveryEventId', () => {
+  it('amarra a recuperação à fatura paga', () => {
+    expect(paymentRecoveryEventId('sub_1', 'in_1')).toBe('sub_1:recovered:in_1');
+    expect(paymentRecoveryEventId('sub_1', '  ')).toBeNull();
   });
 });
 

@@ -13,7 +13,7 @@ import {
 import { getStripeHealthSnapshot } from '../services/stripeHealth';
 import { setPendingLinkToken } from '../utils/cookieUtils';
 import { supabaseAdmin } from '../services/supabase';
-import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate, recordScheduledCancellation, recordSubscriptionRenewal, recordPlanChangeAudit } from '../services/stripeWebhookService';
+import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate, recordScheduledCancellation, recordSubscriptionRenewal, recordPlanChangeAudit, recordPaymentRecovery } from '../services/stripeWebhookService';
 
 // alias para legibilidade — todas as queries de DB usam service_role
 const supabase = supabaseAdmin;
@@ -468,6 +468,16 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
         source: 'api',
       });
     }
+
+    await recordPaymentRecovery({
+      churchId: church.id,
+      churchName: church.name ?? '',
+      ownerUserId: church.user_id ?? null,
+      subscription,
+      oldPlan: church.plan_type ?? null,
+      newPlan: finalPlanType,
+      source: 'api',
+    });
 
     billingLog({
       event: 'sync_subscription',
@@ -988,13 +998,15 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/** Tipos exibidos no histórico da UI (criação, plano e cancelamento agendado; sem sync/pagamentos). */
+/** Tipos exibidos no histórico da UI. Sync interno fica de fora. */
 const SUBSCRIPTION_HISTORY_EVENT_TYPES = [
   'subscription_created',
   'plan_changed',
   'activate_free',
   'downgrade_job',
+  'cancellation_scheduled',
   'subscription_renewed',
+  'payment_recovered',
 ] as const;
 
 /**
