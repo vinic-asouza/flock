@@ -243,13 +243,13 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Depende de:** [[BR-BILL-008]]
 
 ### BR-BILL-020: Cancelamento agendado no histórico
-- **Declaração:** `cancel_at_period_end` grava `cancellation_scheduled` na hora do agendamento, uma vez por assinatura e instante de `cancel_at`, e um audit log da igreja.
+- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` uma vez por assinatura e instante de `cancel_at`, e um audit log da igreja com o dono como autor.
 - **Tipo:** Gatilho
-- **Gatilho:** Webhook `customer.subscription.updated`
-- **Comportamento esperado:** Histórico do Plano e aba Logs mostram o agendamento junto com o status já exibido na aba.
+- **Gatilho:** Webhook `customer.subscription.updated` e `POST /sync-subscription`
+- **Comportamento esperado:** Histórico do Plano e aba Logs mostram o agendamento junto com o status já exibido na aba. Um segundo sync não duplica a linha.
 - **Comportamento em violação:** —
-- **Implementado em:** `stripeWebhookService.ts`
-- **Testado em:** `billingPresentation.test.ts` (`scheduledCancellationStripeEventId`)
+- **Implementado em:** `billingPresentation.ts` (`resolveScheduledCancellation`), `stripeWebhookService.ts` (`recordScheduledCancellation`), `stripeController.ts` (sync)
+- **Testado em:** `billingPresentation.test.ts` (`resolveScheduledCancellation`)
 - **Depende de:** —
 
 ---
@@ -261,4 +261,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Atualizado em 2026-10-20 (BR-BILL-018 a 020 — DEV-164).*
+*Atualizado em 2026-10-20 (BR-BILL-020 — sync também grava o cancelamento agendado, DEV-166).*

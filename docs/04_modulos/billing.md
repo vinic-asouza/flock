@@ -249,7 +249,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 //                 mesma regra de capacidade vs 100
 ```
 
-Cancelamento ao fim do período no portal grava `cancellation_scheduled` uma vez por `subscriptionId:cancel_at` e um audit log da igreja. O histórico da UI lista esse tipo; `subscription_updated` continua de fora.
+Cancelamento ao fim do período no portal grava `cancellation_scheduled` uma vez por `subscriptionId:cancel_at` e um audit log do dono. A gravação ocorre no webhook e no `POST /sync-subscription` (`cancel_at` com a assinatura ainda ativa; se a flag vier sem data, usa o fim do período do item). O histórico da UI lista esse tipo; `subscription_updated` continua de fora. O indicador de membros da aba Plano relê o limite quando `plan_type` muda.
 
 ### Webhook
 
