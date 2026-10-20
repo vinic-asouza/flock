@@ -313,6 +313,36 @@ export const createMemberViaPublicLink = async (
       }
     }
 
+    const actorId = registrationLink.created_by
+      ?? (
+        await supabase
+          .from('churches')
+          .select('user_id')
+          .eq('id', churchId)
+          .maybeSingle()
+      ).data?.user_id
+      ?? null;
+
+    if (actorId && member.id) {
+      const { error: auditError } = await supabase.from('audit_logs').insert({
+        user_id: actorId,
+        church_id: churchId,
+        entity: 'member',
+        entity_id: member.id,
+        action: 'create',
+        changes_before: null,
+        changes_after: {
+          name: member.name,
+          event: 'public_registration',
+        },
+        ip: null,
+        user_agent: 'public-registration-link',
+      });
+      if (auditError) {
+        console.error('Falha ao registrar audit do cadastro público:', auditError);
+      }
+    }
+
     const { data: church } = await supabase
       .from('churches')
       .select('name')

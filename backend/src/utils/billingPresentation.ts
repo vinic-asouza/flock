@@ -18,6 +18,11 @@ export type ScheduledCancellationSnapshot = {
   status?: string | null;
   cancelAtPeriodEnd?: boolean | null;
   cancelAt?: number | null;
+  /**
+   * Instante do pedido no Stripe. Muda a cada cancelamento,
+   * mesmo quando o fim do período (`cancel_at`) continua o mesmo.
+   */
+  canceledAt?: number | null;
   /** `current_period_end` do item. A assinatura na API clover não traz mais esse campo. */
   itemPeriodEnd?: number | null;
 };
@@ -45,7 +50,38 @@ export function resolveScheduledCancellation(
 
   if (cancelAt == null) return null;
 
-  return { eventId: `${subscriptionId}:${cancelAt}`, cancelAt };
+  const canceledAt = typeof snapshot.canceledAt === 'number' ? snapshot.canceledAt : null;
+  const eventId =
+    canceledAt != null
+      ? `${subscriptionId}:${cancelAt}:${canceledAt}`
+      : `${subscriptionId}:${cancelAt}`;
+
+  return { eventId, cancelAt };
+}
+
+/** Chave da renovação ligada ao cancelamento que ela desfez. */
+export function subscriptionRenewalEventId(
+  subscriptionId: string | null | undefined,
+  cancellationKey: string | null | undefined
+): string | null {
+  const id = subscriptionId?.trim();
+  const key = cancellationKey?.trim();
+  if (!id || !key) return null;
+  return `${id}:renewed:${key}`;
+}
+
+/** Uma troca de plano por fatura. Sem fatura, a chave ainda separa origem e destino. */
+export function planChangeDedupeKey(
+  subscriptionId: string | null | undefined,
+  oldPlan: string | null | undefined,
+  newPlan: string | null | undefined,
+  invoiceId: string | null | undefined
+): string | null {
+  const id = subscriptionId?.trim();
+  const from = oldPlan?.trim();
+  const to = newPlan?.trim();
+  if (!id || !from || !to || from === to) return null;
+  return `${id}:plan:${from}:${to}:${invoiceId?.trim() || 'none'}`;
 }
 
 /**

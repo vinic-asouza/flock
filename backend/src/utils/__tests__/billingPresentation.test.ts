@@ -1,8 +1,10 @@
 import {
   contactPhoneFromAuthUser,
   openInvoiceConfirmationUrl,
+  planChangeDedupeKey,
   resolveScheduledCancellation,
   scheduledCancellationStripeEventId,
+  subscriptionRenewalEventId,
 } from '../billingPresentation';
 
 describe('scheduledCancellationStripeEventId', () => {
@@ -63,6 +65,42 @@ describe('resolveScheduledCancellation', () => {
         cancelAt: 1760000000,
       })
     ).toBeNull();
+  });
+
+  it('separa dois cancelamentos do mesmo período pelo instante do pedido', () => {
+    const first = resolveScheduledCancellation({
+      subscriptionId: 'sub_1',
+      status: 'active',
+      cancelAt: 1760000000,
+      canceledAt: 1750000000,
+    });
+    const second = resolveScheduledCancellation({
+      subscriptionId: 'sub_1',
+      status: 'active',
+      cancelAt: 1760000000,
+      canceledAt: 1750001000,
+    });
+    expect(first?.eventId).toBe('sub_1:1760000000:1750000000');
+    expect(second?.eventId).toBe('sub_1:1760000000:1750001000');
+  });
+});
+
+describe('subscriptionRenewalEventId', () => {
+  it('amarra a renovação ao cancelamento que ela desfez', () => {
+    expect(subscriptionRenewalEventId('sub_1', 'sub_1:1760000000:1750000000')).toBe(
+      'sub_1:renewed:sub_1:1760000000:1750000000'
+    );
+    expect(subscriptionRenewalEventId('sub_1', '  ')).toBeNull();
+  });
+});
+
+describe('planChangeDedupeKey', () => {
+  it('muda com a fatura e ignora plano igual', () => {
+    expect(planChangeDedupeKey('sub_1', '800', '500', 'in_a')).toBe('sub_1:plan:800:500:in_a');
+    expect(planChangeDedupeKey('sub_1', '500', '800', 'in_b')).not.toBe(
+      planChangeDedupeKey('sub_1', '800', '500', 'in_a')
+    );
+    expect(planChangeDedupeKey('sub_1', '500', '500', 'in_a')).toBeNull();
   });
 });
 
