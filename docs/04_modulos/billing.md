@@ -202,7 +202,7 @@ Telemetria dos crons (`runTrackedJob`).
 | POST | `/activate-free-plan` | ✅ | ≥ admin | Cancela pago → 100 |
 | GET | `/checkout-status` | ✅ | ≥ admin | Status pós-checkout |
 | GET | `/payment-confirmation` | ✅ | ≥ admin | URL da fatura hospedada em aberto, ou `url: null` |
-| GET | `/subscription-events` | ✅ | ≥ admin | Histórico UI (inclui `cancellation_scheduled`) |
+| GET | `/subscription-events` | ✅ | ≥ admin | Histórico UI (`cancellation_scheduled`, `subscription_renewed`, `payment_recovered`) |
 
 Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout`.
 
@@ -249,7 +249,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 //                 mesma regra de capacidade vs 100
 ```
 
-Cancelamento ao fim do período no portal grava `cancellation_scheduled` uma vez por `subscriptionId:cancel_at` e um audit log da igreja. O histórico da UI lista esse tipo; `subscription_updated` continua de fora.
+Cancelamento ao fim do período grava `cancellation_scheduled` e um audit do dono. Um segundo cancelamento no mesmo período, depois de renovar, gera outra linha: a chave inclui `canceled_at` quando o Stripe envia o instante do pedido. A chave antiga, sem esse instante, não gera segunda linha se ainda não houve renovação. Renovar grava `subscription_renewed`. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync. A hora é a do pagamento, não a de um sync atrasado; o histórico mostra data e hora, do mais recente para o mais antigo, e o log diz que o dono confirmou o pagamento. Troca de plano grava um audit `plan_changed`. O histórico da UI lista cancelamento, renovação e pagamento confirmado; `subscription_updated` continua de fora. O indicador de membros usa o limite do plano assim que a troca responde.
 
 ### Webhook
 
@@ -286,7 +286,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**20** regras).
 | BR-BILL-017 | Sync sem `stripe_customer_id` → 200 `synced: false`; UI free (`plan_type` 100) sem Sync (mesmo com customer residual) |
 | BR-BILL-018 | Checkout da sessão sem Adaptive Pricing; locale `pt-BR` |
 | BR-BILL-019 | Fatura de proração aberta expõe URL hospedada; `past_due` segue sem troca de plano |
-| BR-BILL-020 | Cancelamento agendado entra no histórico na hora |
+| BR-BILL-020 | Cada cancelamento, cada renovação, a troca de plano e a volta de past_due |
 
 Extras de código: `plan_type` null/`custom` → limite Infinity; avisos de quota 80/90/100%.
 

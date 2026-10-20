@@ -179,6 +179,8 @@ export interface AuthContextType {
   resetPassword: (data: ResetPasswordData) => Promise<void>;
   updateChurch: (data: Partial<Church>) => Promise<Church>;
   refreshChurch: () => Promise<void>;
+  /** Atualiza o plano na tela antes da releitura da igreja. */
+  applyPlanType: (planType: string) => void;
   memberships: ChurchMembership[];
   activeChurchId: string | null;
   churchSelectionRequired: boolean;

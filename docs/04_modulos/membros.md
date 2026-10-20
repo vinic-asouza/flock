@@ -128,7 +128,7 @@ Cadastro oficial do membro no tenant.
 - Tem muitos: `member_groups`; referenciado por grupos (responsible), calendário, integração (mentor)
 
 **Soft delete:** **não** via `deleted_at`. Inativação = `active=false`. **DELETE = hard delete.**  
-**Auditoria:** `audit_logs` (entity `member`) + `created_at` na row.
+**Auditoria:** `audit_logs` (entity `member`) + `created_at` na row. O autocadastro pelo link público também grava `create` com `event: public_registration` e `link_name` (o campo `notes` do link). Na aba Histórico, o autor exibido é o nome do link.
 
 ### member_groups
 

@@ -286,8 +286,13 @@ export default function AuditLogs() {
     return String(value);
   };
 
-  const getActorLabel = (log: AuditLog) =>
-    log.actor?.displayName || log.actor?.email || 'Usuário indisponível';
+  const getActorLabel = (log: AuditLog) => {
+    if (log.changes_after?.event === 'public_registration') {
+      const linkName = log.changes_after.link_name;
+      return typeof linkName === 'string' && linkName.trim() ? linkName.trim() : 'Link público';
+    }
+    return log.actor?.displayName || log.actor?.email || 'Usuário indisponível';
+  };
 
   const getSummaryLine = (log: AuditLog) => {
     if (isMemberListTransfer(log)) {
@@ -303,6 +308,26 @@ export default function AuditLogs() {
     if (log.changes_after?.event === 'cancellation_scheduled') {
       return `Agendou o cancelamento da igreja “${target}”`;
     }
+    if (log.changes_after?.event === 'subscription_renewed') {
+      return `Renovou a assinatura da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'plan_changed') {
+      const from = log.changes_after.old_plan;
+      const to = log.changes_after.new_plan;
+      const shift = from && to ? ` de ${from} para ${to}` : '';
+      return `Alterou o plano${shift} da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'payment_recovered') {
+      return `Confirmou o pagamento da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'public_registration') {
+      const linkName = log.changes_after.link_name;
+      const via =
+        typeof linkName === 'string' && linkName.trim()
+          ? ` pelo link “${linkName.trim()}”`
+          : ' pelo link público';
+      return `Cadastrou o membro “${target}”${via}`;
+    }
     return `${actionLabel} ${entityLabel} “${target}”`;
   };
 
@@ -313,6 +338,13 @@ export default function AuditLogs() {
     if (realAction === 'activate' || realAction === 'deactivate') {
       return realAction === 'activate' ? 'Status: Ativo' : 'Status: Inativo';
     }
+    if (log.changes_after?.event === 'cancellation_scheduled') return 'Cancelamento agendado';
+    if (log.changes_after?.event === 'subscription_renewed') return 'Cancelamento desfeito';
+    if (log.changes_after?.event === 'plan_changed') {
+      return `Plano ${log.changes_after.old_plan ?? '—'} → ${log.changes_after.new_plan ?? '—'}`;
+    }
+    if (log.changes_after?.event === 'payment_recovered') return 'Pagamento confirmado';
+    if (log.changes_after?.event === 'public_registration') return 'Link público';
     if (log.action !== 'update') return null;
     const fields = getChangedFields(log);
     if (fields.length === 0) return null;
@@ -347,6 +379,30 @@ export default function AuditLogs() {
             : '.'}
         </p>
       );
+    }
+
+    if (log.changes_after?.event === 'subscription_renewed') {
+      return <p className="text-sm text-gray-700">Assinatura renovada. O cancelamento agendado foi desfeito.</p>;
+    }
+
+    if (log.changes_after?.event === 'plan_changed') {
+      return (
+        <p className="text-sm text-gray-700">
+          Plano {String(log.changes_after.old_plan ?? '—')} → {String(log.changes_after.new_plan ?? '—')}.
+        </p>
+      );
+    }
+
+    if (log.changes_after?.event === 'payment_recovered') {
+      return (
+        <p className="text-sm text-gray-700">
+          Pagamento confirmado. A assinatura voltou de pagamento atrasado para ativa.
+        </p>
+      );
+    }
+
+    if (log.changes_after?.event === 'public_registration') {
+      return <p className="text-sm text-gray-700">Membro cadastrado pelo link público.</p>;
     }
 
     if (realAction === 'create') {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -21,9 +21,11 @@ import apiService, { formatApiError, getDowngradeBlockInfo } from '@/services/ap
 import {
   getCachedStripeSync,
   setCachedStripeSync,
+  clearStripeSyncCache,
 } from '@/utils/stripeSyncCache';
 import { captureBillingError } from '@/utils/billingTelemetry';
 import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
+import { formatDateTime } from '@/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
@@ -100,10 +102,12 @@ const eventTypeLabels: Record<string, string> = {
   activate_free: 'Plano gratuito ativado',
   downgrade_job: 'Downgrade automático',
   cancellation_scheduled: 'Cancelamento agendado',
+  subscription_renewed: 'Assinatura renovada',
+  payment_recovered: 'Pagamento confirmado',
 };
 
 export function PaymentManagement() {
-  const { user, refreshChurch, currentRole, activeChurchId } = useAuth();
+  const { user, refreshChurch, applyPlanType, currentRole, activeChurchId } = useAuth();
   const canManagePlan = currentRole === 'admin' || currentRole === 'owner';
   const router = useRouter();
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
@@ -264,37 +268,60 @@ export function PaymentManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeChurchId]);
 
-  useEffect(() => {
+  const refreshPaymentConfirmation = useCallback(async () => {
     if (!canManagePlan || !user?.stripe_customer_id || user.plan_type === '100') {
       setPaymentConfirmationUrl(null);
       return;
     }
 
-    let cancelled = false;
-    apiService
-      .getPaymentConfirmation()
-      .then((data) => {
-        if (!cancelled) setPaymentConfirmationUrl(data.url ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setPaymentConfirmationUrl(null);
-      });
+    try {
+      const data = await apiService.getPaymentConfirmation();
+      setPaymentConfirmationUrl(data.url ?? null);
+    } catch {
+      setPaymentConfirmationUrl(null);
+    }
+  }, [canManagePlan, user?.stripe_customer_id, user?.plan_type]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [canManagePlan, user?.stripe_customer_id, user?.plan_type, user?.subscription_status, activeChurchId]);
+  useEffect(() => {
+    void refreshPaymentConfirmation();
+  }, [refreshPaymentConfirmation, user?.subscription_status, activeChurchId]);
 
-  // FB05: atualizar dados ao voltar da aba do portal Stripe
+  // FB05: ao voltar do portal, sincronizar se o cache foi limpo na abertura.
+  // Com cache quente, só relê a igreja — o webhook ou a outra aba já gravou.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && refreshChurch) {
-        void refreshChurch();
+      if (document.visibilityState !== 'visible') return;
+
+      const churchKey = activeChurchId ?? user?.id ?? null;
+      const shouldSync =
+        canManagePlan &&
+        !!user?.stripe_customer_id &&
+        user.plan_type !== '100' &&
+        !!churchKey &&
+        !getCachedStripeSync(churchKey);
+
+      if (!shouldSync) {
+        if (refreshChurch) void refreshChurch();
+        void refreshPaymentConfirmation();
+        return;
       }
+
+      void (async () => {
+        try {
+          const response = await apiService.syncSubscription();
+          if (response.synced && churchKey) {
+            setCachedStripeSync(churchKey);
+          }
+        } catch {
+          // a releitura abaixo ainda mostra o que o banco já tiver
+        }
+        if (refreshChurch) await refreshChurch();
+        await refreshPaymentConfirmation();
+      })();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refreshChurch]);
+  }, [refreshChurch, refreshPaymentConfirmation, canManagePlan, user?.stripe_customer_id, user?.plan_type, user?.id, activeChurchId]);
 
   const handleManageSubscription = async () => {
     try {
@@ -306,6 +333,8 @@ export function PaymentManagement() {
       if (!url) {
         throw new Error('URL do portal não recebida');
       }
+
+      clearStripeSyncCache(activeChurchId ?? user?.id);
 
       // Abrir portal do Stripe em nova guia
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -327,7 +356,8 @@ export function PaymentManagement() {
     }
 
     if (!force && churchKey && getCachedStripeSync(churchKey)) {
-      setSyncMessage('Dados já sincronizados recentemente. Use "Sincronizar agora" no aviso acima ou aguarde alguns minutos.');
+      setSyncMessage(null);
+      setSuccessMessage('Assinatura já está atualizada.');
       return;
     }
 
@@ -418,10 +448,12 @@ export function PaymentManagement() {
 
       if (selectedPlan === '100') {
         await apiService.activateFreePlan();
+        applyPlanType('100');
         setSuccessMessage('Plano gratuito ativado com sucesso!');
         setPaymentConfirmationUrl(null);
       } else {
         const response = await apiService.changePlan(selectedPlan);
+        applyPlanType(selectedPlan);
         if (response.requires_action && response.payment_confirmation_url) {
           setPaymentConfirmationUrl(response.payment_confirmation_url);
           setSuccessMessage('Troca registrada. Confirme o pagamento da diferença para evitar atraso na assinatura.');
@@ -902,7 +934,7 @@ export function PaymentManagement() {
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
           <div className="flex flex-col gap-1 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-sm font-medium text-gray-700">Histórico de assinatura</h3>
-            <span className="text-xs text-gray-500">Criações e alterações de plano</span>
+            <span className="text-xs text-gray-500">Criações, alterações de plano, cancelamentos, renovações e pagamentos confirmados</span>
           </div>
 
           {isLoadingEvents ? (
@@ -936,7 +968,7 @@ export function PaymentManagement() {
                       </p>
                     </div>
                     <time className="text-xs text-gray-400 shrink-0">
-                      {formatDate(evt.created_at)}
+                      {formatDateTime(evt.created_at) || formatDate(evt.created_at)}
                     </time>
                   </div>
                 </li>

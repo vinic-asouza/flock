@@ -243,13 +243,13 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Depende de:** [[BR-BILL-008]]
 
 ### BR-BILL-020: Cancelamento agendado no histórico
-- **Declaração:** `cancel_at_period_end` grava `cancellation_scheduled` na hora do agendamento, uma vez por assinatura e instante de `cancel_at`, e um audit log da igreja.
+- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` e um audit log do dono. A chave é assinatura + `cancel_at` + `canceled_at` quando o Stripe manda o instante do pedido; sem esse instante, a chave antiga (assinatura + `cancel_at`) continua valendo para não duplicar o primeiro registro. Um reload não grava de novo se a chave antiga já existe e não houve renovação depois dela. Cada renovação que desfaz um agendamento grava `subscription_renewed` e um audit do dono, uma vez por cancelamento anterior. Troca de plano grava um audit (`plan_changed`) por assinatura, plano de origem, plano de destino e fatura. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync. A hora desses dois registros é a do pagamento (`paid_at` da mesma fatura, ou a transição já gravada de `past_due` para `active`), não a hora de um sync atrasado. Se a linha nasceu mais de um minuto depois, o sync seguinte realinha. O histórico mostra data e hora, do mais recente para o mais antigo. O log diz que o dono confirmou o pagamento.
 - **Tipo:** Gatilho
-- **Gatilho:** Webhook `customer.subscription.updated`
-- **Comportamento esperado:** Histórico do Plano e aba Logs mostram o agendamento junto com o status já exibido na aba.
+- **Gatilho:** Webhook `customer.subscription.updated`, `POST /sync-subscription` e `POST /change-plan`
+- **Comportamento esperado:** Histórico do Plano lista cada cancelamento, cada renovação e a confirmação do pagamento que tirou a assinatura de `past_due`, com data e hora, do mais recente para o mais antigo. A hora do pagamento confirmado é a do pagamento, não a do sync. A aba Histórico mostra “Confirmou o pagamento” para esse evento, a troca de plano e não duplica o mesmo cancelamento ao recarregar. Autor do cancelamento, da renovação e do pagamento confirmado é o dono. Na troca feita pela API, o autor é quem alterou; no portal, o dono.
 - **Comportamento em violação:** —
-- **Implementado em:** `stripeWebhookService.ts`
-- **Testado em:** `billingPresentation.test.ts` (`scheduledCancellationStripeEventId`)
+- **Implementado em:** `billingPresentation.ts` (`resolveScheduledCancellation`, `subscriptionRenewalEventId`, `planChangeDedupeKey`), `stripeWebhookService.ts`, `stripeController.ts`
+- **Testado em:** `billingPresentation.test.ts`
 - **Depende de:** —
 
 ---
@@ -261,4 +261,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Atualizado em 2026-10-20 (BR-BILL-018 a 020 — DEV-164).*
+*Atualizado em 2026-10-20 (BR-BILL-020 — hora do pagamento confirmado e rótulo do log, DEV-166).*
