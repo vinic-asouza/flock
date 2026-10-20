@@ -101,6 +101,7 @@ const eventTypeLabels: Record<string, string> = {
   activate_free: 'Plano gratuito ativado',
   downgrade_job: 'Downgrade automático',
   cancellation_scheduled: 'Cancelamento agendado',
+  subscription_renewed: 'Assinatura renovada',
 };
 
 export function PaymentManagement() {
@@ -929,7 +930,7 @@ export function PaymentManagement() {
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
           <div className="flex flex-col gap-1 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-sm font-medium text-gray-700">Histórico de assinatura</h3>
-            <span className="text-xs text-gray-500">Criações, alterações de plano e cancelamentos</span>
+            <span className="text-xs text-gray-500">Criações, alterações de plano, cancelamentos e renovações</span>
           </div>
 
           {isLoadingEvents ? (
