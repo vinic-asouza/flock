@@ -3,8 +3,8 @@ type: modulo
 nome: config
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-15
-versao: "1.2"
+ultima_atualizacao: 2026-10-20
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, config, igreja-config]
 depende_de: [auth]
@@ -64,7 +64,7 @@ Produto: [[01_produto/visao-do-produto]].
 ```
 backend/src/
 ├── routes/
-│   ├── church.ts              → /api/church (5 rotas) + rate limit 50/15min
+│   ├── church.ts              → /api/church (5 rotas) + RL leitura 600/15min e escrita 40/15min
 │   ├── account.ts             → /api/account (7 rotas) + RL conta/sensível
 │   └── churchUsers.ts         → /api/church-users (4 rotas, admin+)
 ├── controllers/
@@ -92,7 +92,7 @@ app.ts:
 frontend: (main)/settings/page.tsx + components/settings/{Church,Account,ChurchUsers,AuditLogs,Payment}*
   (+ subscription page → billing; conteúdo de Plano = [[04_modulos/billing]])
 
-Testes: inexistentes.
+Testes: `routes/__tests__/churchRateLimit.test.ts` (rate limit de /api/church).
 ```
 
 ---
@@ -175,7 +175,9 @@ Sem tabela local dedicada — `auth.users` + user_metadata.phone. GET `/account`
 
 **Total:** **16** endpoints.
 
-### `/api/church` — rate limit 50 / 15 min / IP
+### `/api/church` — leitura 600 / 15 min / IP; escrita 40 / 15 min / IP
+
+GET e HEAD contam só na leitura. PUT e POST contam só na escrita. OPTIONS não conta. Os contadores não se misturam (`churchRateLimit.ts`).
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
@@ -440,7 +442,7 @@ N/A — sem jobs/cron deste módulo. E-mails são síncronos best-effort na requ
 | Logs | admin+ |
 | Conta | próprio usuário + reauth por senha em ops sensíveis |
 | Billing leakage | sanitize GET church |
-| Rate limits | church 50/15m; account 20/15m; email/password/delete 5/h |
+| Rate limits | church leitura 600/15m e escrita 40/15m; account 20/15m; email/password/delete 5/h |
 | PII | CNPJ, e-mails, telefones, metadados Auth |
 | Convite | `listUsers` Admin API paginado (custo/privacidade) |
 
@@ -450,7 +452,7 @@ N/A — sem jobs/cron deste módulo. E-mails são síncronos best-effort na requ
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| — | — | 0% | Nenhum teste dedicado |
+| Unit | `backend/src/routes/__tests__/churchRateLimit.test.ts` | rate limit | Leituras e escritas de `/api/church` não compartilham contador; excesso responde 429 |
 
 **Gaps:** sanitize role; CNPJ unique; owner imutável; 1 igreja/user; bloqueio delete com Stripe ativo; active church cookie; audit filters activate/deactivate; e-mail falha vs 201.
 
