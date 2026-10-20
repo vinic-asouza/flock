@@ -67,6 +67,36 @@ export function legacyScheduledCancellationEventId(
   return `${subscriptionId}:${cancelAt}`;
 }
 
+/**
+ * Instante em que a fatura foi paga. O histórico usa essa hora,
+ * não o momento em que o sync gravou a linha.
+ */
+export function invoicePaidAtIso(
+  invoice:
+    | { status_transitions?: { paid_at?: number | null } | null }
+    | string
+    | null
+    | undefined
+): string | null {
+  if (!invoice || typeof invoice === 'string') return null;
+  const paidAt = invoice.status_transitions?.paid_at;
+  if (typeof paidAt !== 'number' || !Number.isFinite(paidAt) || paidAt <= 0) return null;
+  return new Date(paidAt * 1000).toISOString();
+}
+
+/** O sync gravou a linha bem depois do pagamento. Um minuto cobre o relógio do webhook. */
+export function paymentRecoveryRecordedLate(
+  recordedAt: string | null | undefined,
+  occurredAt: string | null | undefined,
+  skewMs = 60_000
+): boolean {
+  if (!recordedAt || !occurredAt) return false;
+  const recorded = new Date(recordedAt).getTime();
+  const occurred = new Date(occurredAt).getTime();
+  if (Number.isNaN(recorded) || Number.isNaN(occurred)) return false;
+  return recorded - occurred > skewMs;
+}
+
 /** Uma confirmação de pagamento por fatura que tirou a assinatura de past_due. */
 export function paymentRecoveryEventId(
   subscriptionId: string | null | undefined,

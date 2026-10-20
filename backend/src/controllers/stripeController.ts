@@ -301,6 +301,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       customer: church.stripe_customer_id,
       status: 'all',
       limit: 10,
+      expand: ['data.latest_invoice'],
     });
 
     if (subscriptions.data.length === 0) {

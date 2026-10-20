@@ -24,8 +24,10 @@ import {
 } from '../templates/stripeEmailTemplates';
 import { getPlanConfig } from '../config/plans';
 import {
+  invoicePaidAtIso,
   legacyScheduledCancellationEventId,
   paymentRecoveryEventId,
+  paymentRecoveryRecordedLate,
   planChangeDedupeKey,
   resolveScheduledCancellation,
   subscriptionRenewalEventId,
@@ -44,6 +46,7 @@ interface SubscriptionEventRecord {
   source?: string;
   stripe_event_id?: string | null;
   payload?: Record<string, unknown> | null;
+  created_at?: string;
 }
 
 const INSERT_RETRIES = 2;
@@ -76,6 +79,7 @@ export async function insertSubscriptionEvent(
     source: record.source ?? 'webhook',
     stripe_event_id: record.stripe_event_id ?? null,
     payload: record.payload ?? null,
+    ...(record.created_at ? { created_at: record.created_at } : {}),
   };
 
   let lastError: PostgrestError | null = null;
@@ -257,12 +261,11 @@ export async function recordPaymentRecovery(input: {
 
   const { data: existing } = await supabaseAdmin
     .from('church_subscription_events')
-    .select('id')
+    .select('id, created_at')
     .eq('church_id', input.churchId)
     .eq('event_type', 'payment_recovered')
     .eq('stripe_event_id', eventId)
     .maybeSingle();
-  if (existing) return;
 
   const { data: pastDue } = await supabaseAdmin
     .from('church_subscription_events')
@@ -273,6 +276,24 @@ export async function recordPaymentRecovery(input: {
     .limit(1)
     .maybeSingle();
   if (!pastDue?.created_at) return;
+
+  const occurredAt = await resolvePaymentRecoveryOccurredAt(
+    input.churchId,
+    input.subscription,
+    pastDue.created_at,
+    invoiceIdOf(input.subscription)
+  );
+
+  if (existing?.id) {
+    await alignPaymentRecoveryClock({
+      eventRowId: existing.id,
+      recordedAt: existing.created_at,
+      occurredAt,
+      churchId: input.churchId,
+      dedupeKey: eventId,
+    });
+    return;
+  }
 
   const { data: recoveredAfter } = await supabaseAdmin
     .from('church_subscription_events')
@@ -294,7 +315,12 @@ export async function recordPaymentRecovery(input: {
     new_status: input.subscription.status,
     source,
     stripe_event_id: eventId,
-    payload: { id: input.subscription.id, invoice_id: invoiceIdOf(input.subscription) },
+    payload: {
+      id: input.subscription.id,
+      invoice_id: invoiceIdOf(input.subscription),
+      occurred_at: occurredAt,
+    },
+    created_at: occurredAt ?? undefined,
   });
   if (!inserted) return;
 
@@ -323,9 +349,62 @@ export async function recordPaymentRecovery(input: {
     },
     ip: null,
     user_agent: source === 'api' ? 'stripe-sync' : 'stripe-webhook',
+    ...(occurredAt ? { created_at: occurredAt } : {}),
   });
   if (error) {
     logError('Falha ao registrar audit de pagamento confirmado', error);
+  }
+}
+
+async function resolvePaymentRecoveryOccurredAt(
+  churchId: string,
+  subscription: Stripe.Subscription,
+  pastDueCreatedAt: string,
+  invoiceId: string | null
+): Promise<string | null> {
+  const latestInvoiceId = invoiceIdOf(subscription);
+  const paidAt = invoicePaidAtIso(subscription.latest_invoice);
+  if (paidAt && invoiceId && latestInvoiceId === invoiceId) return paidAt;
+
+  const { data } = await supabaseAdmin
+    .from('church_subscription_events')
+    .select('created_at')
+    .eq('church_id', churchId)
+    .neq('event_type', 'payment_recovered')
+    .eq('old_status', 'past_due')
+    .in('new_status', ['active', 'trialing'])
+    .gt('created_at', pastDueCreatedAt)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return data?.created_at ?? null;
+}
+
+async function alignPaymentRecoveryClock(input: {
+  eventRowId: string;
+  recordedAt: string | null;
+  occurredAt: string | null;
+  churchId: string;
+  dedupeKey: string;
+}): Promise<void> {
+  if (!input.occurredAt || !paymentRecoveryRecordedLate(input.recordedAt, input.occurredAt)) return;
+
+  const { error: eventError } = await supabaseAdmin
+    .from('church_subscription_events')
+    .update({ created_at: input.occurredAt })
+    .eq('id', input.eventRowId);
+  if (eventError) {
+    logError('Falha ao alinhar hora do pagamento confirmado', eventError);
+  }
+
+  const { error: auditError } = await supabaseAdmin
+    .from('audit_logs')
+    .update({ created_at: input.occurredAt })
+    .eq('church_id', input.churchId)
+    .filter('changes_after->>dedupe_key', 'eq', input.dedupeKey);
+  if (auditError) {
+    logError('Falha ao alinhar hora do log de pagamento confirmado', auditError);
   }
 }
 

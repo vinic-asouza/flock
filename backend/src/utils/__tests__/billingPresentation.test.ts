@@ -1,7 +1,9 @@
 import {
   contactPhoneFromAuthUser,
   openInvoiceConfirmationUrl,
+  invoicePaidAtIso,
   paymentRecoveryEventId,
+  paymentRecoveryRecordedLate,
   planChangeDedupeKey,
   resolveScheduledCancellation,
   scheduledCancellationStripeEventId,
@@ -92,6 +94,28 @@ describe('subscriptionRenewalEventId', () => {
       'sub_1:renewed:sub_1:1760000000:1750000000'
     );
     expect(subscriptionRenewalEventId('sub_1', '  ')).toBeNull();
+  });
+});
+
+describe('paymentRecoveryRecordedLate', () => {
+  it('marca só o registro gravado depois do pagamento', () => {
+    expect(paymentRecoveryRecordedLate('2026-10-20T21:01:08.000Z', '2026-10-20T19:52:25.000Z')).toBe(
+      true
+    );
+    expect(paymentRecoveryRecordedLate('2026-10-20T19:52:26.000Z', '2026-10-20T19:52:25.000Z')).toBe(
+      false
+    );
+    expect(paymentRecoveryRecordedLate(null, '2026-10-20T19:52:25.000Z')).toBe(false);
+  });
+});
+
+describe('invoicePaidAtIso', () => {
+  it('usa o paid_at da fatura expandida', () => {
+    expect(invoicePaidAtIso({ status_transitions: { paid_at: 1_700_000_000 } })).toBe(
+      '2023-11-14T22:13:20.000Z'
+    );
+    expect(invoicePaidAtIso('in_1')).toBeNull();
+    expect(invoicePaidAtIso({ status_transitions: { paid_at: null } })).toBeNull();
   });
 });
 
