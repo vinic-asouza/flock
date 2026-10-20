@@ -23,6 +23,7 @@ import {
   getSubscriptionReactivatedTemplate,
 } from '../templates/stripeEmailTemplates';
 import { getPlanConfig } from '../config/plans';
+import { scheduledCancellationStripeEventId } from '../utils/billingPresentation';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // DB05: helper para registrar transições de assinatura no histórico de billing
@@ -590,7 +591,7 @@ export async function handleSubscriptionUpdated(
   const { data: churchBeforeUpdate } = await supabaseAdmin
     .from('churches')
     .select(
-      'id, name, subscription_status, plan_type, subscription_end_date, stripe_subscription_id'
+      'id, name, user_id, subscription_status, plan_type, subscription_end_date, stripe_subscription_id'
     )
     .eq('stripe_customer_id', customerId)
     .maybeSingle();
@@ -627,6 +628,68 @@ export async function handleSubscriptionUpdated(
     stripe_event_id: String(subscription.id),
     payload: { id: subscription.id, status: subscription.status, plan: finalPlanType },
   });
+
+  const subForSchedule = subscription as Stripe.Subscription & {
+    cancel_at_period_end?: boolean;
+    cancel_at?: number | null;
+  };
+  const cancellationEventId = scheduledCancellationStripeEventId(
+    subscription.id,
+    subForSchedule.cancel_at_period_end,
+    subForSchedule.cancel_at
+  );
+
+  if (cancellationEventId) {
+    const { data: existingCancellation } = await supabaseAdmin
+      .from('church_subscription_events')
+      .select('id')
+      .eq('church_id', church.id)
+      .eq('event_type', 'cancellation_scheduled')
+      .eq('stripe_event_id', cancellationEventId)
+      .maybeSingle();
+
+    if (!existingCancellation) {
+      const endDateIso = subForSchedule.cancel_at
+        ? new Date(subForSchedule.cancel_at * 1000).toISOString()
+        : null;
+
+      await insertSubscriptionEvent({
+        church_id: church.id,
+        event_type: 'cancellation_scheduled',
+        old_plan: churchBeforeUpdate?.plan_type ?? null,
+        new_plan: finalPlanType,
+        old_status: churchBeforeUpdate?.subscription_status ?? null,
+        new_status: subscription.status,
+        source: 'webhook',
+        stripe_event_id: cancellationEventId,
+        payload: {
+          id: subscription.id,
+          cancel_at: subForSchedule.cancel_at ?? null,
+        },
+      });
+
+      if (churchBeforeUpdate?.user_id) {
+        const { error: auditError } = await supabaseAdmin.from('audit_logs').insert({
+          user_id: churchBeforeUpdate.user_id,
+          church_id: church.id,
+          entity: 'church',
+          entity_id: church.id,
+          action: 'update',
+          changes_before: { name: church.name },
+          changes_after: {
+            name: church.name,
+            event: 'cancellation_scheduled',
+            subscription_end_date: endDateIso,
+          },
+          ip: null,
+          user_agent: 'stripe-webhook',
+        });
+        if (auditError) {
+          logError('Falha ao registrar audit de cancelamento agendado', auditError);
+        }
+      }
+    }
+  }
 
   const isNowActive = subscription.status === 'active';
   const sub = subscription as Stripe.Subscription & {

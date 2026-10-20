@@ -12,9 +12,24 @@ import { requireRole } from '../middlewares/requireRole';
 
 const router = Router();
 
-const churchLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 50,
+const churchWindowMs = 15 * 60 * 1000;
+
+const churchReadLimiter = rateLimit({
+  windowMs: churchWindowMs,
+  max: 600,
+  skip: (req) => req.method !== 'GET' && req.method !== 'HEAD',
+  message: {
+    error: 'Muitas consultas na igreja',
+    details: 'Você excedeu o limite de consultas. Tente novamente em 15 minutos.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const churchWriteLimiter = rateLimit({
+  windowMs: churchWindowMs,
+  max: 40,
+  skip: (req) => req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS',
   message: {
     error: 'Muitas operações na igreja',
     details: 'Você excedeu o limite de operações. Tente novamente em 15 minutos.'
@@ -23,7 +38,8 @@ const churchLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-router.use(churchLimiter);
+router.use(churchReadLimiter);
+router.use(churchWriteLimiter);
 
 router.get('/memberships', authUserOnly, listMemberships);
 router.post('/active', authUserOnly, setActiveChurch);
