@@ -633,10 +633,11 @@ export async function handleSubscriptionUpdated(
     cancel_at_period_end?: boolean;
     cancel_at?: number | null;
   };
+  const scheduledEnd = getSubscriptionEndDate(subscription);
   const cancellationEventId = scheduledCancellationStripeEventId(
     subscription.id,
     subForSchedule.cancel_at_period_end,
-    subForSchedule.cancel_at
+    subForSchedule.cancel_at ?? (scheduledEnd ? Math.floor(scheduledEnd.getTime() / 1000) : null)
   );
 
   if (cancellationEventId) {
