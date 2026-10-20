@@ -1,6 +1,7 @@
 import {
   contactPhoneFromAuthUser,
   openInvoiceConfirmationUrl,
+  resolveScheduledCancellation,
   scheduledCancellationStripeEventId,
 } from '../billingPresentation';
 
@@ -10,6 +11,58 @@ describe('scheduledCancellationStripeEventId', () => {
     expect(scheduledCancellationStripeEventId('sub_1', false, 1760000000)).toBeNull();
     expect(scheduledCancellationStripeEventId('sub_1', true, null)).toBeNull();
     expect(scheduledCancellationStripeEventId('', true, 1760000000)).toBeNull();
+  });
+});
+
+describe('resolveScheduledCancellation', () => {
+  it('grava quando há cancel_at mesmo com a flag falsa', () => {
+    expect(
+      resolveScheduledCancellation({
+        subscriptionId: 'sub_1',
+        status: 'active',
+        cancelAtPeriodEnd: false,
+        cancelAt: 1760000000,
+      })
+    ).toEqual({ eventId: 'sub_1:1760000000', cancelAt: 1760000000 });
+  });
+
+  it('usa o fim do período do item quando a flag vem sem cancel_at', () => {
+    expect(
+      resolveScheduledCancellation({
+        subscriptionId: 'sub_1',
+        status: 'active',
+        cancelAtPeriodEnd: true,
+        cancelAt: null,
+        itemPeriodEnd: 1760000000,
+      })
+    ).toEqual({ eventId: 'sub_1:1760000000', cancelAt: 1760000000 });
+  });
+
+  it('ignora assinatura já encerrada e agendamento sem data', () => {
+    expect(
+      resolveScheduledCancellation({
+        subscriptionId: 'sub_1',
+        status: 'canceled',
+        cancelAtPeriodEnd: true,
+        cancelAt: 1760000000,
+      })
+    ).toBeNull();
+    expect(
+      resolveScheduledCancellation({
+        subscriptionId: 'sub_1',
+        status: 'active',
+        cancelAtPeriodEnd: false,
+        cancelAt: null,
+        itemPeriodEnd: 1760000000,
+      })
+    ).toBeNull();
+    expect(
+      resolveScheduledCancellation({
+        subscriptionId: '  ',
+        status: 'active',
+        cancelAt: 1760000000,
+      })
+    ).toBeNull();
   });
 });
 

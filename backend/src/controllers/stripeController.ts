@@ -13,7 +13,7 @@ import {
 import { getStripeHealthSnapshot } from '../services/stripeHealth';
 import { setPendingLinkToken } from '../utils/cookieUtils';
 import { supabaseAdmin } from '../services/supabase';
-import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate } from '../services/stripeWebhookService';
+import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate, recordScheduledCancellation } from '../services/stripeWebhookService';
 
 // alias para legibilidade — todas as queries de DB usam service_role
 const supabase = supabaseAdmin;
@@ -268,7 +268,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     // Buscar igreja do usuário
     const { data: church, error: churchError } = await supabase
       .from('churches')
-      .select('id, stripe_customer_id, stripe_subscription_id, plan_type, subscription_status, last_stripe_event_created')
+      .select('id, name, user_id, stripe_customer_id, stripe_subscription_id, plan_type, subscription_status, last_stripe_event_created')
       .eq('id', req.church!.churchId)
       .single();
 
@@ -432,6 +432,17 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       source: 'api',
       stripe_event_id: subscriptionId,
       payload: { subscription_id: subscriptionId },
+    });
+
+    await recordScheduledCancellation({
+      churchId: church.id,
+      churchName: church.name ?? '',
+      ownerUserId: church.user_id ?? null,
+      subscription,
+      oldPlan: church.plan_type ?? null,
+      newPlan: finalPlanType,
+      oldStatus: church.subscription_status ?? null,
+      source: 'api',
     });
 
     billingLog({
