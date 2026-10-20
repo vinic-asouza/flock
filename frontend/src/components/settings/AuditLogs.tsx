@@ -317,6 +317,9 @@ export default function AuditLogs() {
       const shift = from && to ? ` de ${from} para ${to}` : '';
       return `Alterou o plano${shift} da igreja “${target}”`;
     }
+    if (log.changes_after?.event === 'payment_recovered') {
+      return `Confirmou o pagamento da igreja “${target}”`;
+    }
     if (log.changes_after?.event === 'public_registration') {
       const linkName = log.changes_after.link_name;
       const via =
@@ -340,6 +343,7 @@ export default function AuditLogs() {
     if (log.changes_after?.event === 'plan_changed') {
       return `Plano ${log.changes_after.old_plan ?? '—'} → ${log.changes_after.new_plan ?? '—'}`;
     }
+    if (log.changes_after?.event === 'payment_recovered') return 'Pagamento confirmado';
     if (log.changes_after?.event === 'public_registration') return 'Link público';
     if (log.action !== 'update') return null;
     const fields = getChangedFields(log);
@@ -385,6 +389,14 @@ export default function AuditLogs() {
       return (
         <p className="text-sm text-gray-700">
           Plano {String(log.changes_after.old_plan ?? '—')} → {String(log.changes_after.new_plan ?? '—')}.
+        </p>
+      );
+    }
+
+    if (log.changes_after?.event === 'payment_recovered') {
+      return (
+        <p className="text-sm text-gray-700">
+          Pagamento confirmado. A assinatura voltou de pagamento atrasado para ativa.
         </p>
       );
     }

@@ -25,6 +25,7 @@ import {
 } from '@/utils/stripeSyncCache';
 import { captureBillingError } from '@/utils/billingTelemetry';
 import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
+import { formatDateTime } from '@/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
@@ -967,7 +968,7 @@ export function PaymentManagement() {
                       </p>
                     </div>
                     <time className="text-xs text-gray-400 shrink-0">
-                      {formatDate(evt.created_at)}
+                      {formatDateTime(evt.created_at) || formatDate(evt.created_at)}
                     </time>
                   </div>
                 </li>
