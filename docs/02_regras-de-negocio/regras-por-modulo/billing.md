@@ -243,10 +243,10 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Depende de:** [[BR-BILL-008]]
 
 ### BR-BILL-020: Cancelamento agendado no histórico
-- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` e um audit log do dono. A chave é assinatura + `cancel_at` + `canceled_at` quando o Stripe manda o instante do pedido; sem esse instante, a chave antiga (assinatura + `cancel_at`) continua valendo para não duplicar o primeiro registro. Cada renovação que desfaz um agendamento grava `subscription_renewed` e um audit do dono, uma vez por cancelamento anterior. Troca de plano grava um audit (`plan_changed`) por assinatura, plano de origem, plano de destino e fatura.
+- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` e um audit log do dono. A chave é assinatura + `cancel_at` + `canceled_at` quando o Stripe manda o instante do pedido; sem esse instante, a chave antiga (assinatura + `cancel_at`) continua valendo para não duplicar o primeiro registro. Um reload não grava de novo se a chave antiga já existe e não houve renovação depois dela. Cada renovação que desfaz um agendamento grava `subscription_renewed` e um audit do dono, uma vez por cancelamento anterior. Troca de plano grava um audit (`plan_changed`) por assinatura, plano de origem, plano de destino e fatura. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync.
 - **Tipo:** Gatilho
 - **Gatilho:** Webhook `customer.subscription.updated`, `POST /sync-subscription` e `POST /change-plan`
-- **Comportamento esperado:** Histórico do Plano lista cada cancelamento e cada renovação. A aba Logs mostra os mesmos fatos, a troca de plano e não duplica webhook e API da mesma fatura. Autor do cancelamento e da renovação é o dono. Na troca feita pela API, o autor é quem alterou; no portal, o dono.
+- **Comportamento esperado:** Histórico do Plano lista cada cancelamento, cada renovação e a confirmação do pagamento que tirou a assinatura de `past_due`. A aba Histórico mostra os mesmos fatos, a troca de plano e não duplica o mesmo cancelamento ao recarregar. Autor do cancelamento, da renovação e do pagamento confirmado é o dono. Na troca feita pela API, o autor é quem alterou; no portal, o dono.
 - **Comportamento em violação:** —
 - **Implementado em:** `billingPresentation.ts` (`resolveScheduledCancellation`, `subscriptionRenewalEventId`, `planChangeDedupeKey`), `stripeWebhookService.ts`, `stripeController.ts`
 - **Testado em:** `billingPresentation.test.ts`
@@ -261,4 +261,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Atualizado em 2026-10-20 (BR-BILL-020 — cada cancelamento, cada renovação e o log da troca de plano, DEV-166).*
+*Atualizado em 2026-10-20 (BR-BILL-020 — histórico lista o cancelamento e a volta de past_due, DEV-166).*
