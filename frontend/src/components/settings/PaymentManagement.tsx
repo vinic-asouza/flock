@@ -21,6 +21,7 @@ import apiService, { formatApiError, getDowngradeBlockInfo } from '@/services/ap
 import {
   getCachedStripeSync,
   setCachedStripeSync,
+  clearStripeSyncCache,
 } from '@/utils/stripeSyncCache';
 import { captureBillingError } from '@/utils/billingTelemetry';
 import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
@@ -285,16 +286,40 @@ export function PaymentManagement() {
     };
   }, [canManagePlan, user?.stripe_customer_id, user?.plan_type, user?.subscription_status, activeChurchId]);
 
-  // FB05: atualizar dados ao voltar da aba do portal Stripe
+  // FB05: ao voltar do portal, sincronizar se o cache foi limpo na abertura.
+  // Com cache quente, só relê a igreja — o webhook ou a outra aba já gravou.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && refreshChurch) {
-        void refreshChurch();
+      if (document.visibilityState !== 'visible') return;
+
+      const churchKey = activeChurchId ?? user?.id ?? null;
+      const shouldSync =
+        canManagePlan &&
+        !!user?.stripe_customer_id &&
+        user.plan_type !== '100' &&
+        !!churchKey &&
+        !getCachedStripeSync(churchKey);
+
+      if (!shouldSync) {
+        if (refreshChurch) void refreshChurch();
+        return;
       }
+
+      void (async () => {
+        try {
+          const response = await apiService.syncSubscription();
+          if (response.synced && churchKey) {
+            setCachedStripeSync(churchKey);
+          }
+        } catch {
+          // a releitura abaixo ainda mostra o que o banco já tiver
+        }
+        if (refreshChurch) await refreshChurch();
+      })();
     };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refreshChurch]);
+  }, [refreshChurch, canManagePlan, user?.stripe_customer_id, user?.plan_type, user?.id, activeChurchId]);
 
   const handleManageSubscription = async () => {
     try {
@@ -306,6 +331,8 @@ export function PaymentManagement() {
       if (!url) {
         throw new Error('URL do portal não recebida');
       }
+
+      clearStripeSyncCache(activeChurchId ?? user?.id);
 
       // Abrir portal do Stripe em nova guia
       window.open(url, '_blank', 'noopener,noreferrer');
@@ -902,7 +929,7 @@ export function PaymentManagement() {
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 min-w-0">
           <div className="flex flex-col gap-1 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <h3 className="text-sm font-medium text-gray-700">Histórico de assinatura</h3>
-            <span className="text-xs text-gray-500">Criações e alterações de plano</span>
+            <span className="text-xs text-gray-500">Criações, alterações de plano e cancelamentos</span>
           </div>
 
           {isLoadingEvents ? (

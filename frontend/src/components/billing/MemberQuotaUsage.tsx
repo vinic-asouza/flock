@@ -60,7 +60,8 @@ export function MemberQuotaUsage({
   onUpgradeClick,
   className = '',
 }: MemberQuotaUsageProps) {
-  const { isAuthenticated, activeChurchId } = useAuth();
+  const { isAuthenticated, activeChurchId, user } = useAuth();
+  const planType = user?.plan_type;
   const [data, setData] = useState<MemberLimitData | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -97,7 +98,7 @@ export function MemberQuotaUsage({
   useEffect(() => {
     setLoading(true);
     load();
-  }, [load, activeChurchId]);
+  }, [load, activeChurchId, planType]);
 
   const handleRetry = async () => {
     setRetrying(true);
