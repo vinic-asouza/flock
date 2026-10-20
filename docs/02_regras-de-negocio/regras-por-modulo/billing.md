@@ -243,13 +243,13 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Depende de:** [[BR-BILL-008]]
 
 ### BR-BILL-020: Cancelamento agendado no histórico
-- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` uma vez por assinatura e instante de `cancel_at`, e um audit log da igreja com o dono como autor.
+- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` e um audit log do dono. A chave é assinatura + `cancel_at` + `canceled_at` quando o Stripe manda o instante do pedido; sem esse instante, a chave antiga (assinatura + `cancel_at`) continua valendo para não duplicar o primeiro registro. Cada renovação que desfaz um agendamento grava `subscription_renewed` e um audit do dono, uma vez por cancelamento anterior. Troca de plano grava um audit (`plan_changed`) por assinatura, plano de origem, plano de destino e fatura.
 - **Tipo:** Gatilho
-- **Gatilho:** Webhook `customer.subscription.updated` e `POST /sync-subscription`
-- **Comportamento esperado:** Histórico do Plano e aba Logs mostram o agendamento junto com o status já exibido na aba. Um segundo sync não duplica a linha.
+- **Gatilho:** Webhook `customer.subscription.updated`, `POST /sync-subscription` e `POST /change-plan`
+- **Comportamento esperado:** Histórico do Plano lista cada cancelamento e cada renovação. A aba Logs mostra os mesmos fatos, a troca de plano e não duplica webhook e API da mesma fatura. Autor do cancelamento e da renovação é o dono. Na troca feita pela API, o autor é quem alterou; no portal, o dono.
 - **Comportamento em violação:** —
-- **Implementado em:** `billingPresentation.ts` (`resolveScheduledCancellation`), `stripeWebhookService.ts` (`recordScheduledCancellation`), `stripeController.ts` (sync)
-- **Testado em:** `billingPresentation.test.ts` (`resolveScheduledCancellation`)
+- **Implementado em:** `billingPresentation.ts` (`resolveScheduledCancellation`, `subscriptionRenewalEventId`, `planChangeDedupeKey`), `stripeWebhookService.ts`, `stripeController.ts`
+- **Testado em:** `billingPresentation.test.ts`
 - **Depende de:** —
 
 ---
@@ -261,4 +261,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Atualizado em 2026-10-20 (BR-BILL-020 — sync também grava o cancelamento agendado, DEV-166).*
+*Atualizado em 2026-10-20 (BR-BILL-020 — cada cancelamento, cada renovação e o log da troca de plano, DEV-166).*
