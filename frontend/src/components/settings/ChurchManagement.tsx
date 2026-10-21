@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
 import { Church } from '@/types';
 import { DENOMINATIONS, formatPhone, maskPhoneInput } from '@/utils';
+import { formatChurchAddressLine } from '@/utils/settingsDisplay';
 import { validateCNPJ, validatePhone } from '@/utils/validations';
 import { Building2, MapPin, Mail, Phone, FileText, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -348,13 +349,7 @@ export function ChurchManagement() {
                   <span className="text-sm font-medium text-gray-500">Endereço</span>
                 </div>
                 <p className="text-base text-gray-900 break-words">
-                  {formData.address || 'Não informado'}
-                  {formData.city && formData.state && (
-                    <span className="text-gray-600">
-                      {formData.address ? ', ' : ''}
-                      {formData.city} - {formData.state}
-                    </span>
-                  )}
+                  {formatChurchAddressLine(formData.address, formData.city, formData.state) || 'Não informado'}
                 </p>
               </div>
 
@@ -434,7 +429,7 @@ export function ChurchManagement() {
                 <Input
                   value={formData.address}
                   onChange={(e) => handleInputChange('address', e.target.value)}
-                  placeholder="Endereço completo"
+                  placeholder="Rua, número e complemento"
                   maxLength={255}
                 />
               </div>

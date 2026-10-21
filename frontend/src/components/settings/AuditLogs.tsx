@@ -305,6 +305,12 @@ export default function AuditLogs() {
     const actionLabel = ACTION_LABELS[action] || 'Alterou';
     const entityLabel = ENTITY_LABELS[log.entity] || 'registro';
     const target = getTargetName(log);
+    if (log.changes_after?.event === 'church_registered') {
+      return `Cadastrou a igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'free_plan_activated') {
+      return `Ativou o plano gratuito da igreja “${target}”`;
+    }
     if (log.changes_after?.event === 'cancellation_scheduled') {
       return `Agendou o cancelamento da igreja “${target}”`;
     }
@@ -338,6 +344,8 @@ export default function AuditLogs() {
     if (realAction === 'activate' || realAction === 'deactivate') {
       return realAction === 'activate' ? 'Status: Ativo' : 'Status: Inativo';
     }
+    if (log.changes_after?.event === 'church_registered') return 'Cadastro da igreja';
+    if (log.changes_after?.event === 'free_plan_activated') return 'Plano gratuito';
     if (log.changes_after?.event === 'cancellation_scheduled') return 'Cancelamento agendado';
     if (log.changes_after?.event === 'subscription_renewed') return 'Cancelamento desfeito';
     if (log.changes_after?.event === 'plan_changed') {
@@ -368,6 +376,14 @@ export default function AuditLogs() {
     }
 
     const realAction = getRealAction(log);
+
+    if (log.changes_after?.event === 'church_registered') {
+      return <p className="text-sm text-gray-700">Cadastro da igreja.</p>;
+    }
+
+    if (log.changes_after?.event === 'free_plan_activated') {
+      return <p className="text-sm text-gray-700">Plano gratuito ativado.</p>;
+    }
 
     if (log.changes_after?.event === 'cancellation_scheduled') {
       const endDate = log.changes_after.subscription_end_date;

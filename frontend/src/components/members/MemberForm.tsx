@@ -156,7 +156,7 @@ function RadioSimNaoFalecido({ label, value, onChange, disabled }: { label: stri
 }
 
 export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode, error }: MemberFormProps) {
-  const { congregations, loading: filtersLoading } = useFiltersData();
+  const { congregations, loading: filtersLoading, error: filtersError, reload: reloadFilters } = useFiltersData();
   const { states, cities, loadingCities, fetchCities } = useIbgeData();
   const { professions, loading: professionsLoading } = useProfessions();
 
@@ -950,9 +950,22 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
             className="col-span-full w-full min-w-0"
             options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}
             placeholder={filtersLoading ? 'Carregando...' : 'Selecione a congregação'}
-            disabled={filtersLoading || isLoading}
+            loading={filtersLoading}
+            disabled={filtersLoading || isLoading || Boolean(filtersError)}
             error={errors.congregation_id?.message}
           />
+          {filtersError && (
+            <div className="col-span-full flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-red-600">{filtersError}</p>
+              <button
+                type="button"
+                onClick={() => { void reloadFilters(); }}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-gray-200 bg-white px-4 text-sm font-medium text-gray-900"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Ministérios */}

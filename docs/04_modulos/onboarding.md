@@ -202,6 +202,8 @@ Criado via `signUp` no register; compensado com `admin.deleteUser` se igreja ou 
 }
 // + cookie flock_active_church_id; limpa pending link token
 // Nota: register não emite sessão. O funil FE faz auto-login e vai a /checkout?plan=.
+// No sucesso, grava audit church_registered e, se não vinculou plano pago, free_plan_activated.
+// Falha desse audit não desfaz o 201. Igrejas já existentes não recebem backfill.
 // Sessão JWT completa só após login bem-sucedido (auth). Se o Auth exigir e-mail
 // confirmado e recusar o login, a UI mostra o erro — sem tela de “enviamos um link”.
 

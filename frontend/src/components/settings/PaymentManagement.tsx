@@ -26,6 +26,7 @@ import {
 import { captureBillingError } from '@/utils/billingTelemetry';
 import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
 import { formatDateTime } from '@/utils';
+import { subscriptionHistoryDetail } from '@/utils/settingsDisplay';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
@@ -955,16 +956,7 @@ export function PaymentManagement() {
                         {eventTypeLabels[evt.event_type] ?? evt.event_type}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5 break-words">
-                        {evt.old_plan && evt.new_plan && evt.old_plan !== evt.new_plan
-                          ? `Plano ${evt.old_plan} → ${evt.new_plan}`
-                          : evt.new_plan
-                          ? `Plano ${evt.new_plan}`
-                          : evt.old_plan
-                          ? `Plano ${evt.old_plan}`
-                          : '—'}
-                        {evt.event_type !== 'activate_free' && (evt.old_status || evt.new_status)
-                          ? ` · ${evt.old_status ?? '—'} → ${evt.new_status ?? '—'}`
-                          : ''}
+                        {subscriptionHistoryDetail(evt, formatDate)}
                       </p>
                     </div>
                     <time className="text-xs text-gray-400 shrink-0">

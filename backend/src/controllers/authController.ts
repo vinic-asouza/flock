@@ -25,6 +25,7 @@ import { sanitizeChurchForRole } from '../utils/churchDto';
 import { sendEmail } from '../services/emailService';
 import { getWelcomeEmailTemplate, getNewUserNotificationTemplate } from '../templates/emailTemplates';
 import { createPrimaryCongregationForChurch } from '../utils/primaryCongregation';
+import { recordRegistrationAudits } from '../utils/registrationAudit';
 
 export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res: Response) => {
   try {
@@ -225,6 +226,19 @@ export const register = async (req: Request<{}, {}, ChurchRegistrationData>, res
         });
       }
     }
+
+    const linkedPlan = pendingSubscription && !pendingError && !subscriptionLinkFailed
+      ? String(pendingSubscription.plan_type ?? '')
+      : '';
+    const paidPlanLinked = linkedPlan !== '' && linkedPlan !== '100';
+    await recordRegistrationAudits({
+      churchId: churchRecord.id,
+      churchName: churchRecord.name || churchData.name || 'Igreja',
+      userId: authData.user.id,
+      paidPlanLinked,
+      ip: req.ip || null,
+      userAgent: req.get('user-agent') || null,
+    });
 
     // Enviar emails em background (não bloquear a resposta)
     // Usar IIFE para executar assincronamente sem await

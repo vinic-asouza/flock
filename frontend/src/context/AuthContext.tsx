@@ -43,8 +43,8 @@ const preserveErrorProperties = (error: unknown): Error => {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/** Teto da checagem inicial. O axios já corta em 10s; isto cobre request que não settle. */
-const SESSION_INIT_TIMEOUT_MS = 12_000;
+/** Teto da checagem inicial, acima da rede lenta vista na VM (8–25s). O GET /refresh/check usa 45s; isto só cobre promise que não settle. */
+const SESSION_INIT_TIMEOUT_MS = 50_000;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Church | null>(null);
