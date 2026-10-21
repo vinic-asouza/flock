@@ -1,7 +1,7 @@
 ---
 type: api-design
-ultima_atualizacao: 2026-09-15
-versao: "1.6"
+ultima_atualizacao: 2026-10-20
+versao: "1.7"
 tipo_api: REST
 base_url: /api
 tags: [arquitetura, API, endpoints, contratos]
@@ -246,7 +246,7 @@ Role: mínimo `requireRole`. Status: ✅ implementado.
 | GET | `/api/refresh/test-cookies` | ❌ | — | Debug cookies | ✅ |
 | POST | `/api/refresh/test-clear-cookies` | ❌ | — | Debug limpar cookies | ✅ |
 
-### Church (`/api/church`) — RL router 50/15min
+### Church (`/api/church`) — leitura 600/15min; escrita 40/15min
 
 | Método | Rota | Auth | Role | Descrição | Status |
 | --- | --- | --- | --- | --- | --- |
