@@ -240,6 +240,7 @@ class ApiService {
       new_status: string | null;
       source: string | null;
       stripe_event_id: string | null;
+      payload?: { cancel_at?: number | null } | null;
       created_at: string;
     }>;
     pagination: { limit: number; offset: number; total: number; has_more: boolean };
@@ -294,7 +295,7 @@ class ApiService {
   // Verificar autenticação e obter church + role em uma chamada
   async getCheckAuth(): Promise<import('@/types').CheckAuthResponse> {
     try {
-      const response = await this.api.get('/refresh/check');
+      const response = await this.api.get('/refresh/check', { timeout: 45000 });
       const data = response.data;
       if (data.activeChurchId) {
         this.setActiveChurchIdClient(data.activeChurchId);
@@ -542,13 +543,13 @@ class ApiService {
   }
 
   // Listar congregações
-  async listCongregations(params?: { search?: string }) {
+  async listCongregations(params?: { search?: string; timeoutMs?: number }) {
     const queryParams = new URLSearchParams();
     if (params?.search?.trim()) {
       queryParams.append('search', params.search.trim());
     }
     const url = `/congregations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    const response = await this.api.get(url);
+    const response = await this.api.get(url, params?.timeoutMs ? { timeout: params.timeoutMs } : undefined);
     return response.data;
   }
 

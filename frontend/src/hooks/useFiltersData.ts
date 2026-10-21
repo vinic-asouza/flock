@@ -12,12 +12,14 @@ export function useFiltersData() {
       setLoading(true);
       setError(null);
 
-      const congregationsData = await apiService.listCongregations();
+      const congregationsData = await apiService.listCongregations({ timeoutMs: 45_000 });
+      if (!Array.isArray(congregationsData)) {
+        throw new Error('Resposta de congregações inválida');
+      }
 
       setCongregations(congregationsData);
     } catch {
-      setCongregations([]);
-      setError('Erro ao carregar dados dos filtros');
+      setError('Não foi possível carregar as congregações.');
     } finally {
       setLoading(false);
     }

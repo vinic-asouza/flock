@@ -23,6 +23,7 @@ interface SelectProps {
   searchable?: boolean;
   error?: string;
   helperText?: string;
+  loading?: boolean;
   onSearchChange?: (term: string) => void;
 }
 
@@ -38,6 +39,7 @@ export function Select({
   searchable = false,
   error,
   helperText,
+  loading = false,
   onSearchChange,
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -208,7 +210,11 @@ export function Select({
       )}
 
       <div className="max-h-48 overflow-y-auto">
-        {filteredOptions.length > 0 ? (
+        {loading ? (
+          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+            Carregando...
+          </div>
+        ) : filteredOptions.length > 0 ? (
           filteredOptions.map((option, index) => (
             <button
               key={option.value}
