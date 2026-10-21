@@ -49,9 +49,10 @@ const registrationLinkSchema = Joi.object<CreateRegistrationLinkData>({
 
   default_congregation_id: Joi.string()
     .uuid()
-    .optional()
-    .allow(null, '')
+    .required()
     .messages({
+      'string.empty': 'Congregação é obrigatória',
+      'any.required': 'Congregação é obrigatória',
       'string.guid': 'ID da congregação inválido'
     }),
 

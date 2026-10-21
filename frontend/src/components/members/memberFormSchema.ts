@@ -26,7 +26,7 @@ export const memberSchema = z.object({
       if (!date) return false;
       return new Date(date) <= new Date();
     }, { message: 'Data de nascimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001)' }),
-  gender: z.enum(['Masculino', 'Feminino']),
+  gender: z.enum(['Masculino', 'Feminino', 'Não informado']),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável']),
   hometown: z.string().optional().or(z.literal('')),
   // nationality mantido para não quebrar leitura legada, mas não exibido no form

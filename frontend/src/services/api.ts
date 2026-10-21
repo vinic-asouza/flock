@@ -206,7 +206,7 @@ class ApiService {
   }
 
   async syncSubscription(): Promise<{ synced: boolean; message?: string }> {
-    const response = await this.api.post('/stripe/sync-subscription', {});
+    const response = await this.api.post('/stripe/sync-subscription', {}, { timeout: 30000 });
     return response.data;
   }
 
@@ -215,8 +215,18 @@ class ApiService {
     return response.data;
   }
 
-  async changePlan(plan: string): Promise<{ message?: string; [key: string]: unknown }> {
-    const response = await this.api.post('/stripe/change-plan', { plan });
+  async changePlan(plan: string): Promise<{
+    message?: string;
+    requires_action?: boolean;
+    payment_confirmation_url?: string | null;
+    [key: string]: unknown;
+  }> {
+    const response = await this.api.post('/stripe/change-plan', { plan }, { timeout: 30000 });
+    return response.data;
+  }
+
+  async getPaymentConfirmation(): Promise<{ url: string | null }> {
+    const response = await this.api.get('/stripe/payment-confirmation', { timeout: 30000 });
     return response.data;
   }
 
@@ -299,8 +309,14 @@ class ApiService {
         message: data.message,
         user: data.user,
       };
-    } catch {
-      return { authenticated: false, church: undefined };
+    } catch (error) {
+      const status = error instanceof Error ? (error as Error & { status?: number }).status : undefined;
+      const message = error instanceof Error ? error.message : '';
+      // 401 na checagem é sessão ausente, não falha de rede.
+      if (status === 401 || message === 'Não autenticado') {
+        return { authenticated: false, church: undefined };
+      }
+      throw error;
     }
   }
 
@@ -838,8 +854,9 @@ class ApiService {
 
   async getMemberLimit(): Promise<{
     currentCount: number;
-    limit: number;
-    remaining: number;
+    /** Pode ser `null` quando o backend serializa Infinity (plano ilimitado/custom). */
+    limit: number | null;
+    remaining: number | null;
     planType?: string | null;
     subscriptionStatus?: string | null;
     hasActiveSubscription: boolean;
@@ -1174,7 +1191,7 @@ class ApiService {
   async createRegistrationLink(data: {
     expires_at: string;
     max_uses?: number | null;
-    default_congregation_id?: string | null;
+    default_congregation_id: string;
     notes?: string | null;
   }) {
     const response = await this.api.post('/registration-links', data);

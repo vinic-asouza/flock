@@ -382,6 +382,13 @@ Prorrata em change-plan: `proration_behavior: 'always_invoice'`.
 - **Causa:** igreja sem `stripe_customer_id`; Customer Portal desabilitado no Dashboard.
 - **Solução:** completar checkout ou criar customer; habilitar portal nas Settings.
 
+### Sync sem customer (plano free)
+
+- **Sintoma:** chamado a `POST /api/stripe/sync-subscription` em igreja sem `stripe_customer_id`.
+- **Comportamento esperado:** **200** `{ synced: false }` (noop; BR-BILL-017). Não é erro; não cria customer.
+- **UI:** aba Plano não auto-sincroniza sem customer — empty state free é o esperado.
+- **Contraste:** portal (`create-portal-session`) continua **400** sem customer (BR-BILL-005).
+
 ### Assinatura `past_due` / cartão falhou
 
 - Usuário recebe efeito de cobrança falha (`invoice.payment_failed`).

@@ -136,28 +136,37 @@ export default function CheckoutPage() {
             {plansLoadError ? 'Não foi possível carregar os planos.' : 'Carregando planos...'}
           </p>
           {plansLoadError && (
-            <Button
-              className="mt-4 min-h-11"
-              variant="secondary"
-              onClick={() => {
-                setIsLoadingPlans(true);
-                setPlansLoadError(false);
-                void apiService.getPlans().then((data) => {
-                  setPlanOptions(
-                    data.plans.map((plan) => ({
-                      value: plan.id,
-                      name: plan.name,
-                      price: plan.priceFormatted + (plan.id !== '100' ? '/mês' : ''),
-                      description: plan.description,
-                      members: plan.members,
-                    }))
-                  );
+            <div className="mt-4 flex w-full max-w-xs mx-auto flex-col gap-3">
+              <Button
+                className="min-h-11 w-full"
+                variant="secondary"
+                onClick={() => {
+                  setIsLoadingPlans(true);
                   setPlansLoadError(false);
-                }).catch(() => setPlansLoadError(true)).finally(() => setIsLoadingPlans(false));
-              }}
-            >
-              Tentar novamente
-            </Button>
+                  void apiService.getPlans().then((data) => {
+                    setPlanOptions(
+                      data.plans.map((plan) => ({
+                        value: plan.id,
+                        name: plan.name,
+                        price: plan.priceFormatted + (plan.id !== '100' ? '/mês' : ''),
+                        description: plan.description,
+                        members: plan.members,
+                      }))
+                    );
+                    setPlansLoadError(false);
+                  }).catch(() => setPlansLoadError(true)).finally(() => setIsLoadingPlans(false));
+                }}
+              >
+                Tentar novamente
+              </Button>
+              <Button
+                className="min-h-11 w-full"
+                variant="secondary"
+                onClick={() => router.push(user ? '/' : '/login')}
+              >
+                {user ? 'Ir para o painel' : 'Ir para o login'}
+              </Button>
+            </div>
           )}
         </div>
       </div>

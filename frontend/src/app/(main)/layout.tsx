@@ -7,6 +7,7 @@ import { Header } from '@/components/main/Header';
 import { Footer } from '@/components/main/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { ChurchSelectionGate } from '@/components/auth/ChurchSelectionGate';
+import { SessionInitError } from '@/components/auth/SessionInitError';
 import { Spinner } from '@/components/ui/Spinner';
 
 interface MainLayoutProps {
@@ -14,17 +15,29 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const { user, isLoading, isAuthenticated, churchSelectionRequired } = useAuth();
+  const { user, isLoading, isAuthenticated, churchSelectionRequired, authInitFailed, retryAuth } = useAuth();
   const router = useRouter();
 
   // ACHADO 16: redirecionar para /login se o usuário não estiver autenticado.
   // Sem essa proteção, todas as rotas /members, /groups, /calendar etc. ficavam
   // expostas — o usuário via a "casca" do app antes de qualquer erro aparecer.
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && !churchSelectionRequired) {
+    if (!isLoading && !isAuthenticated && !churchSelectionRequired && !authInitFailed) {
       router.push('/login');
     }
-  }, [isLoading, isAuthenticated, churchSelectionRequired, router]);
+  }, [isLoading, isAuthenticated, churchSelectionRequired, authInitFailed, router]);
+
+  if (authInitFailed && !isLoading) {
+    return (
+      <SessionInitError
+        variant="session"
+        isAuthenticated={isAuthenticated}
+        onRetry={() => {
+          void retryAuth();
+        }}
+      />
+    );
+  }
 
   if (isLoading) {
     return (

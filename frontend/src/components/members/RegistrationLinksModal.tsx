@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { 
   Loader, 
   Plus, 
@@ -19,6 +20,9 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import apiService, { formatApiError } from '@/services/api';
+import { Congregation } from '@/types/congregation';
+import { getCongregationDisplayName, getPrimaryCongregationId } from '@/utils/congregation';
+import { dateTimeLocalToISO, formatDateTime, toDateTimeLocalValue } from '@/utils';
 
 interface RegistrationLink {
   id: string;
@@ -57,13 +61,24 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
   const [expiresAt, setExpiresAt] = useState('');
   const [maxUses, setMaxUses] = useState<string>('');
   const [notes, setNotes] = useState('');
+  const [defaultCongregationId, setDefaultCongregationId] = useState('');
+  const [congregationError, setCongregationError] = useState<string | null>(null);
+  const [congregations, setCongregations] = useState<Congregation[]>([]);
+  const [loadingCongregations, setLoadingCongregations] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       loadLinks();
+      loadCongregations();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (showCreateForm && !editingLink && !defaultCongregationId && congregations.length > 0) {
+      setDefaultCongregationId(getPrimaryCongregationId(congregations));
+    }
+  }, [showCreateForm, editingLink, defaultCongregationId, congregations]);
 
   const loadLinks = async () => {
     try {
@@ -79,6 +94,18 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
     }
   };
 
+  const loadCongregations = async () => {
+    try {
+      setLoadingCongregations(true);
+      const data = await apiService.listCongregations();
+      setCongregations(data || []);
+    } catch {
+      setCongregations([]);
+    } finally {
+      setLoadingCongregations(false);
+    }
+  };
+
   const handleCreate = () => {
     setShowCreateForm(true);
     setEditingLink(null);
@@ -88,29 +115,40 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
   const handleEdit = (link: RegistrationLink) => {
     setEditingLink(link);
     setShowCreateForm(true);
-    setExpiresAt(new Date(link.expires_at).toISOString().slice(0, 16));
+    setExpiresAt(toDateTimeLocalValue(link.expires_at));
     setMaxUses(link.max_uses?.toString() || '');
     setNotes(link.notes || '');
+    setDefaultCongregationId(link.default_congregation_id || getPrimaryCongregationId(congregations));
+    setCongregationError(null);
   };
 
   const resetForm = () => {
     const defaultDate = new Date();
     defaultDate.setDate(defaultDate.getDate() + 30); // 30 dias por padrão
-    setExpiresAt(defaultDate.toISOString().slice(0, 16));
+    setExpiresAt(toDateTimeLocalValue(defaultDate));
     setMaxUses('');
     setNotes('Link para cadastro de novos membros.');
+    setDefaultCongregationId(getPrimaryCongregationId(congregations));
+    setCongregationError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!defaultCongregationId) {
+      setCongregationError('Congregação é obrigatória');
+      return;
+    }
     
     try {
       setIsSubmitting(true);
       setError(null);
+      setCongregationError(null);
 
       const data = {
-        expires_at: new Date(expiresAt).toISOString(),
+        expires_at: dateTimeLocalToISO(expiresAt),
         max_uses: maxUses ? parseInt(maxUses) : null,
+        default_congregation_id: defaultCongregationId,
         notes: notes || null,
       };
 
@@ -190,15 +228,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatDate = (dateString: string) => formatDateTime(dateString);
 
   const handleClose = () => {
     setShowCreateForm(false);
@@ -286,7 +316,7 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                             </span>
                           )}
                         </div>
-                        <div className="flex flex-col gap-1 text-sm text-gray-600 mb-2 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="flex flex-col gap-1 text-sm text-gray-600 mb-2 sm:flex-row sm:items-center sm:gap-4 sm:flex-wrap">
                           <div className="flex items-center gap-1">
                             <Calendar size={14} />
                             <span>Expira em: {formatDate(link.expires_at)}</span>
@@ -297,6 +327,16 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
                               {link.current_uses} {link.max_uses ? `de ${link.max_uses}` : ''} usos
                             </span>
                           </div>
+                          {link.default_congregation_id && (
+                            <div className="flex items-center gap-1">
+                              <span>
+                                Congregação:{' '}
+                                {getCongregationDisplayName(
+                                  congregations.find((c) => c.id === link.default_congregation_id)
+                                ) || 'Definida'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex flex-col gap-2 mt-3 sm:flex-row sm:items-center">
                           <input
@@ -397,6 +437,22 @@ export function RegistrationLinksModal({ isOpen, onClose, canEdit = true }: Regi
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
               required
+            />
+
+            <Select
+              label="Congregação *"
+              value={defaultCongregationId}
+              onChange={(value) => {
+                setDefaultCongregationId(value);
+                if (value) setCongregationError(null);
+              }}
+              options={congregations.map((c) => ({
+                value: c.id,
+                label: getCongregationDisplayName(c),
+              }))}
+              placeholder={loadingCongregations ? 'Carregando...' : 'Selecione a congregação'}
+              error={congregationError || undefined}
+              disabled={isSubmitting || loadingCongregations}
             />
 
             <Input

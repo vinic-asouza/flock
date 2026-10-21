@@ -1,5 +1,5 @@
 ---
-description: "Technical Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentações técnicas internas permanentes em docs/. Use quando o usuário comandar seguir para documentação."
+description: "Technical Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentações técnicas internas permanentes em docs/. Atua no pipeline contínuo após Review limpo; handoff ao Documentation Writer."
 alwaysApply: false
 ---
 
@@ -517,7 +517,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante antes de concluir Document.
 - **Commitar** se alterar `docs/` (workflow §15.4) e **push** no PR existente (§15.6). Não abrir o primeiro PR da Issue nesta etapa.
 - Relê o Linear após push; restaurar `Document` se a automação GitHub tiver regressado.
-- Respeitar o Gate de Avanço (§15.2): não mover para `Done`.
+- Respeitar a Execução Contínua (§15.2): handoff ao Documentation Writer; orquestrador move para `Done` após DW.
 
 ### Nunca
 
@@ -563,9 +563,9 @@ Você não deve:
 
 ### Status Linear (obrigatório)
 
-1. Ao iniciar: se a Issue estiver em `Review` e o usuário **comandou seguir para documentação**, mova para `Document`. Confirme que permanece em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
+1. Ao iniciar: se a Issue estiver em `Review` com review limpo (pipeline contínuo), mova para `Document`. Confirme que permanece em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
 2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
-3. Ao finalizar: a Issue deve continuar em `Document`. Handoff para Documentation Writer. **Não** mova para `Done`.
+3. Ao finalizar: handoff para Documentation Writer (status permanece `Document` enquanto Writers atuam). Quem move para `Done` é o orquestrador após o DW.
 4. **Não** abrir o primeiro PR deste repositório nesta etapa. Se commitar, só push no PR existente; depois reler e restaurar `Document` se preciso (§15.6).
 
 ---
@@ -638,14 +638,13 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado quando o usuário comandar **seguir para documentação**. Se a Issue estiver em `Review`, mova para `Document` na entrada.
+Este agente atua no pipeline contínuo após Review sem obrigatórios pendentes. Se a Issue estiver em `Review` limpo, mova para `Document` na entrada.
 
 Fluxo esperado:
 ```txt
-Review
-  → [comando: seguir para documentação] agente move para Document
+Review (limpo)
+  → orquestrador move para Document
   → Technical Writer avalia docs internas + commit/push no PR existente se alterar docs/
   → Documentation Writer (mesma etapa)
-  → aviso no chat e PARA
-  → Done só com comando do usuário (+ pergunta de merge do PR)
+  → orquestrador → Done + resumo/PR no chat (merge só com confirmação)
 ```

@@ -244,6 +244,12 @@ tags: [padrões, código, convenções]
 - ✅ Contatos: `ContactRow` / `ContactRowsList`. No detalhe do membro, `getNameInitials` fica no título do header; na Integração, o avatar do aside ainda usa `getNameInitials` (`frontend/src/components/ui/ContactRow.tsx`, `frontend/src/utils/getNameInitials.ts`)
 - ❌ Novo `View*Modal` só para leitura; tabs sem sincronizar URL; aninhar `<a>`/`Link` dentro de outro link do card
 
+### CONV-035: Datas civis vs timestamps (fuso)
+> MVP: exibição e defaults de UI em `America/Sao_Paulo`. Datas sem horário (nascimento, recebimento etc.) são calendário civil — não usar `new Date('YYYY-MM-DD').toLocaleDateString()` sem proteção (desloca −1 dia em BRT). Timestamps: `toLocale*` com `timeZone: 'America/Sao_Paulo'`. Inputs `datetime-local`: nunca `toISOString().slice(0, 16)` — usar helpers `toDateTimeLocalValue` / `dateTimeLocalToISO` (frontend) ou equivalente.
+- **Nível:** 🔴 · **Enforcement:** 👁️
+- ✅ `formatDate` / `formatDateSafe` para só-data; `formatDateTime` / `formatGeneratedAt` com TZ
+- ❌ `toISOString().slice(0, 16)` no valor de `datetime-local`; `toLocaleDateString('pt-BR')` sem TZ em data civil
+
 ---
 
 ## 6. 🔧 Configurações de Tooling
@@ -281,4 +287,4 @@ tags: [padrões, código, convenções]
 
 ## Confirmação
 
-Documento prescritivo com **CONV-001…034**, baseado no código Flock (atualizado 2026-09-17: CONV-034 EntityDetail).
+Documento prescritivo com **CONV-001…035**, baseado no código Flock (CONV-034 EntityDetail; CONV-035 datas civis vs timestamps).

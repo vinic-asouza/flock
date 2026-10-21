@@ -256,6 +256,8 @@ export async function createCheckoutSession(
         },
       ],
       mode: 'subscription',
+      locale: 'pt-BR',
+      adaptive_pricing: { enabled: false },
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: metadata || {},
@@ -271,10 +273,14 @@ export async function createCheckoutSession(
  * Obter assinatura por ID
  */
 export async function getSubscription(
-  subscriptionId: string
+  subscriptionId: string,
+  expand?: string[]
 ): Promise<Stripe.Subscription> {
   return withRetry(async () => {
-    return await stripe.subscriptions.retrieve(subscriptionId);
+    return await stripe.subscriptions.retrieve(
+      subscriptionId,
+      expand && expand.length > 0 ? { expand } : {}
+    );
   });
 }
 
@@ -312,6 +318,7 @@ export async function updateSubscription(
         },
       ],
       proration_behavior: 'always_invoice',
+      expand: ['latest_invoice'],
     });
   });
 }

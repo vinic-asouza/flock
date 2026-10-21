@@ -117,12 +117,14 @@ export function TimelineCharts({
 
   // Gerar dados mensais para o gráfico (ano atual) - crescimento acumulado geral
   const monthlyChartData = useMemo(() => {
-    const currentYear = new Date().getFullYear();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonthIndex = now.getMonth(); // 0–11; não desenhar meses futuros
     const currentYearStr = currentYear.toString();
     const months = [
       'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
       'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
-    ];
+    ].slice(0, currentMonthIndex + 1);
 
     // Calcular o total acumulado até o final do ano anterior
     // Obter todos os anos únicos
@@ -330,9 +332,7 @@ export function TimelineCharts({
 
   const formatIntegrationDate = (isoDate?: string) => {
     if (!isoDate) return '-';
-    const date = new Date(isoDate);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('pt-BR');
+    return formatDate(isoDate) || '-';
   };
 
   const formatAdmissionDate = (isoDate?: string) => {

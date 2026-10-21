@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DENOMINATIONS } from '@/utils';
 import { validateCNPJ } from '@/utils/validations';
-import { CheckCircle2, Mail } from 'lucide-react';
+import { formatApiError } from '@/services/api';
 
 // ACHADO 02: removidas variáveis de módulo globais (globalRegisterError, globalRegisterErrorDetails,
 // globalFormData). Estado gerenciado exclusivamente via useState/useRef — sem vazamento entre abas.
@@ -80,9 +80,7 @@ function RegisterPageContent() {
   // ACHADO 02: estado local apenas — sem variáveis de módulo
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<string | null>(null);
-  // ACHADO 08: estado de sucesso pós-registro
-  const [registrationSuccess, setRegistrationSuccess] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [postRegisterLoginError, setPostRegisterLoginError] = useState<string | null>(null);
 
   const [states, setStates] = useState<State[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -196,6 +194,7 @@ function RegisterPageContent() {
     setIsSubmitting(true);
     setError(null);
     setErrorDetails(null);
+    setPostRegisterLoginError(null);
 
     // ACHADO 01: Passo 1 — registrar a conta. Se falhar aqui, é erro de registro real.
     try {
@@ -224,60 +223,34 @@ function RegisterPageContent() {
       return;
     }
 
-    // ACHADO 08: Registro concluído — mostrar estado de sucesso imediatamente
-    setRegisteredEmail(cleanData.email);
-    setRegistrationSuccess(true);
-
-    // ACHADO 01: Passo 2 — tentar auto-login. Se falhar por email não confirmado,
-    // mantemos o estado de sucesso (usuário precisa confirmar o email).
-    // ACHADO 07: sessionStorage flag definida APENAS após login bem-sucedido.
+    // Sessão criada: ir à escolha de plano sem tela de confirmação de e-mail.
     try {
       await login({ email: cleanData.email, password: cleanData.password });
       sessionStorage.setItem('redirectingToCheckout', 'true');
       window.location.href = resolveCheckoutPath(planFromUrl);
     } catch (loginErr: unknown) {
-      const msg = loginErr instanceof Error ? loginErr.message.toLowerCase() : '';
-      const isEmailNotConfirmed = msg.includes('email não confirmado') || msg.includes('not confirmed') || msg.includes('confirm');
-      if (!isEmailNotConfirmed) {
-        console.warn('[Register] Auto-login falhou por motivo inesperado após registro:', loginErr);
-      }
-      // Em qualquer caso: mantém registrationSuccess=true para mostrar orientação ao usuário.
-      // sessionStorage NÃO é setado — nenhum redirect para checkout acontecerá.
+      const raw = formatApiError(loginErr);
+      const lower = raw.toLowerCase();
+      const isEmailNotConfirmed = lower.includes('email não confirmado')
+        || lower.includes('not confirmed')
+        || lower.includes('confirm your email');
+      setPostRegisterLoginError(
+        isEmailNotConfirmed
+          ? 'Necessário realizar confirmação de email. Verifique sua caixa de entrada e clique no link de confirmação.'
+          : raw
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ACHADO 08: tela de confirmação de e-mail exibida após registro concluído
-  if (registrationSuccess) {
+  if (postRegisterLoginError) {
     return (
       <div className="space-y-6 text-center min-w-0">
-        <div className="flex justify-center">
-          <div className="flex items-center justify-center w-16 h-16 bg-green-100 rounded-full">
-            <CheckCircle2 className="w-8 h-8 text-green-600" />
-          </div>
-        </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cadastro concluído!</h1>
-          <p className="mt-2 text-gray-600">
-            Sua conta foi criada com sucesso.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Não foi possível entrar</h1>
+          <p className="mt-2 text-sm text-gray-600 break-words">{postRegisterLoginError}</p>
         </div>
-        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
-          <div className="flex items-start gap-3">
-            <Mail className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-blue-800">Confirme seu e-mail para continuar</p>
-              <p className="text-sm text-blue-700 mt-1 break-words">
-                Enviamos um link de confirmação para <strong className="break-all">{registeredEmail}</strong>.
-                Clique no link do e-mail para ativar sua conta e acessar o sistema.
-              </p>
-            </div>
-          </div>
-        </div>
-        <p className="text-sm text-gray-500">
-          Após confirmar o e-mail, acesse o sistema pelo login.
-        </p>
         <Link
           href="/login"
           className="inline-flex items-center justify-center w-full min-h-11 py-2.5 px-4 bg-primary text-white rounded-md text-sm font-medium hover:bg-primary/90 transition-colors text-center"

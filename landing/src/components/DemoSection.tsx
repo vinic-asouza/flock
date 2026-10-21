@@ -17,7 +17,7 @@ const demoItems: DemoItem[] = [
     id: 'dashboard',
     navLabel: 'Painel',
     title: 'A visão geral da sua igreja',
-    description: 'Veja o que acontece: membros ativos, crescimento, próximos eventos. A visão geral que a liderança precisa.',
+    description: 'Veja o que acontece: membros ativos, crescimento e quem está em integração. A visão geral que a liderança precisa.',
     image: '/demo/painel.png',
   },
   {
@@ -47,13 +47,6 @@ const demoItems: DemoItem[] = [
     title: 'Ministérios',
     description: 'Áreas de serviço da igreja. Crie, acompanhe e conduza o trabalho dos ministérios.',
     image: '/demo/groups.png',
-  },
-  {
-    id: 'calendar',
-    navLabel: 'Calendário',
-    title: 'Calendário',
-    description: 'Cultos, reuniões, eventos. A agenda da igreja visível para quem lidera.',
-    image: '/demo/calendar.png',
   },
   {
     id: 'reports',

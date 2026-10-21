@@ -3,7 +3,7 @@ type: index-regras-modulo
 ultima_atualizacao: 2026-09-16
 versao: "1.8"
 total_modulos: 14
-total_regras: 194
+total_regras: 199
 tags: [regras, índice, módulos]
 ---
 
@@ -19,7 +19,7 @@ tags: [regras, índice, módulos]
 | Autenticação e Sessão | [[02_regras-de-negocio/regras-por-modulo/auth]] | AUTH | 14 | Login, sessão, senha, confirmação |
 | Admin OPS | [[02_regras-de-negocio/regras-por-modulo/admin-ops]] | OPS | 8 | Allowlist + leitura GET de Igrejas + Lista de espera + saúde agregada |
 | Onboarding | [[02_regras-de-negocio/regras-por-modulo/onboarding]] | ONB | 12 | Registro de igreja/owner e funil de plano |
-| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 18 | Rol oficial, import, autocadastro |
+| Membros | [[02_regras-de-negocio/regras-por-modulo/membros]] | MEM | 19 | Rol oficial, import, autocadastro |
 | Integração | [[02_regras-de-negocio/regras-por-modulo/integracao]] | INT | 16 | Pré-membros e conversão |
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
 | Ministérios | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 13 | Áreas de serviço (API `groups`) |
@@ -27,11 +27,11 @@ tags: [regras, índice, módulos]
 | Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
 | Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 18 | Igreja, conta, equipe, audit |
-| Billing | [[02_regras-de-negocio/regras-por-modulo/billing]] | BILL | 16 | Planos, Stripe, limites |
+| Billing | [[02_regras-de-negocio/regras-por-modulo/billing]] | BILL | 20 | Planos, Stripe, limites |
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 14 módulos · **194 regras**
+**Total:** 14 módulos · **199 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 

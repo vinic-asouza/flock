@@ -3,8 +3,8 @@ type: modulo
 nome: billing
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-08-26
-versao: "1.1"
+ultima_atualizacao: 2026-10-20
+versao: "1.3"
 owner: (não identificado no código)
 tags: [módulo, billing]
 depende_de: [auth, config]
@@ -35,7 +35,7 @@ Produto: [[01_produto/visao-do-produto]].
 ### ✅ Este módulo É responsável por:
 
 - Catálogo hardcoded `PLAN_CONFIG` + rotas `/api/plans`
-- Checkout Session autenticado (admin+) e público (landing, rate limit)
+- Checkout Session autenticado (admin+) e público (landing, rate limit). A sessão nasce com `locale: pt-BR` e `adaptive_pricing.enabled: false`, para cobrar na moeda do Price (BRL).
 - Portal do cliente, change-plan, activate-free (cancela Stripe → plan 100)
 - Sync manual Stripe → DB; histórico `church_subscription_events`
 - Webhook assinado (`constructEvent`) com claim idempotente + stale skip
@@ -197,11 +197,12 @@ Telemetria dos crons (`runTrackedJob`).
 | POST | `/webhook` | Stripe sig | — | Webhook (raw body, RL 300/min) |
 | POST | `/create-checkout-session` | optional | admin+ se authed | Checkout 200/500/800 |
 | POST | `/create-portal-session` | ✅ | ≥ admin | Customer Portal |
-| POST | `/sync-subscription` | ✅ | ≥ admin | Sync Stripe→DB |
-| POST | `/change-plan` | ✅ | ≥ admin | Troca preço subscription |
+| POST | `/sync-subscription` | ✅ | ≥ admin | Sync Stripe→DB (sem customer → 200 `synced: false`) |
+| POST | `/change-plan` | ✅ | ≥ admin | Troca preço; se a fatura ficar aberta, devolve `payment_confirmation_url` |
 | POST | `/activate-free-plan` | ✅ | ≥ admin | Cancela pago → 100 |
 | GET | `/checkout-status` | ✅ | ≥ admin | Status pós-checkout |
-| GET | `/subscription-events` | ✅ | ≥ admin | Histórico UI |
+| GET | `/payment-confirmation` | ✅ | ≥ admin | URL da fatura hospedada em aberto, ou `url: null` |
+| GET | `/subscription-events` | ✅ | ≥ admin | Histórico UI (`cancellation_scheduled`, `subscription_renewed`, `payment_recovered`) |
 
 Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout`.
 
@@ -241,10 +242,14 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 
 ```typescript
 // change-plan: { plan: '200'|'500'|'800' }
+// 200: { requires_action, payment_confirmation_url, subscription }
+// requires_action true → fatura de proração aberta; a UI abre hosted_invoice_url
 // Downgrade: exige count(active members) ≤ limite destino → senão 400
 // activate-free: cancela subscription no Stripe (immediate) + plan_type=100
 //                 mesma regra de capacidade vs 100
 ```
+
+Cancelamento ao fim do período grava `cancellation_scheduled` e um audit do dono. Um segundo cancelamento no mesmo período, depois de renovar, gera outra linha: a chave inclui `canceled_at` quando o Stripe envia o instante do pedido. A chave antiga, sem esse instante, não gera segunda linha se ainda não houve renovação. Renovar grava `subscription_renewed`. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync. A hora é a do pagamento, não a de um sync atrasado; o histórico mostra data e hora, do mais recente para o mais antigo, e o log diz que o dono confirmou o pagamento. Troca de plano grava um audit `plan_changed`. O histórico da UI lista cancelamento, renovação e pagamento confirmado; `subscription_updated` continua de fora. O indicador de membros usa o limite do plano assim que a troca responde.
 
 ### Webhook
 
@@ -258,7 +263,7 @@ Checkout público: RL **10/h** por IP. Autenticado: `requireAdminForPaidCheckout
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**16** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**20** regras).
 
 | ID | Declaração curta |
 | --- | --- |
@@ -278,6 +283,10 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/billing]] (**16** regras).
 | BR-BILL-014 | Avisos e-mail 7/3/1 dias antes do fim |
 | BR-BILL-015 | Purge pending expiradas (7d) |
 | BR-BILL-016 | Purge webhooks >90d |
+| BR-BILL-017 | Sync sem `stripe_customer_id` → 200 `synced: false`; UI free (`plan_type` 100) sem Sync (mesmo com customer residual) |
+| BR-BILL-018 | Checkout da sessão sem Adaptive Pricing; locale `pt-BR` |
+| BR-BILL-019 | Fatura de proração aberta expõe URL hospedada; `past_due` segue sem troca de plano |
+| BR-BILL-020 | Cada cancelamento, cada renovação, a troca de plano e a volta de past_due |
 
 Extras de código: `plan_type` null/`custom` → limite Infinity; avisos de quota 80/90/100%.
 
@@ -377,7 +386,8 @@ Conteúdo autenticado em `frontend/src/components/settings/PaymentManagement.tsx
 **Responsividade (mobile/tablet):** alvos touch `min-h-11`. Desktop (`md+` / `sm+` conforme bloco) permanece equivalente. Sem migrar troca de plano para rota full-page.
 
 - **Cards:** status, plano atual, datas, `past_due`, sync falho, vazia, expirada — `p-4 sm:p-6`, `min-w-0` / `overflow-x-hidden`; nome e preço do plano empilham no mobile.
-- **CTAs:** Gerenciar Assinatura / Trocar de Plano / Sincronizar / Assinar / Reativar / Atualizar pagamento — empilham em `<sm`, full-width; row em `sm+`.
+- **Estado vazio (sem assinatura ativa):** classificado por **plano Grátis** (`plan_type === '100'`), não só por ausência de `stripe_customer_id`. Conta free (mesmo com customer residual de checkout abandonado) mostra copy do plano gratuito + limite 100 e um único CTA **Assinar Plano**; não mostra “assinatura não encontrada” nem **Sincronizar Assinatura**. Auto-sync on mount e sync manual também ignoram plano 100 (DEV-158; complementa DEV-136 / [[BR-BILL-017]]).
+- **CTAs:** Gerenciar Assinatura / Trocar de Plano / Sincronizar / Assinar / Reativar / Atualizar pagamento — empilham em `<sm`, full-width; row em `sm+`. Sync só fora do plano Grátis.
 - **Modais Trocar de Plano e Confirmar:** `footer` sticky do `Modal` compartilhado (`flex-col-reverse` no mobile). Alerta de downgrade (BR-BILL-006) permanece no body scrollável. Overlay `visualViewport` (teclado iOS) já no `Modal` (DEV-34).
 - **Histórico de assinatura:** wrap `flex-col sm:flex-row`; `min-w-0`.
 - **Retorno Stripe:** `/subscription/success` e `/subscription/cancel` já usam `min-h-dvh`, safe-area e CTAs `min-h-11` (funil / P1).
@@ -451,7 +461,8 @@ Tracking: `job_runs` via `runTrackedJob`.
 | --- | --- | --- |
 | Plano inválido | 400 | checkout/change |
 | Assinatura já ativa | 409 | checkout authed |
-| Sem customer | 400 | portal |
+| Sem customer | 400 | portal (`create-portal-session`) |
+| Sem customer | 200 `synced: false` | sync (`sync-subscription`) — BR-BILL-017; UI não auto-sincroniza |
 | Downgrade não cabe | 400 | change / activate-free |
 | Cancel Stripe fail | 500 | activate-free |
 | Admin required | 403 | rotas billing / checkout authed |
@@ -483,9 +494,9 @@ Tracking: `job_runs` via `runTrackedJob`.
 
 | Tipo | Arquivo | Cobertura | O que testa |
 | --- | --- | --- | --- |
-| — | — | 0% | Nenhum teste dedicado no repo |
+| — | `utils/__tests__/billingPresentation.test.ts` | helpers | URL de fatura aberta, chave de cancelamento agendado, telefone de contato |
 
-**Gaps:** constructEvent + claim race; stale event; downgrade capacity; past_due canAdd; pending→link onboarding; cron eligibility; change-plan proration.
+**Gaps:** constructEvent + claim race; stale event; downgrade capacity; past_due canAdd; pending→link onboarding; cron eligibility.
 
 ---
 

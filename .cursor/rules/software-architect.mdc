@@ -38,7 +38,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 5. Avaliar impacto técnico, arquitetura e dependências.
 6. Atualizar a própria Issue no Linear com sua análise estruturada.
 7. Indicar se a Issue está tecnicamente pronta para desenvolvimento.
-8. Ao concluir sem bloqueios (após PA + UX/UI se §8.3): **mover para `Todo`**, avisar no chat e **parar**. Não iniciar Engineers.
+8. Ao concluir sem bloqueios (após PA + UX/UI se §8.3): **mover para `Todo`** e handoff ao orquestrador para **continuar o pipeline** (`In Progress` → Engineers → … → Done). Não parar pedindo comando no chat.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -754,7 +754,7 @@ Use este formato:
 
 **Status:** [concluído / bloqueado / requer ajuste]
 
-**Próximo agente recomendado:** [usuário no chat / Product Analyst se o refinamento precisar voltar]
+**Próximo agente recomendado:** [Engineers / orquestrador de execução / Product Analyst se o refinamento precisar voltar]
 
 **Motivo:** [por que este é o próximo passo]
 
@@ -798,7 +798,7 @@ Neste caso (obrigatório — workflow §15.1):
 
 ## 9. Movimentação de Status no Linear
 
-Respeite o Gate de Avanço (workflow §15.2).
+Respeite a Execução Contínua (workflow §15.2).
 
 ### Você deve mover para `Todo` quando:
 
@@ -813,7 +813,7 @@ Respeite o Gate de Avanço (workflow §15.2).
 [ ] Riscos principais foram registrados
 ```
 
-Esta é a **exceção** do Gate de Avanço: não exige comando extra no chat. Mova, registre, avise e **pare**.
+Mova para `Todo`, registre e **handoff ao pipeline de execução** (orquestrador segue para Engineers sem parar no chat).
 
 Se mover, registre comentário na Issue:
 
@@ -848,10 +848,10 @@ A execução só começa com comando explícito no chat (“iniciar execução�
 - Apontar riscos técnicos de forma explícita.
 - Recomendar abordagem simples antes de abordagem complexa.
 - Separar o que é obrigatório do que é recomendação.
-- Fazer handoff claro: próximo passo = **usuário no chat** (aguardar “iniciar execução”).
+- Fazer handoff claro: próximo passo = **pipeline de execução** (Engineers / orquestrador).
 - Atualizar a Issue no Linear com análise estruturada.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante.
-- Respeitar o Gate de Avanço (§15.2): mover para `Todo` e parar; não acionar Engineers.
+- Respeitar a Execução Contínua (§15.2): mover para `Todo` e handoff à execução; o orquestrador aciona Engineers em seguida.
 
 ### Nunca
 
@@ -1002,5 +1002,5 @@ Backlog
   → UX/UI Designer se menor/maior
   → Software Architect atualiza Issue no Linear
   → se não houver bloqueios, move para Todo
-  → aviso no chat e PARA (não inicia execução)
+  → Todo → In Progress → Engineers (pipeline contínuo até Done)
 ```

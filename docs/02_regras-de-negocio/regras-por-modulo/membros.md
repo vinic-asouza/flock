@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: membros
-ultima_atualizacao: 2026-08-31
-versao: "1.3"
-total_regras: 18
+ultima_atualizacao: 2026-10-19
+versao: "1.4"
+total_regras: 19
 tags: [regras, modulo:membros]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -37,6 +37,7 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | BR-MEM-016 | Validade de link de registro | Restrição | Ativo |
 | BR-MEM-017 | Congregação obrigatória | Restrição | Ativo |
 | BR-MEM-018 | Contrato CSV operacional | Restrição | Ativo |
+| BR-MEM-019 | Congregação do link público de membros | Restrição | Ativo |
 
 ---
 
@@ -222,14 +223,14 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Depende de:** —
 
 ### BR-MEM-016: Validade de link de registro
-- **Declaração:** expires_at futuro e ≤1 ano; max_uses 1–10000 se informado.
+- **Declaração:** expires_at futuro e ≤1 ano; max_uses 1–10000 se informado; `default_congregation_id` UUID obrigatório na criação/edição do link.
 - **Tipo:** Restrição
 - **Gatilho:** Create/update registration link
-- **Comportamento esperado:** Link salvo
+- **Comportamento esperado:** Link salvo com congregação definida
 - **Comportamento em violação:** 400
-- **Implementado em:** `registrationLinkValidator.ts`
-- **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Implementado em:** `registrationLinkValidator.ts` / `registrationLinkController.ts`
+- **Testado em:** `registrationLinkValidator.test.ts`
+- **Depende de:** [[BR-MEM-019]]
 
 ### BR-MEM-017: Congregação obrigatória
 - **Declaração:** Todo membro deve ter `congregation_id` (UUID da igreja). Não existe membro sem congregação nem sentinel “Sede”.
@@ -241,6 +242,16 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** [[BR-CON-010]]
 
+### BR-MEM-019: Congregação do link público de membros
+- **Declaração:** A congregação do autocadastro público de membros é definida na criação do link (`default_congregation_id`). O formulário anônimo não solicita congregação; o POST usa exclusivamente a congregação do link (ignora override do body). Ministérios do form público são os da congregação do link. Links sem congregação são rejeitados no validate/create públicos.
+- **Tipo:** Restrição
+- **Gatilho:** Create link; GET/POST `/api/public/registration/:token`; GET `.../groups`
+- **Comportamento esperado:** Membro nasce na congregação do link; form sem campo congregação
+- **Comportamento em violação:** 400 link mal configurado / congregação obrigatória na criação do link
+- **Implementado em:** `registrationLinkValidator.ts` / `publicRegistrationController.ts` / `RegistrationLinksModal` / `PublicMemberForm`
+- **Testado em:** `registrationLinkValidator.test.ts` + QA local DEV-157
+- **Depende de:** [[BR-MEM-016]], [[BR-MEM-017]]
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -250,4 +261,4 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 
 ---
 
-*Atualizado em 2026-08-25 (DEV-49).*
+*Atualizado em 2026-10-19 (DEV-157).*

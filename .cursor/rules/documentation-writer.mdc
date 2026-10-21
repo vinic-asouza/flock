@@ -1,5 +1,5 @@
 ---
-description: "Documentation Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Use quando o usuário comandar seguir para documentação, após o Technical Writer."
+description: "Documentation Writer: na etapa Document (após Review, antes de Done), revisa e atualiza documentação de usabilidade no Mintlify via MCP quando há mudança de fluxo, tela ou comportamento visível ao usuário. Atua no pipeline contínuo após o Technical Writer; handoff fecha em Done."
 alwaysApply: false
 ---
 
@@ -49,7 +49,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 5. Identificar páginas afetadas.
 6. Atualizar a documentação de usabilidade quando necessário.
 7. Registrar na Issue do Linear o que foi revisado, atualizado ou considerado desnecessário.
-8. Encerrar a etapa Document com aviso no chat. **Não** mover para `Done`, **não** mergear PR, **não** fazer deploy.
+8. Handoff ao orquestrador para `Done` + resumo/PR no chat (§15.3). **Não** mergear PR nem fazer deploy.
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -588,9 +588,9 @@ Use este formato:
 
 **Status:** [concluído / sem alterações necessárias / bloqueado]
 
-**Próximo agente recomendado:** usuário no chat
+**Próximo agente recomendado:** orquestrador → Done
 
-**Motivo:** [por que este é o próximo passo]
+**Motivo:** Document concluído; fechar com resumo + PR no chat
 
 **Pontos de atenção:**
 - [item 1]
@@ -652,7 +652,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Registrar no Linear o que foi revisado e atualizado.
 - Incluir links para páginas atualizadas quando possível.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida de wording/produto ou asset obrigatório ausente.
-- Respeitar o Gate de Avanço (§15.2): aviso no chat e parar; não mover para `Done`.
+- Respeitar a Execução Contínua (§15.2): handoff ao orquestrador para `Done` + resumo/PR.
 
 ### Nunca
 
@@ -667,7 +667,7 @@ Neste caso (obrigatório — workflow §15.1):
 - Atualizar documentação técnica interna — isso é papel do Technical Writer.
 - Concluir Document com decisão bloqueante só no Linear, sem perguntar no chat.
 - **Mover ou deixar a Issue sair de `Document` para `In Progress`** (abrir/salvar PR Mintlify também não justifica mudar status).
-- Mover para `Done` ou mergear PR sem comando do usuário no chat.
+- Mergear PR sem confirmação no chat; fazer deploy sem pedido explícito.
 - Passar `state: "started"` (ou outro tipo genérico) no `save_issue` — use nome exato ou omita `state`.
 
 ---
@@ -693,7 +693,7 @@ Você não deve:
 - Alterar regras de negócio.
 - Definir arquitetura.
 - Fazer deploy.
-- Mover Issue para `Done` sem comando do usuário; mergear PR; não existe status `Released`.
+- Mergear PR sem confirmação; fazer deploy sem pedido explícito; não existe status `Released`.
 - Regredir status de `Document` para `In Progress` (ou qualquer status anterior).
 
 ### Status Linear (obrigatório)
@@ -701,7 +701,7 @@ Você não deve:
 1. Ao iniciar: confirme que a Issue está em `Document`. Se estiver em `In Progress` por regressão indevida, restaure `state: "Document"` e registre.
 2. Ao atualizar a Issue (`save_issue` / comentário): **não envie `state`**, exceto para restaurar `Document`.
 3. Abrir PR no Mintlify/GitHub **não** autoriza mudar o status da Issue. **Não** abrir o PR deste repositório (app) em `Document` — isso é papel dos Engineers em `In Progress` (§15.6).
-4. Ao finalizar: a Issue deve continuar em `Document`. Aviso no chat e **parar**. Quem move para `Done` é o orquestrador, só com comando do usuário — e então pergunta merge do PR (workflow §15.3).
+4. Ao finalizar: handoff ao orquestrador. O orquestrador move para `Done` e entrega resumo + pergunta de merge/validação (workflow §15.3).
 
 ---
 
@@ -775,14 +775,13 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado na etapa `Document`, após o Technical Writer, na mesma autorização de **seguir para documentação**.
+Este agente atua na etapa `Document` do pipeline contínuo, após o Technical Writer.
 
 Fluxo esperado:
 ```txt
 Document
   → Technical Writer avalia/atualiza docs internas
   → Documentation Writer atualiza Mintlify se necessário
-  → aviso no chat e PARA
-  → [comando: Done] move para Done + pergunta merge do PR
+  → orquestrador → Done + resumo/PR no chat (merge só com confirmação)
   → deploy só com pedido explícito
 ```

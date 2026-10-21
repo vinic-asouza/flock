@@ -115,6 +115,14 @@ function SubscriptionSuccessContent() {
     };
   }, [sessionId, userId, isAuthLoading, isConfirmed, refreshChurch]);
 
+  useEffect(() => {
+    if (!isConfirmed || error || missingSessionId) return;
+    const timeoutId = setTimeout(() => {
+      router.push('/');
+    }, 5000);
+    return () => clearTimeout(timeoutId);
+  }, [isConfirmed, error, missingSessionId, router]);
+
   if (isAuthLoading || isLoading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-gray-50 overflow-x-hidden px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -122,6 +130,12 @@ function SubscriptionSuccessContent() {
           <Loader className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
           <p className="text-base sm:text-lg font-medium text-gray-900 mb-2">Processando sua assinatura...</p>
           <p className="text-sm text-gray-500">Aguarde enquanto confirmamos seu pagamento</p>
+          <div className="mt-6">
+            <Button onClick={() => router.push('/')} className="w-full min-h-11">
+              Ir para o Sistema
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -174,6 +188,9 @@ function SubscriptionSuccessContent() {
               </h1>
               <p className="text-sm sm:text-base text-gray-600">
                 Sua assinatura foi ativada com sucesso
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Você será levado ao sistema em alguns segundos.
               </p>
             </>
           )}

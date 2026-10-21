@@ -39,7 +39,7 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **Atributos-chave:** `name` (nome completo), `abbreviation` (nome popular curto, opcional), endereço, `leader`, `phone`, `is_primary`  
 - **Relacionamentos:** pertence a 1 igreja; membros e eventos referenciam-na  
 - **Usado em:** Membros, Integração, Ministérios, Ensino, Calendário, Relatórios
-- **UI:** “Congregações”; em selects/chips/flags a UI prefere `abbreviation` quando existir  
+- **UI:** “Congregações”; em selects/chips/filtros a UI exibe o **nome** e, se houver sigla, `nome (sigla)` — nunca só a abreviação
 - **Nota:** cada igreja tem exatamente uma **congregação principal** (`is_primary = true`), criada no registro com o nome da igreja (sem abreviação). Não existe mais o conceito implícito “Sede” (`congregation_id` null / sentinel `sede`).
 
 **Congregação principal** *(código: `is_primary` em `congregations`)*  

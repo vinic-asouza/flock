@@ -156,27 +156,25 @@ export const createRegistrationLink = async (
     }
 
     const churchId = req.church!.churchId;
+    const defaultCongregationId = req.body.default_congregation_id as string;
 
-    // Validar se as referências (congregação e função) pertencem à igreja
-    if (req.body.default_congregation_id) {
-      const { data: congregation, error: congError } = await supabase
-        .from('congregations')
-        .select('id')
-        .eq('id', req.body.default_congregation_id)
-        .eq('church_id', churchId)
-        .single();
+    const { data: congregation, error: congError } = await supabase
+      .from('congregations')
+      .select('id')
+      .eq('id', defaultCongregationId)
+      .eq('church_id', churchId)
+      .single();
 
-      if (congError || !congregation) {
-        return res.status(400).json({
-          error: 'Congregação inválida',
-          details: 'A congregação especificada não pertence à sua igreja'
-        });
-      }
+    if (congError || !congregation) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: 'A congregação especificada não pertence à sua igreja'
+      });
+    }
 
-      const access = assertCongregationAccess(req.church!, req.body.default_congregation_id);
-      if (!access.ok) {
-        return res.status(access.status).json(access.body);
-      }
+    const access = assertCongregationAccess(req.church!, defaultCongregationId);
+    if (!access.ok) {
+      return res.status(access.status).json(access.body);
     }
 
     // Gerar token único
@@ -216,7 +214,7 @@ export const createRegistrationLink = async (
       current_uses: 0,
       is_active: true,
       created_by: req.user.id,
-      default_congregation_id: req.body.default_congregation_id || null,
+      default_congregation_id: defaultCongregationId,
       notes: req.body.notes || null
     };
 
@@ -290,13 +288,12 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       });
     }
 
-    // Validar dados se fornecidos
-    if (req.body.expires_at || req.body.max_uses !== undefined) {
-      // Converter expires_at para string ISO se necessário
-      const expiresAtString = req.body.expires_at 
-        ? req.body.expires_at 
-        : (existingLink.expires_at instanceof Date 
-          ? existingLink.expires_at.toISOString() 
+    // Validar dados se fornecidos (create/edit completo exige congregação)
+    if (req.body.expires_at || req.body.max_uses !== undefined || req.body.default_congregation_id !== undefined || req.body.notes !== undefined) {
+      const expiresAtString = req.body.expires_at
+        ? req.body.expires_at
+        : (existingLink.expires_at instanceof Date
+          ? existingLink.expires_at.toISOString()
           : typeof existingLink.expires_at === 'string'
           ? existingLink.expires_at
           : new Date(existingLink.expires_at).toISOString());
@@ -304,7 +301,8 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       const updateData: CreateRegistrationLinkData = {
         expires_at: expiresAtString,
         max_uses: req.body.max_uses !== undefined ? req.body.max_uses : existingLink.max_uses,
-        default_congregation_id: req.body.default_congregation_id ?? existingLink.default_congregation_id ?? null,
+        default_congregation_id:
+          req.body.default_congregation_id ?? existingLink.default_congregation_id ?? '',
         notes: req.body.notes ?? existingLink.notes ?? null
       };
 
@@ -317,27 +315,31 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       }
     }
 
-    // Validar referências se fornecidas
     if (req.body.default_congregation_id !== undefined) {
-      if (req.body.default_congregation_id) {
-        const { data: congregation, error: congError } = await supabase
-          .from('congregations')
-          .select('id')
-          .eq('id', req.body.default_congregation_id)
-          .eq('church_id', churchId)
-          .single();
+      if (!req.body.default_congregation_id) {
+        return res.status(400).json({
+          error: 'Dados inválidos',
+          details: ['Congregação é obrigatória']
+        });
+      }
 
-        if (congError || !congregation) {
-          return res.status(400).json({
-            error: 'Congregação inválida',
-            details: 'A congregação especificada não pertence à sua igreja'
-          });
-        }
+      const { data: congregation, error: congError } = await supabase
+        .from('congregations')
+        .select('id')
+        .eq('id', req.body.default_congregation_id)
+        .eq('church_id', churchId)
+        .single();
 
-        const access = assertCongregationAccess(req.church!, req.body.default_congregation_id);
-        if (!access.ok) {
-          return res.status(access.status).json(access.body);
-        }
+      if (congError || !congregation) {
+        return res.status(400).json({
+          error: 'Congregação inválida',
+          details: 'A congregação especificada não pertence à sua igreja'
+        });
+      }
+
+      const access = assertCongregationAccess(req.church!, req.body.default_congregation_id);
+      if (!access.ok) {
+        return res.status(access.status).json(access.body);
       }
     }
 
@@ -346,8 +348,8 @@ export const updateRegistrationLink = async (req: AuthRequest, res: Response) =>
       ...(req.body.expires_at && { expires_at: new Date(req.body.expires_at) }),
       ...(req.body.max_uses !== undefined && { max_uses: req.body.max_uses }),
       ...(req.body.is_active !== undefined && { is_active: req.body.is_active }),
-      ...(req.body.default_congregation_id !== undefined && { 
-        default_congregation_id: req.body.default_congregation_id || null 
+      ...(req.body.default_congregation_id !== undefined && {
+        default_congregation_id: req.body.default_congregation_id
       }),
       ...(req.body.notes !== undefined && { notes: req.body.notes || null })
     };

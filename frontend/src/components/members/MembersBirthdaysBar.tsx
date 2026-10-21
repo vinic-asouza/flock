@@ -60,6 +60,14 @@ export function MembersBirthdaysBar({ congregationId, onOpenMember }: MembersBir
     void loadCount();
   }, [loadCount]);
 
+  useEffect(() => {
+    const handleMemberUpdate = () => {
+      void loadCount();
+    };
+    window.addEventListener('memberUpdated', handleMemberUpdate);
+    return () => window.removeEventListener('memberUpdated', handleMemberUpdate);
+  }, [loadCount]);
+
   const loadList = useCallback(async () => {
     const requestId = ++listRequest.current;
     setModalOpen(true);

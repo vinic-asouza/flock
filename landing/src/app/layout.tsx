@@ -116,7 +116,6 @@ export default function RootLayout({
       "Integração de Pré-Membros",
       "Gestão de Congregações",
       "Ministérios",
-      "Calendário com Recorrência",
       "Relatórios Detalhados"
     ]
   };

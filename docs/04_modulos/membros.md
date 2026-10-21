@@ -132,7 +132,7 @@ Cadastro oficial do membro no tenant.
 - Tem muitos: `member_groups`; referenciado por grupos (responsible), calendário, integração (mentor)
 
 **Soft delete:** **não** via `deleted_at`. Inativação = `active=false`. **DELETE = hard delete.**  
-**Auditoria:** `audit_logs` (entity `member`) + `created_at` na row.
+**Auditoria:** `audit_logs` (entity `member`) + `created_at` na row. O autocadastro pelo link público também grava `create` com `event: public_registration` e `link_name` (o campo `notes` do link). Na aba Histórico, o autor exibido é o nome do link.
 
 ### member_groups
 
@@ -158,7 +158,7 @@ Capability de autocadastro.
 | expires_at | timestamptz | — | Expiração |
 | max_uses / current_uses | int | null / 0 | Limite |
 | is_active | boolean | true | Soft disable |
-| default_congregation_id | uuid | null | Prefill |
+| default_congregation_id | uuid | null (legado) | **Obrigatório na API** na criação/edição (BR-MEM-019). Congregação do autocadastro; form público não escolhe. |
 | created_by | uuid | null | Auth user |
 | notes | text | null | — |
 | created_at / updated_at | timestamptz | now() | Audit |
@@ -197,8 +197,8 @@ Capability de autocadastro.
 | --- | --- | --- | --- | --- |
 | GET | `/` | ✅ | ≥ reader | Listar |
 | GET | `/:id` | ✅ | ≥ reader | Detalhe |
-| POST | `/` | ✅ | ≥ editor | Criar link |
-| PUT | `/:id` | ✅ | ≥ editor | Atualizar |
+| POST | `/` | ✅ | ≥ editor | Criar link (`default_congregation_id` obrigatório) |
+| PUT | `/:id` | ✅ | ≥ editor | Atualizar (edição completa exige congregação) |
 | PATCH | `/:id/deactivate` | ✅ | ≥ editor | `is_active=false` |
 | DELETE | `/:id` | ✅ | ≥ editor | Hard delete link |
 
@@ -206,9 +206,9 @@ Capability de autocadastro.
 
 | Método | Rota | Auth | Role | Descrição |
 | --- | --- | --- | --- | --- |
-| GET | `/registration/:token` | 🔗 | — | Validar link |
-| GET | `/registration/:token/groups` | 🔗 | — | Ministérios do form |
-| POST | `/registration/:token` | 🔗 | — | Criar membro (RL 15/15min) |
+| GET | `/registration/:token` | 🔗 | — | Validar link; retorna `default_congregation_id` (sem lista de congregações) |
+| GET | `/registration/:token/groups` | 🔗 | — | Ministérios da congregação do link |
+| POST | `/registration/:token` | 🔗 | — | Criar membro na congregação do link (RL 15/15min; body não redefine congregação) |
 
 **Total aprox.:** **21** endpoints do domínio membros.
 
@@ -328,6 +328,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**18** regras).
 | BR-MEM-016 | Link: expires futuro ≤1 ano; max_uses 1–10000 |
 | BR-MEM-017 | `congregation_id` UUID obrigatório (sem Sede/null) |
 | BR-MEM-018 | CSV operacional (sem questionário; legado só no import; skip Idade/Status/Congregação) |
+| BR-MEM-019 | Link público: congregação na criação; form anônimo sem escolha; ministérios da cong. do link |
 
 **Inferido:** reativar via PATCH pode **não** revalidar limite do plano.
 
@@ -379,11 +380,12 @@ sequenceDiagram
   V->>API: GET /public/registration/:token
   API->>MW: valida token/active/expiry/max_uses
   API->>LIM: capacidade
-  API-->>V: valid + church + congregations
+  API-->>V: valid + church + default_congregation_id
 
   V->>API: POST /public/registration/:token + body
   activate API
   API->>LIM: checkMemberLimit
+  API->>API: congregation_id := link.default_congregation_id
   API->>API: validateMember
   API->>DB: INSERT member
   API->>DB: increment current_uses
@@ -577,7 +579,7 @@ graph LR
 4. **Import:** `checkDuplicate` por linha pode re-consultar; CSV ≤10MB sync no event loop.  
 5. **`updated_at` no type TS sem coluna DB** — não usar em sort SQL.  
 6. **Reports** na rota members; PDFs em `/export` (outro módulo) — não misturar.  
-7. Query pública de congregações com `.eq('active', true)` — tabelas `congregations` **pode não ter** `active` (verificar schema live).  
+7. `congregations` **não tem** coluna `active` — não filtrar por ela no público (raiz do bug DEV-157 / lista vazia). Integração pública ainda pode ter o filtro legado (fora do escopo DEV-157).  
 8. Após hard delete, FKs SET NULL / CASCADE (calendar, groups) — familiarizar-se com efeitos.  
 9. **UI edição (`MemberForm` mode=edit):** validação Zod no cliente antes do `PUT`. Campos opcionais vindos do Postgres como `null` (enums/booleanos) devem ser normalizados para `undefined`/string vazia no hydrate — senão o submit falha. Em submit inválido, exibir banner + scroll ao campo (`onInvalid`); sucesso mostra toast e fecha o modal. Não hidratar `document` no form (campo sem UI de edição).
 10. **Mobile / `Modal`:** evitar `min-h-[70–75vh]` dentro do conteúdo do `Modal` (conflita com flex + `dvh`). Preferir `min-h-0` e deixar o body do Modal rolar; CTAs longos no footer sticky (`footer` prop) ou empilhados no form.
@@ -588,8 +590,10 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-10-19 | 1.11 | Link público: congregação obrigatória na criação; form anônimo sem campo; ministérios da cong. do link (BR-MEM-019) | DEV-157 |
 | 2026-10-01 | 1.10 | Ficha: iniciais no header; coluna esquerda com Informações Eclesiásticas e Contatos; recebimento sai de Dados; batismo fora da UI | DEV-132 |
 | 2026-10-01 | 1.9 | Faixa de aniversariantes no hub `/members` (mês, congregação da lista, nome abre a ficha). Calendário permanece | DEV-131 |
+| 2026-09-30 | 1.8 | Aniversariantes do mês no hub `/members` (faixa + modal); não na superfície do Calendário | DEV-129 |
 | 2026-09-17 | 1.8 | Aside enxuto (contatos valor+copiar); tab Família fundida em Dados; grid ≥1920px | DEV-124 |
 | 2026-09-17 | 1.7 | Detalhe em página `/members/[id]` (aside + abas Dados/Família/Vínculos); remove modal de view | DEV-119 |
 | 2026-08-31 | 1.6 | Questionário eclesiástico sai de membros (BR-MEM-004 / BR-INT-016); ficha: **Vínculo na igreja** | DEV-91 |
@@ -608,7 +612,7 @@ graph LR
 | --- | --- |
 | Módulo documentado | **membros** ✅ |
 | Endpoints | **~21** (12 members + 6 links + 3 public registration) |
-| Regras BR-MEM | **18** |
+| Regras BR-MEM | **19** |
 | Integrações | Supabase DB, Resend (avisos de limite) |
 | Jobs/cron | Nenhum dedicado |
-| Testes | Unitários leves (`csvParser`) |
+| Testes | Unitários leves (`csvParser`, `registrationLinkValidator`) |
