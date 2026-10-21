@@ -1,7 +1,9 @@
 import {
   formatChurchAddressLine,
   subscriptionHistoryDetail,
-} from '../settingsDisplay';
+} from '../../../../frontend/src/utils/settingsDisplay';
+
+// Fora do tsconfig do backend: o helper vive no frontend e o rootDir não alcança esse arquivo.
 
 const formatAccessDate = () => '21/11/2026';
 
