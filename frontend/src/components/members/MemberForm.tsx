@@ -266,7 +266,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     const asStr = (value: string | null | undefined) => value ?? '';
     const asBool = (value: boolean | null | undefined) =>
       value === null || value === undefined ? undefined : value;
-    const genderValues = ['Masculino', 'Feminino'] as const;
+    const genderValues = ['Masculino', 'Feminino', 'Não informado'] as const;
     const maritalValues = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável'] as const;
     const parentMemberValues = ['sim', 'nao', 'falecido'] as const;
 
@@ -279,7 +279,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       'gender',
       genderValues.includes(member.gender as typeof genderValues[number])
         ? (member.gender as typeof genderValues[number])
-        : 'Masculino'
+        : 'Não informado'
     );
     setValue(
       'marital_status',
@@ -540,8 +540,9 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           <Select
             label="Gênero *"
             value={watch('gender') || ''}
-            onChange={(value) => setValue('gender', value as 'Masculino' | 'Feminino')}
+            onChange={(value) => setValue('gender', value as 'Masculino' | 'Feminino' | 'Não informado')}
             options={[
+              { value: 'Não informado', label: 'Não informado' },
               { value: 'Masculino', label: 'Masculino' },
               { value: 'Feminino', label: 'Feminino' },
             ]}

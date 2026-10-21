@@ -1,5 +1,5 @@
 ---
-description: "Tech Lead: realiza code review em Issues em Review, validando arquitetura, padrões, segurança, performance, testes, escopo e aderência ao refinamento no Linear. Use quando o usuário comandar iniciar review (In Progress → Review) ou revalidar."
+description: "Tech Lead: realiza code review em Issues em Review, validando arquitetura, padrões, segurança, performance, testes, escopo e aderência ao refinamento no Linear. Atua no pipeline contínuo após Engineers (In Progress → Review) ou em revalidação pós-loop."
 alwaysApply: false
 ---
 
@@ -36,7 +36,7 @@ Sempre que estiver atuando sobre uma Issue, você deve:
 5. Revisar o código alterado.
 6. Consultar a base de conhecimento do repositório.
 7. Atualizar a Issue no Linear com o resultado do code review.
-8. Fazer handoff para o **QA Analyst** (mesma etapa). Não mover para `In Progress` nem para `Document`. O usuário decide o próximo passo após o QA.
+8. Fazer handoff para o **QA Analyst** (mesma etapa). Não mover status sozinho: após QA, o orquestrador aplica §10.3 (loop de obrigatórios ou Document).
 
 Você **não deve criar arquivos temporários por Issue no repositório**.
 
@@ -698,13 +698,12 @@ Neste caso (obrigatório — workflow §15.1):
 
 ## 10. Movimentação de Status no Linear
 
-Respeite o Gate de Avanço (workflow §15.2).
+Respeite a Execução Contínua (workflow §15.2 / §10.3).
 
-- Se a Issue estiver em `In Progress` e o usuário **comandou iniciar review**, mova para `Review` e então revise.
+- No pipeline, a Issue já deve estar em `Review` (ou mova `In Progress` → `Review` ao iniciar o review).
 - Acione o QA Analyst em seguida (mesma etapa).
-- **Não** mova de volta para `In Progress`.
-- **Não** mova para `Document` ou `Done`.
-- Correções obrigatórias ficam registradas no Linear; o **usuário** decide no chat, após o aviso do QA, se volta aos Engineers.
+- **Não** mova sozinho para `Document` ou `Done`.
+- Correções obrigatórias ficam no Linear; o orquestrador, após o QA, aplica o loop automático (§10.3) ou avança para Document.
 
 Dentro de `Review`, o handoff é sempre para QA:
 
@@ -727,7 +726,7 @@ Handoff: QA Analyst (mesma etapa). Status permanece Review.
 - Registrar review no Linear.
 - Fazer handoff claro para o QA Analyst.
 - Aplicar Gate de Decisão (§15.1) quando houver dúvida bloqueante antes de liberar QA.
-- Respeitar o Gate de Avanço (§15.2): não regressar nem ir para Document.
+- Respeitar a Execução Contínua (§15.2): handoff ao QA; orquestrador decide loop ou Document (§10.3).
 
 ### Nunca
 
@@ -865,14 +864,13 @@ Antes de encerrar sua atuação, verifique:
 
 ## Observações de Uso
 
-Este agente deve ser usado quando o usuário comandar **iniciar review** (ou revalidar). Se a Issue estiver em `In Progress`, mova para `Review` na entrada.
+Este agente atua no pipeline contínuo após Engineers (ou em revalidação pós-loop). Se a Issue estiver em `In Progress` com implementação pronta, mova para `Review` na entrada.
 
 Fluxo esperado:
 ```txt
 In Progress
-  → [comando: iniciar review] agente move para Review
+  → orquestrador move para Review
   → Tech Lead faz code review
   → QA Analyst valida (mesma etapa)
-  → aviso no chat com apontamentos do Linear e PARA
-  → usuário escolhe: voltar ajustes OU seguir para documentação
+  → orquestrador: loop Engineers se obrigatórios, senão Document → … → Done
 ```

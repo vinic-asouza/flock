@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { apiService, formatApiError } from '@/services/api';
-import { formatDate as formatCivilDate } from '@/utils';
+import { formatDate, formatDateTime } from '@/utils';
 import { formatMemberName } from '@/utils/formatMemberName';
 import toast from 'react-hot-toast';
 import {
@@ -204,15 +204,6 @@ export default function AuditLogs() {
     });
   };
 
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   const isActivationChange = (log: AuditLog) => {
     if (log.action !== 'update') return false;
     const before = log.changes_before;
@@ -242,6 +233,11 @@ export default function AuditLogs() {
     if (log.entity === 'calendar_item') {
       const title = log.changes_after?.title ?? log.changes_before?.title;
       return title ? String(title) : 'Evento';
+    }
+    if (log.entity === 'public_registration_link' || log.entity === 'public_integration_link') {
+      const notes = log.changes_after?.notes ?? log.changes_before?.notes;
+      if (notes && String(notes).trim()) return String(notes);
+      return 'Link de cadastro';
     }
 
     const name =
@@ -275,20 +271,28 @@ export default function AuditLogs() {
   const formatFieldValue = (value: unknown, field: string) => {
     if (value === null || value === undefined || value === '') return 'Não informado';
     if (field === 'active') return value ? 'Ativo' : 'Inativo';
-    if (field === 'birth' && (typeof value === 'string' || value instanceof Date)) {
-      return formatCivilDate(value) || 'Não informado';
+    if (
+      (field === 'birth' || field === 'admission_date' || field === 'wedding_date' || field === 'baptism_date') &&
+      (typeof value === 'string' || value instanceof Date)
+    ) {
+      return formatDate(value) || 'Não informado';
     }
     if (
       (field === 'start_at' || field === 'end_at') &&
       (typeof value === 'string' || typeof value === 'number' || value instanceof Date)
     ) {
-      return new Date(value).toLocaleString('pt-BR');
+      return formatDateTime(typeof value === 'number' ? new Date(value) : value);
     }
     return String(value);
   };
 
-  const getActorLabel = (log: AuditLog) =>
-    log.actor?.displayName || log.actor?.email || 'Usuário indisponível';
+  const getActorLabel = (log: AuditLog) => {
+    if (log.changes_after?.event === 'public_registration') {
+      const linkName = log.changes_after.link_name;
+      return typeof linkName === 'string' && linkName.trim() ? linkName.trim() : 'Link público';
+    }
+    return log.actor?.displayName || log.actor?.email || 'Usuário indisponível';
+  };
 
   const getSummaryLine = (log: AuditLog) => {
     if (isMemberListTransfer(log)) {
@@ -301,6 +305,29 @@ export default function AuditLogs() {
     const actionLabel = ACTION_LABELS[action] || 'Alterou';
     const entityLabel = ENTITY_LABELS[log.entity] || 'registro';
     const target = getTargetName(log);
+    if (log.changes_after?.event === 'cancellation_scheduled') {
+      return `Agendou o cancelamento da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'subscription_renewed') {
+      return `Renovou a assinatura da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'plan_changed') {
+      const from = log.changes_after.old_plan;
+      const to = log.changes_after.new_plan;
+      const shift = from && to ? ` de ${from} para ${to}` : '';
+      return `Alterou o plano${shift} da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'payment_recovered') {
+      return `Confirmou o pagamento da igreja “${target}”`;
+    }
+    if (log.changes_after?.event === 'public_registration') {
+      const linkName = log.changes_after.link_name;
+      const via =
+        typeof linkName === 'string' && linkName.trim()
+          ? ` pelo link “${linkName.trim()}”`
+          : ' pelo link público';
+      return `Cadastrou o membro “${target}”${via}`;
+    }
     return `${actionLabel} ${entityLabel} “${target}”`;
   };
 
@@ -311,6 +338,13 @@ export default function AuditLogs() {
     if (realAction === 'activate' || realAction === 'deactivate') {
       return realAction === 'activate' ? 'Status: Ativo' : 'Status: Inativo';
     }
+    if (log.changes_after?.event === 'cancellation_scheduled') return 'Cancelamento agendado';
+    if (log.changes_after?.event === 'subscription_renewed') return 'Cancelamento desfeito';
+    if (log.changes_after?.event === 'plan_changed') {
+      return `Plano ${log.changes_after.old_plan ?? '—'} → ${log.changes_after.new_plan ?? '—'}`;
+    }
+    if (log.changes_after?.event === 'payment_recovered') return 'Pagamento confirmado';
+    if (log.changes_after?.event === 'public_registration') return 'Link público';
     if (log.action !== 'update') return null;
     const fields = getChangedFields(log);
     if (fields.length === 0) return null;
@@ -334,6 +368,42 @@ export default function AuditLogs() {
     }
 
     const realAction = getRealAction(log);
+
+    if (log.changes_after?.event === 'cancellation_scheduled') {
+      const endDate = log.changes_after.subscription_end_date;
+      return (
+        <p className="text-sm text-gray-700">
+          Cancelamento agendado
+          {typeof endDate === 'string' && endDate
+            ? ` até ${formatDate(endDate)}.`
+            : '.'}
+        </p>
+      );
+    }
+
+    if (log.changes_after?.event === 'subscription_renewed') {
+      return <p className="text-sm text-gray-700">Assinatura renovada. O cancelamento agendado foi desfeito.</p>;
+    }
+
+    if (log.changes_after?.event === 'plan_changed') {
+      return (
+        <p className="text-sm text-gray-700">
+          Plano {String(log.changes_after.old_plan ?? '—')} → {String(log.changes_after.new_plan ?? '—')}.
+        </p>
+      );
+    }
+
+    if (log.changes_after?.event === 'payment_recovered') {
+      return (
+        <p className="text-sm text-gray-700">
+          Pagamento confirmado. A assinatura voltou de pagamento atrasado para ativa.
+        </p>
+      );
+    }
+
+    if (log.changes_after?.event === 'public_registration') {
+      return <p className="text-sm text-gray-700">Membro cadastrado pelo link público.</p>;
+    }
 
     if (realAction === 'create') {
       const after = log.changes_after;
@@ -490,7 +560,7 @@ export default function AuditLogs() {
                         <User className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">{getActorLabel(log)}</span>
                       </span>
-                      <span>{formatDate(log.created_at)}</span>
+                      <span>{formatDateTime(log.created_at)}</span>
                       {preview && !isExpanded && (
                         <span className="text-gray-400">Alterou: {preview}</span>
                       )}

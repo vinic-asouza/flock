@@ -13,8 +13,9 @@ import { MobileNavDrawer } from '@/components/main/MobileNavDrawer';
 
 interface MemberLimitInfo {
   currentCount: number;
-  limit: number;
-  remaining: number;
+  /** `null` quando o plano é ilimitado (Infinity serializado no JSON). */
+  limit: number | null;
+  remaining: number | null;
   planType?: string | null;
   subscriptionStatus?: string | null;
   percentage: number;
@@ -139,7 +140,10 @@ export function Header() {
               <span>Pagamento pendente — atualizar</span>
             </Link>
           )}
-          {memberLimit && memberLimit.limit !== Infinity && memberLimit.percentage >= 80 && (
+          {memberLimit &&
+            memberLimit.limit != null &&
+            memberLimit.limit !== Infinity &&
+            memberLimit.percentage >= 80 && (
             <div
               className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium ${
                 memberLimit.percentage >= 100
@@ -216,8 +220,8 @@ export function Header() {
           <div className="hidden md:flex items-center gap-1 text-sm text-gray-600">
             <User size={16} className="text-gray-600" />
             <div className="flex items-center gap-2">
-              <span className="truncate max-w-48" title={session?.user?.email}>
-                {session?.user?.email || 'usuario@igreja.com'}
+              <span className="truncate max-w-48" title={session?.user?.email || undefined}>
+                {session?.user?.email || ''}
               </span>
               {currentRole && (
                 <span

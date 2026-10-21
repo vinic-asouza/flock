@@ -42,7 +42,7 @@ Produto: [[01_produto/visao-do-produto]] · Glossário: [[01_produto/glossario]]
 - Listagem com `search` em nome **ou** abreviação e `activeMembersCount` (membros `active=true`)
 - Bloquear DELETE se houver membros ativos, se for principal, ou se for a última congregação
 - Auditoria create/update/delete
-- UI: labels Nome completo / Abreviação; display compacto via `getCongregationDisplayName` nos consumidores
+- UI: labels Nome completo / Abreviação; display via `getCongregationDisplayName` → `nome` ou `nome (sigla)` nos consumidores
 
 ### ❌ Este módulo NÃO é responsável por:
 
@@ -209,7 +209,7 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/congregacoes]] (**14** regras)
 | BR-CON-011 | DELETE proibido se `is_primary` ou última |
 | BR-CON-012 | No máximo uma `is_primary` por igreja |
 | BR-CON-013 | Abreviação opcional; única por igreja quando preenchida |
-| BR-CON-014 | UI compacta prefere abbr; PDF usa nome completo |
+| BR-CON-014 | UI exibe `nome` ou `nome (sigla)`; PDF usa nome completo |
 
 ---
 

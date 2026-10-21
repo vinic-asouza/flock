@@ -8,11 +8,12 @@ import {
   createCheckoutSession,
   createCustomerPortalSession,
   updateSubscription,
+  getSubscription,
 } from '../services/stripe';
 import { getStripeHealthSnapshot } from '../services/stripeHealth';
 import { setPendingLinkToken } from '../utils/cookieUtils';
 import { supabaseAdmin } from '../services/supabase';
-import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate } from '../services/stripeWebhookService';
+import { insertSubscriptionEvent, processStripeWebhook, getUserEmailFromChurch, shouldSetToFreePlan, getSubscriptionEndDate, recordScheduledCancellation, recordSubscriptionRenewal, recordPlanChangeAudit, recordPaymentRecovery } from '../services/stripeWebhookService';
 
 // alias para legibilidade — todas as queries de DB usam service_role
 const supabase = supabaseAdmin;
@@ -25,6 +26,7 @@ import { recordCheckoutCreated, recordSyncSubscription } from '../utils/billingM
 import { sendEmail } from '../services/emailService';
 import { getPlanChangedTemplate } from '../templates/stripeEmailTemplates';
 import { checkMemberLimit } from '../utils/planLimits';
+import { openInvoiceConfirmationUrl } from '../utils/billingPresentation';
 
 /**
  * Criar sessão de checkout
@@ -266,7 +268,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     // Buscar igreja do usuário
     const { data: church, error: churchError } = await supabase
       .from('churches')
-      .select('id, stripe_customer_id, stripe_subscription_id, plan_type, subscription_status, last_stripe_event_created')
+      .select('id, name, user_id, stripe_customer_id, stripe_subscription_id, plan_type, subscription_status, subscription_end_date, last_stripe_event_created')
       .eq('id', req.church!.churchId)
       .single();
 
@@ -278,9 +280,19 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
     }
 
     if (!church.stripe_customer_id) {
-      return res.status(400).json({
-        error: 'Cliente não possui customer_id',
-        details: 'Não foi possível encontrar o customer_id do Stripe para esta conta',
+      // Conta free / nunca fez checkout: nada a alinhar no Stripe (não é erro)
+      billingLog({
+        event: 'sync_subscription',
+        church_id: church.id,
+        outcome: 'skipped',
+        reason: 'no_stripe_customer',
+        request_id: req.requestId,
+      });
+      recordSyncSubscription('skipped');
+
+      return res.json({
+        message: 'Nenhum customer Stripe vinculado a esta conta',
+        synced: false,
       });
     }
 
@@ -289,6 +301,7 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       customer: church.stripe_customer_id,
       status: 'all',
       limit: 10,
+      expand: ['data.latest_invoice'],
     });
 
     if (subscriptions.data.length === 0) {
@@ -422,6 +435,51 @@ export const syncSubscription = async (req: AuthRequest, res: Response) => {
       payload: { subscription_id: subscriptionId },
     });
 
+    await recordSubscriptionRenewal({
+      churchId: church.id,
+      churchName: church.name ?? '',
+      ownerUserId: church.user_id ?? null,
+      subscription,
+      previousEndDate: church.subscription_end_date ?? null,
+      oldPlan: church.plan_type ?? null,
+      newPlan: finalPlanType,
+      oldStatus: church.subscription_status ?? null,
+      source: 'api',
+    });
+
+    await recordScheduledCancellation({
+      churchId: church.id,
+      churchName: church.name ?? '',
+      ownerUserId: church.user_id ?? null,
+      subscription,
+      oldPlan: church.plan_type ?? null,
+      newPlan: finalPlanType,
+      oldStatus: church.subscription_status ?? null,
+      source: 'api',
+    });
+
+    if (church.plan_type && finalPlanType && church.plan_type !== finalPlanType) {
+      await recordPlanChangeAudit({
+        churchId: church.id,
+        churchName: church.name ?? '',
+        actorUserId: church.user_id ?? null,
+        oldPlan: church.plan_type,
+        newPlan: finalPlanType,
+        subscription,
+        source: 'api',
+      });
+    }
+
+    await recordPaymentRecovery({
+      churchId: church.id,
+      churchName: church.name ?? '',
+      ownerUserId: church.user_id ?? null,
+      subscription,
+      oldPlan: church.plan_type ?? null,
+      newPlan: finalPlanType,
+      source: 'api',
+    });
+
     billingLog({
       event: 'sync_subscription',
       church_id: church.id,
@@ -486,7 +544,7 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
     // Buscar igreja do usuário
     const { data: church, error: churchError } = await supabase
       .from('churches')
-      .select('id, stripe_customer_id, stripe_subscription_id, plan_type')
+      .select('id, name, stripe_customer_id, stripe_subscription_id, plan_type')
       .eq('id', req.church!.churchId)
       .single();
 
@@ -594,6 +652,16 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
       payload: { old_plan: church.plan_type, new_plan: planType, subscription_id: updatedSubscription.id },
     });
 
+    await recordPlanChangeAudit({
+      churchId: church.id,
+      churchName: church.name ?? '',
+      actorUserId: req.user.id,
+      oldPlan: church.plan_type,
+      newPlan: planType,
+      subscription: updatedSubscription,
+      source: 'api',
+    });
+
     // Buscar informações completas da igreja para o email
     const { data: churchData } = await supabase
       .from('churches')
@@ -653,8 +721,14 @@ export const changePlan = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const paymentConfirmationUrl = openInvoiceConfirmationUrl(updatedSubscription.latest_invoice);
+
     res.json({
-      message: 'Plano alterado com sucesso',
+      message: paymentConfirmationUrl
+        ? 'Plano alterado. Confirme o pagamento da diferença.'
+        : 'Plano alterado com sucesso',
+      requires_action: Boolean(paymentConfirmationUrl),
+      payment_confirmation_url: paymentConfirmationUrl,
       subscription: {
         id: updatedSubscription.id,
         status: updatedSubscription.status,
@@ -908,7 +982,8 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
       event_type: 'activate_free',
       old_plan: church.plan_type ?? null,
       new_plan: '100',
-      new_status: 'canceled',
+      // Status da assinatura Stripe cancelada não descreve o plano free ativo.
+      new_status: 'active',
       source: 'api',
       payload: { old_plan: church.plan_type, subscription_id: church.stripe_subscription_id },
     });
@@ -924,13 +999,47 @@ export const activateFreePlan = async (req: AuthRequest, res: Response) => {
   }
 };
 
-/** Tipos exibidos no histórico da UI (criação + mudanças de plano; sem sync/pagamentos). */
+/** Tipos exibidos no histórico da UI. Sync interno fica de fora. */
 const SUBSCRIPTION_HISTORY_EVENT_TYPES = [
   'subscription_created',
   'plan_changed',
   'activate_free',
   'downgrade_job',
+  'cancellation_scheduled',
+  'subscription_renewed',
+  'payment_recovered',
 ] as const;
+
+/**
+ * Fatura em aberto da assinatura da igreja ativa.
+ * GET /api/stripe/payment-confirmation
+ */
+export const getPaymentConfirmation = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user || !req.church) {
+      return res.status(401).json({ error: 'Não autenticado' });
+    }
+
+    const { data: church, error } = await supabase
+      .from('churches')
+      .select('stripe_subscription_id')
+      .eq('id', req.church.churchId)
+      .single();
+
+    if (error || !church?.stripe_subscription_id) {
+      return res.json({ url: null });
+    }
+
+    const subscription = await getSubscription(church.stripe_subscription_id, ['latest_invoice']);
+    return res.json({ url: openInvoiceConfirmationUrl(subscription.latest_invoice) });
+  } catch (err: unknown) {
+    logError('Erro ao buscar confirmação de pagamento:', err);
+    return res.status(500).json({
+      error: 'Erro ao buscar confirmação de pagamento',
+      details: err instanceof Error ? err.message : 'Erro desconhecido',
+    });
+  }
+};
 
 /**
  * Histórico de eventos de assinatura da igreja ativa

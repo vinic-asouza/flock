@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
-import { formatPhone } from '@/utils';
+import { formatPhone, maskPhoneInput } from '@/utils';
 import { validatePhone } from '@/utils/validations';
 import { Edit, Key, Trash2, Mail, Phone, ExternalLink, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -145,6 +145,10 @@ export function AccountManagement() {
   };
 
   const handleSyncSubscription = async () => {
+    if (!user?.stripe_customer_id) {
+      return;
+    }
+
     try {
       setIsSyncing(true);
       setDeleteError(null);
@@ -454,7 +458,9 @@ export function AccountManagement() {
                 <div className="flex min-w-0 items-center gap-3">
                   <Phone className="shrink-0 text-gray-400" size={20} />
                   <div className="min-w-0">
-                    <p className="break-all font-medium text-gray-500">{accountData.phone || 'Não informado'}</p>
+                    <p className="break-all font-medium text-gray-500">
+                      {accountData.phone ? formatPhone(accountData.phone) : 'Não informado'}
+                    </p>
                   </div>
                 </div>
                 <Button
@@ -636,7 +642,7 @@ export function AccountManagement() {
           <Input
             label="Novo Telefone"
             type="tel"
-            value={formatPhone(phoneData.newPhone)}
+            value={maskPhoneInput(phoneData.newPhone || '')}
             onChange={(e) => handlePhoneChange(e.target.value)}
             placeholder="(11) 99999-9999"
           />

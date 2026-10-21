@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: billing
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
-total_regras: 16
+ultima_atualizacao: 2026-10-20
+versao: "1.2"
+total_regras: 20
 tags: [regras, modulo:billing]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -35,6 +35,10 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 | BR-BILL-014 | Avisos expiração 7/3/1 | Gatilho | Ativo |
 | BR-BILL-015 | Cleanup pending 7d | Gatilho | Ativo |
 | BR-BILL-016 | Cleanup webhooks 90d | Gatilho | Ativo |
+| BR-BILL-017 | Sync sem customer = noop; UI free sem Sync | Fato | Ativo |
+| BR-BILL-018 | Checkout na moeda do preço | Restrição | Ativo |
+| BR-BILL-019 | Fatura aberta confirma no Stripe | Gatilho | Ativo |
+| BR-BILL-020 | Cancelamento agendado no histórico | Gatilho | Ativo |
 
 ---
 
@@ -92,6 +96,16 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Comportamento em violação:** 400
 - **Implementado em:** `stripeController.ts`
 - **Testado em:** N/A — sem suite dedicada
+- **Depende de:** —
+
+### BR-BILL-017: Sync sem customer = noop; UI free sem Sync
+- **Declaração:** `POST /sync-subscription` sem `stripe_customer_id` responde 200 com `synced: false` (nada a alinhar). Não cria customer Stripe. Conta free que nunca fez checkout não trata ausência de customer como erro. Na aba Plano, conta no plano Grátis (`plan_type` 100) **não** oferece Sync (auto nem botão), mesmo com `stripe_customer_id` residual de checkout abandonado — o estado vazio é o do plano gratuito. Distinto de [[BR-BILL-005]] (portal continua exigindo customer).
+- **Tipo:** Fato
+- **Gatilho:** sync-subscription (API ou auto-sync UI); render do estado vazio da aba Plano
+- **Comportamento esperado:** 200 `{ synced: false }` sem customer; UI não dispara sync sem customer **nem** em `plan_type` 100; free vê copy de plano gratuito + único CTA de upgrade
+- **Comportamento em violação:** free com customer residual tratado como “pago sem assinatura” (mensagem + Sync)
+- **Implementado em:** `stripeController.ts` (`syncSubscription`); `PaymentManagement.tsx` (guards + empty state); `AccountManagement.tsx` (guard sem customer)
+- **Testado em:** Smoke QA DEV-136; smoke DEV-158 (free local)
 - **Depende de:** —
 
 ### 🔄 Regras de Upgrade / Downgrade
@@ -208,6 +222,36 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** [[BR-POL-016]]
 
+### BR-BILL-018: Checkout na moeda do preço
+- **Declaração:** A Checkout Session nasce com Adaptive Pricing desligado e locale `pt-BR`, para apresentar a moeda do Price (BRL).
+- **Tipo:** Restrição
+- **Gatilho:** Criação da sessão de checkout
+- **Comportamento esperado:** O checkout não oferece USD como moeda padrão da sessão.
+- **Comportamento em violação:** —
+- **Implementado em:** `services/stripe.ts` (`createCheckoutSession`)
+- **Testado em:** N/A — parâmetro da API Stripe
+- **Depende de:** [[BR-BILL-002]]
+
+### BR-BILL-019: Fatura aberta confirma no Stripe
+- **Declaração:** Se a troca de plano deixar fatura com valor em aberto, a API devolve a URL hospedada. `past_due` continua sem troca de plano; o caminho é confirmar essa fatura.
+- **Tipo:** Gatilho
+- **Gatilho:** `POST /change-plan` ou `GET /payment-confirmation`
+- **Comportamento esperado:** Botão Confirmar pagamento só com URL. Sem 3DS dentro do app.
+- **Comportamento em violação:** —
+- **Implementado em:** `stripeController.ts`, `PaymentManagement.tsx`
+- **Testado em:** `billingPresentation.test.ts` (`openInvoiceConfirmationUrl`)
+- **Depende de:** [[BR-BILL-008]]
+
+### BR-BILL-020: Cancelamento agendado no histórico
+- **Declaração:** Assinatura ainda ativa com `cancel_at` (ou a flag de fim de período mais o fim do item) grava `cancellation_scheduled` e um audit log do dono. A chave é assinatura + `cancel_at` + `canceled_at` quando o Stripe manda o instante do pedido; sem esse instante, a chave antiga (assinatura + `cancel_at`) continua valendo para não duplicar o primeiro registro. Um reload não grava de novo se a chave antiga já existe e não houve renovação depois dela. Cada renovação que desfaz um agendamento grava `subscription_renewed` e um audit do dono, uma vez por cancelamento anterior. Troca de plano grava um audit (`plan_changed`) por assinatura, plano de origem, plano de destino e fatura. A volta de `past_due` para `active` grava `payment_recovered` e um audit do dono, uma vez por fatura, no webhook e no sync. A hora desses dois registros é a do pagamento (`paid_at` da mesma fatura, ou a transição já gravada de `past_due` para `active`), não a hora de um sync atrasado. Se a linha nasceu mais de um minuto depois, o sync seguinte realinha. O histórico mostra data e hora, do mais recente para o mais antigo. O log diz que o dono confirmou o pagamento.
+- **Tipo:** Gatilho
+- **Gatilho:** Webhook `customer.subscription.updated`, `POST /sync-subscription` e `POST /change-plan`
+- **Comportamento esperado:** Histórico do Plano lista cada cancelamento, cada renovação e a confirmação do pagamento que tirou a assinatura de `past_due`, com data e hora, do mais recente para o mais antigo. A hora do pagamento confirmado é a do pagamento, não a do sync. A aba Histórico mostra “Confirmou o pagamento” para esse evento, a troca de plano e não duplica o mesmo cancelamento ao recarregar. Autor do cancelamento, da renovação e do pagamento confirmado é o dono. Na troca feita pela API, o autor é quem alterou; no portal, o dono.
+- **Comportamento em violação:** —
+- **Implementado em:** `billingPresentation.ts` (`resolveScheduledCancellation`, `subscriptionRenewalEventId`, `planChangeDedupeKey`), `stripeWebhookService.ts`, `stripeController.ts`
+- **Testado em:** `billingPresentation.test.ts`
+- **Depende de:** —
+
 ---
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
@@ -217,4 +261,4 @@ Monetizar por plano, sincronizar Stripe e aplicar limites/downgrades.
 
 ---
 
-*Gerado em 2026-07-13.*
+*Atualizado em 2026-10-20 (BR-BILL-020 — hora do pagamento confirmado e rótulo do log, DEV-166).*

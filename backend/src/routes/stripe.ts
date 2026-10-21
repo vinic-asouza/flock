@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCheckout, createPortalSession, handleWebhook, syncSubscription, changePlan, activateFreePlan, checkCheckoutStatus, getSubscriptionEvents } from '../controllers/stripeController';
+import { createCheckout, createPortalSession, handleWebhook, syncSubscription, changePlan, activateFreePlan, checkCheckoutStatus, getSubscriptionEvents, getPaymentConfirmation } from '../controllers/stripeController';
 import { optionalAuth } from '../middlewares/auth';
 import authMiddleware from '../middlewares/auth';
 import { requireRole } from '../middlewares/requireRole';
@@ -33,6 +33,7 @@ router.post('/sync-subscription', express.json(), authMiddleware, requireRole('a
 router.post('/change-plan', express.json(), authMiddleware, requireRole('admin'), changePlan);
 router.post('/activate-free-plan', express.json(), authMiddleware, requireRole('admin'), activateFreePlan);
 router.get('/checkout-status', authMiddleware, requireRole('admin'), checkCheckoutStatus);
+router.get('/payment-confirmation', authMiddleware, requireRole('admin'), getPaymentConfirmation);
 router.get('/subscription-events', authMiddleware, requireRole('admin'), getSubscriptionEvents);
 
 export default router;

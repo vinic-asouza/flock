@@ -102,7 +102,7 @@ function MembersPageContent() {
   const [selectedMemberName, setSelectedMemberName] = useState<string>('');
   const [memberLimit, setMemberLimit] = useState<{
     currentCount: number;
-    limit: number;
+    limit: number | null;
     canAdd: boolean;
     isPastDue?: boolean;
     message?: string;

@@ -438,7 +438,8 @@ Não há classes `*Exception` tipadas — respostas JSON ad hoc.
 
 **Módulos que dependem deste:**
 
-- [[04_modulos/onboarding]] — register + confirmação  
+- [[04_modulos/onboarding]] — register → auto-login → `/checkout` (callback de confirmação permanece se o Auth enviar link)  
+
 - [[04_modulos/igreja-config]], [[04_modulos/membros]], [[04_modulos/integracao]], [[04_modulos/congregacoes]], [[04_modulos/grupos]], [[04_modulos/calendario]], [[04_modulos/relatorios]], [[04_modulos/billing]], [[04_modulos/tutoriais]] — todos usam `authMiddleware` / sessão  
 - [[04_modulos/admin-ops]] — sessão de operador em `/api/ops` (`requirePlatformAdmin`, **sem** church context)  
 

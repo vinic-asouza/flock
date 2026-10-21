@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/Card';
 import { Tabs } from '@/components/ui/Tabs';
 import { apiService, formatApiError } from '@/services/api';
 import { Congregation } from '@/types/congregation';
+import { formatPhone } from '@/utils';
 import type { Member } from '@/types/reports';
 
 const MEMBERS_PER_PAGE = 10;
@@ -146,7 +147,7 @@ export function CongregationDetailView({ congregation }: CongregationDetailViewP
                   href={`tel:${congregation.phone.replace(/\D/g, '')}`}
                   className="text-primary hover:underline"
                 >
-                  {congregation.phone}
+                  {formatPhone(congregation.phone)}
                 </a>
               ) : (
                 '—'

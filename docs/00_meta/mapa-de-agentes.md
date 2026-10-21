@@ -1,8 +1,8 @@
 ---
 type: meta-mapa-agentes
 titulo: Mapa de Agentes — Linear + Cursor
-ultima_atualizacao: 2026-09-10
-versao: "1.8"
+ultima_atualizacao: 2026-10-19
+versao: "2.0"
 tags: [meta, agentes, linear, cursor]
 ---
 
@@ -12,55 +12,53 @@ Cheat sheet operacional. Detalhe completo: [[00_meta/linear-cursor-workflow]].
 
 ---
 
-## Fluxo resumido
+## Fluxo resumido (pipeline contínuo até Done)
 
 ```
+[comando: iniciar desenvolvimento / desenvolver / continuar Issue]
+
 Backlog
-  → [comando: iniciar desenvolvimento / refinar]
   → Product Analyst (classifica impacto visual: nenhum | menor | maior)
   → UX/UI Designer **somente se** menor ou maior (workflow §8.3)
   → Software Architect
-  → move para Todo → [para e avisa no chat]
-
-Todo
-  → aguarda comando “iniciar execução”
+  → Todo → In Progress (sem parar no chat)
 
 In Progress
-  → [comando: iniciar execução] move Todo → In Progress
-  → Backend Engineer e/ou Frontend Engineer
+  → Backend Engineer e/ou Frontend Engineer (só os aplicáveis)
   → commit + push; abrir PR se ainda não houver (§15.6)
-  → [para e avisa: verificação manual + URL do PR]
+  → Review (mesma sessão)
 
 Review (QA + Code Review)   ← status Linear: Review
-  → [comando: iniciar review] move In Progress → Review
   → Tech Lead (Code Review) → QA Analyst
-  → [para e avisa no chat com apontamentos do Linear]
-  → [comando: voltar ajustes] → In Progress → Engineers → commit + push no mesmo PR → aviso
-  → [comando: seguir para documentação] → Document
+  → se obrigatórios: In Progress → Engineers → Review (≤2 ciclos automáticos)
+  → se limpo: Document
 
 Document (Technical + Documentation Writers)
-  → Technical Writer avalia docs/ (commit + push no PR existente se alterar) + Documentation Writer avalia Mintlify
+  → Technical Writer avalia docs/ (commit + push no PR existente se alterar)
+  → Documentation Writer avalia Mintlify
   → atualizar só com impacto técnico ou de usabilidade real (§15.5)
-  → [para e avisa no chat]
+  → Done (mesma sessão)
 
 Done
-  → [comando: concluir / Done]
-  → perguntar merge do PR (sim/não); merge só com confirmação
+  → resumo no chat + URL do PR
+  → usuário: validação manual OU confirmar merge (sim/não)
+  → merge só com confirmação
+
+Única pausa intermediária: Gate de Decisão (§15.1)
 
 Deploy (manual)
   → só com pedido explícito; Railway; marcação na Issue (sem status Released)
 ```
 
-O usuário **comanda no chat**; o **agente** move o status Linear (exceto `Backlog` → `Todo`, que ocorre ao concluir PA + UX/UI se §8.3 + SA).
+O usuário **inicia/retoma** no chat; o **agente** move o status Linear ao longo do pipeline (§15.2). Retomar Issue a meio = continuar do status atual até `Done`.
 
 ---
 
-## Gate de Avanço (rápido)
+## Execução Contínua (rápido)
 
-Ao concluir a etapa autorizada: atualizar Linear + aviso no chat + **parar**.  
-A próxima etapa só começa com comando explícito no chat.
+Um comando dispara o pipeline até `Done`. **Não** pedir “iniciar review / seguir docs / concluir” entre etapas.
 
-Exceção: `Backlog` → `Todo` após PA + UX/UI **quando §8.3 exigir** + SA (move, avisa, para — não inicia execução).
+Progresso intermediário: só Linear. Chat: Gate de Decisão ou fechamento em `Done`.
 
 Detalhe: workflow §15.2.
 
@@ -82,29 +80,39 @@ PA classifica. Orquestrador aplica a heurística se o PA omitir (na dúvida: `me
 
 ## Gate de Decisão (rápido)
 
-Se a etapa precisa de decisão do usuário para avançar **dentro** do passo:
+Única pausa intermediária. Se a etapa precisa de decisão do usuário:
 
-1. **Não concluir** / não mover status.
+1. **Não concluir** / não avançar o pipeline.
 2. Registrar bloqueio + perguntas no **Linear**.
 3. Perguntar no **chat do Cursor** e aguardar resposta.
 4. Atualizar o Linear com a **decisão**.
-5. Só então concluir o passo.
+5. **Retomar o pipeline** até `Done`.
 
 Detalhe: workflow §15.1.
 
 ---
 
-## Gate de merge ao `Done` (rápido)
+## Fechamento em `Done` + merge (rápido)
 
-Quando o usuário autorizar `Done`:
+Ao terminar Writers:
 
 1. Mover para `Done` (critérios §16).
-2. O PR já deve estar aberto desde `In Progress`. Perguntar no chat se deseja mergear (sim/não).
+2. Entregar no chat: **resumo + URL do PR** + opções (validação manual / merge sim / manter aberto).
 3. Merge **só** com confirmação inequívoca.
 4. Sem PR: informar o desvio; **não** abrir PR em `Done` (salvo pedido explícito + restaurar `Done`).
 5. Deploy continua pedido à parte.
 
 Detalhe: workflow §15.3.
+
+---
+
+## Loop de Review (rápido)
+
+Correções **obrigatórias** → automático: `Review` → `In Progress` → Engineers → `Review` (máx. 2 ciclos). Depois disso: Gate de Decisão.
+
+Sugestões **opcionais** não bloqueiam `Document`.
+
+Detalhe: workflow §10.3.
 
 ---
 
@@ -114,7 +122,7 @@ Etapa `Document` **avalia** sempre. **Escrever** em `docs/` ou Mintlify **não**
 
 Atualize só se a docs existente ficar incorreta, o usuário precisar fazer algo diferente, ou houver padrão/ADR permanente.
 
-**Não** documente ajuste visual fino, polimento de CSS nem rearranjo de elementos já descritos. Detalhe fica no Linear. No chat, não inventariar polimento.
+**Não** documente ajuste visual fino, polimento de CSS nem rearranjo de elementos já descritos. Detalhe fica no Linear. No chat final, não inventariar polimento.
 
 Detalhe: workflow §15.5.
 
@@ -142,15 +150,15 @@ Detalhe: workflow §15.6 e §15.7.
 | --- | --- | --- | --- |
 | Backlog | Product Analyst | `.cursor/rules/product-analyst.mdc` | Seção na Issue + classificação visual + handoff para UX/UI **ou** SA |
 | Backlog | UX/UI Designer | `.cursor/rules/ux-ui-designer.mdc` | **Condicional** (§8.3): spec ou skip na Issue + handoff para SA |
-| Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + move para `Todo` + aviso no chat |
-| Todo | — | — | Aguarda comando de execução |
+| Backlog | Software Architect | `.cursor/rules/software-architect.mdc` | Seção na Issue + move para `Todo` + handoff à execução |
+| Todo | — | — | Transitório; orquestrador → `In Progress` |
 | In Progress | Backend Engineer | `.cursor/rules/backend-engineer.mdc` | Código + commit + push + PR (§15.6) + resumo na Issue |
 | In Progress | Frontend Engineer | `.cursor/rules/frontend-engineer.mdc` | Código + commit + push + PR (§15.6) + resumo na Issue |
 | Review (Code Review) | Tech Lead | `.cursor/rules/tech-lead.mdc` | Code review na Issue + handoff para QA |
-| Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue + aviso no chat com apontamentos |
+| Review (QA) | QA Analyst | `.cursor/rules/qa-analyst.mdc` | Relatório QA na Issue + handoff (loop ou Document) |
 | Document | Technical Writer | `.cursor/rules/technical-writer.mdc` | Avalia `docs/`; atualiza + commit + push no PR existente só se necessário (§15.5 / §15.6) |
-| Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Avalia Mintlify; atualiza só se necessário (§15.5) + aviso no chat |
-| Done | — | — | Concluída; merge de PR só se o usuário confirmar |
+| Document | Documentation Writer | `.cursor/rules/documentation-writer.mdc` | Avalia Mintlify; atualiza só se necessário (§15.5) + handoff a Done |
+| Done | Orquestrador | — | Resumo + PR no chat; merge só se o usuário confirmar |
 
 ---
 
@@ -185,7 +193,7 @@ Formato mínimo de toda atualização (workflow §7):
 
 ## Handoff
 **Status:** concluído | requer ajustes | bloqueado
-**Próximo agente recomendado:** [par da mesma etapa | usuário no chat]
+**Próximo agente recomendado:** [próximo do pipeline]
 **Motivo:** ...
 **Pontos de atenção:**
 - ...
@@ -209,15 +217,15 @@ Formato mínimo de toda atualização (workflow §7):
 
 - Criar arquivo por Issue em `docs/`
 - Duplicar histórico do Linear no repositório
-- Mover status sem comando de avanço (exceto `Backlog` → `Todo` após PA + UX/UI se §8.3 + SA)
-- Pular etapa ou acionar o próximo papel de outra etapa
+- **Parar entre etapas** pedindo comando de avanço no chat
+- Pular etapa com escopo (omitir só papel sem escopo)
 - Acionar UX/UI em demanda sem impacto visual (ou pular UX/UI quando §8.3 exigir)
-- **Regredir `Review` / `Document` / `Done` → `In Progress`** (automação Git/PR: restaurar na hora, §15.6)
+- **Regredir `Document` / `Done` → `In Progress`** indevidamente (automação Git/PR: restaurar na hora, §15.6). `Review` → `In Progress` só no loop de obrigatórios (§10.3)
 - Abrir o primeiro PR da Issue fora de `In Progress`
 - Passar `state` genérico (`started`) no MCP — usar nome exato do status
-- Mergear PR automaticamente ao autorizar `Done`
+- Mergear PR automaticamente ao chegar em `Done`
 - Deploy automático sem pedido explícito do usuário
 - Tratar publicação como status (`Released` não existe)
 - Inventar decisão bloqueante no lugar do usuário
-- Concluir etapa com pergunta bloqueante só no Linear, sem perguntar no chat
+- Concluir passo com pergunta bloqueante só no Linear, sem perguntar no chat
 - Atualizar `docs/` ou Mintlify por ajuste visual fino / polimento sem impacto técnico ou de usabilidade

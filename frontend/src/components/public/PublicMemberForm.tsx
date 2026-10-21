@@ -16,11 +16,6 @@ import { calculateAge, formatDateToISO } from '@/utils';
 import { memberSchema, MemberFormData } from '@/components/members/memberFormSchema';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
-function getDefaultCongregationId(congregations: { id: string; name: string; is_primary?: boolean }[]): string {
-  if (!congregations.length) return '';
-  return (congregations.find((c) => c.is_primary) || congregations[0]).id;
-}
-
 interface Child {
   name: string;
   birth?: string;
@@ -33,7 +28,8 @@ interface PublicMemberFormProps {
   isLoading?: boolean;
   churchName?: string;
   error?: string | null;
-  congregations?: { id: string; name: string; abbreviation?: string | null; is_primary?: boolean }[];
+  /** Congregação definida no link — não é escolhida pelo visitante */
+  fixedCongregationId?: string;
   registrationToken?: string;
   submitDisabled?: boolean;
 }
@@ -106,7 +102,7 @@ export function PublicMemberForm({
   isLoading = false,
   churchName,
   error,
-  congregations = [],
+  fixedCongregationId = '',
   registrationToken,
   submitDisabled = false,
 }: PublicMemberFormProps) {
@@ -144,7 +140,7 @@ export function PublicMemberForm({
       active: true,
       gender: 'Masculino',
       marital_status: 'Solteiro',
-      congregation_id: '',
+      congregation_id: fixedCongregationId || '',
     },
   });
 
@@ -152,7 +148,6 @@ export function PublicMemberForm({
   const selectedOccupation = watch('occupation');
   const occupationOtherValue = watch('occupation_other');
   const selectedMaritalStatus = watch('marital_status');
-  const selectedCongregationId = watch('congregation_id');
 
   const isCasado = selectedMaritalStatus === 'Casado' || selectedMaritalStatus === 'União Estável';
 
@@ -160,20 +155,19 @@ export function PublicMemberForm({
     if (error && errorRef.current) errorRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [error]);
 
-  // Definir congregação principal como padrão
   useEffect(() => {
-    if (!selectedCongregationId && congregations.length > 0) {
-      setValue('congregation_id', getDefaultCongregationId(congregations));
+    if (fixedCongregationId) {
+      setValue('congregation_id', fixedCongregationId);
     }
-  }, [congregations, selectedCongregationId, setValue]);
+  }, [fixedCongregationId, setValue]);
 
   useEffect(() => {
     const loadGroups = async () => {
-      if (!registrationToken || !selectedCongregationId) { setAvailableGroups([]); return; }
+      if (!registrationToken || !fixedCongregationId) { setAvailableGroups([]); return; }
       try {
         setLoadingGroups(true);
         setGroupsLoadFailed(false);
-        const response = await apiService.listPublicRegistrationGroups(registrationToken, selectedCongregationId);
+        const response = await apiService.listPublicRegistrationGroups(registrationToken, fixedCongregationId);
         setAvailableGroups(response);
       } catch {
         setGroupsLoadFailed(true);
@@ -181,7 +175,7 @@ export function PublicMemberForm({
       } finally { setLoadingGroups(false); }
     };
     loadGroups();
-  }, [selectedCongregationId, registrationToken]);
+  }, [fixedCongregationId, registrationToken]);
 
   useEffect(() => {
     if (selectedState) {
@@ -701,22 +695,7 @@ export function PublicMemberForm({
             </p>
           </div>
 
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-sm text-blue-800 leading-relaxed">
-              Informe a <strong>congregação/filial</strong> da <strong>{churchName || 'igreja'}</strong> a qual você faz parte.
-            </p>
-          </div>
-
-          <Select
-            label="Congregação (obrigatório)"
-            value={watch('congregation_id') || ''}
-            onChange={(value) => { setValue('congregation_id', value); setSelectedGroups([]); }}
-            options={congregations.map(c => ({ value: c.id, label: getCongregationDisplayName(c) }))}
-            error={errors.congregation_id?.message}
-            disabled={isLoading || submitDisabled}
-          />
-
-          {/* Ministérios */}
+          {/* Ministérios (da congregação definida no link) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Ministérios</label>
             {groupsLoadFailed && (

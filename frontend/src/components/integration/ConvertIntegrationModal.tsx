@@ -14,8 +14,10 @@ interface ConvertIntegrationModalProps {
 }
 
 const mapGender = (value?: string | null) => {
-  if (!value) return '';
-  return value === 'masculino' ? 'Masculino' : value === 'feminino' ? 'Feminino' : '';
+  if (!value) return 'Não informado';
+  if (value === 'masculino') return 'Masculino';
+  if (value === 'feminino') return 'Feminino';
+  return 'Não informado';
 };
 
 const mapMaritalStatus = (value?: string | null) => {

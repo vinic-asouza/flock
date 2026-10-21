@@ -42,12 +42,33 @@ export const validateRegistrationLink = async (
       });
     }
 
-    const { data: congregations } = await supabase
+    if (!registrationLink.default_congregation_id) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Link mal configurado',
+        details: 'Este link de registro não tem congregação definida. Solicite um novo link à secretaria da igreja.',
+        church_name: church.name,
+        blocked_reason: 'missing_congregation',
+      });
+    }
+
+    // Nota: congregations não tem coluna `active` (só members/groups usam flags)
+    const { data: congregation } = await supabase
       .from('congregations')
       .select('id, name, abbreviation')
+      .eq('id', registrationLink.default_congregation_id)
       .eq('church_id', churchId)
-      .eq('active', true)
-      .order('name');
+      .single();
+
+    if (!congregation) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Link mal configurado',
+        details: 'A congregação associada a este link não está disponível. Solicite um novo link à secretaria da igreja.',
+        church_name: church.name,
+        blocked_reason: 'invalid_congregation',
+      });
+    }
 
     res.json({
       valid: true,
@@ -58,7 +79,8 @@ export const validateRegistrationLink = async (
       remaining_uses: registrationLink.max_uses
         ? registrationLink.max_uses - registrationLink.current_uses
         : null,
-      congregations: congregations || [],
+      default_congregation_id: congregation.id,
+      default_congregation: congregation,
     });
 
   } catch (error) {
@@ -79,9 +101,25 @@ export const listPublicRegistrationGroups = async (
 ) => {
   try {
     const churchId = req.churchId!;
-    const congregation_id = (req.query.congregation_id as string) || '';
+    const registrationLink = req.registrationLink!;
+    const congregation_id = registrationLink.default_congregation_id;
 
-    let query = supabase
+    if (!congregation_id) {
+      return res.status(400).json({
+        error: 'Link mal configurado',
+        details: 'Este link de registro não tem congregação definida.',
+      });
+    }
+
+    const congregationCheck = await validateCongregationBelongsToChurch(congregation_id, churchId);
+    if (!congregationCheck.valid) {
+      return res.status(400).json({
+        error: 'Congregação inválida',
+        details: congregationCheck.message,
+      });
+    }
+
+    const { data: groups, error } = await supabase
       .from('groups')
       .select(`
         id,
@@ -94,20 +132,8 @@ export const listPublicRegistrationGroups = async (
       `)
       .eq('church_id', churchId)
       .eq('status', true)
+      .eq('congregation_id', congregation_id)
       .order('name');
-
-    if (congregation_id) {
-      const congregationCheck = await validateCongregationBelongsToChurch(congregation_id, churchId);
-      if (!congregationCheck.valid) {
-        return res.status(400).json({
-          error: 'Congregação inválida',
-          details: congregationCheck.message,
-        });
-      }
-      query = query.eq('congregation_id', congregation_id);
-    }
-
-    const { data: groups, error } = await query;
 
     if (error) {
       return res.status(400).json({
@@ -150,7 +176,22 @@ export const createMemberViaPublicLink = async (
       });
     }
 
-    const { error: validationError } = validateMember(req.body);
+    // Congregação vem exclusivamente do link (não aceitar override do body)
+    const congregationId = registrationLink.default_congregation_id;
+
+    if (!congregationId) {
+      return res.status(400).json({
+        error: 'Link mal configurado',
+        details: 'Este link de registro não tem congregação definida. Solicite um novo link à secretaria da igreja.'
+      });
+    }
+
+    const payload = {
+      ...req.body,
+      congregation_id: congregationId,
+    };
+
+    const { error: validationError } = validateMember(payload);
     if (validationError) {
       return res.status(400).json({
         error: 'Dados inválidos',
@@ -158,7 +199,7 @@ export const createMemberViaPublicLink = async (
       });
     }
 
-    const normalizedData = normalizeMemberDates(req.body);
+    const normalizedData = normalizeMemberDates(payload);
 
     if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
       const { data: duplicate, error: checkError } = await supabase
@@ -174,16 +215,6 @@ export const createMemberViaPublicLink = async (
           details: 'Já existe um membro cadastrado com este nome completo.'
         });
       }
-    }
-
-    const congregationId = (normalizedData.congregation_id as string | null | undefined)
-      || registrationLink.default_congregation_id;
-
-    if (!congregationId) {
-      return res.status(400).json({
-        error: 'Dados inválidos',
-        details: 'A congregação é obrigatória para o cadastro'
-      });
     }
 
     const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
@@ -279,6 +310,37 @@ export const createMemberViaPublicLink = async (
 
       if (updateError) {
         console.error('Erro ao atualizar contador de usos (sem limite):', updateError);
+      }
+    }
+
+    const actorId = registrationLink.created_by
+      ?? (
+        await supabase
+          .from('churches')
+          .select('user_id')
+          .eq('id', churchId)
+          .maybeSingle()
+      ).data?.user_id
+      ?? null;
+
+    if (actorId && member.id) {
+      const { error: auditError } = await supabase.from('audit_logs').insert({
+        user_id: actorId,
+        church_id: churchId,
+        entity: 'member',
+        entity_id: member.id,
+        action: 'create',
+        changes_before: null,
+        changes_after: {
+          name: member.name,
+          event: 'public_registration',
+          link_name: registrationLink.notes?.trim() || null,
+        },
+        ip: null,
+        user_agent: 'public-registration-link',
+      });
+      if (auditError) {
+        console.error('Falha ao registrar audit do cadastro público:', auditError);
       }
     }
 

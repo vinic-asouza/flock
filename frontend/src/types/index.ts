@@ -167,6 +167,9 @@ export interface AuthContextType {
   canCreateCongregations: boolean;
   isLoading: boolean;
   isOperationLoading: boolean;
+  /** A checagem inicial de sessão falhou ou estourou o tempo. */
+  authInitFailed: boolean;
+  retryAuth: () => void;
   isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<RegisterResponse>;
@@ -176,6 +179,8 @@ export interface AuthContextType {
   resetPassword: (data: ResetPasswordData) => Promise<void>;
   updateChurch: (data: Partial<Church>) => Promise<Church>;
   refreshChurch: () => Promise<void>;
+  /** Atualiza o plano na tela antes da releitura da igreja. */
+  applyPlanType: (planType: string) => void;
   memberships: ChurchMembership[];
   activeChurchId: string | null;
   churchSelectionRequired: boolean;

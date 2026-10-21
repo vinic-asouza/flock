@@ -201,7 +201,9 @@ Criado via `signUp` no register; compensado com `admin.deleteUser` se igreja ou 
   activeChurchId: string;
 }
 // + cookie flock_active_church_id; limpa pending link token
-// Nota: sessão JWT completa só após confirmação de e-mail + login (auth)
+// Nota: register não emite sessão. O funil FE faz auto-login e vai a /checkout?plan=.
+// Sessão JWT completa só após login bem-sucedido (auth). Se o Auth exigir e-mail
+// confirmado e recusar o login, a UI mostra o erro — sem tela de “enviamos um link”.
 
 // Erros:
 // 400 — Dados inválidos / CNPJ já cadastrado / Email já cadastrado /

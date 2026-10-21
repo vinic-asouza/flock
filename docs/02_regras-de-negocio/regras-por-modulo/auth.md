@@ -73,6 +73,7 @@ Garantir acesso seguro à conta (login, sessão, recuperação de senha e confir
 - **Implementado em:** `backend/src/controllers/authController.ts`
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** [[BR-GEN-004]]
+- **Nota de funil:** o cadastro web não pinta etapa de confirmação no caminho feliz; o auto-login pós-register cai nesta regra se o Auth recusar.
 
 ### BR-AUTH-004: Vínculo com igreja no login
 - **Declaração:** Um login só completa quando o usuário tiver ao menos um membership de igreja.

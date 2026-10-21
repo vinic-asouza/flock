@@ -17,9 +17,12 @@ import { GeographySection } from '@/components/reports/GeographySection';
 import { OccupationsTable } from '@/components/reports/OccupationsTable';
 import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
 import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
+import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
+import { formatDateTimeWithSeconds } from '@/utils';
 
 export default function HomePage() {
-  const { isLoading: isAuthLoading, isAuthenticated } = useAuth();
+  const { isLoading: isAuthLoading, isAuthenticated, currentRole } = useAuth();
+  const canManagePlan = currentRole === 'admin' || currentRole === 'owner';
   const [reportsData, setReportsData] = useState<MemberReports | null>(null);
   const [loading, setLoading] = useState(true);
   const [reportsError, setReportsError] = useState<string | null>(null);
@@ -36,6 +39,7 @@ export default function HomePage() {
 
   const loadReports = async (view: ViewMode, congregationId?: string) => {
     const requestId = ++loadReportsRequestIdRef.current;
+    setLastUpdated(formatDateTimeWithSeconds(new Date()));
     try {
       setLoading(true);
       setReportsError(null);
@@ -51,7 +55,7 @@ export default function HomePage() {
         return;
       }
       setReportsData(data);
-      setLastUpdated(new Date().toLocaleString('pt-BR'));
+      setLastUpdated(formatDateTimeWithSeconds(new Date()));
     } catch (err: unknown) {
       if (requestId !== loadReportsRequestIdRef.current) {
         return;
@@ -144,21 +148,30 @@ export default function HomePage() {
   const showDashboardContent =
     reportsData || waitingForCongregation || (loading && reportsData);
 
+  const pageHeader = (
+    <div className="min-w-0">
+      <h1 className="text-xl font-semibold text-gray-900">Relatórios</h1>
+      <p className="text-sm text-gray-500 mt-1 break-words">
+        Análise detalhada dos membros da igreja
+        {lastUpdated && (
+          <span className="block sm:inline sm:ml-2">• Atualizado em {lastUpdated}</span>
+        )}
+      </p>
+    </div>
+  );
+
   if (showInitialSkeleton) {
-    return <ReportsSkeleton />;
+    return (
+      <>
+        {pageHeader}
+        <ReportsSkeleton />
+      </>
+    );
   }
 
   return (
     <>
-      <div className="min-w-0">
-        <h1 className="text-xl font-semibold text-gray-900">Relatórios</h1>
-        <p className="text-sm text-gray-500 mt-1 break-words">
-          Análise detalhada dos membros da igreja
-          {lastUpdated && (
-            <span className="block sm:inline sm:ml-2">• Atualizado em {lastUpdated}</span>
-          )}
-        </p>
-      </div>
+      {pageHeader}
 
       {reportsError && !reportsData && (
         <div className="py-6">
@@ -253,6 +266,12 @@ export default function HomePage() {
             ) : (
               reportsData && (
                 <>
+                  <MemberQuotaUsage
+                    canManagePlan={canManagePlan}
+                    variant="panel"
+                    className="mb-1"
+                  />
+
                   <SummaryCards
                     data={reportsData.summary}
                     loading={loading}
