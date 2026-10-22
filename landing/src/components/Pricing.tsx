@@ -109,7 +109,7 @@ export function Pricing() {
                   onClick={() => selectWaitlistPlan('100')}
                   className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
-                  Quero ser Igreja Fundadora
+                  Quero ser Igreja Parceira
                 </button>
               ) : (
                 <Link
@@ -210,7 +210,7 @@ export function Pricing() {
                       onClick={() => selectWaitlistPlan(planId)}
                       className="flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:bg-[#0d0a3a] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:hover:scale-105 md:px-6 md:py-3 md:text-base"
                     >
-                      Quero ser Igreja Fundadora
+                      Quero ser Igreja Parceira
                     </button>
                   ) : (
                     <>

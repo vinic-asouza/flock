@@ -42,7 +42,7 @@ export function Hero() {
             </div>
             <p className="mt-4 text-sm sm:text-base font-medium text-gray-700">
               {isClosedLaunch()
-                ? 'Vagas limitadas para Igrejas Fundadoras.'
+                ? 'Vagas limitadas para Igrejas Parceiras.'
                 : 'Grátis para até 100 membros'}
             </p>
           </div>

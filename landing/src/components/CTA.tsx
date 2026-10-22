@@ -20,7 +20,7 @@ export function CTA() {
           </h2>
           <p className="text-base sm:text-lg md:text-xl opacity-90 mb-6">
             {isClosedLaunch()
-              ? 'Vagas limitadas para Igrejas Fundadoras. Fale com a gente para participar.'
+              ? 'Vagas limitadas para Igrejas Parceiras. Fale com a gente para participar.'
               : 'Comece gratuitamente e veja o Flock funcionando na prática.'}
           </p>
           <StartFreeAction className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold hover:bg-gray-100 transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary">

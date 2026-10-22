@@ -1,5 +1,5 @@
 export const FOUNDER_OFFER_BANNER =
-  'Oferta Igrejas Fundadoras · 3 meses grátis + 50% off no 1º ano · Vagas limitadas';
+  'Oferta Igrejas Parceiras · 3 meses grátis + 50% off no 1º ano · Vagas limitadas';
 
 export const FOUNDER_PROMO_PRICES = {
   '200': 'R$ 14,99',

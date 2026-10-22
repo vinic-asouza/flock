@@ -52,7 +52,7 @@ const benefits = [
   {
     title: isClosedLaunch() ? 'Vagas limitadas nesta fase.' : 'Teste grátis até 100 membros.',
     description: isClosedLaunch()
-      ? 'O cadastro das Igrejas Fundadoras passa pelo contato. O plano gratuito segue até 100 membros.'
+      ? 'O cadastro das Igrejas Parceiras passa pelo contato. O plano gratuito segue até 100 membros.'
       : 'Use o Flock para conhecer as funcionalidades e ver se faz sentido para a realidade da sua igreja.',
   },
 ];

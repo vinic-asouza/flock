@@ -1,7 +1,7 @@
 import { isClosedLaunch } from '@/utils/launchMode';
 
 const CLOSED_FREE_ANSWER =
-  'Nesta fase, o cadastro é por convite às Igrejas Fundadoras. Deixe seu interesse na seção de contato. O plano gratuito segue até 100 membros.';
+  'Nesta fase, o cadastro é por convite às Igrejas Parceiras. Deixe seu interesse na seção de contato. O plano gratuito segue até 100 membros.';
 
 const faqs = [
   {
