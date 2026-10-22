@@ -3,7 +3,7 @@ type: modulo
 nome: aquisicao
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-09-01
+ultima_atualizacao: 2026-10-22
 versao: "1.4"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
@@ -109,7 +109,7 @@ Lead captado pela landing.
 | church_name | varchar | NOT NULL | — | Igreja (body: `churchName`) |
 | city | varchar | NOT NULL | — | Cidade |
 | state | varchar | NOT NULL | — | UF 2 letras |
-| plan | varchar | NOT NULL | — | `200\|500\|800\|personalizado` |
+| plan | varchar | NOT NULL | — | `100\|200\|500\|800\|personalizado` (`100` = interesse no Grátis) |
 | message | text | NULL | — | ≤1000 |
 | created_at / updated_at | timestamptz | NULL | now() | Auditoria |
 
@@ -149,6 +149,8 @@ Operações de superfície (não são rotas backend deste módulo, mas fazem par
 | CTA login checkout | `…/login?redirect=/checkout?plan=` |
 | `GET /api/plans` | Consumido da API billing (público) |
 
+Com `NEXT_PUBLIC_LAUNCH_MODE=closed`, a home não abre cadastro nem checkout: “Começar grátis” rola até `#pricing` e o CTA de cada plano rola até `#waitlist` com o plano já marcado (inclui `100`). Sem a variável, vale a tabela acima. “Acessar Painel” não muda. A flag não bloqueia `/register` acessado direto.
+
 Catálogo KB ≈**5** (waitlist + superfícies de funil/consumo de plans).
 
 ### Contrato — `POST /api/waitlist`
@@ -162,7 +164,7 @@ Catálogo KB ≈**5** (waitlist + superfícies de funil/consumo de plans).
   churchName: string;    // 2–255 → church_name
   city: string;          // 2–100
   state: string;         // length 2, uppercase
-  plan: '200'|'500'|'800'|'personalizado';
+  plan: '100'|'200'|'500'|'800'|'personalizado';
   message?: string|null; // max 1000
 }
 
