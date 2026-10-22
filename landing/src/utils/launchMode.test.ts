@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { founderPromoLine, founderPromoPrice } from './founderOffer.ts';
+import { partnerPromoLine, partnerPromoPrice } from './partnerOffer.ts';
 import { isClosedLaunch } from './launchMode.ts';
 import { parseWaitlistPlanParam } from './waitlistPlan.ts';
 
@@ -13,13 +13,13 @@ describe('isClosedLaunch', () => {
   });
 });
 
-describe('founder offer prices', () => {
+describe('partner offer prices', () => {
   it('keeps the agreed promotional amounts', () => {
-    assert.equal(founderPromoPrice('200'), 'R$ 14,99');
-    assert.equal(founderPromoPrice('500'), 'R$ 29,99');
-    assert.equal(founderPromoPrice('800'), 'R$ 44,99');
-    assert.equal(founderPromoPrice('100'), null);
-    assert.equal(founderPromoLine('R$ 14,99'), '3 meses grátis, depois R$ 14,99/mês por 12 meses');
+    assert.equal(partnerPromoPrice('200'), 'R$ 14,99');
+    assert.equal(partnerPromoPrice('500'), 'R$ 29,99');
+    assert.equal(partnerPromoPrice('800'), 'R$ 44,99');
+    assert.equal(partnerPromoPrice('100'), null);
+    assert.equal(partnerPromoLine('R$ 14,99'), '3 meses grátis, depois R$ 14,99/mês por 12 meses');
   });
 });
 
