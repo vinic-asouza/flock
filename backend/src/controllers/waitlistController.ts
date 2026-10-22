@@ -4,6 +4,12 @@ import { validateWaitlist } from '../validators/waitlistValidator';
 import { sendEmail } from '../services/emailService';
 import { getWaitlistConfirmationTemplate, getWaitlistNotificationTemplate } from '../templates/emailTemplates';
 
+function waitlistPlanEmailLabel(plan: string): string {
+  if (plan === '100') return 'Grátis';
+  if (plan === 'personalizado') return 'Personalizado';
+  return plan;
+}
+
 export const subscribe = async (req: Request, res: Response) => {
   try {
     if (req.body?.email) {
@@ -92,7 +98,7 @@ export const subscribe = async (req: Request, res: Response) => {
           churchName: churchName || undefined,
           city: city || undefined,
           state: state || undefined,
-          plan: plan || undefined,
+          plan: plan ? waitlistPlanEmailLabel(plan) : undefined,
           message: message || undefined,
         }),
       });

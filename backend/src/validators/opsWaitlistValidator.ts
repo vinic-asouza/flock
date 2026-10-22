@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-export const OPS_WAITLIST_PLANS = ['200', '500', '800', 'personalizado'] as const;
+export const OPS_WAITLIST_PLANS = ['100', '200', '500', '800', 'personalizado'] as const;
 
 export const OPS_WAITLIST_SORT_FIELDS = ['created_at'] as const;
 
