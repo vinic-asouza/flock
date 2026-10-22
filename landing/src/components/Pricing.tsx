@@ -7,7 +7,7 @@ import { CheckoutButton } from './CheckoutButton';
 import { fetchPlans, type ApiPlan } from '@/services/plans';
 import { buildLoginCheckoutUrl, buildFreeRegisterUrl, PLAN_DISPLAY_NAMES, type PaidPlanId } from '@/utils/planFunnel';
 import { isClosedLaunch } from '@/utils/launchMode';
-import { FOUNDER_OFFER_BANNER, founderPromoPrice } from '@/utils/founderOffer';
+import { PARTNER_OFFER_BANNER, partnerPromoPrice } from '@/utils/partnerOffer';
 import { selectWaitlistPlan } from '@/utils/landingScroll';
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
@@ -79,7 +79,7 @@ export function Pricing() {
       <div className="max-w-7xl mx-auto min-w-0">
         {isClosedLaunch() && (
           <p className="mx-auto mb-8 max-w-3xl rounded-xl border border-primary/15 bg-white px-4 py-3 text-center text-sm font-semibold text-[#090725] sm:text-base">
-            {FOUNDER_OFFER_BANNER}
+            {PARTNER_OFFER_BANNER}
           </p>
         )}
         <div className="text-center mb-16">
@@ -130,7 +130,7 @@ export function Pricing() {
             const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES['200'];
             const isFeatured = plan.id === '500';
             const displayName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name;
-            const promoPrice = founderPromoPrice(plan.id);
+            const promoPrice = partnerPromoPrice(plan.id);
             const closed = isClosedLaunch();
 
             return (
