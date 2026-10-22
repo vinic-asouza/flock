@@ -7,7 +7,7 @@ import { CheckoutButton } from './CheckoutButton';
 import { fetchPlans, type ApiPlan } from '@/services/plans';
 import { buildLoginCheckoutUrl, buildFreeRegisterUrl, PLAN_DISPLAY_NAMES, type PaidPlanId } from '@/utils/planFunnel';
 import { isClosedLaunch } from '@/utils/launchMode';
-import { FOUNDER_OFFER_BANNER, founderPromoLine, founderPromoPrice } from '@/utils/founderOffer';
+import { FOUNDER_OFFER_BANNER, founderPromoPrice } from '@/utils/founderOffer';
 import { selectWaitlistPlan } from '@/utils/landingScroll';
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
@@ -157,15 +157,22 @@ export function Pricing() {
                   </p>
                   {closed && promoPrice ? (
                     <div>
-                      <s className="block text-sm text-gray-400">
-                        {plan.priceFormatted}
-                        <span className="ml-1">/mês</span>
-                      </s>
-                      <div className="text-4xl font-extrabold text-primary">
-                        {promoPrice}
-                        <span className="text-sm md:text-base font-normal text-gray-500 ml-1">/mês</span>
+                      <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
+                          50%
+                        </span>
+                        <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                          Promoção de lançamento
+                        </span>
                       </div>
-                      <p className="mt-2 text-sm text-gray-700">{founderPromoLine(promoPrice)}</p>
+                      <s className="block text-2xl font-bold text-gray-700 decoration-gray-500">
+                        {plan.priceFormatted}/mês
+                      </s>
+                      <p className="mt-3 text-xl font-medium leading-relaxed text-gray-900">
+                        <span className="block">3 meses grátis, depois</span>
+                        <span className="mt-1 block text-2xl font-extrabold text-primary">{promoPrice}/mês</span>
+                        <span className="block">por 12 meses</span>
+                      </p>
                     </div>
                   ) : (
                     <div className="text-2xl md:text-3xl font-extrabold text-primary">
