@@ -1,3 +1,8 @@
+import { isClosedLaunch } from '@/utils/launchMode';
+
+const CLOSED_FREE_ANSWER =
+  'Nesta fase, o cadastro é por convite às Igrejas Fundadoras. Deixe seu interesse na seção de contato. O plano gratuito segue até 100 membros.';
+
 const faqs = [
   {
     question: 'Preciso instalar alguma coisa?',
@@ -58,7 +63,9 @@ export function FaqSection() {
                 </span>
               </summary>
               <p className="pb-4 text-sm sm:text-base text-gray-600 leading-relaxed">
-                {item.answer}
+                {isClosedLaunch() && item.question === 'Posso começar gratuitamente?'
+                  ? CLOSED_FREE_ANSWER
+                  : item.answer}
               </p>
             </details>
           ))}

@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { Church, FileSpreadsheet, UserPlus, BarChart3 } from 'lucide-react';
+import { isClosedLaunch } from '@/utils/launchMode';
 
 const processes = [
   {
@@ -49,9 +50,10 @@ const benefits = [
     description: 'Acesse as informações da sua igreja pelo computador, tablet ou celular.',
   },
   {
-    title: 'Teste grátis até 100 membros.',
-    description:
-      'Use o Flock para conhecer as funcionalidades e ver se faz sentido para a realidade da sua igreja.',
+    title: isClosedLaunch() ? 'Vagas limitadas nesta fase.' : 'Teste grátis até 100 membros.',
+    description: isClosedLaunch()
+      ? 'O cadastro das Igrejas Fundadoras passa pelo contato. O plano gratuito segue até 100 membros.'
+      : 'Use o Flock para conhecer as funcionalidades e ver se faz sentido para a realidade da sua igreja.',
   },
 ];
 

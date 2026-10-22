@@ -7,7 +7,9 @@ import { z } from 'zod';
 import { Loader, ArrowRight, CheckCircle2, ArrowLeft, Mail } from 'lucide-react';
 import { waitlistService } from '@/services/waitlist';
 import toast from 'react-hot-toast';
-import { readPlanFromLocation, parseWaitlistPlanParam } from '@/utils/waitlistPlan';
+import { readPlanFromLocation, parseWaitlistPlanParam, type WaitlistPlanId } from '@/utils/waitlistPlan';
+import { isClosedLaunch } from '@/utils/launchMode';
+import { WAITLIST_PLAN_EVENT } from '@/utils/landingScroll';
 import { PLAN_DISPLAY_NAMES } from '@/utils/planFunnel';
 import { useIbgeData } from '@/hooks/useIbgeData';
 
@@ -21,7 +23,7 @@ const waitlistSchema = z.object({
   churchName: z.string().min(2, 'Nome da igreja deve ter pelo menos 2 caracteres'),
   city: z.string().min(1, 'Cidade é obrigatória'),
   state: z.string().length(2, 'Estado deve ter 2 caracteres'),
-  plan: z.enum(['200', '500', '800', 'personalizado'], {
+  plan: z.enum(['100', '200', '500', '800', 'personalizado'], {
     errorMap: () => ({ message: 'Selecione um plano válido' }),
   }),
   message: z.string().optional(),
@@ -67,12 +69,18 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
   const watchedState = watch('state');
 
   useEffect(() => {
+    const allowFree = isClosedLaunch();
+
+    const applyPlan = (planValue: WaitlistPlanId | null) => {
+      if (!planValue) return;
+      setValue('plan', planValue, { shouldValidate: true });
+    };
+
     const applyPlanFromUrl = () => {
-      const planValue =
-        parseWaitlistPlanParam(initialPlan) ?? readPlanFromLocation();
-      if (planValue) {
-        setValue('plan', planValue, { shouldValidate: true });
-      }
+      applyPlan(
+        parseWaitlistPlanParam(initialPlan, { allowFree }) ??
+          readPlanFromLocation(undefined, undefined, { allowFree })
+      );
 
       if (typeof window !== 'undefined' && window.location.hash.includes('?')) {
         const newHash = window.location.hash.split('?')[0];
@@ -80,9 +88,18 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
       }
     };
 
+    const onPlanEvent = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      applyPlan(parseWaitlistPlanParam(detail, { allowFree }));
+    };
+
     applyPlanFromUrl();
     window.addEventListener('hashchange', applyPlanFromUrl);
-    return () => window.removeEventListener('hashchange', applyPlanFromUrl);
+    window.addEventListener(WAITLIST_PLAN_EVENT, onPlanEvent);
+    return () => {
+      window.removeEventListener('hashchange', applyPlanFromUrl);
+      window.removeEventListener(WAITLIST_PLAN_EVENT, onPlanEvent);
+    };
   }, [setValue, initialPlan]);
 
   // Buscar cidades quando o estado mudar
@@ -321,19 +338,24 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Plano de Interesse *
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className={`grid grid-cols-2 gap-3 ${isClosedLaunch() ? 'lg:grid-cols-3' : 'sm:grid-cols-4'}`}>
           {[
-            { value: '200', label: PLAN_DISPLAY_NAMES['200'], description: 'Até 200 membros' },
-            { value: '500', label: PLAN_DISPLAY_NAMES['500'], description: 'Até 500 membros' },
-            { value: '800', label: PLAN_DISPLAY_NAMES['800'], description: 'Até 800 membros' },
-            { value: 'personalizado', label: 'Personalizado', description: 'Mais de 800 membros' },
+            ...(isClosedLaunch()
+              ? [{ value: '100' as const, label: PLAN_DISPLAY_NAMES['100'], description: 'Até 100 membros' }]
+              : []),
+            { value: '200' as const, label: PLAN_DISPLAY_NAMES['200'], description: 'Até 200 membros' },
+            { value: '500' as const, label: PLAN_DISPLAY_NAMES['500'], description: 'Até 500 membros' },
+            { value: '800' as const, label: PLAN_DISPLAY_NAMES['800'], description: 'Até 800 membros' },
+            { value: 'personalizado' as const, label: 'Personalizado', description: 'Mais de 800 membros' },
           ].map((plan) => {
             const isSelected = watch('plan') === plan.value;
             return (
               <button
                 key={plan.value}
                 type="button"
-                onClick={() => setValue('plan', plan.value as '200' | '500' | '800' | 'personalizado', { shouldValidate: true })}
+                aria-pressed={isSelected}
+                aria-label={`${plan.label}, ${plan.description}`}
+                onClick={() => setValue('plan', plan.value, { shouldValidate: true })}
                 className={`
                   relative min-h-11 p-3 sm:p-2 rounded-lg border-1 transition-all duration-200 text-left
                   ${isSelected

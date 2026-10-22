@@ -1,4 +1,5 @@
 export const OPS_WAITLIST_PLANS = [
+  "100",
   "200",
   "500",
   "800",
