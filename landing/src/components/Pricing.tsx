@@ -6,6 +6,9 @@ import Link from 'next/link';
 import { CheckoutButton } from './CheckoutButton';
 import { fetchPlans, type ApiPlan } from '@/services/plans';
 import { buildLoginCheckoutUrl, buildFreeRegisterUrl, PLAN_DISPLAY_NAMES, type PaidPlanId } from '@/utils/planFunnel';
+import { isClosedLaunch } from '@/utils/launchMode';
+import { FOUNDER_OFFER_BANNER, founderPromoPrice } from '@/utils/founderOffer';
+import { selectWaitlistPlan } from '@/utils/landingScroll';
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
 
@@ -74,6 +77,11 @@ export function Pricing() {
   return (
     <section id="pricing" className="scroll-mt-24 py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
       <div className="max-w-7xl mx-auto min-w-0">
+        {isClosedLaunch() && (
+          <p className="mx-auto mb-8 max-w-3xl rounded-xl border border-primary/15 bg-white px-4 py-3 text-center text-sm font-semibold text-[#090725] sm:text-base">
+            {FOUNDER_OFFER_BANNER}
+          </p>
+        )}
         <div className="text-center mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
             Comece grátis. Cresça quando sua igreja crescer.
@@ -95,12 +103,22 @@ export function Pricing() {
                   <p className="text-sm text-gray-600">Até {freePlan.members} membros — {freePlan.priceFormatted}</p>
                 </div>
               </div>
-              <Link
-                href={buildFreeRegisterUrl(FRONTEND_URL)}
-                className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base"
-              >
-                Começar grátis
-              </Link>
+              {isClosedLaunch() ? (
+                <button
+                  type="button"
+                  onClick={() => selectWaitlistPlan('100')}
+                  className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                  Quero ser Igreja Parceira
+                </button>
+              ) : (
+                <Link
+                  href={buildFreeRegisterUrl(FRONTEND_URL)}
+                  className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base"
+                >
+                  Começar grátis
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -112,6 +130,8 @@ export function Pricing() {
             const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES['200'];
             const isFeatured = plan.id === '500';
             const displayName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name;
+            const promoPrice = founderPromoPrice(plan.id);
+            const closed = isClosedLaunch();
 
             return (
               <div
@@ -135,10 +155,31 @@ export function Pricing() {
                   <p className="text-sm md:text-base text-gray-600 mb-4">
                     Até {plan.members} membros
                   </p>
-                  <div className="text-2xl md:text-3xl font-extrabold text-primary">
-                    {plan.priceFormatted}
-                    <span className="text-sm md:text-base font-normal text-gray-500 ml-1">/mês</span>
-                  </div>
+                  {closed && promoPrice ? (
+                    <div>
+                      <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+                        <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
+                          50%
+                        </span>
+                        <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                          Promoção de lançamento
+                        </span>
+                      </div>
+                      <s className="block text-2xl font-bold text-gray-700 decoration-gray-500">
+                        {plan.priceFormatted}/mês
+                      </s>
+                      <p className="mt-3 text-xl font-medium leading-relaxed text-gray-900">
+                        <span className="block">3 meses grátis, depois</span>
+                        <span className="mt-1 block text-2xl font-extrabold text-primary">{promoPrice}/mês</span>
+                        <span className="block">por 12 meses</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-2xl md:text-3xl font-extrabold text-primary">
+                      {plan.priceFormatted}
+                      <span className="text-sm md:text-base font-normal text-gray-500 ml-1">/mês</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 mb-6">
@@ -163,15 +204,27 @@ export function Pricing() {
                 </div>
 
                 <div className="mt-auto space-y-2">
-                  <CheckoutButton plan={planId} className="w-full">
-                    Escolher este plano
-                  </CheckoutButton>
-                  <Link
-                    href={buildLoginCheckoutUrl(planId, FRONTEND_URL)}
-                    className="flex min-h-11 w-full items-center justify-center text-center text-sm text-primary hover:text-[#0d0a3a] font-medium py-2"
-                  >
-                    Já tenho conta
-                  </Link>
+                  {closed ? (
+                    <button
+                      type="button"
+                      onClick={() => selectWaitlistPlan(planId)}
+                      className="flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:bg-[#0d0a3a] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:hover:scale-105 md:px-6 md:py-3 md:text-base"
+                    >
+                      Quero ser Igreja Parceira
+                    </button>
+                  ) : (
+                    <>
+                      <CheckoutButton plan={planId} className="w-full">
+                        Escolher este plano
+                      </CheckoutButton>
+                      <Link
+                        href={buildLoginCheckoutUrl(planId, FRONTEND_URL)}
+                        className="flex min-h-11 w-full items-center justify-center text-center text-sm text-primary hover:text-[#0d0a3a] font-medium py-2"
+                      >
+                        Já tenho conta
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -182,14 +235,11 @@ export function Pricing() {
           <p className="text-sm text-gray-700">
             Sua igreja tem mais de 800 membros?{' '}
             <a
-              href="#waitlist?plan=personalizado"
+              href="#waitlist"
               className="text-primary font-semibold hover:text-[#0d0a3a] transition-colors underline"
               onClick={(e) => {
                 e.preventDefault();
-                window.location.hash = '#waitlist?plan=personalizado';
-                setTimeout(() => {
-                  document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                selectWaitlistPlan('personalizado');
               }}
             >
               Entre em contato

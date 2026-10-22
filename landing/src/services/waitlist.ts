@@ -8,7 +8,7 @@ export interface WaitlistData {
   churchName: string;
   city: string;
   state: string;
-  plan: '200' | '500' | '800' | 'personalizado';
+  plan: '100' | '200' | '500' | '800' | 'personalizado';
   message?: string;
 }
 

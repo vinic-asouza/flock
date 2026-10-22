@@ -17,6 +17,11 @@ describe("parseWaitlistListSearchParams", () => {
     assert.equal(query.status, "pending");
   });
 
+  it("should parse free plan 100", () => {
+    const query = parseWaitlistListSearchParams(new URLSearchParams("plan=100"));
+    assert.equal(query.plan, "100");
+  });
+
   it("should parse personalizado and search", () => {
     const query = parseWaitlistListSearchParams(
       new URLSearchParams("plan=personalizado&q=Ana&page=2")
