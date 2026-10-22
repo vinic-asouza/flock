@@ -1,0 +1,32 @@
+{
+  "name": "Flock",
+  "install": "./scripts/cloud-agent-install.sh",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "cd backend && npm run dev",
+      "description": "API Express + TypeScript (http://localhost:4000). Requer os secrets SUPABASE_* e STRIPE_* para iniciar."
+    },
+    {
+      "name": "frontend",
+      "command": "cd frontend && npm run dev",
+      "description": "Painel da Igreja - Next.js (http://localhost:3001)."
+    },
+    {
+      "name": "landing",
+      "command": "cd landing && npm run dev",
+      "description": "Site institucional - Next.js (http://localhost:3000)."
+    },
+    {
+      "name": "admin-ops",
+      "command": "cd admin-ops && npm run dev",
+      "description": "Console operacional interno - Next.js (http://localhost:3002)."
+    }
+  ],
+  "ports": [
+    { "name": "landing", "port": 3000 },
+    { "name": "frontend", "port": 3001 },
+    { "name": "admin-ops", "port": 3002 },
+    { "name": "backend", "port": 4000 }
+  ]
+}
