@@ -3,8 +3,8 @@ type: modulo
 nome: aquisicao
 status: Ativo
 complexidade: Baixa
-ultima_atualizacao: 2026-10-22
-versao: "1.4"
+ultima_atualizacao: 2026-10-23
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
 depende_de: [billing, onboarding]
@@ -237,13 +237,15 @@ sequenceDiagram
   participant ONB as onboarding
   participant BILL as billing
 
-  V->>L: Escolher este plano (plan 200|500|800)
+  V->>L: Escolher plano (plan 200|500|800)
   L->>L: sessionStorage flock_selected_plan
   L->>App: redirect register?plan=
   Note over App,BILL: daqui em diante onboarding/billing
   App->>ONB: registro igreja
   App->>BILL: checkout autenticado ou pós-registro
 ```
+
+No lançamento fechado (`NEXT_PUBLIC_LAUNCH_MODE=closed`) o mesmo botão **não** usa `CheckoutButton`: marca o plano e rola até `#waitlist`. A oferta (3 meses grátis + 50% por 12 meses) aparece dentro do card. No lançamento aberto o card mostra só o preço cheio.
 
 ### Estados
 
@@ -274,7 +276,7 @@ App isolada `landing/` (Next.js :3000). **Não** reutiliza shell/`Modal`/`Mobile
 
 - **Header:** `position: fixed` + spacer `h-16` (sticky quebrava com `overflow-x: hidden` em `html`/`body`); logo à esquerda, hamburger à direita (`justify-between`); menu empilhado com alvos ≥44px; `env(safe-area-inset-top)`; fecha ao navegar.
 - **Root:** `overflow-x-hidden` + `min-w-0`; `viewportFit: cover` no layout; toast abaixo do header (~4.5rem + safe-area).
-- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado. Pricing: faixa Grátis + cards pagos; CTA do card **Escolher este plano**.
+- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado. Pricing (`#pricing`): três cards pagos (Essencial, Crescimento com selo “Mais escolhido”, Completo), sem faixa do Grátis. CTA **Escolher plano**. O Grátis continua no Header, no Hero e no CTA final. Rodapé da seção: todas as funcionalidades incluídas, sem fidelidade, cancele quando quiser.
 - **FAQ `#faq`:** accordion nativo (`<details>`/`<summary>`); âncora no Header/Footer.
 - **CTA final:** bloco Começar grátis acima; `id="waitlist"` no **card do form** (não no H2 do fechamento), para Contato/hash posicionarem o formulário.
 - **WaitlistForm** (home `#waitlist` + `/waitlist`): inputs `text-base` (≥16px, evita zoom iOS) + `min-h-11`; planos Essencial / Crescimento / Completo / Personalizado (valores `200|500|800|personalizado`; sem `100` — a API não aceita); estados erro/sucesso/toast preservados.
