@@ -92,7 +92,7 @@ Fonte única: `NAV_ITEMS` (`frontend/src/components/main/navItems.ts`), consumid
 
 **Header:** igreja ativa / switcher, alerta de limite de membros ≥80% (oculto < `md`), badge de plano, papel, e-mail, logout; atalho para plano; hamburger só < `md`.
 
-**Quota de membros (DEV-159):** o Painel (`/`) e a aba Plano (`/settings?tab=payment`) exibem de forma persistente **\"X de N membros ativos\"** (N = teto do `plan_type`; sempre da igreja, não do filtro de congregação). Abaixo de 80%: só o indicador. ≥80%: aviso + CTA \"Atualizar plano\" (admin/owner). Em 100%: mensagem de bloqueio de novas inclusões (cadastro/import/conversão/links públicos).
+**Quota de membros (DEV-159):** a aba Plano (`/settings?tab=payment`) exibe de forma persistente **\"X de N membros ativos\"** (N = teto do `plan_type`; sempre da igreja, não do filtro de congregação). O Painel (`/`) não mostra esse indicador. Abaixo de 80%: só o indicador na aba Plano. ≥80%: aviso no Header e na aba Plano + CTA \"Atualizar plano\" (admin/owner). Em 100%: mensagem de bloqueio de novas inclusões (cadastro/import/conversão/links públicos).
 
 **Settings:** navegação por abas (`?tab=`); abas `payment`, `users`, `logs` só para `admin`/`owner`.
 
@@ -284,7 +284,7 @@ OAuth social: **não identificado** — auth é e-mail/senha + callback de confi
 | Admin OPS saúde | Never-ran: “Ainda não executou”; Atualizar com falha de rede: alerta + último payload |
 | Erros de formulário | Zod/Joi + toast (`react-hot-toast`) |
 | Sem permissão (reader) | botões disabled + tooltip de somente leitura |
-| Limite de membros | toast/API message + alerta no Header (≥80%) + indicador \"X de N\" no Painel e aba Plano |
+| Limite de membros | toast/API message + alerta no Header (≥80%) + indicador \"X de N\" na aba Plano |
 
 ---
 
