@@ -4,7 +4,7 @@ nome: aquisicao
 status: Ativo
 complexidade: Baixa
 ultima_atualizacao: 2026-10-23
-versao: "1.5"
+versao: "1.6"
 owner: (não identificado no código)
 tags: [módulo, aquisicao]
 depende_de: [billing, onboarding]
@@ -149,7 +149,7 @@ Operações de superfície (não são rotas backend deste módulo, mas fazem par
 | CTA login checkout | `…/login?redirect=/checkout?plan=` |
 | `GET /api/plans` | Consumido da API billing (público) |
 
-Com `NEXT_PUBLIC_LAUNCH_MODE=closed`, a home não abre cadastro nem checkout: “Começar grátis” rola até `#pricing` e o CTA de cada plano rola até `#waitlist` com o plano já marcado (inclui `100`). Sem a variável, vale a tabela acima. “Acessar Painel” não muda. A flag não bloqueia `/register` acessado direto.
+Com `NEXT_PUBLIC_LAUNCH_MODE=closed`, a home não abre cadastro nem checkout: “Começar grátis” do Header e do Hero rola até `#pricing`, e o CTA de cada plano rola até `#waitlist` com o plano já marcado (inclui `100`). O fechamento dessa fase não mostra “Começar grátis” nem “Sem cadastro aberto nesta fase.” Sem a variável, vale a tabela acima. “Acessar Painel” não muda. A flag não bloqueia `/register` acessado direto.
 
 Catálogo KB ≈**5** (waitlist + superfícies de funil/consumo de plans).
 
@@ -276,9 +276,9 @@ App isolada `landing/` (Next.js :3000). **Não** reutiliza shell/`Modal`/`Mobile
 
 - **Header:** `position: fixed` + spacer `h-16` (sticky quebrava com `overflow-x: hidden` em `html`/`body`); logo à esquerda, hamburger à direita (`justify-between`); menu empilhado com alvos ≥44px; `env(safe-area-inset-top)`; fecha ao navegar.
 - **Root:** `overflow-x-hidden` + `min-w-0`; `viewportFit: cover` no layout; toast abaixo do header (~4.5rem + safe-area).
-- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado. Pricing (`#pricing`): três cards pagos (Essencial, Crescimento com selo “Mais escolhido”, Completo), sem faixa do Grátis. CTA **Escolher plano**. O Grátis continua no Header, no Hero e no CTA final. Rodapé da seção: todas as funcionalidades incluídas, sem fidelidade, cancele quando quiser.
+- **Hero / Pricing / CheckoutButton:** CTAs `min-h-11`, empilham em `<sm`; redirect `planFunnel` inalterado. Pricing (`#pricing`): três cards pagos (Essencial, Crescimento com selo “Mais escolhido”, Completo), sem faixa do Grátis. CTA **Escolher plano**. No lançamento aberto, Começar grátis segue no Header, no Hero e no CTA final. No lançamento fechado, fica só no Header e no Hero. Rodapé da seção: todas as funcionalidades incluídas, sem fidelidade, cancele quando quiser.
 - **FAQ `#faq`:** accordion nativo (`<details>`/`<summary>`); âncora no Header/Footer.
-- **CTA final:** bloco Começar grátis acima; `id="waitlist"` no **card do form** (não no H2 do fechamento), para Contato/hash posicionarem o formulário.
+- **CTA final:** no lançamento aberto, bloco Começar grátis acima do formulário; no lançamento fechado, só o texto de vagas e o card do form. `id="waitlist"` no **card do form** (não no H2 do fechamento), para Contato/hash posicionarem o formulário. O título do card, no fechado, pede o acesso de Igreja Parceira.
 - **WaitlistForm** (home `#waitlist` + `/waitlist`): inputs `text-base` (≥16px, evita zoom iOS) + `min-h-11`; planos Essencial / Crescimento / Completo / Personalizado (valores `200|500|800|personalizado`; sem `100` — a API não aceita); estados erro/sucesso/toast preservados.
 - **DemoSection:** nav de módulos no lugar de dots; setas com alvos touch; CTAs Agendar demonstração / Ver planos; container sem overflow.
 - **StatsGraphics:** SVG pizza `w-full h-full` (sem overflow horizontal); altura mobile reduzida (`min-h-[280px]`).
@@ -412,6 +412,7 @@ graph LR
 
 | Data | Versão | Descrição | Issue |
 | --- | --- | --- | --- |
+| 2026-10-23 | 1.6 | Lançamento fechado: fechamento da home sem “Começar grátis” e sem “Sem cadastro aberto nesta fase.”; título do card pede acesso de Igreja Parceira | DEV-171 |
 | 2026-09-01 | 1.4 | Admin OPS: PATCH de situação da waitlist (`converted`/`discarded`); POST público intacto | DEV-95 |
 | 2026-08-31 | 1.3 | Home: 4 seções novas (para quem, visão, relatórios, FAQ); nomes comerciais Grátis/Essencial/Crescimento/Completo; header `fixed`; `id=waitlist` no form. Funil e BR-ACQ inalterados | DEV-90 |
 | 2026-08-26 | 1.2 | Lista autenticada de leads no Admin OPS (`GET /api/ops/waitlist`); POST público intacto | DEV-72 |
