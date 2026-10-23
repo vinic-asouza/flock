@@ -17,12 +17,10 @@ import { GeographySection } from '@/components/reports/GeographySection';
 import { OccupationsTable } from '@/components/reports/OccupationsTable';
 import { ViewSelector, ViewMode } from '@/components/reports/ViewSelector';
 import { ReportsSkeleton } from '@/components/reports/ReportsSkeleton';
-import { MemberQuotaUsage } from '@/components/billing/MemberQuotaUsage';
 import { formatDateTimeWithSeconds } from '@/utils';
 
 export default function HomePage() {
-  const { isLoading: isAuthLoading, isAuthenticated, currentRole } = useAuth();
-  const canManagePlan = currentRole === 'admin' || currentRole === 'owner';
+  const { isLoading: isAuthLoading, isAuthenticated } = useAuth();
   const [reportsData, setReportsData] = useState<MemberReports | null>(null);
   const [loading, setLoading] = useState(true);
   const [reportsError, setReportsError] = useState<string | null>(null);
@@ -266,12 +264,6 @@ export default function HomePage() {
             ) : (
               reportsData && (
                 <>
-                  <MemberQuotaUsage
-                    canManagePlan={canManagePlan}
-                    variant="panel"
-                    className="mb-1"
-                  />
-
                   <SummaryCards
                     data={reportsData.summary}
                     loading={loading}
