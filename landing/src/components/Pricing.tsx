@@ -1,27 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Building2, BarChart3, Check, Gift } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowRight, BarChart3, Check, ClipboardList, Star, User } from 'lucide-react';
 import { CheckoutButton } from './CheckoutButton';
 import { fetchPlans, type ApiPlan } from '@/services/plans';
-import { buildLoginCheckoutUrl, buildFreeRegisterUrl, PLAN_DISPLAY_NAMES, type PaidPlanId } from '@/utils/planFunnel';
+import { PLAN_DISPLAY_NAMES, type PaidPlanId } from '@/utils/planFunnel';
 import { isClosedLaunch } from '@/utils/launchMode';
-import { PARTNER_OFFER_BANNER, partnerPromoPrice } from '@/utils/partnerOffer';
+import { partnerPromoPrice } from '@/utils/partnerOffer';
 import { selectWaitlistPlan } from '@/utils/landingScroll';
 
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
+const PAID_ORDER = ['200', '500', '800'] as const;
 
 const PLAN_ICONS: Record<string, React.ElementType> = {
-  '200': Users,
-  '500': Building2,
+  '200': User,
+  '500': ClipboardList,
   '800': BarChart3,
 };
 
 const PLAN_FEATURES: Record<string, string[]> = {
   '200': [
     'Rol de membros',
-    'Quem está chegando',
+    'Acompanhamento de quem está chegando',
     'Congregações',
     'Ministérios e equipes',
     'Relatórios',
@@ -29,7 +28,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
   ],
   '500': [
     'Rol de membros',
-    'Quem está chegando',
+    'Acompanhamento de quem está chegando',
     'Congregações',
     'Ministérios e equipes',
     'Relatórios',
@@ -37,7 +36,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
   ],
   '800': [
     'Rol de membros',
-    'Quem está chegando',
+    'Acompanhamento de quem está chegando',
     'Congregações',
     'Ministérios e equipes',
     'Relatórios',
@@ -45,28 +44,40 @@ const PLAN_FEATURES: Record<string, string[]> = {
   ],
 };
 
+const TRUST_POINTS = [
+  'Todas as funcionalidades incluídas',
+  'Sem fidelidade',
+  'Cancele quando quiser',
+];
+
 const FALLBACK_PAID: ApiPlan[] = [
   { id: '200', name: 'Plano 200 Membros', priceFormatted: 'R$ 29,99', members: 200 },
   { id: '500', name: 'Plano 500 Membros', priceFormatted: 'R$ 59,99', members: 500 },
   { id: '800', name: 'Plano 800 Membros', priceFormatted: 'R$ 89,99', members: 800 },
 ];
 
+function orderPaidPlans(plans: ApiPlan[]): ApiPlan[] {
+  return PAID_ORDER.flatMap((id) => {
+    const plan = plans.find((item) => item.id === id);
+    return plan ? [plan] : [];
+  });
+}
+
+function planCtaClass(featured: boolean): string {
+  return `flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:text-base ${
+    featured
+      ? 'bg-[#5346f0] hover:bg-[#4639d6] focus-visible:ring-[#5346f0]'
+      : 'bg-[#090725] hover:bg-[#0d0a3a] focus-visible:ring-[#090725]'
+  }`;
+}
+
 export function Pricing() {
   const [paidPlans, setPaidPlans] = useState<ApiPlan[]>(FALLBACK_PAID);
-  const [freePlan, setFreePlan] = useState<ApiPlan | null>({
-    id: '100',
-    name: 'Plano 100 Membros',
-    priceFormatted: 'Gratuito',
-    members: 100,
-    description: 'Ideal para começar',
-  });
 
   useEffect(() => {
     fetchPlans()
       .then((plans) => {
-        const free = plans.find((p) => p.id === '100') ?? null;
-        const paid = plans.filter((p) => p.id !== '100');
-        if (free) setFreePlan(free);
+        const paid = orderPaidPlans(plans.filter((plan) => plan.id !== '100'));
         if (paid.length > 0) setPaidPlans(paid);
       })
       .catch(() => {
@@ -74,179 +85,136 @@ export function Pricing() {
       });
   }, []);
 
+  const closed = isClosedLaunch();
+
   return (
-    <section id="pricing" className="scroll-mt-24 py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto min-w-0">
-        {isClosedLaunch() && (
-          <p className="mx-auto mb-8 max-w-3xl rounded-xl border border-primary/15 bg-white px-4 py-3 text-center text-sm font-semibold text-[#090725] sm:text-base">
-            {PARTNER_OFFER_BANNER}
+    <section id="pricing" className="scroll-mt-24 bg-[#f6f6f8] px-4 py-20 min-w-0">
+      <div className="mx-auto min-w-0 max-w-6xl">
+        <div className="mb-12 text-center">
+          <p className="mb-4 inline-flex rounded-full bg-[#ece9ff] px-3 py-1 text-xs font-semibold tracking-[0.16em] text-[#5346f0]">
+            PLANOS
           </p>
-        )}
-        <div className="text-center mb-16">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
+          <h2 className="mb-3 text-2xl font-extrabold text-primary sm:text-3xl md:text-4xl">
             Comece grátis. Cresça quando sua igreja crescer.
           </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-4">
-            Todas as funcionalidades. Uma única assinatura. <br /> Você paga apenas pelo tamanho da sua igreja.
+          <p className="mx-auto max-w-2xl text-base text-gray-600 sm:text-lg">
+            O Flock é o mesmo em todos os planos. Você paga apenas pelo tamanho da sua igreja.
           </p>
         </div>
 
-        {freePlan && (
-          <div className="mb-8 max-w-xl mx-auto">
-            <div className="bg-white rounded-xl border-2 border-primary/20 p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Gift className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{PLAN_DISPLAY_NAMES[freePlan.id] ?? 'Grátis'}</h3>
-                  <p className="text-sm text-gray-600">Até {freePlan.members} membros — {freePlan.priceFormatted}</p>
-                </div>
-              </div>
-              {isClosedLaunch() ? (
-                <button
-                  type="button"
-                  onClick={() => selectWaitlistPlan('100')}
-                  className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                >
-                  Quero ser Igreja Parceira
-                </button>
-              ) : (
-                <Link
-                  href={buildFreeRegisterUrl(FRONTEND_URL)}
-                  className="inline-flex justify-center items-center min-h-11 w-full sm:w-auto bg-primary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 shadow-lg hover:shadow-xl sm:hover:scale-105 text-sm sm:text-base"
-                >
-                  Começar grátis
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-12">
+        <div className="mb-10 grid grid-cols-1 items-stretch gap-6 pt-4 lg:grid-cols-3 lg:gap-5">
           {paidPlans.map((plan) => {
             const planId = plan.id as PaidPlanId;
-            const IconComponent = PLAN_ICONS[plan.id] || Users;
+            const IconComponent = PLAN_ICONS[plan.id] || User;
             const features = PLAN_FEATURES[plan.id] || PLAN_FEATURES['200'];
             const isFeatured = plan.id === '500';
             const displayName = PLAN_DISPLAY_NAMES[plan.id] ?? plan.name;
             const promoPrice = partnerPromoPrice(plan.id);
-            const closed = isClosedLaunch();
+            const showOffer = closed && Boolean(promoPrice);
 
             return (
-              <div
+              <article
                 key={plan.id}
-                className={`bg-white rounded-xl border-2 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 p-6 md:p-8 flex flex-col relative ${
+                className={`relative flex flex-col rounded-2xl border p-6 shadow-sm md:p-8 ${
                   isFeatured
-                    ? 'border-primary hover:border-primary'
-                    : 'border-gray-200 hover:border-primary/50'
+                    ? 'z-10 border-[#cfc9ff] bg-[#f4f2ff] shadow-md lg:-my-2 lg:py-10'
+                    : 'border-gray-200 bg-white'
                 }`}
               >
                 {isFeatured && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap">
+                  <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-[#5346f0] px-3 py-1 text-xs font-semibold text-white">
+                    <Star className="h-3.5 w-3.5 fill-current" aria-hidden />
                     Mais escolhido
                   </span>
                 )}
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <IconComponent className="w-8 h-8 text-primary" aria-hidden />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-extrabold text-gray-900">{displayName}</h3>
-                  <p className="text-sm md:text-base text-gray-600 mb-4">
-                    Até {plan.members} membros
-                  </p>
-                  {closed && promoPrice ? (
-                    <div>
-                      <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
-                        <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
-                          50%
-                        </span>
-                        <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                          Promoção de lançamento
-                        </span>
-                      </div>
-                      <s className="block text-2xl font-bold text-gray-700 decoration-gray-500">
-                        {plan.priceFormatted}/mês
-                      </s>
-                      <p className="mt-3 text-xl font-medium leading-relaxed text-gray-900">
-                        <span className="block">3 meses grátis, depois</span>
-                        <span className="mt-1 block text-2xl font-extrabold text-primary">{promoPrice}/mês</span>
-                        <span className="block">por 12 meses</span>
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-2xl md:text-3xl font-extrabold text-primary">
-                      {plan.priceFormatted}
-                      <span className="text-sm md:text-base font-normal text-gray-500 ml-1">/mês</span>
-                    </div>
-                  )}
-                </div>
 
-                <div className="flex-1 mb-6">
-                  <ul className="space-y-2">
-                    {features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="flex-shrink-0 w-5 h-5 bg-primary/10 rounded-full flex items-center justify-center mt-0.5">
-                          <Check className="w-3 h-3 text-primary" aria-hidden />
-                        </div>
-                        <span
-                          className={
-                            feature === 'Suporte dedicado'
-                              ? 'text-sm font-bold text-primary'
-                              : 'text-sm text-gray-700'
-                          }
-                        >
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                <div
+                  className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl ${
+                    isFeatured ? 'bg-white' : 'bg-[#f3f1ff]'
+                  }`}
+                >
+                  <IconComponent className="h-5 w-5 text-[#5346f0]" aria-hidden />
                 </div>
+                <h3 className="text-xl font-extrabold text-gray-900">{displayName}</h3>
+                <p className="mb-5 text-sm text-gray-500">Para igrejas com até {plan.members} membros</p>
 
-                <div className="mt-auto space-y-2">
-                  {closed ? (
-                    <button
-                      type="button"
-                      onClick={() => selectWaitlistPlan(planId)}
-                      className="flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:bg-[#0d0a3a] hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:hover:scale-105 md:px-6 md:py-3 md:text-base"
+                {showOffer ? (
+                  <>
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-[#ece9ff] px-2.5 py-1 text-xs font-bold text-[#5346f0]">
+                        50% OFF
+                      </span>
+                      <span className="text-sm font-medium text-gray-600">Oferta de lançamento</span>
+                    </div>
+                    <div
+                      className={`mb-6 rounded-2xl px-4 py-5 text-center ${
+                        isFeatured ? 'bg-white/80' : 'bg-[#f7f6fb]'
+                      }`}
                     >
-                      Quero ser Igreja Parceira
-                    </button>
-                  ) : (
-                    <>
-                      <CheckoutButton plan={planId} className="w-full">
-                        Escolher este plano
-                      </CheckoutButton>
-                      <Link
-                        href={buildLoginCheckoutUrl(planId, FRONTEND_URL)}
-                        className="flex min-h-11 w-full items-center justify-center text-center text-sm text-primary hover:text-[#0d0a3a] font-medium py-2"
+                      <p className="text-sm font-medium text-gray-600">3 meses grátis</p>
+                      <p className="mt-1 text-3xl font-extrabold tracking-tight text-gray-900">
+                        {promoPrice}
+                        <span className="text-lg font-bold">/mês</span>
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500">nos 12 meses seguintes</p>
+                      <p className="mt-2 text-sm text-gray-400 line-through">{plan.priceFormatted}/mês</p>
+                    </div>
+                  </>
+                ) : (
+                  <p className="mb-6 text-3xl font-extrabold text-gray-900">
+                    {plan.priceFormatted}
+                    <span className="ml-1 text-base font-medium text-gray-500">/mês</span>
+                  </p>
+                )}
+
+                <ul className="mb-6 flex-1 space-y-2.5">
+                  {features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5">
+                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-[#ece9ff]">
+                        <Check className="h-3 w-3 text-[#5346f0]" aria-hidden />
+                      </span>
+                      <span
+                        className={
+                          feature === 'Suporte dedicado'
+                            ? 'text-sm font-bold text-[#5346f0]'
+                            : 'text-sm text-gray-700'
+                        }
                       >
-                        Já tenho conta
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {closed ? (
+                  <button
+                    type="button"
+                    onClick={() => selectWaitlistPlan(planId)}
+                    className={planCtaClass(isFeatured)}
+                  >
+                    Escolher plano
+                    <ArrowRight className="h-4 w-4" aria-hidden />
+                  </button>
+                ) : (
+                  <CheckoutButton plan={planId} tone={isFeatured ? 'accent' : 'navy'}>
+                    Escolher plano
+                  </CheckoutButton>
+                )}
+              </article>
             );
           })}
         </div>
 
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 text-center">
-          <p className="text-sm text-gray-700">
-            Sua igreja tem mais de 800 membros?{' '}
-            <a
-              href="#waitlist"
-              className="text-primary font-semibold hover:text-[#0d0a3a] transition-colors underline"
-              onClick={(e) => {
-                e.preventDefault();
-                selectWaitlistPlan('personalizado');
-              }}
-            >
-              Entre em contato
-            </a>{' '}
-            para um orçamento personalizado.
-          </p>
-        </div>
+        <ul className="flex flex-col items-center justify-center gap-3 text-sm text-gray-600 sm:flex-row sm:gap-8">
+          {TRUST_POINTS.map((point) => (
+            <li key={point} className="flex items-center gap-2">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100">
+                <Check className="h-3 w-3 text-emerald-600" aria-hidden />
+              </span>
+              {point}
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
