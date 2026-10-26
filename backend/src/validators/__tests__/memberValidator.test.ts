@@ -48,11 +48,11 @@ describe('validateMember ecclesiastical questionnaire', () => {
 });
 
 describe('validateMember contact and gender', () => {
-  it('rejects Não informado', () => {
+  it.each(['create', 'update'] as const)('rejects Não informado on %s', (mode) => {
     const { error } = validateMember({
       ...validMember,
       gender: 'Não informado',
-    } as never);
+    } as never, { mode });
     expect(error?.details.map((detail) => detail.message).join(' ')).toContain('Masculino ou Feminino');
   });
 
