@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Loader, Mail, MessageCircle, User, Users, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
 import apiService from '@/services/api';
@@ -16,6 +17,10 @@ interface Member {
   name: string;
   email?: string;
   phone?: string;
+  minor_without_own_contact?: boolean;
+  communication_consent_at?: string | null;
+  communication_consent_source?: 'internal' | 'public' | 'import' | null;
+  duplicate_review_pending?: boolean;
   whatsapp?: string;
   birth: string;
   gender: string;
@@ -69,6 +74,12 @@ interface ViewMemberModalProps {
   onDeletePermanently: () => void;
 }
 
+
+function consentOriginLabel(source?: 'internal' | 'public' | 'import' | null): string {
+  if (source === 'public') return 'autocadastro';
+  if (source === 'import') return 'importação';
+  return 'formulário interno';
+}
 
 function formatarData(data: string): string {
   if (!data) return '-';
@@ -214,6 +225,12 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
           <>
             {/* Conteúdo principal */}
             <div className="flex-1 p-6 space-y-6">
+              {member.duplicate_review_pending && (
+                <Alert
+                  variant="warning"
+                  message="Possível duplicidade no autocadastro. Confira nome, nascimento e contato antes de usar este cadastro."
+                />
+              )}
               {/* Header com nome, status e PDF abaixo do nome */}
               <div className="flex flex-col gap-3">
                 <div>
@@ -395,6 +412,17 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                     </h4>
 
                     <div className="space-y-3">
+                      <div>
+                        <span className="text-sm font-medium text-gray-500">Comunicação</span>
+                        <p className="text-gray-900">
+                          {member.communication_consent_at
+                            ? `Consentimento registrado em ${formatarData(member.communication_consent_at)} · origem: ${consentOriginLabel(member.communication_consent_source)}.`
+                            : 'Sem consentimento registrado.'}
+                        </p>
+                      </div>
+                      {member.minor_without_own_contact && (
+                        <p className="text-gray-900">Menor de 18 anos sem contato próprio.</p>
+                      )}
                       {member.email && (
                         <div className="flex items-center gap-2">
                           <Mail size={16} className="text-gray-400" />
