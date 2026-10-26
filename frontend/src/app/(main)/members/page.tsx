@@ -117,8 +117,15 @@ function MembersPageContent() {
 
   // Função para atualizar o limite de membros
   const updateMemberLimit = useCallback(async () => {
+    const loadLimit = () => apiService.getMemberLimit();
     try {
-      const limitData = await apiService.getMemberLimit();
+      let limitData;
+      try {
+        limitData = await loadLimit();
+      } catch {
+        await new Promise((resolve) => setTimeout(resolve, 400));
+        limitData = await loadLimit();
+      }
       setMemberLimit({
         currentCount: limitData.currentCount,
         limit: limitData.limit,
@@ -126,11 +133,8 @@ function MembersPageContent() {
         isPastDue: limitData.isPastDue,
         message: limitData.message,
       });
-      // ACHADO 08: limpar estado de erro se a chamada subsequente tiver sucesso
       setMemberLimitLoadError(false);
     } catch {
-      // ACHADO 08: sinalizar explicitamente a falha para que o render não mostre os botões
-      // como se o estado fosse "ainda carregando" (null)
       setMemberLimitLoadError(true);
     }
   }, []);
@@ -154,43 +158,45 @@ function MembersPageContent() {
 
   // Aplicar filtros da URL se presentes e carregar membros
   useEffect(() => {
-    let isMounted = true;
+    let cancelled = false;
     
     const initializePage = async () => {
-      if (!isMounted) return;
-      
       setIsInitializing(true);
-      
-      const congregationIdFromUrl = searchParams.get('congregation_id');
-      const statusFromUrl = searchParams.get('status');
-      
-      const filtersToUse = { ...initialFilters };
-      
-      if (congregationIdFromUrl || statusFromUrl) {
-        if (congregationIdFromUrl) {
-          filtersToUse.congregationId = congregationIdFromUrl;
+
+      try {
+        const congregationIdFromUrl = searchParams.get('congregation_id');
+        const statusFromUrl = searchParams.get('status');
+        
+        const filtersToUse = { ...initialFilters };
+        
+        if (congregationIdFromUrl || statusFromUrl) {
+          if (congregationIdFromUrl) {
+            filtersToUse.congregationId = congregationIdFromUrl;
+          }
+          
+          if (statusFromUrl && (statusFromUrl === 'active' || statusFromUrl === 'inactive' || statusFromUrl === 'all')) {
+            filtersToUse.status = statusFromUrl as 'all' | 'active' | 'inactive';
+          }
+          
+          if (!cancelled) {
+            setFilters(filtersToUse);
+          }
         }
         
-        if (statusFromUrl && (statusFromUrl === 'active' || statusFromUrl === 'inactive' || statusFromUrl === 'all')) {
-          filtersToUse.status = statusFromUrl as 'all' | 'active' | 'inactive';
+        if (!cancelled) {
+          await loadMembers(filtersToUse, sorting, 1);
         }
-        
-        if (isMounted) {
-          setFilters(filtersToUse);
+      } finally {
+        if (!cancelled) {
+          setIsInitializing(false);
         }
-      }
-      
-      // Carregar membros com os filtros (seja da URL ou iniciais)
-      if (isMounted) {
-        await loadMembers(filtersToUse, sorting, 1);
-        setIsInitializing(false);
       }
     };
     
-    initializePage();
+    void initializePage();
     
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]); // Executar quando searchParams mudar
@@ -482,7 +488,8 @@ function MembersPageContent() {
             <div className="text-sm text-amber-600 italic px-3 py-2 bg-amber-50 rounded-lg border border-amber-200 max-w-full break-words">
               Não foi possível verificar o limite de membros.
             </div>
-          ) : memberLimit === null || memberLimit.canAdd === true || memberLimit.limit === Infinity ? (
+          ) : null}
+          {memberLimit === null || memberLimit.canAdd === true || memberLimit.limit === Infinity ? (
             <>
               <Button
                 variant="secondary"

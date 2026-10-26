@@ -182,6 +182,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [contactError, setContactError] = useState<string | null>(null);
   const [duplicateWarnings, setDuplicateWarnings] = useState<Array<'name_birth' | 'email'>>([]);
   const acknowledgeRef = useRef(false);
+  const congregationRetryRef = useRef(false);
   const contactSectionRef = useRef<HTMLDivElement>(null);
   const prevMemberRef = useRef<Member | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -193,6 +194,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     setValue,
     setError,
     clearErrors,
+    getValues,
     watch,
     reset,
   } = useForm<MemberFormData>({
@@ -224,6 +226,22 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   };
 
   const handleInvalidSubmit = (formErrors: FieldErrors<MemberFormData>) => {
+    if (
+      formErrors.congregation_id &&
+      defaultCongregationId &&
+      !getValues('congregation_id') &&
+      !congregationRetryRef.current
+    ) {
+      congregationRetryRef.current = true;
+      setValue('congregation_id', defaultCongregationId, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+      void handleSubmit(handleFormSubmit)();
+      return;
+    }
+
     const messages = collectErrorMessages(formErrors);
     const unique = [...new Set(messages)];
     setValidationSummary(
@@ -259,12 +277,19 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     }
   }, [error]);
 
-  // Definir congregação principal como padrão ao criar
+  const defaultCongregationId =
+    mode === 'create' && !filtersLoading ? getPrimaryCongregationId(congregations) : '';
+
+  // O campo pode aparecer preenchido antes do valor entrar no formulário.
+  // Grava o id da principal e valida, para o submit usar o mesmo id exibido.
   useEffect(() => {
-    if (mode === 'create' && !filtersLoading && !watch('congregation_id') && congregations.length > 0) {
-      setValue('congregation_id', getPrimaryCongregationId(congregations));
-    }
-  }, [mode, filtersLoading, congregations, setValue, watch]);
+    if (!defaultCongregationId || getValues('congregation_id')) return;
+    setValue('congregation_id', defaultCongregationId, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  }, [defaultCongregationId, getValues, setValue]);
 
   // Preencher formulário ao editar
   useEffect(() => {
@@ -499,7 +524,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       wedding_date: data.wedding_date ? formatDateToISO(data.wedding_date) || undefined : undefined,
       occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
       occupation_other: undefined,
-      congregation_id: data.congregation_id,
+      congregation_id: data.congregation_id || defaultCongregationId,
       children: childrenWithISO,
       groups: selectedGroups,
       minor_without_own_contact: Boolean(data.minor_without_own_contact),
@@ -1004,9 +1029,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           <Select
             label="Congregação *"
-            value={watch('congregation_id') || ''}
+            value={watch('congregation_id') || defaultCongregationId}
             onChange={(value) => {
-              setValue('congregation_id', value);
+              setValue('congregation_id', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true,
+              });
               if (mode === 'create') setSelectedGroups([]);
             }}
             className="col-span-full w-full min-w-0"
