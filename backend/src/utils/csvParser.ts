@@ -808,10 +808,10 @@ export function normalizeRow(row: CSVRow): CSVRow {
     }
   }
   
-  // Normaliza gênero
-  if (normalized.gender) {
+  // Normaliza gênero. Valor preenchido e não mapeado permanece para o Joi recusar a linha.
+  if (normalized.gender && normalized.gender.trim() !== '') {
     const gender = normalizeGender(normalized.gender);
-    normalized.gender = gender || '';
+    normalized.gender = gender || normalized.gender.trim();
   }
   
   // Normaliza estado civil

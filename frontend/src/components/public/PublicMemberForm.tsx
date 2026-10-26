@@ -13,7 +13,8 @@ import { apiService } from '@/services/api';
 import { Group } from '@/types';
 import { validateDateFormat } from '@/utils/validations';
 import { formatDateToISO } from '@/utils';
-import { memberSchema, MemberFormData } from '@/components/members/memberFormSchema';
+import { memberSchema, MemberFormData, CONTACT_REQUIRED_MESSAGE, hasMemberContact } from '@/components/members/memberFormSchema';
+import { Alert } from '@/components/ui/Alert';
 import { getCongregationDisplayName } from '@/utils/congregation';
 
 interface Child {
@@ -127,6 +128,7 @@ export function PublicMemberForm({
   const [weddingDateDisplay, setWeddingDateDisplay] = useState('');
   const [admissionDateDisplay, setAdmissionDateDisplay] = useState('');
   const [occupationOtherError, setOccupationOtherError] = useState('');
+  const [contactError, setContactError] = useState<string | null>(null);
   const [children, setChildren] = useState<Child[]>([]);
   const [childrenBirthDisplays, setChildrenBirthDisplays] = useState<Record<number, string>>({});
   const [isInfantMember, setIsInfantMember] = useState(false);
@@ -152,6 +154,8 @@ export function PublicMemberForm({
       gender: 'Masculino',
       marital_status: 'Solteiro',
       congregation_id: fixedCongregationId || '',
+      minor_without_own_contact: false,
+      communication_consent: false,
     },
   });
 
@@ -235,6 +239,13 @@ export function PublicMemberForm({
     }
     setOccupationOtherError('');
 
+    if (!hasMemberContact(data) && !data.minor_without_own_contact) {
+      setContactError(CONTACT_REQUIRED_MESSAGE);
+      document.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
+      return;
+    }
+    setContactError(null);
+
     const childrenWithISO = children.map(c => ({
       name: c.name,
       birth: c.birth ? formatDateToISO(c.birth) || undefined : undefined,
@@ -256,6 +267,8 @@ export function PublicMemberForm({
       congregation_id: data.congregation_id,
       children: childrenWithISO,
       groups: selectedGroups,
+      minor_without_own_contact: Boolean(data.minor_without_own_contact),
+      communication_consent: Boolean(data.communication_consent),
     };
 
     await onSubmit(payload);
@@ -527,6 +540,7 @@ export function PublicMemberForm({
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Contato e Endereço
         </h3>
+        <p className="text-sm text-gray-600">Informe ao menos um contato.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
@@ -560,6 +574,33 @@ export function PublicMemberForm({
               isLoading={isLoading}
             />
           </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 min-h-11 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              disabled={isLoading}
+              checked={Boolean(watch('minor_without_own_contact'))}
+              onChange={(event) => {
+                setValue('minor_without_own_contact', event.target.checked);
+                if (event.target.checked) setContactError(null);
+              }}
+            />
+            <span className="text-sm text-gray-900">Sou menor de 18 anos e não tenho telefone, WhatsApp nem e-mail próprios.</span>
+          </label>
+          <label className="flex items-start gap-3 min-h-11 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              disabled={isLoading}
+              checked={Boolean(watch('communication_consent'))}
+              onChange={(event) => setValue('communication_consent', event.target.checked)}
+            />
+            <span className="text-sm text-gray-900">Aceito ser contatado pela igreja por telefone, WhatsApp ou e-mail.</span>
+          </label>
+          {contactError && <Alert variant="error" message={contactError} />}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">

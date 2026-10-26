@@ -30,6 +30,10 @@ export function CreateMemberModal({ isOpen, onClose, onSuccess }: CreateMemberMo
       setIsLoading(false);
     } catch (err: unknown) {
       setIsLoading(false);
+      const status = (err as { status?: number }).status;
+      if (status === 409) {
+        throw err;
+      }
       const errorMessage = err instanceof Error ? err.message : 'Erro ao criar membro';
       setError(errorMessage);
       // Re-lançar o erro para que o MemberForm não limpe o formulário

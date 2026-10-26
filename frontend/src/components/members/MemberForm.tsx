@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { Alert } from '@/components/ui/Alert';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { useIbgeData } from '@/hooks/useIbgeData';
 import { useProfessions } from '@/hooks/useProfessions';
@@ -14,7 +15,7 @@ import { Group } from '@/types';
 import { fetchCEPData, validateDateFormat } from '@/utils/validations';
 import { formatDateToISO, formatPhone, maskPhoneInput } from '@/utils';
 import { getPrimaryCongregationId, getCongregationDisplayName } from '@/utils/congregation';
-import { memberSchema, MemberFormData } from './memberFormSchema';
+import { memberSchema, MemberFormData, CONTACT_REQUIRED_MESSAGE, hasMemberContact } from './memberFormSchema';
 
 interface Child {
   id?: string;
@@ -28,6 +29,9 @@ interface Member {
   name: string;
   email?: string;
   phone?: string;
+  minor_without_own_contact?: boolean;
+  communication_consent_at?: string | null;
+  communication_consent_source?: 'internal' | 'public' | 'import' | null;
   whatsapp?: string;
   birth: string;
   gender: string;
@@ -175,6 +179,11 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [occupationOtherError, setOccupationOtherError] = useState('');
   const [validationSummary, setValidationSummary] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
+  const [duplicateWarnings, setDuplicateWarnings] = useState<Array<'name_birth' | 'email'>>([]);
+  const acknowledgeRef = useRef(false);
+  const congregationRetryRef = useRef(false);
+  const contactSectionRef = useRef<HTMLDivElement>(null);
   const prevMemberRef = useRef<Member | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -185,6 +194,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     setValue,
     setError,
     clearErrors,
+    getValues,
     watch,
     reset,
   } = useForm<MemberFormData>({
@@ -194,6 +204,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       gender: 'Masculino',
       marital_status: 'Solteiro',
       congregation_id: '',
+      minor_without_own_contact: false,
+      communication_consent: false,
     } : {},
     shouldUnregister: false,
   });
@@ -214,6 +226,22 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
   };
 
   const handleInvalidSubmit = (formErrors: FieldErrors<MemberFormData>) => {
+    if (
+      formErrors.congregation_id &&
+      defaultCongregationId &&
+      !getValues('congregation_id') &&
+      !congregationRetryRef.current
+    ) {
+      congregationRetryRef.current = true;
+      setValue('congregation_id', defaultCongregationId, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+      void handleSubmit(handleFormSubmit)();
+      return;
+    }
+
     const messages = collectErrorMessages(formErrors);
     const unique = [...new Set(messages)];
     setValidationSummary(
@@ -249,12 +277,19 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     }
   }, [error]);
 
-  // Definir congregação principal como padrão ao criar
+  const defaultCongregationId =
+    mode === 'create' && !filtersLoading ? getPrimaryCongregationId(congregations) : '';
+
+  // O campo pode aparecer preenchido antes do valor entrar no formulário.
+  // Grava o id da principal e valida, para o submit usar o mesmo id exibido.
   useEffect(() => {
-    if (mode === 'create' && !filtersLoading && !watch('congregation_id') && congregations.length > 0) {
-      setValue('congregation_id', getPrimaryCongregationId(congregations));
-    }
-  }, [mode, filtersLoading, congregations, setValue, watch]);
+    if (!defaultCongregationId || getValues('congregation_id')) return;
+    setValue('congregation_id', defaultCongregationId, {
+      shouldValidate: true,
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+  }, [defaultCongregationId, getValues, setValue]);
 
   // Preencher formulário ao editar
   useEffect(() => {
@@ -266,7 +301,7 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     const asStr = (value: string | null | undefined) => value ?? '';
     const asBool = (value: boolean | null | undefined) =>
       value === null || value === undefined ? undefined : value;
-    const genderValues = ['Masculino', 'Feminino', 'Não informado'] as const;
+    const genderValues = ['Masculino', 'Feminino'] as const;
     const maritalValues = ['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável'] as const;
     const parentMemberValues = ['sim', 'nao', 'falecido'] as const;
 
@@ -279,8 +314,10 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       'gender',
       genderValues.includes(member.gender as typeof genderValues[number])
         ? (member.gender as typeof genderValues[number])
-        : 'Não informado'
+        : ''
     );
+    setValue('minor_without_own_contact', Boolean(member.minor_without_own_contact));
+    setValue('communication_consent', Boolean(member.communication_consent_at));
     setValue(
       'marital_status',
       maritalValues.includes(member.marital_status as typeof maritalValues[number])
@@ -461,6 +498,14 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
     setOccupationOtherError('');
     setValidationSummary(null);
 
+    if (mode === 'create' && !hasMemberContact(data) && !data.minor_without_own_contact) {
+      setContactError(CONTACT_REQUIRED_MESSAGE);
+      contactSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.querySelector<HTMLInputElement>('input[name="email"]')?.focus();
+      return;
+    }
+    setContactError(null);
+
     const childrenWithISO = children.map(c => ({
       name: c.name,
       birth: c.birth ? formatDateToISO(c.birth) || undefined : undefined,
@@ -479,12 +524,27 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       wedding_date: data.wedding_date ? formatDateToISO(data.wedding_date) || undefined : undefined,
       occupation: data.occupation === 'Outra' ? (data.occupation_other || '') : data.occupation,
       occupation_other: undefined,
-      congregation_id: data.congregation_id,
+      congregation_id: data.congregation_id || defaultCongregationId,
       children: childrenWithISO,
       groups: selectedGroups,
+      minor_without_own_contact: Boolean(data.minor_without_own_contact),
+      communication_consent: Boolean(data.communication_consent),
+      acknowledgeDuplicates: acknowledgeRef.current,
     };
 
-    await onSubmit(payload);
+    try {
+      await onSubmit(payload);
+      acknowledgeRef.current = false;
+      setDuplicateWarnings([]);
+    } catch (err) {
+      const enhanced = err as { status?: number; originalError?: { warnings?: Array<'name_birth' | 'email'> } };
+      if (enhanced.status === 409 && Array.isArray(enhanced.originalError?.warnings)) {
+        setDuplicateWarnings(enhanced.originalError.warnings);
+        acknowledgeRef.current = false;
+        return;
+      }
+      throw err;
+    }
 
     if (mode === 'create') {
       setPhoneDisplay(''); setWhatsappDisplay(''); setCepDisplay('');
@@ -534,9 +594,8 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           <Select
             label="Gênero *"
             value={watch('gender') || ''}
-            onChange={(value) => setValue('gender', value as 'Masculino' | 'Feminino' | 'Não informado')}
+            onChange={(value) => setValue('gender', value === 'Feminino' ? 'Feminino' : 'Masculino', { shouldValidate: true })}
             options={[
-              { value: 'Não informado', label: 'Não informado' },
               { value: 'Masculino', label: 'Masculino' },
               { value: 'Feminino', label: 'Feminino' },
             ]}
@@ -757,10 +816,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
       </div>
 
       {/* ─── CONTATO E ENDEREÇO ─── */}
-      <div className="space-y-4">
+      <div className="space-y-4" ref={contactSectionRef}>
         <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
           Contato e Endereço
         </h3>
+        {mode === 'create' && (
+          <p className="text-sm text-gray-600">Informe ao menos um contato.</p>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
@@ -795,6 +857,38 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
               isLoading={isLoading}
             />
           </div>
+        </div>
+
+        <div className="space-y-3">
+          <label className="flex items-start gap-3 min-h-11 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              disabled={isLoading}
+              checked={Boolean(watch('minor_without_own_contact'))}
+              onChange={(event) => {
+                setValue('minor_without_own_contact', event.target.checked);
+                if (event.target.checked) setContactError(null);
+              }}
+            />
+            <span>
+              <span className="block text-sm font-medium text-gray-900">Menor de 18 anos sem contato próprio</span>
+              <span className="block text-sm text-gray-500">Dispensa telefone, WhatsApp e e-mail neste cadastro.</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 min-h-11 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              disabled={isLoading}
+              checked={Boolean(watch('communication_consent'))}
+              onChange={(event) => setValue('communication_consent', event.target.checked)}
+            />
+            <span className="text-sm text-gray-900">A igreja obteve consentimento para entrar em contato com esta pessoa.</span>
+          </label>
+          {contactError && (
+            <Alert variant="error" message={contactError} />
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
@@ -935,9 +1029,13 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
 
           <Select
             label="Congregação *"
-            value={watch('congregation_id') || ''}
+            value={watch('congregation_id') || defaultCongregationId}
             onChange={(value) => {
-              setValue('congregation_id', value);
+              setValue('congregation_id', value, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true,
+              });
               if (mode === 'create') setSelectedGroups([]);
             }}
             className="col-span-full w-full min-w-0"
@@ -995,6 +1093,43 @@ export function MemberForm({ member, onSubmit, onCancel, isLoading = false, mode
           )}
         </div>
       </div>
+
+      {duplicateWarnings.length > 0 && (
+        <div role="alert" className="space-y-3">
+          <Alert
+            variant="warning"
+            message={duplicateWarnings.map((warning) => (
+              warning === 'name_birth'
+                ? 'Já existe um membro com o mesmo nome e a mesma data de nascimento.'
+                : 'Este e-mail já está em outro membro. Familiares podem compartilhar o mesmo e-mail.'
+            )).join(' ')}
+          />
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-11 w-full sm:w-auto"
+              onClick={() => {
+                setDuplicateWarnings([]);
+                document.querySelector<HTMLInputElement>('input[name="name"]')?.focus();
+              }}
+            >
+              Voltar e ajustar
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11 w-full sm:w-auto"
+              isLoading={isLoading}
+              onClick={() => {
+                acknowledgeRef.current = true;
+                void handleSubmit(handleFormSubmit)();
+              }}
+            >
+              Salvar mesmo assim
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Erro de API ou validação do formulário */}
       {(error || validationSummary) && (

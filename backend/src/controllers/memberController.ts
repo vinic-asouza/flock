@@ -7,7 +7,8 @@ import { logAudit } from '../utils/auditLogger';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
 import { error as logError } from '../utils/logger';
-import { validateEmailUniqueness, validateGroups } from '../utils/memberValidations';
+import { findMemberDuplicateWarnings, validateGroups } from '../utils/memberValidations';
+import { omitMemberControlFields, resolveConsentForCreate, resolveConsentForUpdate } from '../utils/memberIdentity';
 import { calculateAge } from '../utils/ageCalculator';
 import {
   applyScopedCongregationFilter,
@@ -577,38 +578,28 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       return res.status(congregationAccess.status).json(congregationAccess.body);
     }
 
-    // Verificar duplicidade por nome (lowercase) - OTIMIZADO
-    if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
-      const normalizedName = normalizedData.name.trim().toLowerCase();
-      
-      // Query otimizada - busca direto no banco com ilike (case-insensitive)
-      const { data: duplicate, error: checkError } = await supabase
-        .from('members')
-        .select('id, name')
-        .eq('church_id', churchId)
-        .ilike('name', normalizedName)
-        .limit(1);
-      
-      if (checkError) {
-        logError('Erro ao verificar duplicidade:', checkError);
-      }
-      
-      if (duplicate && duplicate.length > 0) {
-        return res.status(400).json({
-          error: 'Membro já cadastrado',
-          details: 'Já existe um membro cadastrado com este nome completo.'
-        });
-      }
+    const { error: validationError } = validateMember(
+      { ...normalizedData, groups: groupIds },
+      { mode: 'create' }
+    );
+    if (validationError) {
+      return res.status(400).json({
+        error: 'Dados inválidos',
+        details: validationError.details.map((detail) => detail.message)
+      });
     }
 
-    // Verificar email duplicado (se fornecido)
-    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, churchId);
-    if (!emailValidation.isValid) {
-      return res.status(400).json({
-        error: emailValidation.errorMessage || 'Email já cadastrado',
-        details: emailValidation.duplicateMemberName 
-          ? `Este email já está sendo usado pelo membro: ${emailValidation.duplicateMemberName}`
-          : 'Este email já está cadastrado'
+    const acknowledgeDuplicates = Boolean((req.body as { acknowledgeDuplicates?: boolean }).acknowledgeDuplicates);
+    const duplicateWarnings = await findMemberDuplicateWarnings(churchId, {
+      name: normalizedData.name as string,
+      birth: normalizedData.birth,
+      email: normalizedData.email as string,
+    });
+    if (duplicateWarnings.length > 0 && !acknowledgeDuplicates) {
+      return res.status(409).json({
+        error: 'Possível duplicidade',
+        code: 'DUPLICATE_CONFIRMATION_REQUIRED',
+        warnings: duplicateWarnings,
       });
     }
 
@@ -621,8 +612,12 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    const communicationConsent = Boolean((req.body as { communication_consent?: boolean }).communication_consent);
     const memberData: Partial<Member> = {
-      ...normalizedData,
+      ...omitMemberControlFields(normalizedData),
+      ...resolveConsentForCreate(communicationConsent, 'internal'),
+      minor_without_own_contact: Boolean(normalizedData.minor_without_own_contact),
+      duplicate_review_pending: false,
       church_id: churchId,
       active: true,
       // Garantir que children seja um array JSON válido
@@ -843,14 +838,28 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Verificar email duplicado no update (se fornecido e diferente do atual)
-    const emailValidation = await validateEmailUniqueness(normalizedData.email as string, churchId, id);
-    if (!emailValidation.isValid) {
+    const { error: validationError } = validateMember(
+      { ...normalizedData, groups: newGroupIds },
+      { mode: 'update' }
+    );
+    if (validationError) {
       return res.status(400).json({
-        error: emailValidation.errorMessage || 'Email já cadastrado',
-        details: emailValidation.duplicateMemberName 
-          ? `Este email já está sendo usado pelo membro: ${emailValidation.duplicateMemberName}`
-          : 'Este email já está cadastrado'
+        error: 'Dados inválidos',
+        details: validationError.details.map((detail) => detail.message)
+      });
+    }
+
+    const acknowledgeDuplicates = Boolean((req.body as { acknowledgeDuplicates?: boolean }).acknowledgeDuplicates);
+    const duplicateWarnings = await findMemberDuplicateWarnings(churchId, {
+      name: (normalizedData.name as string) ?? existingMember.name,
+      birth: normalizedData.birth ?? existingMember.birth,
+      email: (normalizedData.email as string) ?? existingMember.email,
+    }, id);
+    if (duplicateWarnings.length > 0 && !acknowledgeDuplicates) {
+      return res.status(409).json({
+        error: 'Possível duplicidade',
+        code: 'DUPLICATE_CONFIRMATION_REQUIRED',
+        warnings: duplicateWarnings,
       });
     }
 
@@ -868,8 +877,17 @@ export const updateMember = async (req: AuthRequest, res: Response) => {
     // ====================
 
     // PASSO 1: Atualiza o membro
+    const consentInput = (req.body as { communication_consent?: boolean }).communication_consent;
     const updateData = {
-      ...normalizedData,
+      ...omitMemberControlFields(normalizedData),
+      ...resolveConsentForUpdate(
+        typeof consentInput === 'boolean' ? consentInput : undefined,
+        existingMember
+      ),
+      minor_without_own_contact: 'minor_without_own_contact' in normalizedData
+        ? Boolean(normalizedData.minor_without_own_contact)
+        : existingMember.minor_without_own_contact,
+      duplicate_review_pending: false,
       // Garantir que children seja um array JSON válido
       children: normalizedData.children !== undefined 
         ? (Array.isArray(normalizedData.children) ? normalizedData.children : [])

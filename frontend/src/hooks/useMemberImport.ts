@@ -53,14 +53,15 @@ export function useMemberImport() {
   const importMembers = useCallback(async (
     file: File,
     congregationId: string | null = null,
-    skipDuplicates: boolean = true
+    skipDuplicates: boolean = true,
+    communicationConsent: boolean = false
   ) => {
     try {
       setImporting(true);
       setError(null);
       setImportResult(null);
 
-      const result = await apiService.importMembers(file, congregationId, skipDuplicates);
+      const result = await apiService.importMembers(file, congregationId, skipDuplicates, communicationConsent);
       setImportResult(result);
       return result;
     } catch (err: unknown) {

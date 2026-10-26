@@ -143,6 +143,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
 
     // Opções de importação
     const skipDuplicates = req.body.skipDuplicates !== 'false';
+    const communicationConsent = req.body.communicationConsent === 'true' || req.body.communicationConsent === true;
 
     // Validar CSV primeiro para contar quantos membros válidos serão importados
     const validationResult = await validateCSV(
@@ -174,7 +175,7 @@ export const importMembersFromCSV = async (req: AuthRequest, res: Response) => {
       req.file.buffer,
       churchId,
       congregationId,
-      { skipDuplicates }
+      { skipDuplicates, communicationConsent }
     );
 
     // Um log genérico por importação de lista de membros
