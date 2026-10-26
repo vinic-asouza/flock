@@ -265,7 +265,8 @@ Seções principais do modal de visualização (paridade com o PDF de perfil):
 // Erros:
 // 401 — não autenticado
 // 403 — Limite de membros / past_due (planLimits)
-// 400 — duplicidade nome/email, grupos inválidos, validação Joi, erro DB
+// 400 — validação Joi (contato na criação, gênero), grupos inválidos, erro DB
+// 409 — possível duplicidade (name_birth e/ou email); reenviar com acknowledgeDuplicates
 // 500 — erro interno
 ```
 
@@ -289,18 +290,18 @@ Seções principais do modal de visualização (paridade com o PDF de perfil):
 
 ## 6. ⚙️ Regras de Negócio
 
-Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**18** regras).
+Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**22** regras).
 
 | ID | Declaração curta |
 | --- | --- |
 | BR-MEM-001 | Create só se caber no plano e ≠ `past_due` |
-| BR-MEM-002 | Nome único na igreja (case-insensitive) |
-| BR-MEM-003 | E-mail único na igreja |
-| BR-MEM-004 | Campos obrigatórios / formatos (Joi) |
+| BR-MEM-002 | Aviso de nome normalizado + mesma data de nascimento (confirmável) |
+| BR-MEM-003 | E-mail repetido é aviso confirmável, não bloqueio |
+| BR-MEM-004 | Campos obrigatórios / formatos (Joi); gênero só Masculino ou Feminino |
 | BR-MEM-005 | Novo membro nasce `active=true` |
 | BR-MEM-006 | Ministérios devem pertencer à igreja |
 | BR-MEM-007 | Import respeita capacidade restante |
-| BR-MEM-008 | Import: skipDuplicates (padrão) por nome |
+| BR-MEM-008 | Import: aviso de contato/duplicidade; não pula só por nome |
 | BR-MEM-009 | Mutações exigem editor+ |
 | BR-MEM-010 | DELETE = hard delete + audit |
 | BR-MEM-011 | Inativar remove participações futuras no calendário |
@@ -312,6 +313,9 @@ Detalhe: [[02_regras-de-negocio/regras-por-modulo/membros]] (**18** regras).
 | BR-MEM-017 | `congregation_id` UUID obrigatório (sem Sede/null) |
 | BR-MEM-018 | CSV operacional (sem questionário; legado só no import; skip Idade/Status/Congregação) |
 | BR-MEM-019 | Link público: congregação na criação; form anônimo sem escolha; ministérios da cong. do link |
+| BR-MEM-020 | Criação exige um contato, salvo menor sem contato próprio |
+| BR-MEM-021 | Consentimento de comunicação com data e origem; ausência não presume aceite |
+| BR-MEM-022 | Autocadastro coincidente não revela o outro membro e marca revisão na ficha |
 
 **Inferido:** reativar via PATCH pode **não** revalidar limite do plano.
 
@@ -339,7 +343,7 @@ sequenceDiagram
     API-->>U: 403
   end
   API->>API: validateMember + normalize dates
-  API->>DB: duplicate name / email / validate groups
+  API->>DB: avisos nome+nascimento / e-mail (409 se não confirmado) + grupos
   API->>DB: INSERT members
   opt groups[]
     API->>DB: INSERT member_groups (rollback member se falhar)
@@ -465,7 +469,7 @@ Este módulo **não** possui cron/job dedicado.
 | Aviso de limite | Fire-and-forget | Dentro de `checkMemberLimit` | On-demand | E-mail se threshold |
 | Import CSV | Sync no request | POST import | On-demand | Parse + inserts (pesado) |
 
-Falha de import = resposta HTTP com relatório parcial (linhas skip/erro); sem fila/retry automático.
+Falha de import = resposta HTTP com relatório parcial (erros por linha e avisos de contato/duplicidade); sem fila/retry automático. Aviso não impede a linha de entrar.
 
 ---
 
@@ -476,8 +480,9 @@ Falha de import = resposta HTTP com relatório parcial (linhas skip/erro); sem f
 | Não autenticado | 401 | `Não autorizado` | sem user |
 | Sem role | 403 | `Permissão insuficiente` | requireRole |
 | Limite / past_due | 403 | `Limite de membros atingido` (+ detalhes quota) | create/import/público |
-| Nome duplicado | 400 | `Membro já cadastrado` | create |
-| E-mail duplicado | 400 | mensagem validação | create/update |
+| Possível duplicidade | 409 | `Possível duplicidade` + `code: DUPLICATE_CONFIRMATION_REQUIRED` | create/update no Painel |
+| Sem contato na criação | 400 | pedir contato ou exceção de menor | create interno e público |
+| Gênero inválido | 400 | `Gênero deve ser Masculino ou Feminino` | create/update/import (linha) |
 | Grupos inválidos | 400 | `Erro ao validar grupos` | create/update |
 | Validação Joi / query | 400 | `Dados inválidos` / página/limite | vários |
 | Não encontrado | 404 | `Membro não encontrado` / link | get/delete/público |

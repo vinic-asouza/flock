@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: membros
-ultima_atualizacao: 2026-10-19
+ultima_atualizacao: 2026-10-26
 versao: "1.4"
-total_regras: 19
+total_regras: 22
 tags: [regras, modulo:membros]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -20,13 +20,13 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | ID | Nome | Tipo | Status |
 | --- | --- | --- | --- |
 | BR-MEM-001 | Limite de plano na criação | Restrição | Ativo |
-| BR-MEM-002 | Nome único na igreja | Restrição | Ativo |
-| BR-MEM-003 | E-mail único na igreja | Restrição | Ativo |
+| BR-MEM-002 | Aviso de nome e nascimento | Restrição | Ativo |
+| BR-MEM-003 | Aviso de e-mail repetido | Restrição | Ativo |
 | BR-MEM-004 | Campos obrigatórios do membro | Restrição | Ativo |
 | BR-MEM-005 | Nascimento active true | Fato | Ativo |
 | BR-MEM-006 | Ministérios do membro válidos | Restrição | Ativo |
 | BR-MEM-007 | Import e limite | Restrição | Ativo |
-| BR-MEM-008 | Skip duplicatas no import | Derivação | Ativo |
+| BR-MEM-008 | Avisos na importação | Derivação | Ativo |
 | BR-MEM-009 | Escrita editor+ | Restrição | Ativo |
 | BR-MEM-010 | DELETE hard delete | Gatilho | Ativo |
 | BR-MEM-011 | Inativação limpa agenda futura | Gatilho | Ativo |
@@ -38,6 +38,9 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | BR-MEM-017 | Congregação obrigatória | Restrição | Ativo |
 | BR-MEM-018 | Contrato CSV operacional | Restrição | Ativo |
 | BR-MEM-019 | Congregação do link público de membros | Restrição | Ativo |
+| BR-MEM-020 | Contato mínimo na criação | Restrição | Ativo |
+| BR-MEM-021 | Consentimento de comunicação | Fato | Ativo |
+| BR-MEM-022 | Revisão de duplicidade no autocadastro | Gatilho | Ativo |
 
 ---
 
@@ -55,28 +58,28 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** [[BR-POL-001]]
 
-### BR-MEM-002: Nome único na igreja
-- **Declaração:** Na mesma igreja, nome completo do membro deve ser único (case-insensitive) na criação.
+### BR-MEM-002: Aviso de nome e nascimento
+- **Declaração:** Nome sozinho não bloqueia o cadastro. Quando o nome normalizado (sem acento, sem diferença de maiúsculas, espaços extras colapsados) e a data de nascimento coincidem com outro membro da mesma igreja, o Painel responde 409 `DUPLICATE_CONFIRMATION_REQUIRED` até o body trazer `acknowledgeDuplicates: true`. Homônimos com nascimentos diferentes entram sem aviso.
 - **Tipo:** Restrição
-- **Gatilho:** POST create
-- **Comportamento esperado:** Criado
-- **Comportamento em violação:** 400 Membro já cadastrado
-- **Implementado em:** `memberController.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Gatilho:** POST/PUT members
+- **Comportamento esperado:** Salvo após confirmação, sem dados do outro membro na resposta
+- **Comportamento em violação:** 409 com `warnings` contendo `name_birth`
+- **Implementado em:** `utils/memberIdentity.ts`, `memberController.ts`
+- **Testado em:** `utils/__tests__/memberIdentity.test.ts`
 - **Depende de:** —
 
-### BR-MEM-003: E-mail único na igreja
-- **Declaração:** E-mail informado deve ser único entre membros da mesma igreja.
+### BR-MEM-003: Aviso de e-mail repetido
+- **Declaração:** E-mail repetido na mesma igreja não bloqueia. No Painel entra no mesmo 409 confirmável (`warnings: email`). Familiares podem compartilhar e-mail. A resposta não inclui o nome do outro membro.
 - **Tipo:** Restrição
-- **Gatilho:** Create/update
-- **Comportamento esperado:** Persistido
-- **Comportamento em violação:** 400 Email já cadastrado
-- **Implementado em:** `utils/memberValidations.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Gatilho:** POST/PUT members
+- **Comportamento esperado:** Salvo após `acknowledgeDuplicates: true`
+- **Comportamento em violação:** 409
+- **Implementado em:** `utils/memberIdentity.ts`, `memberController.ts`
+- **Testado em:** `utils/__tests__/memberIdentity.test.ts`
 - **Depende de:** —
 
 ### BR-MEM-004: Campos obrigatórios do membro
-- **Declaração:** Membro exige nome, nascimento (não futuro), gênero, estado civil, endereço/cidade/UF, tipo e data de recebimento; docs/CEP/fones válidos se informados. O questionário eclesiástico **não** faz parte do contrato de membro (fica no Integrante — [[BR-INT-016]]).
+- **Declaração:** Membro exige nome, nascimento (não futuro), gênero (só Masculino ou Feminino), estado civil, endereço/cidade/UF, tipo e data de recebimento; docs/CEP/fones válidos se informados. Na criação (Painel e autocadastro) exige ao menos um entre telefone, WhatsApp e e-mail, salvo `minor_without_own_contact` ([[BR-MEM-020]]). Edição não exige contato. O questionário eclesiástico **não** faz parte do contrato de membro (fica no Integrante — [[BR-INT-016]]).
 - **Tipo:** Restrição
 - **Gatilho:** Create/update/validate (Painel, público de registro, convert)
 - **Comportamento esperado:** Validação OK; campos do questionário rejeitados/omitidos
@@ -115,15 +118,15 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Testado em:** N/A — sem suite dedicada
 - **Depende de:** [[BR-POL-001]]
 
-### BR-MEM-008: Skip duplicatas no import
-- **Declaração:** Com skipDuplicates (padrão), linhas com mesmo nome na igreja são puladas.
+### BR-MEM-008: Avisos na importação
+- **Declaração:** A importação não pula linha só por nome igual. Linha sem contato, com nome+nascimento coincidentes ou com e-mail já usado entra no rol e aparece em `warnings`. Gênero fora de Masculino/Feminino invalida só aquela linha. `skipDuplicates` não volta a pular por nome.
 - **Tipo:** Derivação
 - **Gatilho:** Import CSV
-- **Comportamento esperado:** Parcial import
-- **Comportamento em violação:** Linha marcada duplicada
+- **Comportamento esperado:** Importação conclui; avisos separados de erros
+- **Comportamento em violação:** Linha inválida em `errors`, as demais seguem
 - **Implementado em:** `memberImportService.ts`
-- **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Testado em:** N/A — sem suite dedicada de import
+- **Depende de:** [[BR-MEM-002]], [[BR-MEM-020]]
 
 ### BR-MEM-018: Contrato CSV operacional
 - **Declaração:** Import e export CSV de membros cobrem o cadastro operacional (pessoais, família — inclusive flags cônjuge/pai/mãe é membro —, contato, endereço, recebimento). **Não** incluem o questionário eclesiástico. `nationality`, `document` e `baptism_date` são só legado no import (aliases). Cabeçalhos Idade/Status/Congregação de um CSV exportado **não** viram cadastro; a congregação do import é a do modal (BR-MEM-017). Labels oficiais do export dos campos suportados devem ser reimportáveis.
@@ -251,6 +254,36 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Implementado em:** `registrationLinkValidator.ts` / `publicRegistrationController.ts` / `RegistrationLinksModal` / `PublicMemberForm`
 - **Testado em:** `registrationLinkValidator.test.ts` + QA local DEV-157
 - **Depende de:** [[BR-MEM-016]], [[BR-MEM-017]]
+
+### BR-MEM-020: Contato mínimo na criação
+- **Declaração:** Criar membro no Painel ou no autocadastro exige telefone, WhatsApp ou e-mail não vazio, salvo a marcação manual `minor_without_own_contact` (menor de 18 anos sem contato próprio). A exceção não é calculada pela data de nascimento. Editar um membro existente não exige contato. Na importação, linha sem contato entra com aviso.
+- **Tipo:** Restrição
+- **Gatilho:** POST members e POST público com `mode: create`
+- **Comportamento esperado:** Criado com a flag persistida quando marcada
+- **Comportamento em violação:** 400 pedindo contato ou a exceção de menor
+- **Implementado em:** `memberValidator.ts`
+- **Testado em:** `validators/__tests__/memberValidator.test.ts`
+- **Depende de:** [[BR-MEM-004]]
+
+### BR-MEM-021: Consentimento de comunicação
+- **Declaração:** Consentimento é um registro único (`communication_consent_at` + `communication_consent_source`: `internal`, `public` ou `import`). Ausência dos dois campos significa sem consentimento registrado; cadastros antigos não são presumidos. Desmarcar zera os dois. Marcar de novo sem desmarcar preserva data e origem. Na importação, um checkbox do modal vale para as linhas inseridas daquela leva e começa desmarcado.
+- **Tipo:** Fato
+- **Gatilho:** Create/update/import
+- **Comportamento esperado:** Ficha mostra data e origem, ou "sem consentimento registrado"
+- **Comportamento em violação:** CHECK impede data sem origem ou origem sem data
+- **Implementado em:** `memberIdentity.ts`, migration `20261026120000_dev_173_member_contact_consent`
+- **Testado em:** `utils/__tests__/memberIdentity.test.ts`
+- **Depende de:** —
+
+### BR-MEM-022: Revisão de duplicidade no autocadastro
+- **Declaração:** O autocadastro nunca informa que outra pessoa já existe. Se nome+nascimento ou e-mail coincidem, o membro é criado com `duplicate_review_pending`. Um PUT interno bem-sucedido zera a flag. A resposta pública omite essa flag.
+- **Tipo:** Gatilho
+- **Gatilho:** POST `/api/public/registration/:token`
+- **Comportamento esperado:** Sucesso idêntico para o visitante; aviso na ficha para reader+
+- **Comportamento em violação:** —
+- **Implementado em:** `publicRegistrationController.ts`
+- **Testado em:** N/A — sem suite HTTP
+- **Depende de:** [[BR-MEM-002]], [[BR-MEM-003]]
 
 ---
 
