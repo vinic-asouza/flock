@@ -1,5 +1,6 @@
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { logError } from './logger';
+import { DuplicateWarning, MemberIdentityRow, collectDuplicateWarnings } from './memberIdentity';
 
 /**
  * Valida se um email já está em uso por outro membro
@@ -136,4 +137,22 @@ export async function validateGroups(
   }
 
   return { isValid: true };
+}
+
+export async function findMemberDuplicateWarnings(
+  churchId: string,
+  candidate: { name?: string | null; birth?: unknown; email?: string | null },
+  excludeMemberId?: string
+): Promise<DuplicateWarning[]> {
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, name, birth, email')
+    .eq('church_id', churchId);
+
+  if (error) {
+    logError('Erro ao verificar duplicidade de membro:', error);
+    return [];
+  }
+
+  return collectDuplicateWarnings(candidate, (data ?? []) as MemberIdentityRow[], excludeMemberId);
 }
