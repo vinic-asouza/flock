@@ -6,7 +6,9 @@ import { matchEnrollment } from '../services/teachingMatchService';
 import { shouldSkipPossibleMemberQueue } from '../services/teachingEnrollmentPolicy';
 import {
   countEventRegistrations,
+  insertEventRegistrationWithCapacity,
   isEventFull,
+  EVENT_FULL_MESSAGE,
 } from '../services/eventCapacity';
 import { error as logError } from '../utils/logger';
 
@@ -16,8 +18,8 @@ const UNAVAILABLE = {
 };
 
 const FULL = {
-  error: 'Não há vagas disponíveis.',
-  details: 'Não há vagas disponíveis.',
+  error: EVENT_FULL_MESSAGE,
+  details: EVENT_FULL_MESSAGE,
 };
 
 const OPEN_STATUSES = new Set(['open', 'in_progress']);
@@ -38,12 +40,11 @@ async function loadEventContext(eventId: string, churchId: string) {
     .eq('id', churchId)
     .single();
 
-  const { count } = await supabase
-    .from('event_registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('event_id', eventId);
-
-  const registrationCount = count || 0;
+  const { count: registrationCount, error: countError } = await countEventRegistrations(
+    eventId,
+    churchId
+  );
+  if (countError) return null;
   const capacity = event.capacity ?? null;
   const spotsRemaining = capacity == null ? null : Math.max(capacity - registrationCount, 0);
   const full = capacity != null && registrationCount >= capacity;
@@ -244,20 +245,16 @@ export const createPublicEventRegistration = async (
       }
     }
 
-    const { count: latestCount } = await countEventRegistrations(
-      eventLink.event_id,
-      churchId
+    const insertResult = await insertEventRegistrationWithCapacity(
+      { id: eventLink.event_id, church_id: churchId, capacity: ctx.event.capacity },
+      enrollmentPayload
     );
-    if (isEventFull(ctx.event.capacity, latestCount)) {
-      return res.status(409).json(FULL);
-    }
 
-    const { error: insertError } = await supabase
-      .from('event_registrations')
-      .insert([enrollmentPayload]);
-
-    if (insertError) {
-      logError('Erro ao inserir inscrição pública de evento:', insertError);
+    if (!insertResult.ok) {
+      if (insertResult.reason === 'full') {
+        return res.status(409).json(FULL);
+      }
+      logError('Erro ao inserir inscrição pública de evento:', insertResult.message);
       return res.status(500).json({
         error: 'Erro interno do servidor',
         details: 'Não foi possível concluir a inscrição',
