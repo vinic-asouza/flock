@@ -339,6 +339,92 @@ export interface GroupSorting {
   sort_order: 'asc' | 'desc';
 }
 
+// Tipos para Eventos
+export type EventStatus =
+  | 'draft'
+  | 'open'
+  | 'in_progress'
+  | 'closed'
+  | 'archived';
+
+export type EventRegistrationKind = 'member' | 'guest' | 'possible_member';
+
+export interface ChurchEvent {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string | null;
+  starts_at: string;
+  ends_at?: string | null;
+  location?: string | null;
+  congregation_id?: string | null;
+  status: EventStatus;
+  capacity?: number | null;
+  responsible_id: string;
+  group_id?: string | null;
+  registration_count?: number;
+  spots_remaining?: number | null;
+  created_at: string;
+  updated_at: string;
+  congregations?: { id: string; name: string; abbreviation?: string | null } | null;
+  groups?: { id: string; name: string; congregation_id?: string | null } | null;
+  responsible?: { id: string; name: string } | null;
+  organizers?: Array<{ id: string; name: string } | null>;
+  organizer_ids?: string[];
+}
+
+export interface EventRegistration {
+  id: string;
+  church_id: string;
+  event_id: string;
+  kind: EventRegistrationKind;
+  member_id?: string | null;
+  full_name?: string | null;
+  whatsapp?: string | null;
+  birth_date?: string | null;
+  email?: string | null;
+  display_name?: string;
+  whatsapp_masked?: string;
+  age?: number | null;
+  signals?: { N: boolean; W: boolean; D: boolean };
+  queue_candidates?: Array<{
+    id: string;
+    name: string;
+    age?: number | null;
+    birth?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
+    whatsapp_masked?: string;
+    congregation?: { id: string; name: string; abbreviation?: string | null } | null;
+    already_enrolled?: boolean;
+    signals?: { N: boolean; W: boolean; D: boolean };
+  }>;
+  member?: {
+    id: string;
+    name: string;
+    congregation_id?: string | null;
+    whatsapp?: string | null;
+    whatsapp_masked?: string | null;
+    age?: number | null;
+    birth?: string | null;
+    congregations?: { id: string; name: string; abbreviation?: string | null } | null;
+  } | null;
+  created_at: string;
+}
+
+export interface EventPublicLink {
+  id: string;
+  event_id: string;
+  token: string;
+  url: string;
+  expires_at: string;
+  max_uses?: number | null;
+  current_uses: number;
+  is_active: boolean;
+  enrollment_allowed?: boolean;
+  event_status?: EventStatus;
+}
+
 // Tipos para Ensino (Teaching)
 export type TeachingClassStatus =
   | 'draft'

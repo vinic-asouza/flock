@@ -458,4 +458,44 @@ export interface PublicTeachingRequest extends Request {
   teachingLink?: TeachingPublicLink;
   churchId?: string;
   churchName?: string;
+}
+
+export type EventStatus = 'draft' | 'open' | 'in_progress' | 'closed' | 'archived';
+export type EventRegistrationKind = 'member' | 'guest' | 'possible_member';
+
+export interface Event {
+  id: string;
+  church_id: string;
+  name: string;
+  description?: string | null;
+  starts_at: Date | string;
+  ends_at?: Date | string | null;
+  location?: string | null;
+  congregation_id?: string | null;
+  status: EventStatus;
+  capacity?: number | null;
+  responsible_id: string;
+  group_id?: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface EventPublicLink {
+  id: string;
+  church_id: string;
+  event_id: string;
+  token: string;
+  is_active: boolean;
+  expires_at: Date | string;
+  max_uses?: number | null;
+  current_uses: number;
+  created_by?: string | null;
+  created_at: Date | string;
+  updated_at: Date | string;
+}
+
+export interface PublicEventRequest extends Request {
+  eventLink?: EventPublicLink;
+  churchId?: string;
+  churchName?: string;
 } 

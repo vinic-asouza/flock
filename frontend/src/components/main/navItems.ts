@@ -6,7 +6,7 @@ import {
   UserPlus,
   BookOpen,
   UserCog,
-  Calendar,
+  CalendarDays,
   GraduationCap,
   type LucideIcon,
 } from 'lucide-react';
@@ -25,7 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Integração', href: '/integration', icon: UserPlus },
   { label: 'Ministérios', href: '/ministries', icon: UserCog },
   { label: 'Congregações', href: '/congregations', icon: Layers },
-  { label: 'Calendário', href: '/calendar', icon: Calendar },
+  { label: 'Eventos', href: '/events', icon: CalendarDays },
   { label: 'Ensino', href: '/teaching', icon: GraduationCap },
   { label: 'Configurações', href: '/settings', icon: Settings, sectionStart: true },
   { label: 'Tutoriais', href: '/tutorials', icon: BookOpen },
