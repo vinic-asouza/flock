@@ -3,8 +3,8 @@ type: modulo
 nome: calendario
 status: Ativo
 complexidade: Alta
-ultima_atualizacao: 2026-10-01
-versao: "1.4"
+ultima_atualizacao: 2026-11-02
+versao: "1.5"
 owner: (não identificado no código)
 tags: [módulo, calendario]
 depende_de: [auth, igreja-config, congregacoes, grupos, membros]
@@ -26,6 +26,8 @@ Existe para substituir planilhas/agenda informal e alimentar visão mensal no ap
 
 No sistema, é módulo de domínio com lógica mais densa (expansão de recorrência em memória). Consome congregações, grupos e membros; é consumido por relatórios/UX.  
 Produto: [[01_produto/visao-do-produto]].
+
+> **v1 / DEV-102:** a superfície de produto para encontros especiais passou a ser [[04_modulos/eventos]]. Código `calendar_*` permanece; **nav/UI Calendário permanece oculta** (DEV-128) — não reativar por Issues de Eventos.
 
 ---
 

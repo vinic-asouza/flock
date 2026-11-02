@@ -1,9 +1,9 @@
 ---
 type: index-regras-modulo
-ultima_atualizacao: 2026-09-16
-versao: "1.8"
-total_modulos: 14
-total_regras: 199
+ultima_atualizacao: 2026-11-02
+versao: "1.9"
+total_modulos: 15
+total_regras: 213
 tags: [regras, índice, módulos]
 ---
 
@@ -24,21 +24,22 @@ tags: [regras, índice, módulos]
 | Congregações | [[02_regras-de-negocio/regras-por-modulo/congregacoes]] | CON | 14 | Unidades locais |
 | Ministérios | [[02_regras-de-negocio/regras-por-modulo/grupos]] | GRP | 13 | Áreas de serviço (API `groups`) |
 | Ensino | [[02_regras-de-negocio/regras-por-modulo/ensino]] | ENS | 27 | Programas, turmas, matrículas, aulas, chamada, certificados |
-| Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes |
+| Eventos | [[02_regras-de-negocio/regras-por-modulo/eventos]] | EVT | 14 | Encontros especiais, vagas, inscritos, link público |
+| Calendário | [[02_regras-de-negocio/regras-por-modulo/calendario]] | CAL | 16 | Agenda e participantes (superfície UI oculta na v1) |
 | Relatórios | [[02_regras-de-negocio/regras-por-modulo/relatorios]] | REL | 13 | Painel e exportações |
 | Igreja / Config | [[02_regras-de-negocio/regras-por-modulo/igreja-config]] | CFG | 18 | Igreja, conta, equipe, audit |
 | Billing | [[02_regras-de-negocio/regras-por-modulo/billing]] | BILL | 20 | Planos, Stripe, limites |
 | Aquisição | [[02_regras-de-negocio/regras-por-modulo/aquisicao]] | ACQ | 5 | Landing / waitlist |
 | Tutoriais | [[02_regras-de-negocio/regras-por-modulo/tutoriais]] | TUT | 4 | Guias in-app |
 
-**Total:** 14 módulos · **199 regras**
+**Total:** 15 módulos · **213 regras**
 
 ## Contagem por categoria de prioridade (orientação)
 
 | Prioridade | Módulos |
 | --- | --- |
 | Crítica | auth, membros, billing, onboarding |
-| Alta | integracao, igreja-config, congregacoes, ensino |
+| Alta | integracao, igreja-config, congregacoes, ensino, eventos |
 | Média | ministérios (grupos), calendario, relatorios |
 | Baixa / acquis. | aquisicao, tutoriais, admin-ops |
 
@@ -50,4 +51,5 @@ Regras transversais: `BR-GEN-*` · políticas de plano: `BR-POL-*`.
 
 ## Última atualização
 
+2026-11-02 — BR-EVT-001…014 (Eventos, DEV-102); total 213 regras / 15 módulos.
 2026-09-15 — BR-ENS-024…025 (certificados, DEV-110); BR-ENS-026…027 (materiais, DEV-112); índice ENS alinhado a 27 regras.

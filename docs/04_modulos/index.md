@@ -1,7 +1,7 @@
 ---
 type: modulos-index
-ultima_atualizacao: 2026-09-13
-total_modulos: 14
+ultima_atualizacao: 2026-11-02
+total_modulos: 15
 tags: [módulos, índice]
 ---
 
@@ -37,6 +37,7 @@ graph TD
   CON[Congregações]
   GRP[Ministérios]
   ENS[Ensino]
+  EVT[Eventos]
   CAL[Calendário]
   REL[Relatórios]
   CFG[Igreja / Config]
@@ -73,6 +74,12 @@ graph TD
   ENS --> CON
   ENS --> MEM
 
+  EVT --> AUTH
+  EVT --> CFG
+  EVT --> CON
+  EVT --> MEM
+  EVT --> GRP
+
   CAL --> AUTH
   CAL --> CFG
   CAL --> CON
@@ -108,7 +115,8 @@ graph TD
 | **congregacoes** | Unidades locais (CRUD + batch) | Baixa | Ativo | auth, igreja-config | ~6 |
 | **grupos** | Ministérios (áreas de serviço) e vínculos membro↔ministério | Média | Ativo | auth, igreja-config, congregacoes, membros | ~8 |
 | **ensino** | Programas, turmas, matrículas, aulas, chamada, certificados | Alta | Ativo | auth, igreja-config, congregacoes, membros | ~25 |
-| **calendario** | Agenda (itens, recorrência, participantes) | Alta | Ativo | auth, igreja-config, congregacoes, grupos, membros | ~11 |
+| **eventos** | Encontros especiais, vagas, inscritos, link público | Alta | Ativo | auth, igreja-config, congregacoes, membros, grupos | ~12 |
+| **calendario** | Agenda (itens, recorrência, participantes) — UI oculta na v1 | Alta | Ativo (código) | auth, igreja-config, congregacoes, grupos, membros | ~11 |
 | **relatorios** | Relatórios agregados e exportações PDF/CSV | Alta | Ativo | auth, igreja-config, membros, integracao, congregacoes, grupos, calendario | ~13 |
 | **igreja-config** | Igreja, conta do usuário, equipe (`church_users`), audit logs | Alta | Ativo | auth | ~16 |
 | **billing** | Planos, Stripe (checkout/portal/webhooks), quotas, crons | Alta | Ativo | auth, igreja-config | ~14 |
@@ -116,7 +124,7 @@ graph TD
 | **tutoriais** | Guias in-app (conteúdo front) | Baixa | Ativo | auth | ~1 |
 | **admin-ops** | Centro operacional interno (`admin-ops/` :3002 + `/api/ops` auth + UI/GETs de Igrejas + Lista de espera + saúde) | Média | Em Desenvolvimento | auth | 8 |
 
-**Total:** **14** módulos · ~**140** operações HTTP de domínio da igreja + **8** `/api/ops`.
+**Total:** **15** módulos · ~**152** operações HTTP de domínio da igreja + **8** `/api/ops`.
 
 ---
 
@@ -125,7 +133,7 @@ graph TD
 - Cada módulo terá arquivo `docs/04_modulos/[nome].md` (nomes = slugs da tabela).
 - Fluxos, contratos e operações do módulo ficam **no próprio** `04_modulos/[nome].md`.
 - Regras de negócio numeradas permanecem em [[02_regras-de-negocio/regras-por-modulo/index]].
-- Nomes de pasta/arquivo alinhados aos slugs de regras: `auth`, `onboarding`, `membros`, `integracao`, `congregacoes`, `grupos`, `ensino`, `calendario`, `relatorios`, `igreja-config`, `billing`, `aquisicao`, `tutoriais`, `admin-ops`.
+- Nomes de pasta/arquivo alinhados aos slugs de regras: `auth`, `onboarding`, `membros`, `integracao`, `congregacoes`, `grupos`, `ensino`, `eventos`, `calendario`, `relatorios`, `igreja-config`, `billing`, `aquisicao`, `tutoriais`, `admin-ops`.
 
 ---
 
@@ -138,6 +146,7 @@ graph TD
 - [[04_modulos/congregacoes]] — Congregações
 - [[04_modulos/grupos]] — Ministérios (API `groups`)
 - [[04_modulos/ensino]] — Ensino (programas e turmas)
+- [[04_modulos/eventos]] — Eventos (encontros especiais)
 - [[04_modulos/calendario]] — Calendário e participantes
 - [[04_modulos/relatorios]] — Relatórios e exportações
 - [[04_modulos/igreja-config]] — Igreja, conta e equipe
