@@ -21,6 +21,7 @@ type Step = 'upload' | 'validation' | 'importing' | 'result';
 
 export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportModalProps) {
   const [step, setStep] = useState<Step>('upload');
+  const [communicationConsent, setCommunicationConsent] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [congregations, setCongregations] = useState<Congregation[]>([]);
   const [selectedCongregationId, setSelectedCongregationId] = useState<string>('');
@@ -85,7 +86,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
 
     try {
       setStep('importing');
-      await importMembers(file, selectedCongregationId, true);
+      await importMembers(file, selectedCongregationId, true, communicationConsent);
       setStep('result');
     } catch {
       // O erro já foi definido pelo hook
@@ -98,6 +99,7 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
     
     setStep('upload');
     setFile(null);
+    setCommunicationConsent(false);
     reset();
     onClose();
   };
@@ -415,6 +417,19 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
               </div>
             )}
 
+                <label className="flex items-start gap-3 min-h-11 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    checked={communicationConsent}
+                    disabled={importing}
+                    onChange={(event) => setCommunicationConsent(event.target.checked)}
+                  />
+                  <span className="text-sm text-gray-900">
+                    Esta importação tem consentimento de contato. O aceite vale para todos os membros importados com sucesso.
+                  </span>
+                </label>
+
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
                   <Button variant="secondary" onClick={() => setStep('upload')} disabled={importing} className="min-h-11 w-full sm:w-auto">
                     Voltar
@@ -524,6 +539,24 @@ export function MemberImportModal({ isOpen, onClose, onSuccess }: MemberImportMo
                           <span className="text-red-600">{err}</span>
                         </div>
                       ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(importResult.warnings?.length ?? 0) > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">
+                  Avisos:
+                </h4>
+                <div className="max-h-60 overflow-y-auto border border-yellow-200 rounded-md bg-yellow-50">
+                  {importResult.warnings?.map((warning, index) => (
+                    <div key={index} className="p-2 border-b border-yellow-200 last:border-b-0 text-sm text-yellow-800 flex items-start gap-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 font-medium text-xs w-16 justify-center">
+                        {warning.row}
+                      </span>
+                      <span>{warning.messages.join(' ')}</span>
                     </div>
                   ))}
                 </div>

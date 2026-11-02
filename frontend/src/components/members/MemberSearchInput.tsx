@@ -26,6 +26,11 @@ export function MemberSearchInput({ id, value, onChange, isLoading = false, plac
   }, [value]);
 
   useEffect(() => {
+    if (input === value) {
+      setIsSearching(false);
+      return;
+    }
+
     setIsSearching(true);
     const handler = setTimeout(() => {
       onChangeRef.current(input);
@@ -33,9 +38,8 @@ export function MemberSearchInput({ id, value, onChange, isLoading = false, plac
     }, 500);
     return () => {
       clearTimeout(handler);
-      setIsSearching(false);
     };
-  }, [input]);
+  }, [input, value]);
 
   return (
     <div className="relative w-full h-10">

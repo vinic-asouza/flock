@@ -26,7 +26,7 @@ export const memberSchema = z.object({
       if (!date) return false;
       return new Date(date) <= new Date();
     }, { message: 'Data de nascimento deve estar no formato DD/MM/YYYY (ex: 05/01/2001)' }),
-  gender: z.enum(['Masculino', 'Feminino', 'Não informado']),
+  gender: z.enum(['Masculino', 'Feminino']).or(z.literal('')),
   marital_status: z.enum(['Solteiro', 'Casado', 'Divorciado', 'Viúvo', 'Outro', 'União Estável']),
   hometown: z.string().optional().or(z.literal('')),
   // nationality mantido para não quebrar leitura legada, mas não exibido no form
@@ -92,6 +92,21 @@ export const memberSchema = z.object({
     }, { message: 'Data de recebimento deve estar no formato DD/MM/YYYY e não pode ser no futuro' }),
   congregation_id: z.string().min(1, 'Congregação é obrigatória'),
   active: z.boolean(),
+  minor_without_own_contact: z.boolean().optional(),
+  communication_consent: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  if (data.gender !== 'Masculino' && data.gender !== 'Feminino') {
+    ctx.addIssue({ code: 'custom', path: ['gender'], message: 'Selecione o gênero' });
+  }
 });
+
+export const CONTACT_REQUIRED_MESSAGE =
+  'Informe telefone, WhatsApp ou e-mail, ou marque que é menor de 18 anos sem contato próprio.';
+
+export function hasMemberContact(data: { phone?: string; whatsapp?: string; email?: string }): boolean {
+  return [data.phone, data.whatsapp, data.email].some(
+    (value) => typeof value === 'string' && value.trim() !== ''
+  );
+}
 
 export type MemberFormData = z.infer<typeof memberSchema>;

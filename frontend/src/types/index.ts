@@ -262,6 +262,10 @@ export interface ImportResult {
     row: number;
     reason: string;
   }>;
+  warnings?: Array<{
+    row: number;
+    messages: string[];
+  }>;
 }
 
 // Tipos para Ministérios (API: /groups)

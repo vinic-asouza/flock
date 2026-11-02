@@ -31,8 +31,8 @@ export const waitlistSchema = Joi.object({
     'string.length': 'Estado deve ter exatamente 2 caracteres',
     'any.required': 'Estado é obrigatório',
   }),
-  plan: Joi.string().valid('200', '500', '800', 'personalizado').required().messages({
-    'any.only': 'Plano deve ser 200, 500, 800 ou personalizado',
+  plan: Joi.string().valid('100', '200', '500', '800', 'personalizado').required().messages({
+    'any.only': 'Plano deve ser 100, 200, 500, 800 ou personalizado',
     'any.required': 'Plano é obrigatório',
   }),
   message: Joi.string().max(1000).optional().allow('', null).messages({

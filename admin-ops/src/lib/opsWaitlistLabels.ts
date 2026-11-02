@@ -7,6 +7,9 @@ export function waitlistPlanLabel(value: string | null | undefined): string {
   if (value === "personalizado") {
     return "Personalizado";
   }
+  if (value === "100") {
+    return "Grátis";
+  }
   if (["200", "500", "800"].includes(value)) {
     return `Plano ${value}`;
   }

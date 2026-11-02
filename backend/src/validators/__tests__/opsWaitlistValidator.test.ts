@@ -55,6 +55,12 @@ describe('validateOpsWaitlistListQuery', () => {
     expect(value.plan).toBe('personalizado');
   });
 
+  it('should accept free plan 100', () => {
+    const { error, value } = validateOpsWaitlistListQuery({ plan: '100' });
+    expect(error).toBeUndefined();
+    expect(value.plan).toBe('100');
+  });
+
   it('should accept status all and converted', () => {
     const all = validateOpsWaitlistListQuery({ status: 'all' });
     expect(all.error).toBeUndefined();

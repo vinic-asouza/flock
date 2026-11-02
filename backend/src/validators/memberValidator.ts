@@ -51,10 +51,11 @@ const memberSchema = Joi.object({
     }),
 
   gender: Joi.string()
-    .valid('Masculino', 'Feminino', 'Não informado')
+    .valid('Masculino', 'Feminino')
     .required()
     .messages({
-      'any.only': 'Gênero deve ser Masculino, Feminino ou Não informado',
+      'any.only': 'Gênero deve ser Masculino ou Feminino',
+      'string.empty': 'Gênero deve ser Masculino ou Feminino',
       'any.required': 'Gênero é obrigatório'
     }),
 
@@ -293,9 +294,48 @@ const memberSchema = Joi.object({
   groups: Joi.array()
     .items(Joi.string().uuid())
     .optional()
-    .allow(null)
+    .allow(null),
+
+  minor_without_own_contact: Joi.boolean()
+    .optional()
+    .default(false),
+
+  communication_consent: Joi.boolean()
+    .optional(),
+
+  acknowledgeDuplicates: Joi.boolean()
+    .optional()
+}).custom((value, helpers) => {
+  const mode = helpers.prefs.context?.mode ?? 'update';
+  if (mode !== 'create') return value;
+
+  const hasContact = [value.phone, value.whatsapp, value.email].some(
+    (field: unknown) => typeof field === 'string' && field.trim() !== ''
+  );
+  if (!hasContact && !value.minor_without_own_contact) {
+    return helpers.error('any.custom', {
+      message: 'Informe telefone, WhatsApp ou e-mail, ou marque que é menor de 18 anos sem contato próprio.'
+    });
+  }
+  return value;
+}).messages({
+  'any.custom': '{{#message}}'
 });
 
-export const validateMember = (data: Partial<Member> & { groups?: string[] }) => {
-  return memberSchema.validate(data, { abortEarly: false, allowUnknown: false });
+export type MemberValidationMode = 'create' | 'update' | 'import';
+
+export const validateMember = (
+  data: Partial<Member> & {
+    groups?: string[];
+    minor_without_own_contact?: boolean;
+    communication_consent?: boolean;
+    acknowledgeDuplicates?: boolean;
+  },
+  options?: { mode?: MemberValidationMode }
+) => {
+  return memberSchema.validate(data, {
+    abortEarly: false,
+    allowUnknown: false,
+    context: { mode: options?.mode ?? 'update' }
+  });
 }; 

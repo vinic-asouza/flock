@@ -70,6 +70,10 @@ export interface Member {
   phone?: string;
   whatsapp?: string;
   email?: string;
+  minor_without_own_contact?: boolean;
+  communication_consent_at?: string | null;
+  communication_consent_source?: 'internal' | 'public' | 'import' | null;
+  duplicate_review_pending?: boolean;
   baptism_date?: Date;
   occupation?: string;
   admission?: string;

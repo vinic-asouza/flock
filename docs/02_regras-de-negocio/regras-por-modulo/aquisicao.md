@@ -1,7 +1,7 @@
 ---
 type: regras-modulo
 modulo: aquisicao
-ultima_atualizacao: 2026-07-13
+ultima_atualizacao: 2026-10-22
 versao: "1.0"
 total_regras: 5
 tags: [regras, modulo:aquisicao]
@@ -42,13 +42,13 @@ Captar interesse comercial via landing e lista de espera.
 - **Depende de:** —
 
 ### BR-ACQ-002: Planos waitlist
-- **Declaração:** plan ∈ 200|500|800|personalizado.
+- **Declaração:** plan ∈ 100|200|500|800|personalizado. `100` é o interesse no plano Grátis (rótulo Grátis); não cria igreja nem assinatura.
 - **Tipo:** Restrição
 - **Gatilho:** POST waitlist
-- **Comportamento esperado:** OK
+- **Comportamento esperado:** OK. O banco reforça a mesma lista no CHECK `check_plan_valid`.
 - **Comportamento em violação:** 400
 - **Implementado em:** `waitlistValidator.ts`
-- **Testado em:** N/A — sem suite dedicada
+- **Testado em:** `backend/src/validators/__tests__/waitlistValidator.test.ts`
 - **Depende de:** —
 
 ### BR-ACQ-003: E-mail único waitlist

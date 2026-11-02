@@ -1,17 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader, CreditCard } from 'lucide-react';
+import { ArrowRight, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
-import {
-  buildRegisterUrl,
-  type PaidPlanId,
-} from '@/utils/planFunnel';
+import { buildRegisterUrl, type PaidPlanId } from '@/utils/planFunnel';
 
 interface CheckoutButtonProps {
   plan: PaidPlanId;
   className?: string;
   children?: React.ReactNode;
+  tone?: 'navy' | 'accent';
 }
 
 const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001';
@@ -20,6 +18,7 @@ export function CheckoutButton({
   plan,
   className = '',
   children,
+  tone = 'navy',
 }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,36 +29,30 @@ export function CheckoutButton({
     } catch (error) {
       console.error('Erro ao redirecionar para registro:', error);
       toast.error('Não foi possível iniciar o cadastro. Tente novamente.');
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <button
+      type="button"
       onClick={handleCheckout}
       disabled={isLoading}
-      className={`
-        w-full text-white px-4 md:px-6 py-2.5 md:py-3 min-h-11 rounded-lg text-sm md:text-base 
-        font-semibold transition-all duration-300 shadow-lg hover:shadow-xl 
-        sm:hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed
-        flex items-center justify-center gap-2
-        ${className}
-      `}
-      style={{
-        backgroundColor: '#090725',
-        backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
-      }}
+      className={`flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-base ${
+        tone === 'accent'
+          ? 'bg-[#5346f0] hover:bg-[#4639d6] focus-visible:ring-[#5346f0]'
+          : 'bg-[#090725] hover:bg-[#0d0a3a] focus-visible:ring-[#090725]'
+      } ${className}`}
     >
       {isLoading ? (
         <>
-          <Loader className="w-5 h-5 animate-spin" />
+          <Loader className="h-5 w-5 animate-spin" aria-hidden />
           <span>Processando...</span>
         </>
       ) : (
         <>
-          <CreditCard className="w-5 h-5" />
-          {children || 'Assinar Agora'}
+          {children || 'Escolher plano'}
+          <ArrowRight className="h-4 w-4" aria-hidden />
         </>
       )}
     </button>

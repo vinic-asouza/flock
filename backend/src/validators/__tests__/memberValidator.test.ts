@@ -46,3 +46,49 @@ describe('validateMember ecclesiastical questionnaire', () => {
     expect(error).toBeDefined();
   });
 });
+
+describe('validateMember contact and gender', () => {
+  it.each(['create', 'update'] as const)('rejects Não informado on %s', (mode) => {
+    const { error } = validateMember({
+      ...validMember,
+      gender: 'Não informado',
+    } as never, { mode });
+    expect(error?.details.map((detail) => detail.message).join(' ')).toContain('Masculino ou Feminino');
+  });
+
+  it('requires a contact on create unless the minor exception is set', () => {
+    const withoutContact = validateMember(validMember as never, { mode: 'create' });
+    expect(withoutContact.error?.details.map((detail) => detail.message).join(' ')).toContain('menor de 18 anos');
+
+    const withException = validateMember({
+      ...validMember,
+      minor_without_own_contact: true,
+    } as never, { mode: 'create' });
+    expect(withException.error).toBeUndefined();
+
+    const withEmail = validateMember({
+      ...validMember,
+      email: 'ana@igreja.com',
+    } as never, { mode: 'create' });
+    expect(withEmail.error).toBeUndefined();
+  });
+
+  it('allows an update without contact', () => {
+    const { error } = validateMember(validMember as never, { mode: 'update' });
+    expect(error).toBeUndefined();
+  });
+
+  it('does not require contact on import', () => {
+    const { error } = validateMember(validMember as never, { mode: 'import' });
+    expect(error).toBeUndefined();
+  });
+
+  it('keeps the phone validation message', () => {
+    const { error } = validateMember({
+      ...validMember,
+      phone: '123',
+      email: 'ana@igreja.com',
+    } as never, { mode: 'create' });
+    expect(error?.details.map((detail) => detail.message).join(' ')).toContain('Telefone inválido');
+  });
+});

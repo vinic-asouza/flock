@@ -2,6 +2,8 @@ import { Response } from 'express';
 import { supabaseAdmin as supabase } from '../services/supabase';
 import { PublicRegistrationRequest, Member } from '../types';
 import { validateMember } from '../validators/memberValidator';
+import { findMemberDuplicateWarnings } from '../utils/memberValidations';
+import { omitMemberControlFields, resolveConsentForCreate } from '../utils/memberIdentity';
 import { normalizeMemberDates } from '../utils/dateNormalizer';
 import { checkMemberLimit } from '../utils/planLimits';
 import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
@@ -191,7 +193,7 @@ export const createMemberViaPublicLink = async (
       congregation_id: congregationId,
     };
 
-    const { error: validationError } = validateMember(payload);
+    const { error: validationError } = validateMember(payload, { mode: 'create' });
     if (validationError) {
       return res.status(400).json({
         error: 'Dados inválidos',
@@ -200,22 +202,11 @@ export const createMemberViaPublicLink = async (
     }
 
     const normalizedData = normalizeMemberDates(payload);
-
-    if (normalizedData.name && typeof normalizedData.name === 'string' && normalizedData.name.trim()) {
-      const { data: duplicate, error: checkError } = await supabase
-        .from('members')
-        .select('id, name')
-        .eq('church_id', churchId)
-        .ilike('name', normalizedData.name.trim())
-        .limit(1);
-
-      if (!checkError && duplicate && duplicate.length > 0) {
-        return res.status(400).json({
-          error: 'Membro já cadastrado',
-          details: 'Já existe um membro cadastrado com este nome completo.'
-        });
-      }
-    }
+    const duplicateWarnings = await findMemberDuplicateWarnings(churchId, {
+      name: normalizedData.name as string,
+      birth: normalizedData.birth,
+      email: normalizedData.email as string,
+    });
 
     const congregationCheck = await validateCongregationBelongsToChurch(congregationId, churchId);
     if (!congregationCheck.valid) {
@@ -225,8 +216,15 @@ export const createMemberViaPublicLink = async (
       });
     }
 
+    const communicationConsent = Boolean((req.body as { communication_consent?: boolean }).communication_consent);
+    const groups = Array.isArray((req.body as { groups?: unknown }).groups)
+      ? (req.body as { groups: string[] }).groups
+      : [];
     const memberData: Partial<Member> = {
-      ...normalizedData,
+      ...omitMemberControlFields(normalizedData),
+      ...resolveConsentForCreate(communicationConsent, 'public'),
+      minor_without_own_contact: Boolean(normalizedData.minor_without_own_contact),
+      duplicate_review_pending: duplicateWarnings.length > 0,
       church_id: churchId,
       active: true,
       congregation_id: congregationId,
@@ -235,12 +233,9 @@ export const createMemberViaPublicLink = async (
         : []
     };
 
-    const { groups, ...memberDataWithoutGroups } = memberData as Record<string, unknown> & { groups?: string[] };
-    const finalMemberData = memberDataWithoutGroups;
-
     const { data: member, error: memberError } = await supabase
       .from('members')
-      .insert([finalMemberData])
+      .insert([memberData])
       .select()
       .single();
 
@@ -350,9 +345,14 @@ export const createMemberViaPublicLink = async (
       .eq('id', churchId)
       .single();
 
+    const {
+      duplicate_review_pending: _duplicateReviewPending,
+      ...publicMember
+    } = member;
+
     res.status(201).json({
       message: 'Membro cadastrado com sucesso',
-      member,
+      member: publicMember,
       church_name: church?.name || 'Igreja'
     });
 

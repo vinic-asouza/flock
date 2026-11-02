@@ -2,6 +2,14 @@ import { parseCSV, mapColumns, normalizeRow, CSVRow } from '../utils/csvParser';
 import { validateMember } from '../validators/memberValidator';
 import { Member } from '../types';
 import { supabaseAdmin as supabase } from './supabase';
+import {
+  collectDuplicateWarnings,
+  DUPLICATE_WARNING_MESSAGES,
+  hasAnyContact,
+  MemberIdentityRow,
+  MISSING_CONTACT_WARNING,
+  resolveConsentForCreate,
+} from '../utils/memberIdentity';
 
 export interface ValidationError {
   row: number;
@@ -19,6 +27,10 @@ export interface ValidationResult {
     row: number;
     errors: ValidationError[];
   }>;
+  warnings: Array<{
+    row: number;
+    messages: string[];
+  }>;
   preview: Partial<Member>[];
 }
 
@@ -35,6 +47,10 @@ export interface ImportResult {
   skipped: Array<{
     row: number;
     reason: string;
+  }>;
+  warnings: Array<{
+    row: number;
+    messages: string[];
   }>;
 }
 
@@ -152,6 +168,7 @@ export async function validateCSV(
             message: 'O arquivo CSV está vazio'
           }]
         }],
+        warnings: [],
         preview: []
       };
     }
@@ -164,42 +181,24 @@ export async function validateCSV(
     
     // Prepara todos os dados dos membros primeiro
     const memberDataList: Array<{ data: Partial<Member>; rowNumber: number }> = [];
-    const nameOccurrences = new Map<string, number[]>(); // nome (lowercase) -> array de números de linha
     
     for (let i = 0; i < normalizedRows.length; i++) {
       const row = normalizedRows[i];
       const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho e arrays começam em 0
       
       const memberData = buildMemberFromCSVRow(row, congregationId, rowNumber);
-
       memberDataList.push({ data: memberData, rowNumber });
-      
-      // Verifica duplicatas dentro do próprio CSV (por nome em lowercase)
-      if (memberData.name && memberData.name.trim() !== '') {
-        const normalizedName = memberData.name.trim().toLowerCase();
-        if (nameOccurrences.has(normalizedName)) {
-          nameOccurrences.get(normalizedName)!.push(rowNumber);
-        } else {
-          nameOccurrences.set(normalizedName, [rowNumber]);
-        }
-      }
     }
     
-    // Busca duplicatas no banco de dados em batch (otimização)
-    const existingDuplicates = await checkDuplicatesBatch(
-      memberDataList.map(m => m.data),
-      churchId
-    );
-    
-    // Valida cada linha
+    const knownMembers = await loadChurchIdentities(churchId);
     const errors: Array<{ row: number; errors: ValidationError[] }> = [];
+    const warnings: Array<{ row: number; messages: string[] }> = [];
     const validRows: Partial<Member>[] = [];
     
     for (const { data: memberData, rowNumber } of memberDataList) {
       const rowErrors: ValidationError[] = [];
       
-      // Valida usando o validator existente
-      const { error: validationError } = validateMember(memberData);
+      const { error: validationError } = validateMember(memberData, { mode: 'import' });
       
       if (validationError) {
         const validationRowErrors: ValidationError[] = validationError.details.map(detail => ({
@@ -211,48 +210,25 @@ export async function validateCSV(
         rowErrors.push(...validationRowErrors);
       }
       
-      // Verifica duplicatas dentro do próprio CSV (por nome em lowercase)
-      if (memberData.name && memberData.name.trim() !== '') {
-        const normalizedName = memberData.name.trim().toLowerCase();
-        const occurrences = nameOccurrences.get(normalizedName);
-        if (occurrences && occurrences.length > 1) {
-          const otherRows = occurrences.filter(r => r !== rowNumber);
-          if (otherRows.length > 0) {
-            rowErrors.push({
-              row: rowNumber,
-              field: 'name',
-              message: `Nome duplicado no arquivo CSV. Aparece também nas linhas: ${otherRows.join(', ')}`,
-              value: memberData.name
-            });
-          }
-        }
-      }
-      
-      // Verifica duplicatas no banco de dados (usando resultado do batch)
-      // Verifica apenas por nome (lowercase)
-      let isDuplicate = false;
-      if (memberData.name && memberData.name.trim()) {
-        const normalizedName = memberData.name.trim().toLowerCase();
-        isDuplicate = existingDuplicates.has(`name:${normalizedName}`);
-      }
-      
-      if (isDuplicate) {
-        rowErrors.push({
-          row: rowNumber,
-          field: 'name',
-          message: 'Membro já está cadastrado no sistema (mesmo nome completo).',
-          value: memberData.name || ''
-        });
-      }
-      
       if (rowErrors.length > 0) {
         errors.push({
           row: rowNumber,
           errors: rowErrors
         });
-      } else {
-        validRows.push(memberData);
+        continue;
       }
+
+      const messages = memberRowWarnings(memberData, knownMembers);
+      if (messages.length > 0) {
+        warnings.push({ row: rowNumber, messages });
+      }
+      knownMembers.push({
+        id: `csv-${rowNumber}`,
+        name: memberData.name || '',
+        birth: memberData.birth,
+        email: memberData.email,
+      });
+      validRows.push(memberData);
     }
     
     // Preview de todas as linhas válidas
@@ -264,6 +240,7 @@ export async function validateCSV(
       validRows: validRows.length,
       invalidRows: errors.length,
       errors,
+      warnings,
       preview
     };
     
@@ -281,98 +258,35 @@ export async function validateCSV(
           message: error instanceof Error ? error.message : 'Erro ao processar arquivo CSV'
         }]
       }],
+      warnings: [],
       preview: []
     };
   }
 }
 
-/**
- * Verifica duplicatas em batch (otimização para validação)
- * Retorna um Set com chaves únicas dos membros que são duplicatas
- * Chave: "name:XXX" (nome em lowercase)
- */
-async function checkDuplicatesBatch(
-  memberDataList: Partial<Member>[],
-  churchId: string
-): Promise<Set<string>> {
-  const duplicateKeys = new Set<string>();
-  
-  try {
-    // Coleta todos os nomes únicos (em lowercase)
-    const names = new Set<string>();
-    
-    for (const memberData of memberDataList) {
-      if (memberData.name && memberData.name.trim()) {
-        const normalizedName = memberData.name.trim().toLowerCase();
-        names.add(normalizedName);
-      }
-    }
-    
-    // Busca membros existentes com esses nomes em batch
-    if (names.size > 0) {
-      // Busca todos os membros da igreja e compara nomes em lowercase
-      const { data: existingMembers } = await supabase
-        .from('members')
-        .select('name')
-        .eq('church_id', churchId);
-      
-      if (existingMembers) {
-        for (const member of existingMembers) {
-          if (member.name) {
-            const normalizedName = member.name.trim().toLowerCase();
-            if (names.has(normalizedName)) {
-              duplicateKeys.add(`name:${normalizedName}`);
-            }
-          }
-        }
-      }
-    }
-    
-  } catch (error) {
-    // Em caso de erro, logar mas não bloquear
-    console.error('Erro ao verificar duplicatas em batch:', error);
+async function loadChurchIdentities(churchId: string): Promise<MemberIdentityRow[]> {
+  const { data, error } = await supabase
+    .from('members')
+    .select('id, name, birth, email')
+    .eq('church_id', churchId);
+
+  if (error) {
+    console.error('Erro ao carregar membros para aviso de duplicidade:', error);
+    return [];
   }
-  
-  return duplicateKeys;
+
+  return (data ?? []) as MemberIdentityRow[];
 }
 
-/**
- * Verifica se um membro já existe (duplicata) - usado na importação
- * Verifica apenas por nome completo (lowercase)
- */
-async function checkDuplicate(
-  memberData: Partial<Member>,
-  churchId: string
-): Promise<boolean> {
-  try {
-    // Verifica apenas por nome (lowercase)
-    if (memberData.name && memberData.name.trim()) {
-      const normalizedName = memberData.name.trim().toLowerCase();
-      
-      // Busca todos os membros da igreja e compara nomes em lowercase
-      const { data: existingMembers, error } = await supabase
-        .from('members')
-        .select('name')
-        .eq('church_id', churchId);
-      
-      if (!error && existingMembers) {
-        for (const member of existingMembers) {
-          if (member.name) {
-            const existingNormalizedName = member.name.trim().toLowerCase();
-            if (existingNormalizedName === normalizedName) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-    
-    return false;
-  } catch (error) {
-    // Em caso de erro, assume que não é duplicata para não bloquear importação
-    console.error('Erro ao verificar duplicata:', error);
-    return false;
+function memberRowWarnings(member: Partial<Member>, knownMembers: MemberIdentityRow[]): string[] {
+  const messages: string[] = [];
+  if (!hasAnyContact(member)) {
+    messages.push(MISSING_CONTACT_WARNING);
   }
+  for (const warning of collectDuplicateWarnings(member, knownMembers)) {
+    messages.push(DUPLICATE_WARNING_MESSAGES[warning]);
+  }
+  return messages;
 }
 
 /**
@@ -384,14 +298,14 @@ export async function importMembers(
   congregationId: string | null = null,
   options: {
     skipDuplicates?: boolean;
+    communicationConsent?: boolean;
   } = {}
 ): Promise<ImportResult> {
-  const skipDuplicates = options.skipDuplicates !== false;
-  
+  const communicationConsent = options.communicationConsent === true;
+
   try {
-    // Parse do CSV
     const csvRows = parseCSV(buffer);
-    
+
     if (csvRows.length === 0) {
       return {
         success: false,
@@ -403,83 +317,73 @@ export async function importMembers(
           row: 0,
           errors: ['O arquivo CSV está vazio']
         }],
-        skipped: []
+        skipped: [],
+        warnings: [],
       };
     }
-    
-    // Mapeia e normaliza colunas
+
     const mappedRows = mapColumns(csvRows);
     const normalizedRows = mappedRows.map(normalizeRow);
-    
     const errors: Array<{ row: number; errors: string[] }> = [];
-    const skipped: Array<{ row: number; reason: string }> = [];
-    const membersToImport: Partial<Member>[] = [];
-    
-    // Processa cada linha
+    const warnings: Array<{ row: number; messages: string[] }> = [];
+    const membersToImport: Array<{ rowNumber: number; member: Partial<Member> }> = [];
+    const knownMembers = await loadChurchIdentities(churchId);
+    const consent = resolveConsentForCreate(communicationConsent, 'import');
+
     for (let i = 0; i < normalizedRows.length; i++) {
       const row = normalizedRows[i];
-      const rowNumber = i + 2; // +2 porque linha 1 é cabeçalho
-      
+      const rowNumber = i + 2;
       const memberData = buildMemberFromCSVRow(row, congregationId, rowNumber);
+      const { error: validationError } = validateMember(memberData, { mode: 'import' });
 
-      // Valida dados
-      const { error: validationError } = validateMember(memberData);
-      
       if (validationError) {
-        const errorMessages = validationError.details.map(detail => detail.message);
         errors.push({
           row: rowNumber,
-          errors: errorMessages
+          errors: validationError.details.map(detail => detail.message)
         });
         continue;
       }
-      
-      // Verifica duplicatas se necessário
-      if (skipDuplicates) {
-        const isDuplicate = await checkDuplicate(memberData, churchId);
-        if (isDuplicate) {
-          skipped.push({
-            row: rowNumber,
-            reason: 'Membro duplicado (mesmo nome completo)'
-          });
-          continue;
-        }
+
+      const messages = memberRowWarnings(memberData, knownMembers);
+      if (messages.length > 0) {
+        warnings.push({ row: rowNumber, messages });
       }
-      
-      membersToImport.push(memberData);
+      knownMembers.push({
+        id: `csv-${rowNumber}`,
+        name: memberData.name || '',
+        birth: memberData.birth,
+        email: memberData.email,
+      });
+      membersToImport.push({ rowNumber, member: memberData });
     }
-    
-    // Importa em lotes de 100
+
     const batchSize = 100;
     let importedCount = 0;
     const importErrors: Array<{ row: number; errors: string[] }> = [];
-    
+
     for (let i = 0; i < membersToImport.length; i += batchSize) {
       const batch = membersToImport.slice(i, i + batchSize);
-      
-      // Converte datas para ISO string para inserção no banco
-      // Adiciona church_id a cada membro (não estava na validação)
-      const batchForInsert = batch.map(member => ({
+      const batchForInsert = batch.map(({ member }) => ({
         ...member,
-        church_id: churchId, // Adiciona church_id aqui, na hora da inserção
+        ...consent,
+        minor_without_own_contact: false,
+        duplicate_review_pending: false,
+        church_id: churchId,
         birth: member.birth ? member.birth.toISOString() : null,
         baptism_date: member.baptism_date ? member.baptism_date.toISOString() : null,
         admission_date: member.admission_date ? member.admission_date.toISOString() : null,
         wedding_date: member.wedding_date ? member.wedding_date.toISOString() : null,
-        // Garante que children seja um array JSON válido
-        children: member.children && Array.isArray(member.children) 
-          ? member.children 
+        children: member.children && Array.isArray(member.children)
+          ? member.children
           : [],
       }));
-      
+
       const { error: insertError } = await supabase
         .from('members')
         .insert(batchForInsert);
-      
+
       if (insertError) {
-        // Adiciona erro para cada membro do batch
-        batch.forEach((_, index) => {
-          const rowNumber = (i + index) + 2; // +2 para compensar cabeçalho
+        batch.forEach(({ rowNumber }) => {
           importErrors.push({
             row: rowNumber,
             errors: [insertError.message]
@@ -489,17 +393,17 @@ export async function importMembers(
         importedCount += batch.length;
       }
     }
-    
+
     return {
       success: importedCount > 0,
       totalRows: normalizedRows.length,
       importedRows: importedCount,
       errorRows: errors.length + importErrors.length,
-      skippedRows: skipped.length,
+      skippedRows: 0,
       errors: [...errors, ...importErrors],
-      skipped
+      skipped: [],
+      warnings,
     };
-    
   } catch (error) {
     return {
       success: false,
@@ -511,7 +415,8 @@ export async function importMembers(
         row: 0,
         errors: [error instanceof Error ? error.message : 'Erro ao processar importação']
       }],
-      skipped: []
+      skipped: [],
+      warnings: [],
     };
   }
 }

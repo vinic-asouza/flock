@@ -349,6 +349,10 @@ erDiagram
 | phone | text | NULL | — | Telefone |
 | whatsapp | text | NULL | — | WhatsApp |
 | email | text | NULL | — | E-mail |
+| minor_without_own_contact | boolean | NOT NULL | `false` | Menor sem contato próprio (DEV-173) |
+| communication_consent_at | timestamptz | NULL | — | Data do consentimento de contato; NULL = sem registro |
+| communication_consent_source | text | NULL, CHECK internal/public/import | — | Origem do consentimento; par com a data |
+| duplicate_review_pending | boolean | NOT NULL | `false` | Autocadastro pediu revisão de possível duplicidade |
 | baptism_date | date | NULL | — | Data batismo |
 | occupation | text | NULL | — | Profissão |
 | admission | text | NULL | — | Tipo admissão (texto livre histórico) |

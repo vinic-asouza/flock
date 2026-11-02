@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
 import { MemberFilters } from '@/app/(main)/members/page';
 
 interface Member {
@@ -118,13 +118,17 @@ export function MembersProvider({ children }: { children: ReactNode }) {
     sort_by: 'created_at',
     sort_order: 'desc'
   });
+  const loadRequestRef = useRef(0);
 
-  // Função para carregar membros do servidor
+  // Função para carregar membros do servidor.
+  // Só a última chamada atualiza a lista: uma resposta antiga não pode
+  // recolocar dados velhos nem tirar o loading de uma busca ainda em curso.
   const loadMembers = useCallback(async (
     filters: MemberFilters, 
     sorting: { sort_by: string; sort_order: 'asc' | 'desc' }, 
     page: number
   ) => {
+    const requestId = ++loadRequestRef.current;
     setLoading(true);
     setError(null);
     setCurrentFilters(filters);
@@ -142,13 +146,17 @@ export function MembersProvider({ children }: { children: ReactNode }) {
       };
 
       const response = await apiService.listMembers(params);
+      if (requestId !== loadRequestRef.current) return;
       setMembers(response.data);
       setPagination(response.pagination);
     } catch (err: unknown) {
+      if (requestId !== loadRequestRef.current) return;
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(`Erro ao carregar membros: ${errorMessage}`);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

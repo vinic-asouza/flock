@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { StatsGraphics } from './StatsGraphics';
 import { useState } from 'react';
-import { buildFreeRegisterUrl } from '@/utils/planFunnel';
+import { isClosedLaunch } from '@/utils/launchMode';
+import { StartFreeAction } from './StartFreeAction';
 
 export function Hero() {
   const [isHovered, setIsHovered] = useState(false);
@@ -21,11 +21,10 @@ export function Hero() {
               Centralize as informações e tenha uma visão clara de tudo o que está acontecendo.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href={buildFreeRegisterUrl(process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3001')}
+              <StartFreeAction
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
-                className="group bg-primary text-white px-6 sm:px-8 py-3 min-h-11 rounded-lg text-base sm:text-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl sm:hover:scale-105 relative overflow-hidden w-full sm:w-auto"
+                className="group bg-primary text-white px-6 sm:px-8 py-3 min-h-11 rounded-lg text-base sm:text-lg font-semibold hover:bg-[#0d0a3a] transition-all duration-300 inline-flex items-center justify-center gap-2 shadow-lg hover:shadow-xl sm:hover:scale-105 relative overflow-hidden w-full sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               >
                 <span className="relative z-10">Começar grátis</span>
                 <ArrowRight
@@ -33,7 +32,7 @@ export function Hero() {
                   className={`relative z-10 transition-all duration-300 ${isHovered ? 'translate-x-2 scale-110' : ''}`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-primary via-[#0d0a3a] to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </Link>
+              </StartFreeAction>
               <a
                 href="#como-funciona"
                 className="bg-white text-primary px-6 sm:px-8 py-3 min-h-11 rounded-lg text-base sm:text-lg font-semibold border border-primary/20 hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl sm:hover:scale-105 inline-flex items-center justify-center w-full sm:w-auto"
@@ -42,7 +41,9 @@ export function Hero() {
               </a>
             </div>
             <p className="mt-4 text-sm sm:text-base font-medium text-gray-700">
-              Grátis para até 100 membros
+              {isClosedLaunch()
+                ? 'Vagas limitadas para Igrejas Parceiras.'
+                : 'Grátis para até 100 membros'}
             </p>
           </div>
 

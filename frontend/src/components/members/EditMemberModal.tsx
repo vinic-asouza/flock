@@ -106,8 +106,11 @@ export function EditMemberModal({ isOpen, onClose, memberId, onSuccess }: EditMe
       onSuccess(updatedMember);
       onClose();
     } catch (err: unknown) {
-      const errorMessage = formatApiError(err) || 'Erro ao atualizar membro';
-      setError(errorMessage);
+      const status = (err as { status?: number }).status;
+      if (status !== 409) {
+        const errorMessage = formatApiError(err) || 'Erro ao atualizar membro';
+        setError(errorMessage);
+      }
       // Re-lançar o erro para que o MemberForm não limpe o formulário
       throw err;
     } finally {

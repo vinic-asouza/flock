@@ -1134,7 +1134,12 @@ class ApiService {
     return response.data;
   }
 
-  async importMembers(file: File, congregationId: string | null = null, skipDuplicates: boolean = true): Promise<ImportResult> {
+  async importMembers(
+    file: File,
+    congregationId: string | null = null,
+    skipDuplicates: boolean = true,
+    communicationConsent: boolean = false
+  ): Promise<ImportResult> {
     const formData = new FormData();
     formData.append('file', file);
     if (congregationId) {
@@ -1143,6 +1148,7 @@ class ApiService {
       formData.append('congregation_id', 'null');
     }
     formData.append('skipDuplicates', skipDuplicates.toString());
+    formData.append('communicationConsent', communicationConsent ? 'true' : 'false');
 
     const response = await this.api.post('/members/import', formData, {
       headers: {
