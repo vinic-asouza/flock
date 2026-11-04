@@ -1,137 +1,100 @@
 'use client';
 
-import Image from 'next/image';
-import { Church, FileSpreadsheet, UserPlus, BarChart3 } from 'lucide-react';
-import { isClosedLaunch } from '@/utils/launchMode';
+import { useRef } from 'react';
+import Link from 'next/link';
+import { useScroll, useSpring } from 'motion/react';
+import * as m from 'motion/react-m';
+import { ArrowRight, BarChart3, Church, FileSpreadsheet, LifeBuoy, UserPlus, type LucideIcon } from 'lucide-react';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { PrimaryAction } from '@/components/ui/PrimaryAction';
+import { Reveal } from '@/components/motion/Reveal';
 
-const processes = [
-  {
-    step: '1',
-    icon: Church,
-    title: 'Crie sua igreja',
-    description: 'Cadastre sua igreja e configure o ambiente.',
-  },
-  {
-    step: '2',
-    icon: FileSpreadsheet,
-    title: 'Importe seus membros',
-    description: 'Traga para o Flock os dados que sua igreja já possui.',
-  },
-  {
-    step: '3',
-    icon: UserPlus,
-    title: 'Convide sua liderança',
-    description: 'Dê acesso à secretaria, pastores e líderes.',
-  },
-  {
-    step: '4',
-    icon: BarChart3,
-    title: 'Comece a organizar',
-    description: 'Centralize as informações e acompanhe sua igreja em um só lugar.',
-  },
-];
+interface Step {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
 
-const benefits = [
-  {
-    title: 'Uma liderança, uma visão.',
-    description:
-      'Pastores, secretaria e líderes trabalham com informações atualizadas e centralizadas.',
-  },
-  {
-    title: 'Dados para decidir melhor.',
-    description: 'Tenha indicadores claros para acompanhar a realidade da sua igreja.',
-  },
-  {
-    title: 'Feito para igrejas brasileiras.',
-    description: 'Uma plataforma pensada para a forma como igrejas brasileiras se organizam.',
-  },
-  {
-    title: 'Acesso de qualquer lugar.',
-    description: 'Acesse as informações da sua igreja pelo computador, tablet ou celular.',
-  },
-  {
-    title: isClosedLaunch() ? 'Vagas limitadas nesta fase.' : 'Teste grátis até 100 membros.',
-    description: isClosedLaunch()
-      ? 'O cadastro das Igrejas Parceiras passa pelo contato. O plano gratuito segue até 100 membros.'
-      : 'Use o Flock para conhecer as funcionalidades e ver se faz sentido para a realidade da sua igreja.',
-  },
+const STEPS: Step[] = [
+  { icon: Church, title: 'Crie sua igreja', description: 'Cadastre a igreja e configure o ambiente.' },
+  { icon: FileSpreadsheet, title: 'Importe seus membros', description: 'Traga a planilha que você já tem.' },
+  { icon: UserPlus, title: 'Convide sua liderança', description: 'Acesso para secretaria, pastores e líderes.' },
+  { icon: BarChart3, title: 'Comece a organizar', description: 'Tudo em um só lugar.' },
 ];
 
 export function ProcessSection() {
+  const listRef = useRef<HTMLOListElement>(null);
+  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 85%', 'end 55%'] });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
+
   return (
-    <section id="como-funciona" className="scroll-mt-24 py-20 px-4 bg-[#fffffffe] min-w-0 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <div
-          className="mb-12 md:mb-20 rounded-xl p-6 sm:p-8 md:p-12"
-          style={{
-            backgroundColor: '#090725',
-            backgroundImage: 'linear-gradient(to right, #090725, #0d0a3a, #090725)',
-          }}
-        >
-          <div className="text-center mb-8 md:mb-10">
-            <p className="text-sm sm:text-base font-medium text-white/80 mb-2">
-              Você não precisa começar do zero.
-            </p>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white">
-              Comece em poucos passos.
-            </h2>
-            <p className="mt-3 text-sm sm:text-base text-white/80">
-              Sua igreja já tem uma planilha? Traga seus dados para o Flock.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {processes.map((process) => {
-              const IconComponent = process.icon;
-              return (
-                <div key={process.step} className="text-center relative">
-                  <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                    <IconComponent className="w-8 h-8 text-white" aria-hidden />
-                  </div>
-                  <h3 className="text-lg md:text-xl font-bold text-white mb-2 md:mb-3">
-                    {process.step}. {process.title}
-                  </h3>
-                  <p className="text-xs md:text-sm text-white/90 leading-relaxed">
-                    {process.description}
-                  </p>
+    <section id="como-funciona" className="relative scroll-mt-20 bg-white py-24 sm:py-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Você não precisa começar do zero"
+          title="Comece em poucos passos."
+          description="Sua igreja já tem uma planilha? Traga seus dados para o Flock."
+        />
+
+        <div className="relative mt-16">
+          <span aria-hidden className="absolute top-0 bottom-0 left-6 w-px bg-gray-200 md:top-6 md:right-[12.5%] md:bottom-auto md:left-[12.5%] md:h-px md:w-auto" />
+          <m.span
+            aria-hidden
+            style={{ scaleY: progress }}
+            className="absolute top-0 bottom-0 left-6 w-px origin-top bg-gradient-to-b from-accent-500 to-primary md:hidden"
+          />
+          <m.span
+            aria-hidden
+            style={{ scaleX: progress }}
+            className="absolute top-6 right-[12.5%] left-[12.5%] hidden h-px origin-left bg-gradient-to-r from-accent-500 to-primary md:block"
+          />
+
+          <ol ref={listRef} className="relative grid gap-10 md:grid-cols-4 md:gap-6">
+          {STEPS.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <Reveal as="li" key={step.title} delay={i * 0.1} className="relative flex gap-5 md:flex-col md:items-center md:text-center">
+                <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_12px_30px_-10px_rgb(9_7_37/0.55)] ring-8 ring-white">
+                  <Icon aria-hidden className="h-5 w-5" />
+                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent-500 text-[10px] font-bold ring-2 ring-white">
+                    {i + 1}
+                  </span>
+                </span>
+                <div className="pt-1 md:pt-5">
+                  <h3 className="text-lg font-bold text-primary">{step.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{step.description}</p>
                 </div>
-              );
-            })}
+              </Reveal>
+            );
+          })}
+          </ol>
+        </div>
+
+        <Reveal delay={0.1} className="mt-16">
+          <div className="flex flex-col gap-5 rounded-3xl border border-accent-200/70 bg-gradient-to-r from-accent-50 to-white p-6 sm:flex-row sm:items-center sm:p-7">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-accent-500 shadow-sm ring-1 ring-accent-200">
+              <LifeBuoy aria-hidden className="h-6 w-6" />
+            </span>
+            <p className="flex-1 text-base text-gray-700 sm:text-lg">
+              <strong className="font-semibold text-primary">Já tem a lista em planilha ou em outro sistema?</strong> Nossa equipe ajuda você a
+              migrar para o Flock.
+            </p>
+            <Link
+              href="#waitlist"
+              className="group inline-flex min-h-11 shrink-0 items-center gap-1.5 self-start rounded-xl px-4 font-semibold text-accent-500 ring-1 ring-accent-200 transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 sm:self-auto"
+            >
+              Fale com a gente
+              <ArrowRight aria-hidden className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
           </div>
-          <p className="text-center text-sm sm:text-base text-white/90 mt-8 md:mt-10 font-medium">
+        </Reveal>
+
+        <Reveal delay={0.1} className="mt-20 flex flex-col items-center text-center">
+          <p className="text-gradient-brand max-w-3xl text-3xl font-extrabold tracking-[-0.03em] text-balance sm:text-4xl">
             Menos trabalho para migrar. Mais tempo para cuidar da igreja.
           </p>
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
-          <div className="relative flex justify-center order-2 lg:order-1">
-            <Image
-              src="/demo/painel.png"
-              alt="Prévia do Painel do Flock"
-              width={500}
-              height={500}
-              className="rounded-xl w-full max-w-xs md:max-w-sm lg:max-w-md shadow-lg"
-            />
-          </div>
-
-          <div className="order-1 lg:order-2">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-6 md:mb-8">
-              Menos planilhas. Mais organização.
-            </h2>
-
-            <div className="space-y-6">
-              {benefits.map((benefit) => (
-                <div key={benefit.title}>
-                  <h3 className="text-lg font-extrabold text-gray-900 mb-2">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {benefit.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+          <PrimaryAction size="lg" className="mt-8" />
+        </Reveal>
       </div>
     </section>
   );

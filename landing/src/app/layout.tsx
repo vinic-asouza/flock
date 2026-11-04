@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { MotionProvider } from "@/components/motion/MotionProvider";
 
 // Configurar fonte Inter usando next/font
 const inter = Inter({
@@ -141,7 +142,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
         />
-        {children}
+        <MotionProvider>{children}</MotionProvider>
         <Toaster
           position="top-center"
           containerStyle={{

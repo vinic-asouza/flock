@@ -17,6 +17,7 @@ describe('buildSitemapEntries', () => {
     assert.deepEqual(urls, [
       'https://flockapp.com.br',
       'https://flockapp.com.br/waitlist',
+      'https://flockapp.com.br/privacidade',
     ]);
     assert.equal(urls.some((url) => url.includes('#')), false);
   });

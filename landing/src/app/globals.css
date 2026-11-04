@@ -1,99 +1,258 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f5f6fa;
-  --foreground: #171717;
-  --primary: #090725;
+@theme {
+  --color-primary: #090725;
+  --color-brand-950: #090725;
+  --color-brand-900: #0d0a3a;
+  --color-brand-800: #1a1655;
+  --color-brand-700: #33305a;
+  --color-brand-500: #6b6b8f;
+  --color-accent-50: #f4f2ff;
+  --color-accent-100: #ece9ff;
+  --color-accent-200: #cfc9ff;
+  --color-accent-300: #a99ffb;
+  --color-accent-400: #7d71f5;
+  --color-accent-500: #5346f0;
+  --color-accent-600: #4639d6;
+  --color-canvas: #f5f6fa;
+  --color-muted: #6b7280;
+
+  --animate-fade-up: fade-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 1s ease-out both;
+  --animate-ping-soft: ping-soft 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-border-spin: border-spin 6s linear infinite;
+  --animate-shimmer: shimmer 2.8s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes ping-soft {
+    0% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+    80%,
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+
+  @keyframes border-spin {
+    to {
+      --border-angle: 360deg;
+    }
+  }
+
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+@property --border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+:root {
+  interpolate-size: allow-keywords;
 }
 
 html {
-  background: var(--background);
+  background: var(--color-canvas);
   height: 100%;
-  scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
   color-scheme: light;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-inter), sans-serif;
+  background: var(--color-canvas);
+  color: #171717;
   min-height: 100%;
   margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   min-width: 0;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   color: #222;
   font-family: inherit;
 }
 
-button, a, [role=button], .cursor-pointer {
-  cursor: pointer;
-}
-
-/* Utilitário para cor principal */
-.text-primary {
-  color: var(--primary) !important;
-}
-.bg-primary {
-  background-color: var(--primary) !important;
-}
-.border-primary {
-  border-color: var(--primary) !important;
-}
-
-/* Placeholder mais escuro */
-input::placeholder, textarea::placeholder {
-  color: #888;
+input::placeholder,
+textarea::placeholder {
+  color: #8a8a99;
   opacity: 1;
 }
 
-/* Animações personalizadas */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+button,
+a,
+[role="button"] {
+  cursor: pointer;
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+/* Fundo de grade com fade radial, usado em seções escuras */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
 }
 
-/* Sombra 3xl para imagens do dashboard */
-.shadow-3xl {
-  box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25);
+.bg-grid-light {
+  background-image:
+    linear-gradient(to right, rgb(9 7 37 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(9 7 37 / 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 65% 55% at 50% 0%, #000 25%, transparent 75%);
 }
 
-.hero-title {
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  color: #090725;
-  background-image: linear-gradient(
-    90deg,
-    #090725 0%,
-    #1a1655 32%,
-    #33305a 50%,
-    #1a1655 68%,
-    #090725 100%
-  );
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+}
+
+.text-gradient-light {
+  background-image: linear-gradient(180deg, #ffffff 20%, #c9c4ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-brand {
+  background-image: linear-gradient(100deg, #090725 0%, #33305a 45%, #5346f0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Borda em gradiente animado (conic); a máscara limita o gradiente ao anel da borda */
+.border-glow {
+  position: relative;
+  isolation: isolate;
+}
+
+.border-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  padding: 1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  background: conic-gradient(
+    from var(--border-angle),
+    rgb(83 70 240 / 0.15) 0%,
+    rgb(83 70 240 / 0.9) 12%,
+    rgb(169 159 251 / 0.9) 20%,
+    rgb(83 70 240 / 0.15) 32%,
+    rgb(83 70 240 / 0.15) 100%
+  );
+  animation: var(--animate-border-spin);
 }
 
 details > summary::-webkit-details-marker {
   display: none;
 }
 
+details.faq-item::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    content-visibility 0.35s allow-discrete;
+}
+
+details.faq-item[open]::details-content {
+  block-size: auto;
+}
+
+@keyframes draw-check {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.check-draw {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: draw-check 0.6s 0.15s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.burst-dot {
+  animation: burst 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .burst-dot {
+    display: none;
+  }
+
+  .check-draw {
+    stroke-dashoffset: 0;
+  }
+}
