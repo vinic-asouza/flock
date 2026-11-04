@@ -9,9 +9,14 @@ import {
   getPublicTeachingLink,
   createPublicTeachingEnrollment,
 } from '../controllers/publicTeachingController';
+import {
+  getPublicEventLink,
+  createPublicEventRegistration,
+} from '../controllers/publicEventController';
 import publicRegistrationAuth from '../middlewares/publicRegistrationAuth';
 import publicIntegrationAuth from '../middlewares/publicIntegrationAuth';
 import publicTeachingAuth from '../middlewares/publicTeachingAuth';
+import publicEventAuth from '../middlewares/publicEventAuth';
 import { publicPostLimiter } from '../middlewares/publicPostLimiter';
 
 const router = Router();
@@ -25,5 +30,8 @@ router.post('/integration/:token', publicPostLimiter, publicIntegrationAuth, cre
 
 router.get('/teaching/:token', publicTeachingAuth, getPublicTeachingLink);
 router.post('/teaching/:token', publicPostLimiter, publicTeachingAuth, createPublicTeachingEnrollment);
+
+router.get('/events/:token', publicEventAuth, getPublicEventLink);
+router.post('/events/:token', publicPostLimiter, publicEventAuth, createPublicEventRegistration);
 
 export default router;

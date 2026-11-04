@@ -363,6 +363,26 @@ Catálogo completo (programas, turmas, aulas, presença, link): [[04_modulos/ens
 | --- | --- | --- | --- | --- | --- |
 | POST | `/api/teaching/classes/:id/certificates/export` | ✅ | ≥ editor | Multipart logos/cores/`enrollmentIds` → PDF multipágina (turma `closed`, ≤50) | ✅ |
 
+### Eventos (`/api/events`)
+
+Catálogo completo (CRUD, organizadores, inscritos, link, capacidade): [[04_modulos/eventos]].
+
+| Método | Rota | Auth | Role | Descrição | Status |
+| --- | --- | --- | --- | --- | --- |
+| GET | `/api/events/` | ✅ | ≥ reader | Listar eventos (filtros congregação/status) | ✅ |
+| GET | `/api/events/:id` | ✅ | ≥ reader | Detalhe + organizadores + vagas | ✅ |
+| POST | `/api/events/` | ✅ | ≥ editor | Criar evento | ✅ |
+| PATCH | `/api/events/:id` | ✅ | ≥ editor | Atualizar evento | ✅ |
+| DELETE | `/api/events/:id` | ✅ | ≥ editor | Excluir evento | ✅ |
+| PUT | `/api/events/:id/organizers` | ✅ | ≥ editor | Substituir organizadores | ✅ |
+| GET | `/api/events/:id/registrations` | ✅ | ≥ reader | Listar inscritos / fila | ✅ |
+| POST | `/api/events/:id/registrations` | ✅ | ≥ editor | Inscrever membro ou convidado | ✅ |
+| PATCH | `/api/events/registrations/:id/resolve` | ✅ | ≥ editor | Resolver possível membro | ✅ |
+| DELETE | `/api/events/registrations/:id` | ✅ | ≥ editor | Remover inscrição (libera vaga) | ✅ |
+| GET/POST/PATCH | `/api/events/:id/public-link` | ✅ | reader+/editor+ | Link público do evento | ✅ |
+| GET | `/api/public/events/:token` | 🔗 | — | Validar link + vagas | ✅ |
+| POST | `/api/public/events/:token` | 🔗 | — | Inscrição pública (RL + capacidade) | ✅ |
+
 ### Links públicos gerenciados
 
 | Método | Rota | Auth | Role | Descrição | Status |

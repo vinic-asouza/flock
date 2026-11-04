@@ -609,8 +609,78 @@ erDiagram
 
 ---
 
+#### events
+> Encontros especiais (DEV-102). Superfície de produto v1; distinto de `calendar_items`.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| name | text | NOT NULL, len 2–100 | — | Nome |
+| description | text | NULL | — | Livre (sem Tipo/enum) |
+| starts_at | timestamptz | NOT NULL | — | Início |
+| ends_at | timestamptz | NULL, CHECK ≥ starts_at | — | Fim opcional |
+| location | text | NULL | — | Local |
+| congregation_id | uuid | NULL, FK RESTRICT | — | null = todas |
+| status | text | NOT NULL, CHECK draft/open/in_progress/closed/archived | `draft` | Status |
+| capacity | int | NULL, CHECK > 0 | — | Vagas; null = ilimitado |
+| responsible_id | uuid | NOT NULL, FK → members RESTRICT | — | Responsável |
+| group_id | uuid | NULL, FK → groups SET NULL | — | Ministério responsável |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** `church_id`, `(church_id, starts_at)`, `(church_id, congregation_id)`, `(church_id, status)`, `group_id`.
+
+#### event_organizers
+> N organizadores por evento (≠ responsável).
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| event_id | uuid | PK parcial, FK CASCADE | — | Evento |
+| member_id | uuid | PK parcial, FK CASCADE | — | Organizador |
+| created_at | timestamptz | NOT NULL | `now()` | Vínculo |
+
+**PK:** `(event_id, member_id)`.
+
+#### event_registrations
+> Inscrição: membro, convidado ou possível membro. Hard DELETE libera vaga.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| event_id | uuid | NOT NULL, FK CASCADE | — | Evento |
+| kind | text | NOT NULL, CHECK member/guest/possible_member | — | Tipo |
+| member_id | uuid | NULL, FK SET NULL; UNIQUE parcial com event | — | Obrigatório se member |
+| full_name / whatsapp / birth_date | text/date | NULL* | — | Obrigatórios se guest/possible_member |
+| email | text | NULL | — | Fora do match |
+| match_meta | jsonb | NULL | — | Sinais/candidatos |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** `event_id`, `(church_id, kind)`, UNIQUE parcial `(event_id, member_id) WHERE member_id IS NOT NULL`.
+
+#### event_public_links
+> Link de inscrição pública — **um** por evento.
+
+| Campo | Tipo | Restrições | Default | Descrição |
+| --- | --- | --- | --- | --- |
+| id | uuid | PK | `gen_random_uuid()` | Identificador |
+| church_id | uuid | NOT NULL, FK CASCADE | — | Tenant |
+| event_id | uuid | NOT NULL, UNIQUE, FK CASCADE | — | Evento |
+| token | text | NOT NULL, UNIQUE | — | Token na URL |
+| is_active | boolean | NOT NULL | `true` | Ativo |
+| expires_at | timestamptz | NULL | — | Validade |
+| max_uses | int | NULL, CHECK > 0 | — | Teto opcional |
+| current_uses | int | NOT NULL, CHECK ≥ 0 | `0` | Contador |
+| created_by | uuid | NULL, FK auth.users SET NULL | — | Autor |
+| created_at / updated_at | timestamptz | NOT NULL | `now()` | Auditoria |
+
+**Índices:** UNIQUE `event_id`, UNIQUE `token`, `church_id`.  
+**RLS:** habilitado sem policies (acesso via `service_role`).
+
+---
+
 #### calendar_items
-> Programações, eventos, encontros e reuniões (com recorrência).
+> Programações, eventos, encontros e reuniões (com recorrência). UI oculta na v1 (Eventos sucede a superfície).
 
 | Campo | Tipo | Restrições | Default | Descrição |
 | --- | --- | --- | --- | --- |

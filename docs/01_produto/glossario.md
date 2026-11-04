@@ -1,9 +1,9 @@
 ---
 type: glossario
-ultima_atualizacao: 2026-10-02
-versao: "1.14"
+ultima_atualizacao: 2026-11-02
+versao: "1.15"
 tags: [produto, domínio, vocabulário, referência]
-total_termos: 83
+total_termos: 87
 ---
 
 # Glossário do Domínio — Flock
@@ -93,7 +93,29 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 > Edição/ciclo letivo que recebe matrícula (local, horário, datas, responsável, professores, status). Sempre pertence a um Programa e tem congregação.  
 - **Status:** `draft` / `open` / `in_progress` / `closed` / `archived` (UI: Rascunho, Aberta, Em andamento, Encerrada, Arquivada)  
 - **Usado em:** Ensino  
-- **UI:** “Turma” · **não** confundir com **Ministério**
+- **UI:** “Turma” · **não** confundir com **Ministério** nem com **Evento**
+
+**Evento** *(código: `ChurchEvent` / tabela `events`)*  
+> Encontro especial da igreja (congresso, conferência, acampamento, etc.) — **não** a programação semanal. Unidade plana com datas, local, status, capacidade opcional, responsável + organizadores e ministério responsável opcional.  
+- **Status:** `draft` / `open` / `in_progress` / `closed` / `archived` (UI: Rascunho, Aberto, Em andamento, Encerrado, Arquivado)  
+- **Usado em:** Eventos (`/events`)  
+- **UI:** “Evento” · **não** confundir com itens do Calendário legado nem com **Turma**
+
+**Inscrito (Eventos)** *(código: `EventRegistration`, `event_registrations`)*  
+> Participação no evento — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login. Hard delete libera vaga.  
+- **Kinds:** `member` | `guest` | `possible_member`  
+- **Usado em:** Eventos  
+- **UI:** aba **Inscritos** no detalhe do evento
+
+**Vagas / Capacidade** *(código: `events.capacity`)*  
+> Limite opcional de inscritos no evento. `null` = ilimitado. Sem lista de espera; ao esgotar, Painel e link público bloqueiam novas inscrições.  
+- **Usado em:** Eventos  
+- **UI:** “Vagas” / contador ocupadas ÷ capacidade
+
+**Organizador (Eventos)** *(código: `event_organizers`)*  
+> Membro adicional da equipe do evento (0..N), distinto do **Responsável**.  
+- **Usado em:** Eventos  
+- **UI:** “Organizadores”
 
 **Aluno** *(matrícula; código: `TeachingEnrollment`, `teaching_enrollments`)*  
 > Matrícula na turma — **Membro** vinculado, **Convidado** ou **Possível membro**. Não é usuário de login. Soft-remove (`removed_at`) preserva histórico de chamada.
@@ -123,8 +145,8 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **UI:** “Certificados” / “Gerar certificados”
 
 **Possível membro** *(código: `kind = possible_member`)*  
-> Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+). Não aparece na chamada até resolução.
-- **Usado em:** Ensino (fila no detalhe da turma)  
+> Badge/fila: inscrição com match parcial ao rol; confirmação de vínculo só no Painel (editor+). No Ensino, não aparece na chamada até resolução.
+- **Usado em:** Ensino (fila no detalhe da turma); Eventos (fila no detalhe do evento)  
 - **UI:** “Possível membro”
 
 **Responsável (turma)** *(código: `teaching_classes.responsible_id`)*  
@@ -390,7 +412,7 @@ Detalhes: [[01_produto/personas-e-usuarios]].
 
 ## Contagem e arquivos analisados
 
-**Total de termos documentados:** 83 _(frontmatter `total_termos`)_.
+**Total de termos documentados:** 87 _(frontmatter `total_termos`)_.
 
 **Arquivos analisados:**
 

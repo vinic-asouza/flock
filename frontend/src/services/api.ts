@@ -1594,6 +1594,115 @@ class ApiService {
     const response = await this.api.post(`/public/teaching/${token}`, data);
     return response.data;
   }
+
+  // ========== Eventos ==========
+
+  async listEvents(params?: {
+    congregation_id?: string;
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const query = new URLSearchParams();
+    if (params?.congregation_id) query.set('congregation_id', params.congregation_id);
+    if (params?.status) query.set('status', params.status);
+    if (params?.search) query.set('search', params.search);
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    const url = `/events${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data as {
+      data: import('@/types').ChurchEvent[];
+      pagination: import('@/types').TeachingPagination;
+    };
+  }
+
+  async getEvent(id: string) {
+    const response = await this.api.get(`/events/${id}`);
+    return response.data as import('@/types').ChurchEvent;
+  }
+
+  async createEvent(data: Record<string, unknown>) {
+    const response = await this.api.post('/events', data);
+    return response.data as import('@/types').ChurchEvent;
+  }
+
+  async updateEvent(id: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/events/${id}`, data);
+    return response.data as import('@/types').ChurchEvent;
+  }
+
+  async deleteEvent(id: string) {
+    await this.api.delete(`/events/${id}`);
+  }
+
+  async replaceEventOrganizers(eventId: string, organizer_ids: string[]) {
+    const response = await this.api.put(`/events/${eventId}/organizers`, { organizer_ids });
+    return response.data;
+  }
+
+  async listEventRegistrations(
+    eventId: string,
+    params?: { page?: number; limit?: number; search?: string }
+  ) {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    const url = `/events/${eventId}/registrations${query.toString() ? `?${query}` : ''}`;
+    const response = await this.api.get(url);
+    return response.data as {
+      data: import('@/types').EventRegistration[];
+      queue: import('@/types').EventRegistration[];
+      pagination: import('@/types').TeachingPagination;
+    };
+  }
+
+  async createEventRegistration(eventId: string, data: Record<string, unknown>) {
+    const response = await this.api.post(`/events/${eventId}/registrations`, data);
+    return response.data as import('@/types').EventRegistration;
+  }
+
+  async resolveEventRegistration(
+    registrationId: string,
+    data: { action: 'link_member' | 'keep_guest'; member_id?: string }
+  ) {
+    const response = await this.api.patch(`/events/registrations/${registrationId}/resolve`, data);
+    return response.data;
+  }
+
+  async deleteEventRegistration(registrationId: string) {
+    await this.api.delete(`/events/registrations/${registrationId}`);
+  }
+
+  async getEventPublicLink(eventId: string) {
+    const response = await this.api.get(`/events/${eventId}/public-link`);
+    return response.data as import('@/types').EventPublicLink;
+  }
+
+  async createEventPublicLink(eventId: string, data: Record<string, unknown> = {}) {
+    const response = await this.api.post(`/events/${eventId}/public-link`, data);
+    return response.data as import('@/types').EventPublicLink;
+  }
+
+  async updateEventPublicLink(eventId: string, data: Record<string, unknown>) {
+    const response = await this.api.patch(`/events/${eventId}/public-link`, data);
+    return response.data as import('@/types').EventPublicLink;
+  }
+
+  async validateEventPublicLink(token: string) {
+    const response = await this.api.get(`/public/events/${token}`);
+    return response.data;
+  }
+
+  async enrollViaEventPublicLink(
+    token: string,
+    data: { full_name: string; whatsapp: string; birth_date: string; email?: string }
+  ) {
+    const response = await this.api.post(`/public/events/${token}`, data);
+    return response.data;
+  }
 }
 
 // Instância singleton
