@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Check, Gift, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, Check, Gift, SlidersHorizontal, Sparkles, Star } from 'lucide-react';
 import { CheckoutButton } from './CheckoutButton';
 import { Differentiators } from './Differentiators';
 import { SectionHeading } from '@/components/ui/SectionHeading';
@@ -91,33 +91,80 @@ function OfferTimeline({ promoPrice, fullPrice, featured }: { promoPrice: string
   );
 }
 
-function FreePlan({ closed }: { closed: boolean }) {
-  const className =
-    'group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl px-5 font-semibold text-primary ring-1 ring-gray-300 transition-[background-color,box-shadow] hover:bg-white hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary';
+const ASIDE_BUTTON =
+  'group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 self-start rounded-xl px-5 font-semibold text-primary ring-1 ring-gray-300 transition-[background-color,box-shadow] hover:bg-white hover:ring-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:self-auto';
+
+function PlanAside({
+  icon,
+  iconClass,
+  title,
+  limitPrefix,
+  limit,
+  description,
+  action,
+}: {
+  icon: ReactNode;
+  iconClass: string;
+  title: string;
+  limitPrefix: string;
+  limit: string;
+  description: string;
+  action: ReactNode;
+}) {
   return (
-    <Reveal className="mx-auto mt-6 max-w-6xl">
-      <div className="flex flex-col gap-5 rounded-2xl border border-dashed border-gray-300 bg-white/60 p-5 sm:flex-row sm:items-center sm:p-6">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
-          <Gift aria-hidden className="h-5 w-5" />
-        </span>
-        <div className="flex-1">
-          <p className="text-lg font-extrabold text-primary">
-            {PLAN_DISPLAY_NAMES['100']} <span className="font-semibold text-gray-500">· até 100 membros</span>
-          </p>
-          <p className="text-sm text-gray-600">O mesmo Flock, com todas as funcionalidades, para igrejas com até 100 membros.</p>
-        </div>
-        {closed ? (
-          <button type="button" onClick={() => selectWaitlistPlan('100')} className={className}>
-            Solicitar acesso
+    <div className="flex h-full flex-col gap-5 rounded-2xl border border-dashed border-gray-300 bg-white/60 p-5 sm:p-6 lg:flex-row lg:items-center">
+      <span className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1', iconClass)}>{icon}</span>
+      <div className="flex-1">
+        <p className="text-lg font-extrabold text-primary">{title}</p>
+        <p className="mt-0.5 text-sm text-gray-500">
+          {limitPrefix ? `${limitPrefix} ` : null}
+          <span className="text-gradient-brand inline-block text-xl font-extrabold tracking-tight">{limit}</span>
+        </p>
+        <p className="mt-1 text-sm text-gray-600">{description}</p>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function PlanAsides({ closed }: { closed: boolean }) {
+  return (
+    <Reveal className="mx-auto mt-6 grid max-w-6xl gap-4 md:grid-cols-2">
+      <PlanAside
+        icon={<Gift aria-hidden className="h-5 w-5" />}
+        iconClass="bg-emerald-50 text-emerald-600 ring-emerald-100"
+        title={PLAN_DISPLAY_NAMES['100']}
+        limitPrefix="até"
+        limit="100 membros"
+        description="O mesmo Flock, com todas as funcionalidades, para igrejas com até 100 membros."
+        action={
+          closed ? (
+            <button type="button" onClick={() => selectWaitlistPlan('100')} className={ASIDE_BUTTON}>
+              Solicitar acesso
+              <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </button>
+          ) : (
+            <Link href={buildFreeRegisterUrl(FRONTEND_URL)} className={ASIDE_BUTTON}>
+              Começar grátis
+              <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
+          )
+        }
+      />
+      <PlanAside
+        icon={<SlidersHorizontal aria-hidden className="h-5 w-5" />}
+        iconClass="bg-accent-50 text-accent-500 ring-accent-100"
+        title="Personalizado"
+        limitPrefix=""
+        limit="+ de 800 membros"
+        description="O mesmo Flock, com todas as funcionalidades, para igrejas com mais de 800 membros."
+        action={
+          <button type="button" onClick={() => selectWaitlistPlan('personalizado')} className={ASIDE_BUTTON}>
+            Entrar em contato
             <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </button>
-        ) : (
-          <Link href={buildFreeRegisterUrl(FRONTEND_URL)} className={className}>
-            Começar grátis
-            <ArrowRight aria-hidden className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
-        )}
-      </div>
+        }
+      />
     </Reveal>
   );
 }
@@ -148,9 +195,13 @@ export function Pricing() {
           className="mt-20"
           eyebrow="Planos"
           title={
-            closed
-              ? 'Três meses para testar. Depois, o plano do tamanho da sua igreja.'
-              : 'Comece grátis. Cresça quando sua igreja crescer.'
+            closed ? (
+              <>
+                <span className="text-gradient-brand">Três meses para testar.</span> Depois, o plano do tamanho da sua igreja.
+              </>
+            ) : (
+              'Comece grátis. Cresça quando sua igreja crescer.'
+            )
           }
           description="O Flock é o mesmo em todos os planos. Você paga apenas pelo tamanho da sua igreja."
         />
@@ -180,7 +231,7 @@ export function Pricing() {
               <StaggerItem
                 as="article"
                 key={plan.id}
-                className={cn('flex', isFeatured && 'order-first lg:order-none')}
+                className={cn('flex', isFeatured && 'md:order-first lg:order-none')}
               >
                 <div
                   className={cn(
@@ -198,7 +249,12 @@ export function Pricing() {
                   )}
 
                   <h3 className="text-xl font-extrabold text-primary">{displayName}</h3>
-                  <p className="mt-1 text-sm text-gray-500">Para igrejas com até {plan.members} membros</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Para igrejas com até{' '}
+                    <span className="text-gradient-brand inline-block text-xl font-extrabold tracking-tight">
+                      {plan.members} membros
+                    </span>
+                  </p>
 
                   <div className="mt-6 mb-6">
                     {showOffer && promoPrice ? (
@@ -245,7 +301,7 @@ export function Pricing() {
           })}
         </Stagger>
 
-        <FreePlan closed={closed} />
+        <PlanAsides closed={closed} />
 
         <Reveal className="mt-12 rounded-3xl bg-white p-6 ring-1 ring-gray-200/80 sm:p-8">
           <p className="text-center text-sm font-semibold text-primary">Todos os planos incluem</p>

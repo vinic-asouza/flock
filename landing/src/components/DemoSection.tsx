@@ -125,7 +125,7 @@ export function DemoSection() {
     <section
       id="demo"
       ref={sectionRef}
-      className="relative scroll-mt-20 overflow-hidden bg-canvas py-24 sm:py-28"
+      className="relative hidden scroll-mt-20 overflow-hidden bg-canvas py-24 sm:py-28 md:block"
       onPointerEnter={(event) => event.pointerType === 'mouse' && setPaused(true)}
       onPointerLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}

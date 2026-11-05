@@ -7,7 +7,7 @@ import { requestDemo } from '@/utils/landingScroll';
 
 export function DemoCta() {
   return (
-    <section aria-labelledby="demo-cta-title" className="bg-canvas px-4 pb-24 sm:px-6 sm:pb-28 lg:px-8">
+    <section aria-labelledby="demo-cta-title" className="bg-canvas px-4 pt-16 pb-24 sm:px-6 md:pt-0 md:pb-28 lg:px-8">
       <Reveal className="mx-auto max-w-5xl">
         <div className="border-glow rounded-[1.75rem]">
           <div className="relative overflow-hidden rounded-[1.75rem] bg-brand-950 px-6 py-10 text-white sm:px-12 sm:py-12">
@@ -19,7 +19,8 @@ export function DemoCta() {
                   <CalendarCheck aria-hidden className="h-5 w-5 text-accent-200" />
                 </span>
                 <h2 id="demo-cta-title" className="mt-5 text-2xl font-extrabold tracking-[-0.02em] text-balance sm:text-3xl">
-                  Prefere ver com alguém da nossa equipe?
+                  <span className="md:hidden">Gostaria de agendar uma demonstração?</span>
+                  <span className="hidden md:inline">Prefere ver com alguém da nossa equipe?</span>
                 </h2>
                 <p className="mt-3 text-base text-white/70 sm:text-lg">Mostramos o Flock com calma e tiramos suas dúvidas.</p>
               </div>

@@ -89,10 +89,20 @@ export function Footer() {
         </div>
       </div>
 
-      <div aria-hidden className="pointer-events-none mx-auto max-w-7xl overflow-hidden px-4 select-none sm:px-6 lg:px-8">
-        <p className="bg-gradient-to-b from-white/20 to-white/0 bg-clip-text text-center text-6xl leading-none font-black tracking-[-0.06em] text-transparent sm:text-8xl">
-          Flock
-        </p>
+      <div
+        aria-hidden
+        className="group/mark relative mx-auto flex max-w-7xl justify-center px-4 py-3 text-[clamp(4.75rem,16vw,12rem)] leading-none select-none sm:px-6 lg:px-8"
+      >
+        <div className="flex items-center gap-[0.06em] text-white opacity-[0.28] transition-opacity duration-500 ease-out group-hover/mark:opacity-50 [mask-image:linear-gradient(to_bottom,#000_12%,transparent_78%)]">
+          <Image
+            src="/flock-logo.svg"
+            alt=""
+            width={192}
+            height={192}
+            className="h-[0.78em] w-[0.78em]"
+          />
+          <p className="font-black tracking-[-0.06em]">Flock</p>
+        </div>
       </div>
 
       <div className="border-t border-white/10">
