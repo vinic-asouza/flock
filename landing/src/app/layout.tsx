@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { MotionProvider } from "@/components/motion/MotionProvider";
+import { isClosedLaunch } from "@/utils/launchMode";
 
 // Configurar fonte Inter usando next/font
 const inter = Inter({
@@ -11,6 +13,10 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://flockapp.com.br';
+const closedLaunch = isClosedLaunch();
+const siteDescription = closedLaunch
+  ? 'A gestão da sua igreja, em um só lugar. Programa Igrejas Parceiras: 3 meses para testar e 50% de desconto nos 12 meses seguintes.'
+  : 'A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.';
 
 export const viewport = {
   width: 'device-width',
@@ -24,7 +30,7 @@ export const metadata: Metadata = {
     default: "Flock — a gestão da sua igreja, em um só lugar",
     template: "%s | Flock",
   },
-  description: "A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.",
+  description: siteDescription,
   keywords: [
     "igreja",
     "gestão de membros",
@@ -54,7 +60,7 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: siteUrl,
     title: "Flock — a gestão da sua igreja, em um só lugar",
-    description: "A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.",
+    description: siteDescription,
     siteName: "Flock",
     images: [
       {
@@ -68,7 +74,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Flock — a gestão da sua igreja, em um só lugar",
-    description: "A gestão da sua igreja, em um só lugar. Centralize informações e comece grátis até 100 membros.",
+    description: siteDescription,
     images: [`${siteUrl}/og-image.jpg`],
   },
   robots: {
@@ -102,15 +108,18 @@ export default function RootLayout({
     "name": "Flock",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "BRL",
-      "availability": "https://schema.org/InStock"
-    },
-    "description": "A gestão da sua igreja, em um só lugar. Comece grátis até 100 membros.",
+    ...(closedLaunch
+      ? {}
+      : {
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "BRL",
+            availability: "https://schema.org/InStock",
+          },
+        }),
+    "description": siteDescription,
     "url": siteUrl,
-    "screenshot": `${siteUrl}/demo/painel.png`,
     "featureList": [
       "Gestão de Membros",
       "Integração de Pré-Membros",
@@ -133,6 +142,12 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={`${inter.variable} font-sans antialiased`}>
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[80] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary focus:shadow-lg"
+        >
+          Pular para o conteúdo
+        </a>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
@@ -141,7 +156,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationData) }}
         />
-        {children}
+        <MotionProvider>{children}</MotionProvider>
         <Toaster
           position="top-center"
           containerStyle={{

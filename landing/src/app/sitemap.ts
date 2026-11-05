@@ -20,6 +20,11 @@ export function buildSitemapEntries(baseUrl: string): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.7,
     },
+    {
+      url: `${origin}/privacidade`,
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
   ];
 }
 

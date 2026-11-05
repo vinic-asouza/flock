@@ -1,253 +1,281 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, BookOpen } from 'lucide-react';
+import { AnimatePresence, useInView, useReducedMotion, type PanInfo } from 'motion/react';
+import * as m from 'motion/react-m';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { PRODUCT_SCREENS, type ProductScreen, type ScreenCallout } from '@/content/productScreens';
+import { FAKE_SCREEN_HEIGHT, FAKE_SCREEN_WIDTH, FakeScreen } from '@/components/product/FakeScreens';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { Reveal } from '@/components/motion/Reveal';
+import { cn } from '@/utils/cn';
 
-interface DemoItem {
-  id: string;
-  navLabel: string;
-  title: string;
-  description: string;
-  image: string;
-}
+const AUTOPLAY_MS = 7000;
+const EASE = [0.22, 1, 0.36, 1] as const;
 
-const demoItems: DemoItem[] = [
-  {
-    id: 'dashboard',
-    navLabel: 'Painel',
-    title: 'A visão geral da sua igreja',
-    description: 'Veja o que acontece: membros ativos, crescimento e quem está em integração. A visão geral que a liderança precisa.',
-    image: '/demo/painel.png',
-  },
-  {
-    id: 'members',
-    navLabel: 'Membros',
-    title: 'Membros (rol)',
-    description: 'O rol completo da igreja. Quem é membro, quem saiu, dados atualizados. Encontre qualquer pessoa na hora.',
-    image: '/demo/members.png',
-  },
-  {
-    id: 'integration',
-    navLabel: 'Integração',
-    title: 'Quem está chegando',
-    description: 'As pessoas que estão conhecendo a igreja, antes de se tornarem membros. Acompanhe cada passo do caminho.',
-    image: '/demo/integration.png',
-  },
-  {
-    id: 'congregations',
-    navLabel: 'Congregações',
-    title: 'Congregações',
-    description: 'Várias congregações no mesmo cadastro. Cada ponto da igreja organizado e visível.',
-    image: '/demo/congregation.png',
-  },
-  {
-    id: 'groups',
-    navLabel: 'Ministérios',
-    title: 'Ministérios',
-    description: 'Áreas de serviço da igreja. Crie, acompanhe e conduza o trabalho dos ministérios.',
-    image: '/demo/groups.png',
-  },
-  {
-    id: 'reports',
-    navLabel: 'Relatórios',
-    title: 'As estatísticas da sua igreja',
-    description: 'Quantos membros, como está o crescimento, o perfil da congregação. Os números que a liderança acompanha.',
-    image: '/demo/details.png',
-  },
-];
-
-export function DemoSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageFailed, setImageFailed] = useState(false);
+function useContainerScale(designWidth: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState<number | null>(null);
 
   useEffect(() => {
-    demoItems.forEach((item) => {
-      if (item.image) {
-        const img = new window.Image();
-        img.src = item.image;
-      }
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setScale(entry.contentRect.width / designWidth);
     });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [designWidth]);
+
+  return { ref, scale };
+}
+
+function CalloutPin({ callout }: { callout: ScreenCallout }) {
+  const place = callout.place ?? 'above';
+  const labelClass = {
+    above: 'bottom-full left-1/2 mb-6 -translate-x-1/2',
+    'above-start': 'bottom-full left-0 mb-6',
+    'above-end': 'bottom-full right-0 mb-6',
+  }[place];
+
+  return (
+    <span className="absolute" style={{ left: `${callout.x}%`, top: `${callout.y}%` }}>
+      <span className={cn('absolute rounded-full bg-primary/92 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg ring-1 ring-white/20 backdrop-blur', labelClass)}>
+        {callout.label}
+      </span>
+      <span className="absolute flex h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2">
+        <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-accent-400/80" />
+        <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-accent-500 shadow-[0_0_0_4px_rgb(83_70_240/0.18)]" />
+      </span>
+    </span>
+  );
+}
+
+function ScreenView({ screen }: { screen: ProductScreen }) {
+  const { ref, scale } = useContainerScale(FAKE_SCREEN_WIDTH);
+
+  if (screen.src) {
+    return (
+      <Image
+        src={screen.src}
+        alt={screen.alt}
+        fill
+        sizes="(min-width: 1280px) 1100px, 100vw"
+        className="object-cover object-top"
+      />
+    );
+  }
+
+  return (
+    <div ref={ref} className="absolute inset-0 overflow-hidden" role="img" aria-label={`${screen.alt} (prévia ilustrativa)`}>
+      {scale !== null && (
+        <div className="origin-top-left" style={{ transform: `scale(${scale})`, width: FAKE_SCREEN_WIDTH }}>
+          <FakeScreen id={screen.id} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function DemoSection() {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const inView = useInView(sectionRef, { margin: '-30% 0px -30% 0px' });
+  const reduce = useReducedMotion();
+  const baseId = useId();
+  const screen = PRODUCT_SCREENS[index];
+  const autoplay = inView && !paused && !userInteracted && !reduce;
+
+  const goTo = useCallback((next: number, fromUser = true) => {
+    const total = PRODUCT_SCREENS.length;
+    setIndex(((next % total) + total) % total);
+    if (fromUser) setUserInteracted(true);
   }, []);
 
   useEffect(() => {
-    setIsTransitioning(true);
-    setImageLoaded(false);
-    setImageFailed(false);
+    if (!autoplay) return;
+    const timer = window.setTimeout(() => goTo(index + 1, false), AUTOPLAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [autoplay, index, goTo]);
 
-    const timer = setTimeout(() => {
-      setIsTransitioning(false);
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [currentIndex]);
-
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % demoItems.length);
+  const onTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    let next: number | null = null;
+    if (event.key === 'ArrowRight') next = index + 1;
+    if (event.key === 'ArrowLeft') next = index - 1;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = PRODUCT_SCREENS.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    const total = PRODUCT_SCREENS.length;
+    const target = ((next % total) + total) % total;
+    goTo(target);
+    tabRefs.current[target]?.focus();
   };
 
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + demoItems.length) % demoItems.length);
+  const onDragEnd = (_: unknown, info: PanInfo) => {
+    if (info.offset.x < -60) goTo(index + 1);
+    else if (info.offset.x > 60) goTo(index - 1);
   };
-
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index);
-  };
-
-  const currentItem = demoItems[currentIndex];
 
   return (
-    <section id="demo" className="scroll-mt-24 py-20 px-4 bg-[#f5f5f5fe] min-w-0 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            Quer conhecer o Flock antes de começar?
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-            Fale com nossa equipe e veja o Flock funcionando na prática.
-          </p>
-        </div>
+    <section
+      id="demo"
+      ref={sectionRef}
+      className="relative hidden scroll-mt-20 overflow-hidden bg-canvas py-24 sm:py-28 md:block"
+      onPointerEnter={(event) => event.pointerType === 'mouse' && setPaused(true)}
+      onPointerLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+    >
+      <div aria-hidden className="bg-grid-light pointer-events-none absolute inset-x-0 top-0 h-96" />
+      <div className="relative mx-auto max-w-6xl px-8 sm:px-10 lg:px-8">
+        <SectionHeading
+          eyebrow="Demonstração"
+          title="Conheça o Flock por dentro"
+          description="Navegue pelos módulos e veja como cada parte da igreja fica organizada, sem precisar criar uma conta."
+        />
 
-        <div className="text-center mb-8 sm:mb-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <a
-            href="#waitlist"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('waitlist')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 bg-white text-primary px-6 sm:px-8 py-3 rounded-lg text-base sm:text-lg font-semibold border border-primary/20 hover:bg-gray-50 transition-all duration-300 shadow-md hover:shadow-xl"
+        <Reveal delay={0.1} className="mt-12">
+          <div
+            role="tablist"
+            aria-label="Módulos da demonstração"
+            onKeyDown={onTabKeyDown}
+            className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-1.5 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-auto sm:w-fit sm:justify-center sm:rounded-full sm:bg-white sm:p-1.5 sm:shadow-sm sm:ring-1 sm:ring-gray-200/80"
           >
-            Agendar demonstração
-          </a>
-          <a
-            href="#pricing"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center text-sm sm:text-base text-primary font-medium hover:underline"
-          >
-            Ver planos
-          </a>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="grid lg:grid-cols-10 gap-0">
-            <div
-              className="lg:col-span-3 p-6 md:p-8 bg-gradient-to-br from-primary to-[#0d0a3a] text-white flex flex-col justify-start"
-              style={{
-                backgroundColor: '#090725',
-                backgroundImage: 'linear-gradient(to bottom right, #090725, #0d0a3a)',
-              }}
-            >
-              <div className="mb-6">
-                <nav
-                  aria-label="Módulos da demonstração"
-                  className="flex lg:flex-col gap-1 overflow-x-auto mb-5 -mx-1 px-1 pb-1 [scrollbar-width:thin]"
-                >
-                  {demoItems.map((item, index) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => goToSlide(index)}
-                      className={`shrink-0 min-h-11 px-3 rounded-lg text-left text-sm transition-colors ${
-                        index === currentIndex
-                          ? 'bg-white text-primary font-semibold'
-                          : 'text-white/80 hover:bg-white/10 hover:text-white'
-                      }`}
-                      aria-current={index === currentIndex ? 'true' : undefined}
-                    >
-                      {item.navLabel}
-                    </button>
-                  ))}
-                </nav>
-                <h3 className="text-xl md:text-2xl font-bold mb-3">
-                  {currentItem.title}
-                </h3>
-                <p className="text-sm md:text-base text-white/90 leading-relaxed">
-                  {currentItem.description}
-                </p>
-              </div>
-
-              <div className="flex gap-3 mt-auto lg:hidden">
+            {PRODUCT_SCREENS.map((item, i) => {
+              const selected = i === index;
+              return (
                 <button
+                  key={item.id}
+                  ref={(el) => {
+                    tabRefs.current[i] = el;
+                  }}
                   type="button"
-                  onClick={prevSlide}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                  aria-label="Slide anterior"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  type="button"
-                  onClick={nextSlide}
-                  className="inline-flex min-h-11 min-w-11 items-center justify-center bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                  aria-label="Próximo slide"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7 p-4 sm:p-6 md:p-8 lg:p-12 bg-white flex items-center justify-center min-w-0 overflow-hidden">
-              <div className="relative w-full max-w-5xl min-w-0">
-                <button
-                  type="button"
-                  onClick={prevSlide}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 sm:-translate-x-4 z-10 inline-flex min-h-11 min-w-11 items-center justify-center bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex"
-                  aria-label="Slide anterior"
-                >
-                  <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={nextSlide}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 sm:translate-x-4 z-10 inline-flex min-h-11 min-w-11 items-center justify-center bg-primary text-white rounded-full shadow-lg hover:bg-[#0d0a3a] hover:scale-110 transition-all duration-300 hidden lg:flex"
-                  aria-label="Próximo slide"
-                >
-                  <ChevronRight size={20} className="sm:w-6 sm:h-6" />
-                </button>
-
-                <div className="w-full min-w-0 bg-white rounded-xl shadow-inner border border-gray-200 overflow-hidden aspect-video relative">
-                  {currentItem.image && !imageFailed ? (
-                    <>
-                      <Image
-                        key={`${currentIndex}-${currentItem.id}`}
-                        src={currentItem.image}
-                        alt={currentItem.title}
-                        fill
-                        className={`object-cover object-top transition-opacity duration-300 ${
-                          isTransitioning || !imageLoaded ? 'opacity-0' : 'opacity-100'
-                        }`}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 70vw, 70vw"
-                        priority={currentIndex < 2}
-                        onLoad={() => setImageLoaded(true)}
-                        onError={() => {
-                          setImageFailed(true);
-                          setImageLoaded(true);
-                        }}
-                      />
-                      {isTransitioning && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 animate-pulse" />
-                      )}
-                    </>
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-8 text-center">
-                      <BookOpen className="w-12 h-12 text-gray-300 mb-4" aria-hidden />
-                      <p className="text-sm font-medium text-gray-600 mb-1">Preview indisponível</p>
-                      <p className="text-xs text-gray-500 max-w-sm">
-                        A captura de tela de {currentItem.title} ainda não está disponível. Explore a descrição ao lado ou solicite uma demonstração.
-                      </p>
-                    </div>
+                  role="tab"
+                  id={`${baseId}-tab-${item.id}`}
+                  aria-selected={selected}
+                  aria-controls={`${baseId}-panel`}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => goTo(i)}
+                  className={cn(
+                    'relative min-h-11 shrink-0 snap-start overflow-hidden rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500',
+                    selected ? 'text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200 hover:text-primary sm:bg-transparent sm:ring-0'
                   )}
-                </div>
+                >
+                  {selected && (
+                    <m.span
+                      layoutId={`${baseId}-demo-tab`}
+                      className="absolute inset-0 rounded-full bg-primary"
+                      transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                    />
+                  )}
+                  {selected && autoplay && (
+                    <m.span
+                      key={`progress-${index}`}
+                      aria-hidden
+                      className="absolute inset-x-3 bottom-1 h-[2px] origin-left rounded-full bg-accent-300"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ duration: AUTOPLAY_MS / 1000, ease: 'linear' }}
+                    />
+                  )}
+                  <span className="relative">{item.navLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.15} y={40} className="relative mt-8">
+          <div aria-hidden className="absolute -inset-x-10 -top-10 -bottom-16 -z-0 rounded-[3rem] bg-[radial-gradient(closest-side,rgb(83_70_240/0.18),transparent)] blur-2xl" />
+          <div
+            id={`${baseId}-panel`}
+            role="tabpanel"
+            aria-labelledby={`${baseId}-tab-${screen.id}`}
+            className="group/frame relative rounded-[1.4rem] bg-gradient-to-b from-white to-white/60 p-1.5 shadow-[0_50px_120px_-40px_rgb(9_7_37/0.45)] ring-1 ring-gray-200/80 sm:p-2"
+          >
+            <button
+              type="button"
+              aria-label="Módulo anterior"
+              onClick={() => goTo(index - 1)}
+              className="absolute top-1/2 left-0 z-30 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-primary shadow-[0_12px_30px_-12px_rgb(9_7_37/0.5)] ring-1 ring-gray-200/80 transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-110 hover:bg-primary hover:text-white hover:shadow-[0_16px_36px_-12px_rgb(9_7_37/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              <ChevronLeft aria-hidden className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Próximo módulo"
+              onClick={() => goTo(index + 1)}
+              className="absolute top-1/2 right-0 z-30 flex h-12 w-12 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-primary shadow-[0_12px_30px_-12px_rgb(9_7_37/0.5)] ring-1 ring-gray-200/80 transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-110 hover:bg-primary hover:text-white hover:shadow-[0_16px_36px_-12px_rgb(9_7_37/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              <ChevronRight aria-hidden className="h-5 w-5" />
+            </button>
+            <m.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.18}
+              onDragEnd={onDragEnd}
+              className="relative cursor-grab touch-pan-y overflow-hidden rounded-[1rem] bg-canvas active:cursor-grabbing md:aspect-[1040/650]"
+            >
+              <AnimatePresence initial={false} mode="wait">
+                <m.div
+                  key={screen.id}
+                  className="md:absolute md:inset-0"
+                  initial={{ opacity: 0, scale: 1.02, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.99 }}
+                  transition={{ duration: 0.5, ease: EASE }}
+                >
+                  <div className="md:hidden">
+                    <FakeScreen id={screen.id} focus />
+                  </div>
+                  <div className="absolute inset-0 hidden md:block">
+                    <ScreenView screen={screen} />
+                  </div>
+                </m.div>
+              </AnimatePresence>
+
+              <div className="pointer-events-none absolute inset-0 hidden md:block">
+                <AnimatePresence>
+                  {screen.callouts.map((callout, i) => (
+                    <m.div
+                      key={`${screen.id}-${callout.label}`}
+                      className="absolute inset-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                      transition={{ delay: 0.35 + i * 0.18, duration: 0.4, ease: EASE }}
+                    >
+                      <CalloutPin callout={callout} />
+                    </m.div>
+                  ))}
+                </AnimatePresence>
               </div>
+            </m.div>
+
+            <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(20rem,calc(100%-5.5rem))] sm:bottom-5 sm:left-5 sm:max-w-sm" aria-live={userInteracted ? 'polite' : 'off'}>
+              <AnimatePresence mode="wait" initial={false}>
+                <m.div
+                  key={screen.id}
+                  initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  transition={{ duration: 0.35, ease: EASE }}
+                >
+                  <div className="rounded-2xl border border-white/80 bg-white/92 p-4 shadow-[0_22px_50px_-24px_rgb(9_7_37/0.55)] ring-1 ring-primary/10 backdrop-blur-md transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/frame:-translate-y-2">
+                    <h3 className="text-base font-bold tracking-[-0.01em] text-primary sm:text-lg">{screen.title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{screen.description}</p>
+                    <p className="mt-2.5 text-[11px] text-gray-400">Prévia ilustrativa. Dados não representam cliente real.</p>
+                  </div>
+                </m.div>
+              </AnimatePresence>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
