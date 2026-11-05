@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip">
       <Header overlay />
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <Hero />
         <ProblemSolution />
         <AudienceSection />

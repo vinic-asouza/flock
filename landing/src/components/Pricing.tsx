@@ -147,7 +147,11 @@ export function Pricing() {
         <SectionHeading
           className="mt-20"
           eyebrow="Planos"
-          title="Comece grátis. Cresça quando sua igreja crescer."
+          title={
+            closed
+              ? 'Três meses para testar. Depois, o plano do tamanho da sua igreja.'
+              : 'Comece grátis. Cresça quando sua igreja crescer.'
+          }
           description="O Flock é o mesmo em todos os planos. Você paga apenas pelo tamanho da sua igreja."
         />
 

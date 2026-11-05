@@ -160,18 +160,11 @@ export function AudienceSection() {
                     {active.headline}
                   </h3>
                   <p className="mt-4 text-base leading-relaxed text-gray-600">{active.description}</p>
-                  <p className="mt-6 text-xs font-semibold tracking-[0.12em] text-gray-400 uppercase">Módulos em destaque</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {active.modules.map((module) => (
-                      <span key={module.id} className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary ring-1 ring-gray-200">
-                        {module.label}
-                      </span>
-                    ))}
-                  </div>
                 </div>
                 <div className="group space-y-3">
                   {active.modules.map((module) => (
                     <div key={module.id} className="rounded-2xl border border-gray-100 bg-canvas/70 p-4 shadow-inner">
+                      <p className="mb-3 text-xs font-semibold tracking-[0.12em] text-gray-400 uppercase">{module.label}</p>
                       <ModuleIllustration module={module.id} />
                     </div>
                   ))}

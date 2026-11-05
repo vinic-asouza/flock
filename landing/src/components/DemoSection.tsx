@@ -4,7 +4,8 @@ import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } f
 import Image from 'next/image';
 import { AnimatePresence, useInView, useReducedMotion, type PanInfo } from 'motion/react';
 import * as m from 'motion/react-m';
-import { PRODUCT_SCREENS, type ProductScreen } from '@/content/productScreens';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { PRODUCT_SCREENS, type ProductScreen, type ScreenCallout } from '@/content/productScreens';
 import { FAKE_SCREEN_HEIGHT, FAKE_SCREEN_WIDTH, FakeScreen } from '@/components/product/FakeScreens';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { Reveal } from '@/components/motion/Reveal';
@@ -28,6 +29,27 @@ function useContainerScale(designWidth: number) {
   }, [designWidth]);
 
   return { ref, scale };
+}
+
+function CalloutPin({ callout }: { callout: ScreenCallout }) {
+  const place = callout.place ?? 'above';
+  const labelClass = {
+    above: 'bottom-full left-1/2 mb-6 -translate-x-1/2',
+    'above-start': 'bottom-full left-0 mb-6',
+    'above-end': 'bottom-full right-0 mb-6',
+  }[place];
+
+  return (
+    <span className="absolute" style={{ left: `${callout.x}%`, top: `${callout.y}%` }}>
+      <span className={cn('absolute rounded-full bg-primary/92 px-3 py-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg ring-1 ring-white/20 backdrop-blur', labelClass)}>
+        {callout.label}
+      </span>
+      <span className="absolute flex h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2">
+        <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-accent-400/80" />
+        <span className="relative inline-flex h-3.5 w-3.5 rounded-full border-2 border-white bg-accent-500 shadow-[0_0_0_4px_rgb(83_70_240/0.18)]" />
+      </span>
+    </span>
+  );
 }
 
 function ScreenView({ screen }: { screen: ProductScreen }) {
@@ -110,7 +132,7 @@ export function DemoSection() {
       onBlurCapture={() => setPaused(false)}
     >
       <div aria-hidden className="bg-grid-light pointer-events-none absolute inset-x-0 top-0 h-96" />
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto max-w-6xl px-8 sm:px-10 lg:px-8">
         <SectionHeading
           eyebrow="Demonstração"
           title="Conheça o Flock por dentro"
@@ -174,26 +196,46 @@ export function DemoSection() {
             id={`${baseId}-panel`}
             role="tabpanel"
             aria-labelledby={`${baseId}-tab-${screen.id}`}
-            className="relative rounded-[1.4rem] bg-gradient-to-b from-white to-white/60 p-1.5 shadow-[0_50px_120px_-40px_rgb(9_7_37/0.45)] ring-1 ring-gray-200/80 sm:p-2"
+            className="group/frame relative rounded-[1.4rem] bg-gradient-to-b from-white to-white/60 p-1.5 shadow-[0_50px_120px_-40px_rgb(9_7_37/0.45)] ring-1 ring-gray-200/80 sm:p-2"
           >
+            <button
+              type="button"
+              aria-label="Módulo anterior"
+              onClick={() => goTo(index - 1)}
+              className="absolute top-1/2 left-0 z-30 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-primary shadow-[0_12px_30px_-12px_rgb(9_7_37/0.5)] ring-1 ring-gray-200/80 transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-110 hover:bg-primary hover:text-white hover:shadow-[0_16px_36px_-12px_rgb(9_7_37/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              <ChevronLeft aria-hidden className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Próximo módulo"
+              onClick={() => goTo(index + 1)}
+              className="absolute top-1/2 right-0 z-30 flex h-12 w-12 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-primary shadow-[0_12px_30px_-12px_rgb(9_7_37/0.5)] ring-1 ring-gray-200/80 transition-[transform,background-color,color,box-shadow] duration-300 hover:scale-110 hover:bg-primary hover:text-white hover:shadow-[0_16px_36px_-12px_rgb(9_7_37/0.6)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
+            >
+              <ChevronRight aria-hidden className="h-5 w-5" />
+            </button>
             <m.div
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.18}
               onDragEnd={onDragEnd}
-              className="relative cursor-grab touch-pan-y overflow-hidden rounded-[1rem] bg-canvas active:cursor-grabbing"
-              style={{ aspectRatio: `${FAKE_SCREEN_WIDTH} / ${FAKE_SCREEN_HEIGHT}` }}
+              className="relative cursor-grab touch-pan-y overflow-hidden rounded-[1rem] bg-canvas active:cursor-grabbing md:aspect-[1040/650]"
             >
-              <AnimatePresence initial={false}>
+              <AnimatePresence initial={false} mode="wait">
                 <m.div
                   key={screen.id}
-                  className="absolute inset-0"
+                  className="md:absolute md:inset-0"
                   initial={{ opacity: 0, scale: 1.02, y: 8 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.99 }}
                   transition={{ duration: 0.5, ease: EASE }}
                 >
-                  <ScreenView screen={screen} />
+                  <div className="md:hidden">
+                    <FakeScreen id={screen.id} focus />
+                  </div>
+                  <div className="absolute inset-0 hidden md:block">
+                    <ScreenView screen={screen} />
+                  </div>
                 </m.div>
               </AnimatePresence>
 
@@ -202,46 +244,38 @@ export function DemoSection() {
                   {screen.callouts.map((callout, i) => (
                     <m.div
                       key={`${screen.id}-${callout.label}`}
-                      className="absolute -translate-x-1/2 -translate-y-1/2"
-                      style={{ left: `${callout.x}%`, top: `${callout.y}%` }}
-                      initial={{ opacity: 0, y: 8, scale: 0.9 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      className="absolute inset-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
                       exit={{ opacity: 0, transition: { duration: 0.15 } }}
-                      transition={{ delay: 0.5 + i * 0.25, duration: 0.45, ease: EASE }}
+                      transition={{ delay: 0.35 + i * 0.18, duration: 0.4, ease: EASE }}
                     >
-                      <span className="flex items-center gap-2 rounded-full bg-primary/90 py-1 pr-3 pl-1.5 text-xs font-semibold whitespace-nowrap text-white shadow-lg ring-1 ring-white/20 backdrop-blur">
-                        <span className="relative flex h-3 w-3">
-                          <span className="animate-ping-soft absolute inline-flex h-full w-full rounded-full bg-accent-300" />
-                          <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-white bg-accent-400" />
-                        </span>
-                        {callout.label}
-                      </span>
+                      <CalloutPin callout={callout} />
                     </m.div>
                   ))}
                 </AnimatePresence>
               </div>
             </m.div>
+
+            <div className="pointer-events-none absolute bottom-3 left-3 z-20 max-w-[min(20rem,calc(100%-5.5rem))] sm:bottom-5 sm:left-5 sm:max-w-sm" aria-live={userInteracted ? 'polite' : 'off'}>
+              <AnimatePresence mode="wait" initial={false}>
+                <m.div
+                  key={screen.id}
+                  initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  transition={{ duration: 0.35, ease: EASE }}
+                >
+                  <div className="rounded-2xl border border-white/80 bg-white/92 p-4 shadow-[0_22px_50px_-24px_rgb(9_7_37/0.55)] ring-1 ring-primary/10 backdrop-blur-md transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/frame:-translate-y-2">
+                    <h3 className="text-base font-bold tracking-[-0.01em] text-primary sm:text-lg">{screen.title}</h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{screen.description}</p>
+                    <p className="mt-2.5 text-[11px] text-gray-400">Prévia ilustrativa. Dados não representam cliente real.</p>
+                  </div>
+                </m.div>
+              </AnimatePresence>
+            </div>
           </div>
         </Reveal>
-
-        <div className="mx-auto mt-8 max-w-2xl text-center" aria-live={userInteracted ? 'polite' : 'off'}>
-          <AnimatePresence mode="wait" initial={false}>
-            <m.div
-              key={screen.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.3 }}
-            >
-              <h3 className="text-xl font-bold tracking-[-0.01em] text-primary sm:text-2xl">{screen.title}</h3>
-              <p className="mt-2 text-base text-gray-600">{screen.description}</p>
-            </m.div>
-          </AnimatePresence>
-          <p className="mt-4 text-xs text-gray-400">
-            Prévia ilustrativa. Dados não representam cliente real.
-            <span className="sm:hidden"> Deslize para ver os outros módulos.</span>
-          </p>
-        </div>
       </div>
     </section>
   );

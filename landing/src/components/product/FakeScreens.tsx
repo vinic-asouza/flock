@@ -150,7 +150,8 @@ function MembersScreen() {
         </div>
         <span className="rounded-lg bg-primary px-3 py-2 text-[12px] font-semibold text-white">+ Novo membro</span>
       </div>
-      <Card className="p-0">
+      <Card className="overflow-x-auto p-0">
+        <div className="min-w-[32rem]">
         <div className="grid grid-cols-[2fr_1.3fr_1fr] border-b border-gray-100 px-4 py-2.5 text-[11px] font-semibold text-gray-500">
           <span>Nome</span>
           <span>Congregação</span>
@@ -168,6 +169,7 @@ function MembersScreen() {
             </span>
           </div>
         ))}
+        </div>
       </Card>
     </div>
   );
@@ -339,13 +341,13 @@ function ReportsScreen() {
       <CardTitle icon={Network}>Estrutura da igreja</CardTitle>
       <div className="grid grid-cols-2 gap-3">
         <Card>
-          <p className="text-[11px] font-semibold text-gray-700">Distribuição por cargos</p>
+          <p className="text-[11px] font-semibold text-gray-700">Distribuição por ministérios</p>
           <BarList
             className="mt-2"
             items={[
-              { label: 'Diáconos', value: 17 },
-              { label: 'Líderes', value: 12 },
-              { label: 'Presbíteros', value: 6 },
+              { label: 'Jovens', value: 22 },
+              { label: 'Louvor', value: 14 },
+              { label: 'Recepção', value: 11 },
             ]}
           />
         </Card>
@@ -375,15 +377,16 @@ const SCREENS: Record<ProductScreenId, () => React.JSX.Element> = {
 };
 
 /** Tela ilustrativa do produto (placeholder até existir captura real). */
-export function FakeScreen({ id }: { id: ProductScreenId }) {
+export function FakeScreen({ id, focus = false }: { id: ProductScreenId; focus?: boolean }) {
   const Screen = SCREENS[id];
   const current = NAV.find((item) => item.id === id);
   return (
     <div
       aria-hidden
-      className="flex bg-canvas text-left"
-      style={{ width: FAKE_SCREEN_WIDTH, height: FAKE_SCREEN_HEIGHT }}
+      className={cn('flex bg-canvas text-left', focus && 'demo-focus min-h-full flex-col')}
+      style={focus ? undefined : { width: FAKE_SCREEN_WIDTH, height: FAKE_SCREEN_HEIGHT }}
     >
+      {!focus && (
       <aside className="flex w-[188px] shrink-0 flex-col bg-brand-950 px-3 py-4 text-white">
         <p className="flex items-center gap-2 px-2 text-[15px] font-bold">
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-[11px]">F</span>
@@ -403,8 +406,8 @@ export function FakeScreen({ id }: { id: ProductScreenId }) {
             </span>
           ))}
         </nav>
-        <div className="mt-auto rounded-lg bg-white/5 p-2.5 text-[10px] text-white/50">Prévia ilustrativa</div>
       </aside>
+      )}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-[52px] shrink-0 items-center justify-between border-b border-gray-200/70 bg-white px-5">
           <p className="text-[14px] font-bold text-gray-900">{current?.label}</p>
@@ -413,7 +416,7 @@ export function FakeScreen({ id }: { id: ProductScreenId }) {
             <span className="h-7 w-7 rounded-full bg-accent-200" />
           </span>
         </header>
-        <div className="min-h-0 flex-1 overflow-hidden p-5">
+        <div className={cn('min-h-0 flex-1 p-5', focus ? 'overflow-visible' : 'overflow-hidden')}>
           <Screen />
         </div>
       </div>

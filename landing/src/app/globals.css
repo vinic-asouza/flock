@@ -144,6 +144,54 @@ a,
   mask-image: radial-gradient(ellipse 65% 55% at 50% 0%, #000 25%, transparent 75%);
 }
 
+/* Grade clara, centrada no conteúdo, para fundos de seção */
+.bg-grid-soft {
+  background-image:
+    linear-gradient(to right, rgb(9 7 37 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(9 7 37 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 78% 68% at 50% 46%, #000 18%, transparent 74%);
+}
+
+.step-rail-x,
+.step-rail-y {
+  background-repeat: repeat;
+}
+
+.step-rail-x {
+  height: 3px;
+  background-image: repeating-linear-gradient(90deg, #5346f0 0 12px, transparent 12px 22px);
+  background-size: 22px 3px;
+}
+
+.step-rail-y {
+  width: 3px;
+  background-image: repeating-linear-gradient(180deg, #5346f0 0 12px, transparent 12px 22px);
+  background-size: 3px 22px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .step-rail-x {
+    animation: step-march-x 0.85s linear infinite;
+  }
+
+  .step-rail-y {
+    animation: step-march-y 0.85s linear infinite;
+  }
+}
+
+@keyframes step-march-x {
+  to {
+    background-position: 22px 0;
+  }
+}
+
+@keyframes step-march-y {
+  to {
+    background-position: 0 22px;
+  }
+}
+
 .bg-noise {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
   opacity: 0.06;
@@ -233,6 +281,12 @@ details.faq-item[open]::details-content {
     transform: translate(var(--dx), var(--dy)) scale(0.4);
     opacity: 0;
   }
+}
+
+/* Prévia da demo no celular: sem a escala do canvas de 1040px. */
+.demo-focus .grid-cols-5,
+.demo-focus .grid-cols-3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .burst-dot {

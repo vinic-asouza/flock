@@ -41,18 +41,18 @@ function ScrapCard({ scrap, className }: { scrap: Scrap; className?: string }) {
   return (
     <div
       className={cn(
-        'w-44 rounded-xl border border-gray-200 bg-white p-3 shadow-[0_18px_40px_-18px_rgb(9_7_37/0.35)]',
+        'w-60 rounded-2xl border border-gray-200 bg-white p-4 shadow-[0_18px_40px_-18px_rgb(9_7_37/0.35)]',
         className
       )}
     >
-      <p className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-700">
-        <Icon aria-hidden className={cn('h-3.5 w-3.5', scrap.kind === 'planilha' ? 'text-emerald-600' : 'text-amber-600')} />
+      <p className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+        <Icon aria-hidden className={cn('h-4 w-4', scrap.kind === 'planilha' ? 'text-emerald-600' : 'text-amber-600')} />
         {scrap.title}
       </p>
       {scrap.kind === 'planilha' ? (
         <div className="mt-2 grid grid-cols-3 gap-px overflow-hidden rounded bg-gray-200">
           {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} className={cn('h-2.5', i < 3 ? 'bg-emerald-50' : 'bg-white')} />
+            <span key={i} className={cn('h-3', i < 3 ? 'bg-emerald-50' : 'bg-white')} />
           ))}
         </div>
       ) : scrap.kind === 'lista' ? (
@@ -66,7 +66,7 @@ function ScrapCard({ scrap, className }: { scrap: Scrap; className?: string }) {
         </ul>
       ) : (
         <div className="mt-2 flex gap-2">
-          <span className="h-9 w-8 shrink-0 rounded bg-gray-100" />
+          <span className="h-11 w-9 shrink-0 rounded bg-gray-100" />
           <div className="flex-1 space-y-1.5 pt-0.5">
             <span className="block h-1.5 w-full rounded bg-gray-200" />
             <span className="block h-1.5 w-3/4 rounded bg-gray-200" />
@@ -87,31 +87,31 @@ function DashboardPreview({
 }) {
   return (
     <AppWindow title="Painel" className="shadow-[0_40px_100px_-30px_rgb(9_7_37/0.45)]">
-      <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3.5 p-5 sm:grid-cols-4">
         {TILES.map(({ icon: Icon, label, value, hint }, i) => (
           <m.div
             key={label}
             style={tileProgress ? { opacity: tileProgress[i], scale: tileScale } : undefined}
-            className="rounded-xl border border-gray-100 bg-white p-3 shadow-sm"
+            className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent-100 text-accent-500">
-              <Icon aria-hidden className="h-3.5 w-3.5" />
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-100 text-accent-500">
+              <Icon aria-hidden className="h-4 w-4" />
             </span>
-            <p className="mt-2 text-xl font-bold text-gray-900">{value}</p>
-            <p className="text-[11px] text-gray-500">
+            <p className="mt-2.5 text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-xs text-gray-500">
               {label} · {hint}
             </p>
           </m.div>
         ))}
         <m.div
           style={tileProgress ? { opacity: tileProgress[4] } : undefined}
-          className="col-span-2 rounded-xl border border-gray-100 bg-white p-3 shadow-sm sm:col-span-4"
+          className="col-span-2 rounded-xl border border-gray-100 bg-white p-4 shadow-sm sm:col-span-4"
         >
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-700">
-            <BarChart3 aria-hidden className="h-3.5 w-3.5 text-accent-500" />
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+            <BarChart3 aria-hidden className="h-4 w-4 text-accent-500" />
             Relatórios
           </p>
-          <div className="mt-2 flex h-14 items-end gap-1.5">
+          <div className="mt-3 flex h-20 items-end gap-1.5">
             {[38, 52, 45, 60, 58, 72, 68, 80, 76, 88, 84, 94].map((h, i) => (
               <span
                 key={i}
@@ -132,43 +132,44 @@ function ScrollStory() {
   // Motion acelera opacidade via ViewTimeline nativo, que calcula errado a faixa de alvos sticky mais altos que a viewport.
   const progress = useTransform(scrollYProgress, (v) => v);
 
-  const gather = useTransform(progress, [0.08, 0.55], [0, 1]);
-  const scrapOpacity = useTransform(progress, [0.4, 0.58], [1, 0]);
-  const dashboardOpacity = useTransform(progress, [0.3, 0.55], [0.15, 1]);
-  const dashboardScale = useTransform(progress, [0.3, 0.6], [0.9, 1]);
-  const questionOpacity = useTransform(progress, [0.38, 0.48], [1, 0]);
-  const questionY = useTransform(progress, [0.38, 0.48], [0, -16]);
-  const answerOpacity = useTransform(progress, [0.5, 0.62], [0, 1]);
-  const answerY = useTransform(progress, [0.5, 0.62], [16, 0]);
+  const gather = useTransform(progress, [0.05, 0.36], [0, 1]);
+  const scrapOpacity = useTransform(progress, [0.28, 0.4], [1, 0]);
+  const dashboardOpacity = useTransform(progress, [0.1, 0.32], [0.15, 1]);
+  const dashboardScale = useTransform(progress, [0.1, 0.36], [0.9, 1]);
+  const questionOpacity = useTransform(progress, [0.26, 0.38], [1, 0]);
+  const questionY = useTransform(progress, [0.26, 0.38], [0, -16]);
+  const answerOpacity = useTransform(progress, [0.34, 0.46], [0, 1]);
+  const answerY = useTransform(progress, [0.34, 0.46], [16, 0]);
   const tileProgress = [
-    useTransform(progress, [0.5, 0.62], [0, 1]),
-    useTransform(progress, [0.54, 0.66], [0, 1]),
-    useTransform(progress, [0.58, 0.7], [0, 1]),
-    useTransform(progress, [0.62, 0.74], [0, 1]),
-    useTransform(progress, [0.66, 0.8], [0, 1]),
+    useTransform(progress, [0.32, 0.42], [0, 1]),
+    useTransform(progress, [0.36, 0.46], [0, 1]),
+    useTransform(progress, [0.4, 0.5], [0, 1]),
+    useTransform(progress, [0.44, 0.54], [0, 1]),
+    useTransform(progress, [0.48, 0.58], [0, 1]),
   ];
-  const tileScale = useTransform(progress, [0.5, 0.74], [0.92, 1]);
+  const tileScale = useTransform(progress, [0.32, 0.54], [0.92, 1]);
 
   return (
-    <div ref={ref} className="relative h-[240vh]">
+    <div ref={ref} className="relative h-[180vh]">
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden px-8">
-        <div className="relative h-24 w-full max-w-4xl text-center">
+        <div aria-hidden className="bg-grid-soft pointer-events-none absolute inset-0" />
+        <div className="relative h-32 w-full max-w-4xl text-center">
           <m.h2
             style={{ opacity: questionOpacity, y: questionY }}
-            className="absolute inset-x-0 top-0 text-4xl font-extrabold tracking-[-0.03em] text-balance text-primary xl:text-5xl"
+            className="absolute inset-x-0 top-0 text-5xl font-extrabold tracking-[-0.03em] text-balance text-primary"
           >
             {QUESTION}
           </m.h2>
           <m.p
             aria-hidden
             style={{ opacity: answerOpacity, y: answerY }}
-            className="text-gradient-brand absolute inset-x-0 top-0 text-4xl font-extrabold tracking-[-0.03em] text-balance xl:text-5xl"
+            className="text-gradient-brand absolute inset-x-0 top-0 text-5xl font-extrabold tracking-[-0.03em] text-balance"
           >
             {ANSWER}
           </m.p>
         </div>
 
-        <div className="relative mt-10 flex w-full max-w-3xl items-center justify-center">
+        <div className="relative mt-10 flex w-full max-w-4xl items-center justify-center">
           <m.div style={{ opacity: dashboardOpacity, scale: dashboardScale }} className="w-full">
             <DashboardPreview tileProgress={tileProgress} tileScale={tileScale} />
           </m.div>
@@ -178,7 +179,6 @@ function ScrollStory() {
           ))}
         </div>
 
-        <p className="mt-8 text-xs text-gray-500">Prévia ilustrativa. Dados não representam cliente real.</p>
       </div>
     </div>
   );
@@ -206,18 +206,18 @@ function ScrapLayer({
 
 function StaticStory() {
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6">
+    <div className="relative mx-auto max-w-4xl px-4 sm:px-6">
       <Reveal className="text-center">
         <h2 className="text-3xl font-extrabold tracking-[-0.03em] text-balance text-primary sm:text-4xl">{QUESTION}</h2>
       </Reveal>
       <Reveal delay={0.1} className="mt-10 flex justify-center">
-        <div aria-hidden className="relative h-32 w-full max-w-sm">
+        <div aria-hidden className="relative h-48 w-full max-w-lg">
           {SCRAPS.slice(0, 3).map((scrap, i) => (
             <div
               key={scrap.title}
               className="absolute top-0 left-1/2"
               style={{
-                transform: `translateX(calc(-50% + ${(i - 1) * 72}px)) translateY(${i === 1 ? 10 : 0}px) rotate(${[-8, 3, 9][i]}deg)`,
+                transform: `translateX(calc(-50% + ${(i - 1) * 88}px)) translateY(${i === 1 ? 12 : 0}px) rotate(${[-8, 3, 9][i]}deg)`,
               }}
             >
               <ScrapCard scrap={scrap} />
@@ -242,11 +242,11 @@ function StaticStory() {
 export function ProblemSolution() {
   return (
     <section id="visao-geral" aria-label={QUESTION} className="relative bg-canvas">
-      <div aria-hidden className="bg-grid-light pointer-events-none absolute inset-x-0 top-0 h-[60vh]" />
       <div className="hidden lg:motion-safe:block">
         <ScrollStory />
       </div>
-      <div className="py-20 sm:py-24 lg:motion-safe:hidden">
+      <div className="relative py-20 sm:py-24 lg:motion-safe:hidden">
+        <div aria-hidden className="bg-grid-soft pointer-events-none absolute inset-0" />
         <StaticStory />
       </div>
     </section>

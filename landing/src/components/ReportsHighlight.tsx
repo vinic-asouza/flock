@@ -10,7 +10,7 @@ import { BarList, Donut } from '@/components/charts/Charts';
 const HIGHLIGHTS = [
   'Crescimento da membresia ao longo do tempo.',
   'Perfil da igreja: gênero, estado civil e faixa etária.',
-  'Distribuição por cargos e por congregações.',
+  'Distribuição por ministérios e por congregações.',
 ];
 
 const GENDER = [
@@ -33,11 +33,11 @@ const AGE = [
   { label: 'Idosos (60+)', value: 23, color: '#33305a' },
 ];
 
-const ROLES = [
-  { label: 'Diáconos', value: 17, color: '#5346f0' },
-  { label: 'Líderes', value: 12, color: '#7d71f5' },
-  { label: 'Presbíteros', value: 6, color: '#a99ffb' },
-  { label: 'Pastores', value: 3, color: '#33305a' },
+const MINISTRIES = [
+  { label: 'Jovens', value: 22, color: '#5346f0' },
+  { label: 'Louvor', value: 14, color: '#7d71f5' },
+  { label: 'Recepção', value: 11, color: '#a99ffb' },
+  { label: 'Infantil', value: 9, color: '#33305a' },
 ];
 
 const CONGREGATIONS = [
@@ -98,8 +98,8 @@ function ReportsPanel() {
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-gray-100 bg-white p-3">
-            <p className="text-[11px] font-semibold text-gray-700">Distribuição por cargos</p>
-            <BarList items={ROLES} className="mt-2" />
+            <p className="text-[11px] font-semibold text-gray-700">Distribuição por ministérios</p>
+            <BarList items={MINISTRIES} className="mt-2" />
           </div>
           <div className="rounded-xl border border-gray-100 bg-white p-3">
             <p className="text-[11px] font-semibold text-gray-700">Distribuição por congregações</p>

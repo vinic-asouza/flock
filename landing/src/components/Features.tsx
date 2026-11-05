@@ -64,7 +64,7 @@ export function Features() {
         <SectionHeading
           eyebrow="Recursos"
           title="O que o Flock resolve no dia a dia"
-          description="Informações espalhadas dificultam o trabalho da secretaria, dos líderes e da própria liderança. O Flock coloca tudo em um só lugar."
+          description="Informações espalhadas dificultam o trabalho da secretaria, dos pastores e dos líderes. O Flock coloca tudo em um só lugar."
         />
 
         <Stagger className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:gap-5">

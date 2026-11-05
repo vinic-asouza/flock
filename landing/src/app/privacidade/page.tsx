@@ -172,7 +172,7 @@ export default function PrivacyPage() {
   return (
     <div className="flex min-h-screen min-w-0 flex-col overflow-x-clip">
       <Header />
-      <main className="flex-1 bg-white">
+      <main id="conteudo" className="flex-1 bg-white">
         <div className="relative isolate overflow-hidden bg-brand-950 text-white">
           <div aria-hidden className="bg-grid absolute inset-0 -z-10 opacity-60" />
           <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-20">

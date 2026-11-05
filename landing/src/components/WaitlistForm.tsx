@@ -46,7 +46,7 @@ const formatPhone = (value: string): string => {
 };
 
 const inputClass =
-  'w-full min-h-11 rounded-xl border border-gray-200 bg-gray-50/60 px-3.5 py-2.5 text-base transition-[border-color,box-shadow,background-color] duration-200 hover:border-gray-300 focus:border-accent-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-accent-500/15 disabled:cursor-not-allowed disabled:bg-gray-100 aria-[invalid=true]:border-red-300 aria-[invalid=true]:focus:ring-red-500/15';
+  'w-full min-h-11 rounded-xl border border-gray-200 bg-gray-50/60 px-3.5 py-2.5 text-base text-gray-900 transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-gray-400 hover:border-gray-300 focus:border-accent-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-accent-500/15 disabled:cursor-not-allowed disabled:bg-gray-100 aria-[invalid=true]:border-red-300 aria-[invalid=true]:focus:ring-red-500/15';
 
 function Field({
   id,
@@ -291,7 +291,7 @@ export function WaitlistForm({ onSubmit, isLoading: externalLoading, initialPlan
             aria-describedby={errors.email ? 'email-error' : undefined}
             {...register('email')}
             className={inputClass}
-            placeholder="seu@email.com"
+            placeholder="nome@igreja.com"
           />
         </Field>
 

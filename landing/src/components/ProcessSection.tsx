@@ -2,11 +2,10 @@
 
 import { useRef } from 'react';
 import Link from 'next/link';
-import { useScroll, useSpring } from 'motion/react';
+import { useScroll, useSpring, useTransform, type MotionValue } from 'motion/react';
 import * as m from 'motion/react-m';
 import { ArrowRight, BarChart3, Church, FileSpreadsheet, LifeBuoy, UserPlus, type LucideIcon } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/SectionHeading';
-import { PrimaryAction } from '@/components/ui/PrimaryAction';
 import { Reveal } from '@/components/motion/Reveal';
 
 interface Step {
@@ -22,10 +21,50 @@ const STEPS: Step[] = [
   { icon: BarChart3, title: 'Comece a organizar', description: 'Tudo em um só lugar.' },
 ];
 
+function StepMarker({
+  index,
+  progress,
+  icon: Icon,
+}: {
+  index: number;
+  progress: MotionValue<number>;
+  icon: LucideIcon;
+}) {
+  const start = index / STEPS.length;
+  const lit = useTransform(progress, [start, Math.min(start + 0.18, 1)], [0, 1]);
+
+  return (
+    <span className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gray-100 text-gray-400 ring-8 ring-white">
+      <m.span
+        aria-hidden
+        style={{ opacity: lit }}
+        className="absolute -inset-1 rounded-[1.15rem] bg-accent-400/25 blur-md"
+      />
+      <m.span aria-hidden style={{ opacity: lit }} className="absolute inset-0 rounded-2xl bg-primary shadow-[0_12px_30px_-10px_rgb(9_7_37/0.55)]" />
+      <span className="relative z-10 h-6 w-6">
+        <Icon aria-hidden className="h-6 w-6" />
+        <m.span aria-hidden style={{ opacity: lit }} className="absolute inset-0 text-white">
+          <Icon className="h-6 w-6" />
+        </m.span>
+      </span>
+      <span className="absolute -top-2 -right-2 z-10 flex h-5 w-5 items-center justify-center">
+        <span aria-hidden className="absolute inset-0 rounded-full bg-gray-200 ring-2 ring-white" />
+        <m.span aria-hidden style={{ opacity: lit }} className="absolute inset-0 rounded-full bg-accent-500 ring-2 ring-white" />
+        <span className="relative text-[10px] font-bold text-gray-500">
+          {index + 1}
+          <m.span style={{ opacity: lit }} className="absolute inset-0 text-white">
+            {index + 1}
+          </m.span>
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export function ProcessSection() {
   const listRef = useRef<HTMLOListElement>(null);
-  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 85%', 'end 55%'] });
-  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
+  const { scrollYProgress } = useScroll({ target: listRef, offset: ['start 78%', 'end 52%'] });
+  const progress = useSpring(scrollYProgress, { stiffness: 80, damping: 26, restDelta: 0.001 });
 
   return (
     <section id="como-funciona" className="relative scroll-mt-20 bg-white py-24 sm:py-28">
@@ -37,36 +76,19 @@ export function ProcessSection() {
         />
 
         <div className="relative mt-16">
-          <span aria-hidden className="absolute top-0 bottom-0 left-6 w-px bg-gray-200 md:top-6 md:right-[12.5%] md:bottom-auto md:left-[12.5%] md:h-px md:w-auto" />
-          <m.span
-            aria-hidden
-            style={{ scaleY: progress }}
-            className="absolute top-0 bottom-0 left-6 w-px origin-top bg-gradient-to-b from-accent-500 to-primary md:hidden"
-          />
-          <m.span
-            aria-hidden
-            style={{ scaleX: progress }}
-            className="absolute top-6 right-[12.5%] left-[12.5%] hidden h-px origin-left bg-gradient-to-r from-accent-500 to-primary md:block"
-          />
+          <span aria-hidden className="step-rail-y absolute top-7 bottom-7 left-7 md:hidden" />
+          <span aria-hidden className="step-rail-x absolute top-7 right-[12.5%] left-[12.5%] hidden md:block" />
 
           <ol ref={listRef} className="relative grid gap-10 md:grid-cols-4 md:gap-6">
-          {STEPS.map((step, i) => {
-            const Icon = step.icon;
-            return (
+          {STEPS.map((step, i) => (
               <Reveal as="li" key={step.title} delay={i * 0.1} className="relative flex gap-5 md:flex-col md:items-center md:text-center">
-                <span className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_12px_30px_-10px_rgb(9_7_37/0.55)] ring-8 ring-white">
-                  <Icon aria-hidden className="h-5 w-5" />
-                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-accent-500 text-[10px] font-bold ring-2 ring-white">
-                    {i + 1}
-                  </span>
-                </span>
-                <div className="pt-1 md:pt-5">
+                <StepMarker index={i} progress={progress} icon={step.icon} />
+                <div className="pt-1.5 md:pt-5">
                   <h3 className="text-lg font-bold text-primary">{step.title}</h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-gray-600">{step.description}</p>
                 </div>
               </Reveal>
-            );
-          })}
+          ))}
           </ol>
         </div>
 
@@ -89,11 +111,10 @@ export function ProcessSection() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.1} className="mt-20 flex flex-col items-center text-center">
-          <p className="text-gradient-brand max-w-3xl text-3xl font-extrabold tracking-[-0.03em] text-balance sm:text-4xl">
+        <Reveal delay={0.1} className="mt-16 text-center">
+          <p className="text-gradient-brand mx-auto max-w-3xl text-3xl font-extrabold tracking-[-0.03em] text-balance sm:text-4xl">
             Menos trabalho para migrar. Mais tempo para cuidar da igreja.
           </p>
-          <PrimaryAction size="lg" className="mt-8" />
         </Reveal>
       </div>
     </section>

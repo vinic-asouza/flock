@@ -1,6 +1,3 @@
-export const PARTNER_OFFER_BANNER =
-  'Oferta Igrejas Parceiras · 3 meses grátis + 50% off nos 12 meses seguintes · Vagas limitadas';
-
 export const PARTNER_OFFER_SUMMARY =
   '3 meses grátis para testar. Depois, 50% de desconto nos 12 meses seguintes.';
 

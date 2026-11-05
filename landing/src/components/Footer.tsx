@@ -90,7 +90,7 @@ export function Footer() {
       </div>
 
       <div aria-hidden className="pointer-events-none mx-auto max-w-7xl overflow-hidden px-4 select-none sm:px-6 lg:px-8">
-        <p className="translate-y-[18%] bg-gradient-to-b from-white/[0.14] to-white/0 bg-clip-text text-center text-[26vw] leading-[0.8] font-black tracking-[-0.06em] text-transparent lg:text-[17rem]">
+        <p className="bg-gradient-to-b from-white/20 to-white/0 bg-clip-text text-center text-6xl leading-none font-black tracking-[-0.06em] text-transparent sm:text-8xl">
           Flock
         </p>
       </div>

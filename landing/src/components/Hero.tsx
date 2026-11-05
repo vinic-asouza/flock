@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Check, PlayCircle } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { isClosedLaunch } from '@/utils/launchMode';
 import { PrimaryAction } from '@/components/ui/PrimaryAction';
 import { HeroProductShot } from '@/components/hero/HeroProductShot';
@@ -56,7 +56,7 @@ export function Hero() {
               href="#demo"
               className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-7 py-3.5 text-base font-semibold text-white ring-1 ring-white/20 transition-[background-color,box-shadow] duration-300 hover:bg-white/[0.06] hover:ring-white/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:text-lg"
             >
-              <PlayCircle aria-hidden className="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+              <ArrowRight aria-hidden className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               Ver como funciona
             </Link>
           </div>

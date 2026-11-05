@@ -30,19 +30,11 @@ interface HeaderProps {
 
 function useScrollState() {
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const lastY = useRef(0);
   const ticking = useRef(false);
 
   useEffect(() => {
     const update = () => {
-      const y = window.scrollY;
-      setScrolled(y > 12);
-      const delta = y - lastY.current;
-      if (Math.abs(delta) > 6) {
-        setHidden(delta > 0 && y > 480);
-        lastY.current = y;
-      }
+      setScrolled(window.scrollY > 12);
       ticking.current = false;
     };
     const onScroll = () => {
@@ -56,7 +48,7 @@ function useScrollState() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  return { scrolled, hidden };
+  return { scrolled };
 }
 
 function useActiveSection(enabled: boolean) {
@@ -89,7 +81,7 @@ function useActiveSection(enabled: boolean) {
 export function Header({ overlay = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { scrolled, hidden } = useScrollState();
+  const { scrolled } = useScrollState();
   const active = useActiveSection(pathname === '/');
 
   const solid = !overlay || scrolled;
@@ -101,9 +93,8 @@ export function Header({ overlay = false }: HeaderProps) {
         className={cn(
           'fixed inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top,0px)] transition-[transform,background-color,border-color,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
           solid
-            ? 'border-b border-white/10 bg-brand-950/80 backdrop-blur-xl backdrop-saturate-150'
-            : 'border-b border-transparent bg-transparent',
-          hidden && !mobileMenuOpen ? '-translate-y-full' : 'translate-y-0'
+            ? 'border-b border-white/10 bg-brand-950/88 shadow-[0_10px_30px_-18px_rgb(0_0_0/0.7)] backdrop-blur-xl backdrop-saturate-150'
+            : 'border-b border-transparent bg-transparent'
         )}
       >
         <nav
