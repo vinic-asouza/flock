@@ -1,80 +1,100 @@
-import { Users, UserPlus, Building2, UsersRound, BarChart3 } from 'lucide-react';
+import { BarChart3, Building2, UserPlus, Users, UsersRound, type LucideIcon } from 'lucide-react';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { SpotlightCard } from '@/components/ui/SpotlightCard';
+import { Stagger, StaggerItem } from '@/components/motion/Reveal';
+import { ModuleIllustration, type ModuleId } from '@/components/product/ModuleIllustrations';
+import { cn } from '@/utils/cn';
 
-const features = [
+interface Feature {
+  module: ModuleId;
+  icon: LucideIcon;
+  title: string;
+  headline: string;
+  description: string;
+  span: string;
+}
+
+const FEATURES: Feature[] = [
   {
+    module: 'members',
     icon: Users,
     title: 'Membros',
     headline: 'Tenha o rol da igreja sempre atualizado.',
-    description:
-      'Cadastre, encontre e atualize membros rapidamente. Saiba quem entrou, quem saiu e mantenha todas as informações organizadas.',
+    description: 'Cadastre, encontre e atualize qualquer membro em segundos. Saiba quem entrou e quem saiu.',
+    span: 'lg:col-span-4',
   },
   {
+    module: 'integration',
     icon: UserPlus,
-    title: 'Integração',
+    title: 'Integração de novos membros',
     headline: 'Não perca quem está chegando.',
-    description:
-      'Acompanhe visitantes e novos membros desde o primeiro contato até a integração à igreja.',
+    description: 'Acompanhe visitantes e novos membros desde o primeiro contato até a integração à igreja.',
+    span: 'lg:col-span-2',
   },
   {
+    module: 'congregations',
     icon: Building2,
     title: 'Congregações',
     headline: 'Uma igreja. Várias congregações.',
-    description:
-      'Gerencie diferentes congregações mantendo tudo conectado em uma única plataforma.',
+    description: 'Gerencie diferentes congregações, com tudo conectado em uma única plataforma.',
+    span: 'lg:col-span-2',
   },
   {
+    module: 'ministries',
     icon: UsersRound,
     title: 'Ministérios',
-    headline: 'Organize áreas de serviço da igreja.',
-    description:
-      'Saiba quem participa de cada ministério e facilite o acompanhamento dos líderes.',
+    headline: 'Organize as áreas de serviço da igreja.',
+    description: 'Saiba quem participa de cada ministério e facilite o acompanhamento dos líderes.',
+    span: 'lg:col-span-2',
   },
   {
+    module: 'reports',
     icon: BarChart3,
     title: 'Relatórios',
     headline: 'Transforme dados em decisões.',
-    description:
-      'Acompanhe crescimento, perfil da membresia e outros indicadores importantes para entender sua igreja.',
+    description: 'Acompanhe crescimento, perfil da membresia e outros indicadores para entender sua igreja.',
+    span: 'lg:col-span-2',
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="scroll-mt-24 py-20 px-4 bg-[#fffffffe] min-w-0 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto min-w-0">
-        <div className="text-center mb-16">
-          <p className="text-base sm:text-lg font-semibold text-primary mb-2">
-            Sua igreja ainda depende de fichas ou planilhas?
-          </p>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-primary mb-2.5">
-            O que o Flock resolve no dia a dia
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
-            Informações espalhadas dificultam o trabalho da secretaria, dos líderes e da própria liderança. O Flock coloca tudo em um só lugar.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="group p-4 sm:p-6 md:p-8 rounded-xl bg-white border border-gray-200 hover:border-primary/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 min-w-0"
-            >
-              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-primary rounded-xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300">
-                <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" aria-hidden />
-              </div>
-              <p className="text-sm font-semibold text-primary mb-1">{feature.title}</p>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 sm:mb-3 group-hover:text-primary transition-colors">
-                {feature.headline}
-              </h3>
-              <p className="text-sm sm:text-base text-gray-600 leading-relaxed">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-        <div className="text-center mt-8 space-y-3 max-w-3xl mx-auto">
-          <p className="text-sm text-gray-500">
-            Já tem a lista em planilha ou em outro sistema? Nós vamos te ajudar a migrar para o Flock.
-          </p>
-        </div>
+    <section id="features" className="relative scroll-mt-20 bg-canvas py-24 sm:py-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Recursos"
+          title="O que o Flock resolve no dia a dia"
+          description="Informações espalhadas dificultam o trabalho da secretaria, dos pastores e dos líderes. O Flock coloca tudo em um só lugar."
+        />
+
+        <Stagger className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-6 lg:gap-5">
+          {FEATURES.map((feature, index) => {
+            const Icon = feature.icon;
+            const wide = feature.span === 'lg:col-span-4';
+            return (
+              <StaggerItem
+                key={feature.module}
+                className={cn(feature.span, index === 0 && 'sm:col-span-2')}
+              >
+                <SpotlightCard className="flex h-full flex-col">
+                  <div className={cn('flex h-full flex-col gap-6 p-6 sm:p-7', wide && 'md:flex-row md:items-center md:gap-8')}>
+                    <div className={cn('flex flex-col', wide && 'md:w-[44%]')}>
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-[0_8px_20px_-8px_rgb(9_7_37/0.6)] transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
+                        <Icon aria-hidden className="h-5 w-5" />
+                      </span>
+                      <p className="mt-5 text-xs font-semibold tracking-[0.12em] text-accent-500 uppercase">{feature.title}</p>
+                      <h3 className="mt-2 text-lg font-bold tracking-[-0.01em] text-balance text-primary sm:text-xl">{feature.headline}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-600">{feature.description}</p>
+                    </div>
+                    <div className={cn('mt-auto rounded-2xl bg-canvas p-4 ring-1 ring-gray-100', wide && 'md:mt-0 md:flex-1')}>
+                      <ModuleIllustration module={feature.module} />
+                    </div>
+                  </div>
+                </SpotlightCard>
+              </StaggerItem>
+            );
+          })}
+        </Stagger>
       </div>
     </section>
   );

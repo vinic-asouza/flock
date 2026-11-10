@@ -17,7 +17,7 @@ export default async function WaitlistPage({ searchParams }: WaitlistPageProps) 
   return (
     <div className="min-h-screen flex flex-col min-w-0 overflow-x-hidden">
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12 px-4 min-w-0">
+      <main id="conteudo" className="flex-1 flex items-center justify-center py-12 px-4 min-w-0">
         <div className="w-full max-w-md min-w-0">
           <div className="text-center mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-primary mb-2 break-words">

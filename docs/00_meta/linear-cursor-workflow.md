@@ -896,13 +896,14 @@ Milestone Linear define a **base** da feature branch e do PR. Padrão prescritiv
 
 | Milestone / vínculo | Base da feature | Base do PR (`gh pr create --base`) | Done da issue |
 | --- | --- | --- | --- |
-| `MVP` (e demais ≠ `v1`) | `main` | `main` | merge em `main` |
+| `MVP` (e demais fora da linha `major-v1`) | `main` | `main` | merge em `main` |
 | `v1` ou filha de DEV-108 | `major-v1` | `major-v1` (**nunca** `main`) | merge em `major-v1` (não é produção) |
+| `Social` ou filha de DEV-172 | `major-v1` | `major-v1` (**nunca** `main`) | merge em `major-v1` (não é produção) |
 | Épica DEV-108 | — | cutover `major-v1` → `main` | só com liberação explícita de release |
 
-Ao **iniciar** uma Issue do milestone `v1` (ou filha de DEV-108): atualizar/rebasear `major-v1` com `main` antes de criar a feature branch, para não divergir durante o MVP.
+Ao **iniciar** uma Issue do milestone `v1` ou `Social` (ou filha de DEV-108 / DEV-172): atualizar/rebasear `major-v1` com `main` antes de criar a feature branch, para não divergir durante o MVP.
 
-Done em `major-v1` **não** autoriza deploy. Cutover para produção = Done da épica DEV-108 + PR `major-v1` → `main` liberado pelo fundador.
+Done em `major-v1` **não** autoriza deploy. Cutover para produção = Done da épica DEV-108 + PR `major-v1` → `main` liberado pelo fundador. O Social vai para produção nesse cutover ou depois dele, nunca antes.
 
 ---
 
