@@ -1,8 +1,8 @@
 ---
 type: padroes-git
-ultima_atualizacao: 2026-09-10
-versao: "1.2"
-workflow: GitHub Flow adaptado (MVP → main; v1 → major-v1)
+ultima_atualizacao: 2026-11-10
+versao: "1.3"
+workflow: GitHub Flow adaptado (MVP → main; v1 e Social → major-v1)
 tags: [padrões, git, commits, branches]
 ---
 
@@ -33,7 +33,7 @@ Fluxo: branches de trabalho → merge na **base do milestone** (`main` no MVP; `
 | --- | --- | --- |
 | `main` | Produção / linha principal (MVP e releases) | — |
 | `major-v1` | Linha longa pós-MVP (Major v1.0); épica DEV-108 | `main` só no cutover de release |
-| `feature/*` ou `vinisouzadev/pdt-N-...` | Feature / ticket | `main` (MVP) ou `major-v1` (milestone `v1` / filha de DEV-108) |
+| `feature/*` ou `vinisouzadev/pdt-N-...` | Feature / ticket | `main` (MVP) ou `major-v1` (milestones `v1` e `Social` / filhas de DEV-108 e DEV-172) |
 | `fix/*` | Correção | mesma regra da feature (milestone → base) |
 | `dev/*` | Spike/experimento | base do milestone (ou descartar) |
 | `docs/*` | Só documentação | `main` (processo/KB) salvo docs exclusivas de v1 |
@@ -57,11 +57,12 @@ Fluxo: branches de trabalho → merge na **base do milestone** (`main` no MVP; `
 - ❌ `git push origin main` com feature crua
 - Também: não commit direto em `major-v1` no fluxo normal — features entram por PR.
 
-### GIT-025: Milestone → base do PR (MVP vs v1)
+### GIT-025: Milestone → base do PR (MVP vs v1 / Social)
 - **Nível:** 🔴
-- Milestone **`MVP`** (e demais ≠ `v1`) → feature a partir de `main` → PR com base **`main`**.
-- Milestone **`v1`** ou Issue **filha de DEV-108** → ao iniciar a Issue, atualizar/rebasear `major-v1` com `main` → feature a partir de `major-v1` → PR com base **`major-v1`** (nunca `main`) → **Done** = merge em `major-v1` (**não** é produção).
-- **Cutover:** único PR `major-v1` → `main` = Done da épica DEV-108, só com liberação explícita do fundador.
+- Milestone **`MVP`** (e demais fora da linha `major-v1`) → feature a partir de `main` → PR com base **`main`**.
+- Milestone **`v1`**, milestone **`Social`** ou Issue **filha de DEV-108 / DEV-172** → ao iniciar a Issue, atualizar/rebasear `major-v1` com `main` → feature a partir de `major-v1` → PR com base **`major-v1`** (nunca `main`) → **Done** = merge em `major-v1` (**não** é produção).
+- O Flock Social (`social/`, épica DEV-172) depende da base v1, por isso usa a linha `major-v1` mesmo tendo milestone próprio (decisão do fundador em 2026-11-10).
+- **Cutover:** único PR `major-v1` → `main` = Done da épica DEV-108, só com liberação explícita do fundador. O Social vai para produção nesse cutover ou depois dele, nunca antes.
 - Detalhe operacional: workflow §15.7.
 
 ---
@@ -217,4 +218,4 @@ Closes #
 
 ## Confirmação
 
-Regras **GIT-001…025** · MVP → `main` · v1 → `major-v1` · Conventional Commits **em adoção** · sem CI GitHub ainda.
+Regras **GIT-001…025** · MVP → `main` · v1 e Social → `major-v1` · Conventional Commits **em adoção** · sem CI GitHub ainda.
