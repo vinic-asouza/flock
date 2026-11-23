@@ -77,7 +77,15 @@ export const DUPLICATE_WARNING_MESSAGES: Record<DuplicateWarning, string> = {
 
 export const MISSING_CONTACT_WARNING = 'Sem telefone, WhatsApp ou e-mail.';
 
-const MEMBER_CONTROL_FIELDS = ['groups', 'acknowledgeDuplicates', 'communication_consent'] as const;
+const MEMBER_CONTROL_FIELDS = [
+  'groups',
+  'acknowledgeDuplicates',
+  'communication_consent',
+  // Situação/active só via PATCH /status (DEV-179)
+  'active',
+  'situation',
+  'situation_changed_at',
+] as const;
 
 export function omitMemberControlFields<T extends Record<string, unknown>>(data: T): Omit<T, (typeof MEMBER_CONTROL_FIELDS)[number]> {
   const copy = { ...data };
