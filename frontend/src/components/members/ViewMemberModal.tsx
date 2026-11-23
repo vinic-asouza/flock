@@ -4,11 +4,17 @@ import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
-import { Loader, Mail, MessageCircle, User, Users, Trash2, UserMinus, UserPlus, Phone, Church, Download, Home } from 'lucide-react';
+import { Loader, Mail, MessageCircle, User, Users, Trash2, RefreshCw, Phone, Church, Download, Home } from 'lucide-react';
 import apiService from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { calculateAge } from '@/utils';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import {
+  memberSituationBadgeVariant,
+  memberSituationLabel,
+  resolveMemberSituation,
+} from '@/lib/memberSituation';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -61,6 +67,8 @@ interface Member {
     congregations?: { id: string; name: string; abbreviation?: string | null } | null;
   }>;
   active: boolean;
+  situation?: string;
+  situation_changed_at?: string;
 }
 
 interface ViewMemberModalProps {
@@ -69,8 +77,7 @@ interface ViewMemberModalProps {
   memberId: string;
   canEdit?: boolean;
   onEdit: () => void;
-  onDeactivate: () => void;
-  onReactivate: () => void;
+  onChangeSituation: (situation?: string, active?: boolean) => void;
   onDeletePermanently: () => void;
 }
 
@@ -137,7 +144,7 @@ function formatarTelefone(telefone: string): string {
   return telefone;
 }
 
-export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onEdit, onDeactivate, onReactivate, onDeletePermanently }: ViewMemberModalProps) {
+export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onEdit, onChangeSituation, onDeletePermanently }: ViewMemberModalProps) {
   const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,10 +243,11 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                 <div>
                   <h3 className="text-xl font-semibold text-gray-900 uppercase break-words">{formatMemberName(member.name)}</h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${member.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                      {member.active ? 'Ativo' : 'Inativo'}
-                    </span>
+                    <StatusBadge
+                      variant={memberSituationBadgeVariant(resolveMemberSituation(member.situation, member.active))}
+                      label={memberSituationLabel(member.situation, member.active)}
+                      size="sm"
+                    />
                   </div>
                 </div>
                 <div>
@@ -563,29 +571,16 @@ export function ViewMemberModal({ isOpen, onClose, memberId, canEdit = true, onE
                   Excluir Permanentemente
                 </Button>
                 <div className="flex flex-col sm:flex-row gap-2 sm:space-x-0 w-full sm:w-auto">
-                  {member.active ? (
-                    <Button
-                      variant="secondary"
-                      onClick={onDeactivate}
-                      disabled={loading || readOnly}
-                      title={readOnly ? READER_TOOLTIP : undefined}
-                      className="w-full sm:w-auto justify-center"
-                    >
-                      <UserMinus size={16} className="mr-2" />
-                      Inativar Membro
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="secondary"
-                      onClick={onReactivate}
-                      disabled={loading || readOnly}
-                      title={readOnly ? READER_TOOLTIP : undefined}
-                      className="w-full sm:w-auto justify-center"
-                    >
-                      <UserPlus size={16} className="mr-2" />
-                      Reativar
-                    </Button>
-                  )}
+                  <Button
+                    variant="secondary"
+                    onClick={() => onChangeSituation(member.situation, member.active)}
+                    disabled={loading || readOnly}
+                    title={readOnly ? READER_TOOLTIP : undefined}
+                    className="w-full sm:w-auto justify-center"
+                  >
+                    <RefreshCw size={16} className="mr-2" />
+                    Alterar situação
+                  </Button>
                   <Button
                     onClick={onEdit}
                     disabled={loading || readOnly}

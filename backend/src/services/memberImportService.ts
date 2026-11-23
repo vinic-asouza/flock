@@ -137,7 +137,9 @@ function buildMemberFromCSVRow(
     mother_name: row.mother_name || undefined,
     mother_is_member: motherIsMember,
     children: parseChildrenFromRow(row, rowNumber),
-    active: true
+    active: true,
+    situation: 'ativo' as const,
+    situation_changed_at: new Date().toISOString(),
     // church_id NÃO é incluído aqui - será adicionado automaticamente na inserção
   };
 }

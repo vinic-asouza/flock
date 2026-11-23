@@ -80,7 +80,11 @@ export interface Member {
   admission_date?: Date;
   congregation_id?: string;
   children?: Child[];
+  /** Derivado de `situation`: true somente quando situation === 'ativo' (BR-MEM-012). */
   active: boolean;
+  /** Situação do membro no rol (DEV-179). */
+  situation: 'ativo' | 'inativo' | 'transferido' | 'desligado' | 'falecido';
+  situation_changed_at?: Date | string;
   created_at: Date;
   updated_at: Date;
 }
