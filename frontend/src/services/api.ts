@@ -354,6 +354,7 @@ class ApiService {
     limit?: number;
     search?: string;
     active?: boolean;
+    situation?: string;
     congregation_id?: string;
     gender?: string;
     marital_status?: string;
@@ -383,7 +384,8 @@ class ApiService {
     if (params.search) queryParams.append('search', params.search);
 
     // Filtros básicos
-    if (params.active !== undefined) queryParams.append('active', params.active.toString());
+    if (params.situation) queryParams.append('situation', params.situation);
+    else if (params.active !== undefined) queryParams.append('active', params.active.toString());
     if (params.congregation_id) queryParams.append('congregation_id', params.congregation_id);
 
     // Filtros demográficos
@@ -774,9 +776,15 @@ class ApiService {
     return response.data;
   }
 
-  // ACHADO 05: endpoint atômico para alterar apenas status active — evita GET+PUT race condition
-  async setMemberStatus(id: string, active: boolean): Promise<{ message: string; member: { id: string; name: string; active: boolean } }> {
-    const response = await this.api.patch(`/members/${id}/status`, { active });
+  // ACHADO 05 / DEV-179: endpoint atômico para situação (ou active compat)
+  async setMemberStatus(
+    id: string,
+    payload: { situation: string } | { active: boolean }
+  ): Promise<{
+    message: string;
+    member: { id: string; name: string; active: boolean; situation?: string; situation_changed_at?: string };
+  }> {
+    const response = await this.api.patch(`/members/${id}/status`, payload);
     return response.data;
   }
 

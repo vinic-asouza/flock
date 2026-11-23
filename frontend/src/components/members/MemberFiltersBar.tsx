@@ -7,6 +7,7 @@ import { useFiltersData } from '@/hooks/useFiltersData';
 import { Congregation } from '@/types/congregation';
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { MEMBER_SITUATION_LABELS, MEMBER_SITUATIONS, MemberSituationFilter } from '@/lib/memberSituation';
 
 interface MemberFiltersBarProps {
   filters: MemberFilters;
@@ -138,7 +139,7 @@ export function MemberFiltersBar({
     <div ref={containerRef} className="flex flex-wrap gap-2 items-end overflow-visible">
       {/* Status */}
       <div className="flex flex-col gap-1 overflow-visible min-w-[8.5rem] flex-1 sm:flex-initial">
-        <label className="block text-xs font-medium text-gray-600">Status</label>
+        <label className="block text-xs font-medium text-gray-600">Situação</label>
         <div className="relative overflow-visible">
           <button
             ref={statusTriggerRef}
@@ -147,7 +148,9 @@ export function MemberFiltersBar({
             className="h-11 inline-flex items-center justify-between w-full min-w-0 px-3 pr-10 border border-gray-200 rounded-lg bg-white text-gray-700 text-sm hover:bg-gray-50 hover:border-gray-300 transition-colors cursor-pointer"
           >
             <span>
-              {filters.status === 'active' ? 'Ativo' : filters.status === 'inactive' ? 'Inativo' : 'Todos'}
+              {filters.status === 'all'
+                ? 'Todos'
+                : MEMBER_SITUATION_LABELS[filters.status as keyof typeof MEMBER_SITUATION_LABELS] || 'Ativo'}
             </span>
             <ChevronDown 
               size={16} 
@@ -228,27 +231,16 @@ export function MemberFiltersBar({
         >
           {activeDropdown === 'status' && (
             <>
-              <button
-                type="button"
-                onClick={() => { onChange({ status: 'active' }); setOpenSelect(null); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'active' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-              >
-                Ativo
-              </button>
-              <button
-                type="button"
-                onClick={() => { onChange({ status: 'inactive' }); setOpenSelect(null); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'inactive' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-              >
-                Inativo
-              </button>
-              <button
-                type="button"
-                onClick={() => { onChange({ status: 'all' }); setOpenSelect(null); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === 'all' ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
-              >
-                Todos
-              </button>
+              {(['all', ...MEMBER_SITUATIONS] as MemberSituationFilter[]).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => { onChange({ status: value }); setOpenSelect(null); }}
+                  className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${filters.status === value ? 'bg-gray-50 text-gray-900' : 'text-gray-700'}`}
+                >
+                  {value === 'all' ? 'Todos' : MEMBER_SITUATION_LABELS[value]}
+                </button>
+              ))}
             </>
           )}
           {activeDropdown === 'congregation' && (

@@ -19,8 +19,7 @@ export function MemberList({
   canEdit,
   onView,
   onEdit,
-  onDeactivate,
-  onReactivate,
+  onChangeSituation,
   viewModeSelector,
   viewMode,
   isViewModeLoaded,
@@ -33,8 +32,7 @@ export function MemberList({
   canEdit?: boolean;
   onView?: (id: string, name: string) => void;
   onEdit?: (id: string) => void;
-  onDeactivate?: (id: string, name: string) => void;
-  onReactivate?: (id: string, name: string) => void;
+  onChangeSituation?: (id: string, name: string, situation?: string, active?: boolean) => void;
   viewModeSelector?: React.ReactNode;
   viewMode: ViewMode;
   isViewModeLoaded?: boolean;
@@ -94,12 +92,8 @@ export function MemberList({
     onEdit?.(id);
   };
 
-  const handleDeactivate = (id: string, name: string) => {
-    onDeactivate?.(id, name);
-  };
-
-  const handleReactivate = (id: string, name: string) => {
-    onReactivate?.(id, name);
+  const handleChangeSituation = (id: string, name: string, situation?: string, active?: boolean) => {
+    onChangeSituation?.(id, name, situation, active);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -210,8 +204,7 @@ export function MemberList({
               canEdit={canEdit}
               onView={() => handleView(member.id, member.name)}
               onEdit={() => handleEdit(member.id)}
-              onDeactivate={() => handleDeactivate(member.id, member.name)}
-              onReactivate={() => handleReactivate(member.id, member.name)}
+              onChangeSituation={() => handleChangeSituation(member.id, member.name, member.situation, member.active)}
             />
           ))}
         </div>
@@ -224,8 +217,7 @@ export function MemberList({
               canEdit={canEdit}
               onView={() => handleView(member.id, member.name)}
               onEdit={() => handleEdit(member.id)}
-              onDeactivate={() => handleDeactivate(member.id, member.name)}
-              onReactivate={() => handleReactivate(member.id, member.name)}
+              onChangeSituation={() => handleChangeSituation(member.id, member.name, member.situation, member.active)}
             />
           ))}
         </div>

@@ -5,6 +5,7 @@ import { MemberFilters } from '@/app/(main)/members/page';
 import { useFiltersData } from '@/hooks/useFiltersData';
 import { Congregation } from '@/types/congregation';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import { MEMBER_SITUATION_LABELS, isMemberSituation } from '@/lib/memberSituation';
 
 interface ActiveFiltersChipsProps {
   filters: MemberFilters;
@@ -57,7 +58,9 @@ export function ActiveFiltersChips({
   const getFilterLabel = (key: keyof MemberFilters, value: string) => {
     switch (key) {
       case 'status':
-        return value === 'active' ? 'Ativo' : value === 'inactive' ? 'Inativo' : 'Todos';
+        if (value === 'all') return 'Todos';
+        if (isMemberSituation(value)) return MEMBER_SITUATION_LABELS[value];
+        return value === 'active' ? 'Ativo' : value === 'inactive' ? 'Inativo' : value;
       case 'congregationId': {
         const congregation = congregations.find(c => c.id === value);
         return congregation ? getCongregationDisplayName(congregation) : '';
@@ -157,7 +160,7 @@ export function ActiveFiltersChips({
   // Função para verificar se um filtro está ativo
   const isFilterActive = (key: keyof MemberFilters, value: string) => {
     if (key === 'status') {
-      return value !== 'active'; // 'active' é o padrão
+      return value !== 'ativo'; // 'ativo' é o padrão da listagem
     }
     if (key === 'search') {
       return value.trim() !== '';

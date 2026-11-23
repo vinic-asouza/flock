@@ -1,8 +1,14 @@
 'use client';
 
-import { Eye, Edit, UserMinus, UserPlus, Mail, MessageCircle, Phone, MapPin, Briefcase, Church, Users } from 'lucide-react';
+import { Eye, Edit, RefreshCw, Mail, MessageCircle, Phone, MapPin, Briefcase, Church, Users } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import {
+  memberSituationBadgeVariant,
+  memberSituationLabel,
+  resolveMemberSituation,
+} from '@/lib/memberSituation';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -12,6 +18,7 @@ interface MemberCardGridProps {
     name: string;
     birth: string; // ISO date
     active: boolean;
+    situation?: string;
     congregation?: { name: string; abbreviation?: string | null } | null;
     groups?: Array<{
       id: string;
@@ -36,8 +43,7 @@ interface MemberCardGridProps {
   canEdit?: boolean;
   onView?: () => void;
   onEdit?: () => void;
-  onDeactivate?: () => void;
-  onReactivate?: () => void;
+  onChangeSituation?: () => void;
 }
 
 function calcularIdade(birth: string): number | null {
@@ -63,9 +69,10 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onDeactivate, onReactivate }: MemberCardGridProps) {
+export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onChangeSituation }: MemberCardGridProps) {
   const idade = calcularIdade(member.birth);
   const readOnly = canEdit === false;
+  const situation = resolveMemberSituation(member.situation, member.active);
 
   return (
     <div className={`flex flex-col border border-gray-200 rounded-lg px-6 py-4 h-full ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
@@ -75,11 +82,11 @@ export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onDeact
           <span className="font-semibold text-gray-900 text-base truncate uppercase flex-1 min-w-0" title={member.name}>
             {formatMemberName(member.name)}
           </span>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            member.active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
-          }`}>
-            {member.active ? 'Ativo' : 'Inativo'}
-          </span>
+          <StatusBadge
+            variant={memberSituationBadgeVariant(situation)}
+            label={memberSituationLabel(situation)}
+            size="sm"
+          />
         </div>
         
         {/* Informações Pessoais */}
@@ -179,52 +186,31 @@ export function MemberCardGrid({ member, canEdit = true, onView, onEdit, onDeact
       
       {/* Ações alinhadas à direita */}
       <div className="flex gap-2 justify-end">
-        {member.active ? (
-          // Botões para membros ativos
-          <>
-            <button
-              title="Visualizar"
-              onClick={onView}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
-            >
-              <Eye size={18} />
-            </button>
-            <button
-              title={readOnly ? READER_TOOLTIP : 'Editar'}
-              onClick={onEdit}
-              disabled={readOnly}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <Edit size={18} />
-            </button>
-            <button
-              title={readOnly ? READER_TOOLTIP : 'Inativar'}
-              onClick={onDeactivate}
-              disabled={readOnly}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <UserMinus size={18} />
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              title="Visualizar"
-              onClick={onView}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
-            >
-              <Eye size={18} />
-            </button>
-            <button
-              title={readOnly ? READER_TOOLTIP : 'Reativar'}
-              onClick={onReactivate}
-              disabled={readOnly}
-              className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <UserPlus size={18} />
-            </button>
-          </>
+        <button
+          title="Visualizar"
+          onClick={onView}
+          className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+        >
+          <Eye size={18} />
+        </button>
+        {member.active && (
+          <button
+            title={readOnly ? READER_TOOLTIP : 'Editar'}
+            onClick={onEdit}
+            disabled={readOnly}
+            className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Edit size={18} />
+          </button>
         )}
+        <button
+          title={readOnly ? READER_TOOLTIP : 'Alterar situação'}
+          onClick={onChangeSituation}
+          disabled={readOnly}
+          className="p-2 rounded hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <RefreshCw size={18} />
+        </button>
       </div>
     </div>
   );

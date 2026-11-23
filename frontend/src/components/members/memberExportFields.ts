@@ -30,7 +30,7 @@ export const MEMBER_EXPORT_FIELD_OPTIONS: MemberExportFieldOption[] = [
   { id: 'phone', label: 'Telefone', category: 'contact' },
   { id: 'whatsapp', label: 'WhatsApp', category: 'contact' },
   { id: 'email', label: 'Email', category: 'contact' },
-  { id: 'active', label: 'Status', category: 'ecclesiastical' },
+  { id: 'active', label: 'Situação', category: 'ecclesiastical' },
   { id: 'congregation', label: 'Congregação', category: 'ecclesiastical' },
   { id: 'admission', label: 'Tipo de Recebimento', category: 'ecclesiastical' },
   { id: 'admission_date', label: 'Data de Recebimento', category: 'ecclesiastical' },
