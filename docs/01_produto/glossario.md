@@ -49,10 +49,10 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 
 **Membro** *(código: `Member`, `members`)*  
 > Pessoa no **rol oficial** da igreja. **Não** possui login no Flock por ser membro.  
-- **Atributos-chave:** `name`, `birth`, `gender`, `active`, `congregation_id`, recebimento (`admission`, `admission_date`, `baptism_date`)  
+- **Atributos-chave:** `name`, `birth`, `gender`, `situation`, `active` (derivado), `congregation_id`, recebimento (`admission`, `admission_date`, `baptism_date`)  
 - **Relacionamentos:** igreja; opcional congregação; N grupos (`member_groups`); pode ser mentor de integrantes  
 - **Usado em:** Membros, Relatórios, Grupos, Calendário, limite de plano  
-- **UI:** “Membros” · soft delete / `active` · ficha: bloco **Vínculo na igreja** (não é o questionário pastoral)
+- **UI:** “Membros” · Situação do membro + soft via situações não-Ativo · ficha: bloco **Vínculo na igreja** (não é o questionário pastoral)
 
 **Integrante** *(código: `IntegrationMember`, `integration_members`)*  
 > Pré-membro em processo de **Integração** antes de entrar no rol oficial.  
@@ -156,10 +156,22 @@ Sempre use os termos definidos aqui ao se referir a conceitos do produto. Em cas
 - **`invited`** — status previsto no schema; fluxo atual costuma criar já `active` _(inferido)_  
 - **`disabled`** — vínculo desativado  
 
-#### Membro
+#### Membro — Situação (`members.situation`)
 
-- **`active: true`** — membro ativo no rol  
-- **`active: false`** — inativo (soft); ainda conta para regras de limite conforme implementação  
+Situação pastoral/administrativa no rol (DEV-179). Valores canônicos no banco (lowercase); rótulos na UI em português.
+
+| Valor | Rótulo | `active` derivado |
+| --- | --- | --- |
+| `ativo` | Ativo | `true` (conta na cota do plano) |
+| `inativo` | Inativo | `false` |
+| `transferido` | Transferido | `false` |
+| `desligado` | Desligado | `false` |
+| `falecido` | Falecido | `false` |
+
+- **`situation_changed_at`** — data/hora da última mudança de situação  
+- **`active`** — booleano **derivado** de `situation === 'ativo'`; permanece a base de BR-MEM-012 / BR-POL-003  
+- Alteração: `PATCH /api/members/:id/status` com `{ situation }` (compat `{ active }` → Ativo/Inativo)  
+- Não confundir com **cliente comercialmente ativo** (Stripe) nem com `church_user_status`
 
 #### Calendário (`CalendarStatus`)
 
@@ -218,7 +230,7 @@ Programação · Evento · Encontro · Reunião
 | **Importar membros** | CSV validate → import | Carga em lote com validação prévia |
 | **Autocadastrar** | link `PublicRegistrationLink` | Visitante vira Membro |
 | **Autointegrar** | link `PublicIntegrationLink` | Visitante vira Integrante |
-| **Ativar/desativar membro** | `PATCH …/status` | Alterna `active` sem full update |
+| **Alterar situação do membro** | `PATCH …/status` | Define `situation` (+ `active` derivado) sem full update |
 | **Excluir membro** | soft delete | Remove do uso ativo sem apagar histórico de negócio de imediato |
 | **Convidar usuário** | `church_users` + e-mail | Dá login + role na igreja |
 | **Checkout** | Stripe Checkout Session | Pagamento/ativação de plano pago |

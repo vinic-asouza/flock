@@ -357,7 +357,9 @@ erDiagram
 | occupation | text | NULL | — | Profissão |
 | admission | text | NULL | — | Tipo admissão (texto livre histórico) |
 | admission_date | date | NULL | — | Data admissão |
-| active | boolean | NULL | `true` | Membro “ativo” (quota) |
+| situation | text | NOT NULL, CHECK | `'ativo'` | Situação no rol: ativo, inativo, transferido, desligado, falecido (DEV-179) |
+| situation_changed_at | timestamptz | NOT NULL | `now()` | Última mudança de situação |
+| active | boolean | NULL | `true` | Derivado: `true` só se `situation = 'ativo'` (quota) |
 | created_at | timestamptz | NULL | `now()` | Criação |
 | father_name | text | NULL | — | Nome do pai |
 | mother_name | text | NULL | — | Nome da mãe |
@@ -372,7 +374,7 @@ erDiagram
 
 **Relacionamentos:** `church_id` → churches CASCADE; `congregation_id` → congregations **RESTRICT** (não permite deletar cong. com membros). Referenciado por member_groups (CASCADE), calendar/group responsible / mentor (SET NULL).
 
-> **Nota:** não há `updated_at` em `members`. Soft “inativação” via `active=false`; delete de membro na API é **hard delete**.
+> **Nota:** não há `updated_at` em `members`. Situações não-Ativo deixam `active=false` (cota); delete de membro na API é **hard delete**. Migration: `20261123150000_dev_179_member_situation.sql`.
 
 ---
 
