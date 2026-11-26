@@ -1,7 +1,7 @@
 ---
 type: performance-escalabilidade
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-11-26
+versao: "1.1"
 cache: sem cache distribuído (apenas in-memory pontual)
 queue: sem fila
 tags: [arquitetura, performance, cache, filas, escalabilidade]
@@ -16,17 +16,44 @@ tags: [arquitetura, performance, cache, filas, escalabilidade]
 
 ## 1. 📊 Métricas-Alvo
 
-Nenhum SLO/SLA formal (P95, bundle budget) foi encontrado no código ou na KB.
+SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191), calibrados com baseline BR → API `us-west2` (nov/2026).
 
-| Métrica | Target | Atual (se conhecido) |
+| Métrica | Target (aspiracional) | Atual / como medir |
 | --- | --- | --- |
-| Latência P95 de API | (a definir) | — (sem APM com SLOs; Sentry traces sample 0.1) |
+| Latência P95 `/health` (warm) | ≤ 400 ms (pós-região SA); hoje ~300–600 ms em `us-west2` | `GET /api/internal/http-latency` ou `/metrics` |
+| Latência P95 rotas leves autenticadas (`/api/refresh/check`) | ≤ 800 ms (pós-região SA); baseline a coletar após deploy | idem |
+| Latência P95 listagem membros | ≤ 1,5 s (pós-região SA); baseline a coletar | idem |
 | Tempo de build | (a definir) | — |
 | Tamanho do bundle JS | (a definir) | — (sem bundle analyzer) |
 | Export PDF | (a definir) | Síncrono no request — risco sob lista grande |
 | Import CSV | (a definir) | Síncrono; multer ≤ 10 MB em memória |
 
-Observabilidade disponível (não é “target”): Prometheus billing em `/metrics`, Sentry traces, tabela `job_runs`.
+### Observabilidade de latência HTTP (DEV-191)
+
+| Canal | Auth | Uso |
+| --- | --- | --- |
+| `GET /metrics` | Header `X-Internal-Token: $METRICS_TOKEN` (ou `?token=`) | Prometheus text; série `http_request_duration_seconds_*` com labels `method`, `route`, `status_code` |
+| `GET /api/internal/http-latency` | Mesmo `METRICS_TOKEN` | JSON com `p50_ms` / `p95_ms` / `count` por rota (até 50), janela = **uptime do processo** |
+| Railway HTTP metrics | Dashboard / MCP | Agregado do serviço (não por rota Express) |
+| Sentry Performance | `SENTRY_DSN` | Traces sample `SENTRY_TRACES_SAMPLE_RATE` (default 0.1) |
+
+**Procedimento (agentes / time):**
+
+1. Confirmar `METRICS_TOKEN` no serviço `backend` (produção). Sem token em prod, as rotas respondem 404.
+2. Gerar tráfego (navegação no Painel ou `curl` com Origin allowlisted).
+3. Consultar resumo:
+   ```bash
+   curl -sS -H "X-Internal-Token: $METRICS_TOKEN" \
+     https://api.flockapp.com.br/api/internal/http-latency | jq .
+   ```
+4. Ou scrapar Prometheus:
+   ```bash
+   curl -sS -H "X-Internal-Token: $METRICS_TOKEN" \
+     https://api.flockapp.com.br/metrics | rg 'http_request_duration_seconds'
+   ```
+5. **Janela 24h:** o JSON é desde o último restart/deploy. Para 24h contínuas, scrapar `/metrics` com retenção externa (Grafana Cloud, VictoriaMetrics, etc.) — fora do runtime atual.
+
+Rotas normalizam UUIDs/IDs numéricos para `:id` (baixa cardinalidade). `/metrics` e `/api/internal/http-latency` não entram no Histogram.
 
 ---
 

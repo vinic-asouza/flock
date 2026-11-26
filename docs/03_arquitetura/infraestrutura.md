@@ -231,7 +231,7 @@ Não há `.env.example` commitado visível (script tenta copiar `backend/.env.ex
 | `NEXT_PUBLIC_SENTRY_ENABLED` | Frontend | ⚙️ | Gate |
 | `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Frontend | ⚙️ | Default `0.1` |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Front build | ⚙️ | `withSentryConfig` |
-| `METRICS_TOKEN` | Backend | ⚙️ | Protege `GET /metrics` |
+| `METRICS_TOKEN` | Backend | ⚙️ | Protege `GET /metrics` e `GET /api/internal/http-latency` |
 | `INTERNAL_BILLING_TOKEN` | Backend | ⚙️ | Protege `/api/internal/billing/stats` |
 | `HEALTH_CHECK_TOKEN` | Backend | ⚙️ | Protege `/api/health/stripe` (404 se inválido) |
 | `OPS_ALERTS_ENABLED` | Backend | ⚙️ | Default on; `false` silencia |
@@ -266,7 +266,7 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 | Ferramenta | Onde | Status |
 | --- | --- | --- |
 | **Sentry** | Backend (`@sentry/node`, foco billing) + Frontend (`@sentry/nextjs`) | Configurado via env DSN |
-| **Prometheus** | `GET /metrics` (`prom-client` / billing metrics) | Token interno |
+| **Prometheus** | `GET /metrics` (`prom-client`: billing + `http_request_duration_seconds`) e `GET /api/internal/http-latency` (p50/p95 JSON) | `METRICS_TOKEN` |
 | **Stats billing** | `GET /api/internal/billing/stats` | Token interno |
 | **Ops alerts** | E-mail admin + Slack opcional (`opsAlertService`) | Fire-and-forget |
 | Datadog / New Relic / APM full | — | **Não encontrado** |

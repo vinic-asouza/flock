@@ -29,11 +29,13 @@ import calendarParticipantsRoutes from './routes/calendarParticipants';
 import churchUsersRoutes from './routes/churchUsers';
 import opsRoutes from './routes/ops';
 import { requestIdMiddleware } from './middlewares/requestId';
+import { httpLatencyMiddleware } from './middlewares/httpLatency';
 import { requireInternalToken } from './middlewares/internalToken';
 import { runTrackedJob } from './utils/jobRuns';
 import { initSentryBilling } from './utils/sentryBilling';
 import { getMetricsText, getMetricsContentType } from './utils/billingMetrics';
 import { getBillingStats } from './controllers/billingStatsController';
+import { getHttpLatencyStats } from './controllers/httpLatencyController';
 
 dotenv.config();
 initSentryBilling();
@@ -52,6 +54,9 @@ app.use(helmet());
 
 // Correlation ID para logs (X-Request-Id)
 app.use(requestIdMiddleware);
+
+// Latência HTTP → Prometheus `/metrics` + JSON `/api/internal/http-latency`
+app.use(httpLatencyMiddleware);
 
 // Configuração do CORS - Painel, landing e Admin OPS
 const allowedOrigins = [
@@ -157,6 +162,13 @@ app.get('/metrics', requireInternalToken('METRICS_TOKEN'), async (_req, res) => 
     res.status(500).send('metrics_error');
   }
 });
+
+// p50/p95 HTTP por rota (mesmo token de /metrics)
+app.get(
+  '/api/internal/http-latency',
+  requireInternalToken('METRICS_TOKEN'),
+  getHttpLatencyStats
+);
 
 // Stats operacionais de billing (protegido por INTERNAL_BILLING_TOKEN)
 app.get(
