@@ -139,29 +139,31 @@ export function ChurchManagement() {
     setChurchBaseline(data);
   };
 
-  // Carregar dados da igreja via API (ACHADO 02)
+  // Hidratar do auth (já veio de /refresh/check). Fetch só se ainda não houver user.
   useEffect(() => {
+    if (user) {
+      applyChurchToForm(user);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
     const loadChurchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
-
         const church = await apiService.getChurchData();
         applyChurchToForm(church);
       } catch (error) {
         const errorMessage = formatApiError(error);
         toast.error(errorMessage);
         setError(errorMessage);
-
-        if (user) {
-          applyChurchToForm(user);
-        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadChurchData();
+    void loadChurchData();
   }, [user]);
 
   const handleInputChange = (field: keyof ChurchFormData, value: string) => {
@@ -204,12 +206,10 @@ export function ChurchManagement() {
         return;
       }
 
-      // Chamar API para atualizar via contexto
-      await updateChurch(changedFields);
-
-      const refreshed = await apiService.getChurchData();
+      // PUT já devolve a church; evitar GET /church extra
+      const refreshed = await updateChurch(changedFields);
       applyChurchToForm(refreshed);
-      
+
       setSuccess('Dados da igreja atualizados com sucesso!');
       setIsEditing(false);
       

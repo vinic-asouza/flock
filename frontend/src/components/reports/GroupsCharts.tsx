@@ -26,7 +26,6 @@ interface ChartDataItem {
 const MINISTRY_COLOR = '#3B82F6';
 
 export function GroupsCharts({
-  loading = false,
   viewMode = 'all',
   selectedCongregationId,
   totalMembers = 0,
@@ -69,13 +68,11 @@ export function GroupsCharts({
     }
   }, [viewMode, selectedCongregationId]);
 
+  // Não esperar `loading` dos reports — listGroups em paralelo (DEV-190).
   useEffect(() => {
     setGroups([]);
-    if (loading) {
-      return;
-    }
-    loadGroups();
-  }, [viewMode, selectedCongregationId, loading, loadGroups]);
+    void loadGroups();
+  }, [viewMode, selectedCongregationId, loadGroups]);
 
   const ministriesData = useMemo((): ChartDataItem[] => {
     return groups
@@ -99,7 +96,7 @@ export function GroupsCharts({
     router.push('/ministries');
   };
 
-  if (loading || loadingGroups) {
+  if (loadingGroups) {
     return (
       <div className="space-y-6">
         <div className="h-6 bg-gray-200 rounded w-48 animate-pulse"></div>
