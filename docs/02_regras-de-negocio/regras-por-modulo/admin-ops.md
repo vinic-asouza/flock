@@ -1,9 +1,9 @@
 ---
 type: regras-modulo
 modulo: admin-ops
-ultima_atualizacao: 2026-09-01
-versao: "0.5"
-total_regras: 8
+ultima_atualizacao: 2026-11-26
+versao: "0.6"
+total_regras: 9
 tags: [regras, modulo:admin-ops, plataforma]
 ver_tambem:
   - "[[04_modulos/admin-ops]]"
@@ -16,7 +16,7 @@ ver_tambem:
 
 ## Responsabilidade do Módulo
 
-Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cross-tenant **somente GET** das Igrejas (clientes SaaS), listar e marcar situação operacional dos leads da Lista de espera (tabela `waitlist`, sem `church_id`) e expor saúde agregada da plataforma (API, Stripe, jobs) — separado do login do Painel da igreja.
+Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cross-tenant **somente GET** das Igrejas (clientes SaaS), listar e marcar situação operacional dos leads da Lista de espera (tabela `waitlist`, sem `church_id`), expor saúde agregada da plataforma (API, Stripe, jobs) e latência HTTP por rota — separado do login do Painel da igreja.
 
 ## Índice de Regras
 
@@ -30,6 +30,7 @@ Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cro
 | BR-OPS-006 | Sem rol nem diffs de Membros nas respostas ops | Restrição | Ativo |
 | BR-OPS-007 | Saúde agregada visível ao operador | Derivação | Ativo |
 | BR-OPS-008 | Lista de espera no `/api/ops` tem GET e PATCH de situação | Restrição | Ativo |
+| BR-OPS-009 | Latência HTTP visível ao operador | Derivação | Ativo |
 
 ---
 
@@ -112,3 +113,13 @@ Autorizar o **Operador da plataforma** na API (`/api/ops`), permitir leitura cro
 - **Implementado em:** `backend/src/routes/ops.ts`; `opsWaitlistController.ts`; `opsWaitlist.ts`; `opsWaitlistMappers.ts`
 - **Testado em:** `opsWaitlistValidator.test.ts`; `opsWaitlist.test.ts`
 - **Depende de:** BR-OPS-001, BR-OPS-002; relacionado [[BR-ACQ-002]], [[BR-ACQ-003]]
+
+### BR-OPS-009: Latência HTTP visível ao operador
+- **Declaração:** O operador autenticado vê p50/p95 (ms) e contagem por rota HTTP da API na tela Saúde. O endpoint é GET-only; leitura **em processo** do mesmo snapshot de `/api/internal/http-latency`. Não usa `METRICS_TOKEN`, `INTERNAL_BILLING_TOKEN` nem `HEALTH_CHECK_TOKEN`. Janela = uptime do processo (não 24h contínuas). Não é leitura cross-tenant de Igreja (não entra na exceção de BR-GEN-010 / ADR-001).
+- **Tipo:** Derivação
+- **Gatilho:** `GET /api/ops/http-latency`; painel Latência HTTP em `/health` (botão Atualizar, sem polling)
+- **Comportamento esperado:** Payload `{ window, note, generated_at, uptime_seconds, route_count, routes[] }` com até 50 rotas (`method`, `route`, `status_code`, `count`, `p50_ms`, `p95_ms`). Self-path `/api/ops/http-latency` fora do histogram.
+- **Comportamento em violação:** 401 anônimo; 403 não-operador; 500 só se a leitura quebrar por completo
+- **Implementado em:** `backend/src/controllers/opsHttpLatencyController.ts`; `backend/src/utils/httpLatencyPayload.ts`; `admin-ops/src/components/HealthView.tsx`
+- **Testado em:** `backend/src/utils/__tests__/httpLatencyPayload.test.ts`; `admin-ops/src/lib/opsHttpLatencyLabels.test.ts`
+- **Depende de:** BR-OPS-001, BR-OPS-002; relacionado BR-OPS-007

@@ -2,9 +2,9 @@
 type: modulo
 nome: Admin OPS
 status: Em Desenvolvimento
-versao: "0.9"
+versao: "0.10"
 owner: plataforma
-ultima_atualizacao: 2026-09-01
+ultima_atualizacao: 2026-11-26
 tags: [admin-ops, plataforma, interno]
 dependencias: [auth]
 ---
@@ -18,9 +18,9 @@ dependencias: [auth]
 
 ## 📌 Overview
 
-**Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary `/api/ops` (auth de operador + leitura de Igrejas + Lista de espera + saúde agregada).
+**Responsabilidade única:** centro operacional interno — UI `admin-ops/` (local **:3002**) + boundary `/api/ops` (auth de operador + leitura de Igrejas + Lista de espera + saúde agregada + latência HTTP).
 
-Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`, `GET`/`PATCH /api/ops/waitlist`) + **saúde agregada** (`/health`, `GET /api/ops/health`) no app (`:3002`).
+Estado atual: **auth de operador** + **login/shell** + **console read-only de Igrejas** (overview, lista, ficha) + **Lista de espera** (`/waitlist`, `GET`/`PATCH /api/ops/waitlist`) + **saúde agregada** (`/health`, `GET /api/ops/health`) + **latência HTTP** (`GET /api/ops/http-latency`, painel na Saúde) no app (`:3002`).
 
 **Fora:** Mintlify (usuário da igreja não usa isto). Sentry (DEV-70). Deploy Railway (pedido explícito). Tabela `platform_admins`. npm workspaces. Stripe live. Mutação de tenant.
 
@@ -42,6 +42,8 @@ backend/src/controllers/opsAuthController.ts
 backend/src/controllers/opsChurchesController.ts
 backend/src/controllers/opsWaitlistController.ts
 backend/src/controllers/opsHealthController.ts
+backend/src/controllers/opsHttpLatencyController.ts
+backend/src/utils/httpLatencyPayload.ts       → snapshot p50/p95 compartilhado
 backend/src/services/opsChurches.ts           → queries supabaseAdmin
 backend/src/services/opsChurchMappers.ts      → DTOs whitelist
 backend/src/services/opsWaitlist.ts           → lista + PATCH de situação `waitlist`
@@ -96,6 +98,7 @@ Recortes do overview (plano/status/comercialmente ativo) deep-linkam `/churches?
 | GET | `/api/ops/waitlist` | idem | Lista paginada de leads. Default `status=pending`. **Não** existe `GET /api/waitlist` |
 | PATCH | `/api/ops/waitlist/:id` | idem | Situação operacional `converted` \| `discarded`; só a partir de `pending`. Não cria Igreja |
 | GET | `/api/ops/health` | idem | Saúde agregada (API, Stripe, jobs). HTTP **200** autenticado mesmo se o JSON for `degraded`/`error` |
+| GET | `/api/ops/http-latency` | idem | p50/p95 por rota (janela = uptime do processo). Sem `METRICS_TOKEN` |
 
 Erros: `{ error, details }` em PT. Validação Joi da query/params → 400. Anônimo → 401. Não-operador → 403.
 
@@ -156,6 +159,12 @@ Agregação (BR-OPS-007):
 
 UI: se **Atualizar** falhar a rede, a tela preserva o último payload e mostra o alerta acima.
 
+#### `GET /api/ops/http-latency`
+
+Snapshot **em processo** do mesmo payload de `GET /api/internal/http-latency` (p50/p95/count por rota, até 50; janela = `process_uptime`). Auth: sessão do operador — **não** `METRICS_TOKEN` (BR-OPS-009). 401 anônimo; 403 não-operador; 500 só se a leitura quebrar.
+
+UI: painel **Latência HTTP** na tela `/health` (mesmo botão Atualizar; falha de latência não apaga o bloco de saúde e vice-versa). Empty: sem amostras nesta instância. Nota da janela e uptime no painel.
+
 ---
 
 ## ⚠️ Pontos de atenção
@@ -169,4 +178,5 @@ UI: se **Atualizar** falhar a rede, a tela preserva o último payload e mostra o
 - Exceção localizada a BR-GEN-010 / API-028: só os GETs de Igrejas (overview/lista/ficha); Painel continua filtrando `church_id`. `GET /api/ops/health` **não** é leitura cross-tenant de Igreja. `GET`/`PATCH /api/ops/waitlist` também **não** — a tabela não tem `church_id` (BR-OPS-008).
 - Nunca criar `GET /api/waitlist` (rota pública). Captação permanece `POST /api/waitlist` ([[04_modulos/aquisicao]]).
 - `GET /api/ops/health` responde **200** autenticado com `status` no JSON — não copiar o 503 de `GET /api/health/stripe`.
+- `GET /api/ops/http-latency` espelha o internal; janela = uptime do processo, não 24h contínuas.
 - `church_users` na ficha conta a tabela; owner só em `churches.user_id` não entra no total.

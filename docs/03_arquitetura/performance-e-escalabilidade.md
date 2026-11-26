@@ -20,7 +20,7 @@ SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191
 
 | Métrica | Target (aspiracional) | Atual / como medir |
 | --- | --- | --- |
-| Latência P95 `/health` (warm) | ≤ 400 ms (pós-região SA); hoje ~300–600 ms em `us-west2` | `GET /api/internal/http-latency` ou `/metrics` |
+| Latência P95 `/health` (warm) | ≤ 400 ms (pós-região SA); hoje ~300–600 ms em `us-west2` | Admin OPS `/health`, `GET /api/ops/http-latency`, `/api/internal/http-latency` ou `/metrics` |
 | Latência P95 rotas leves autenticadas (`/api/refresh/check`) | ≤ 800 ms (pós-região SA); baseline a coletar após deploy | idem |
 | Latência P95 listagem membros | ≤ 1,5 s (pós-região SA); baseline a coletar | idem |
 | Tempo de build | (a definir) | — |
@@ -32,6 +32,7 @@ SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191
 
 | Canal | Auth | Uso |
 | --- | --- | --- |
+| Admin OPS `/health` → Latência HTTP | Sessão operador (`PLATFORM_ADMIN_EMAILS`) | UI + `GET /api/ops/http-latency` (mesmo JSON; **sem** `METRICS_TOKEN`) |
 | `GET /metrics` | Header `X-Internal-Token: $METRICS_TOKEN` (ou `?token=`) | Prometheus text; série `http_request_duration_seconds_*` com labels `method`, `route`, `status_code` |
 | `GET /api/internal/http-latency` | Mesmo `METRICS_TOKEN` | JSON com `p50_ms` / `p95_ms` / `count` por rota (até 50), janela = **uptime do processo** |
 | Railway HTTP metrics | Dashboard / MCP | Agregado do serviço (não por rota Express) |
@@ -39,21 +40,22 @@ SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191
 
 **Procedimento (agentes / time):**
 
-1. Confirmar `METRICS_TOKEN` no serviço `backend` (produção). Sem token em prod, as rotas respondem 404.
-2. Gerar tráfego (navegação no Painel ou `curl` com Origin allowlisted).
-3. Consultar resumo:
+1. Preferir Admin OPS local `:3002` → **Saúde** → painel Latência HTTP (operador allowlisted). Em produção API, o snapshot é do processo que atende o request.
+2. Alternativa máquina: confirmar `METRICS_TOKEN` no serviço `backend`. Sem token em prod, `/metrics` e `/api/internal/http-latency` respondem 404.
+3. Gerar tráfego (navegação no Painel ou `curl` com Origin allowlisted).
+4. Consultar resumo via token:
    ```bash
    curl -sS -H "X-Internal-Token: $METRICS_TOKEN" \
      https://api.flockapp.com.br/api/internal/http-latency | jq .
    ```
-4. Ou scrapar Prometheus:
+5. Ou scrapar Prometheus:
    ```bash
    curl -sS -H "X-Internal-Token: $METRICS_TOKEN" \
      https://api.flockapp.com.br/metrics | rg 'http_request_duration_seconds'
    ```
-5. **Janela 24h:** o JSON é desde o último restart/deploy. Para 24h contínuas, scrapar `/metrics` com retenção externa (Grafana Cloud, VictoriaMetrics, etc.) — fora do runtime atual.
+6. **Janela 24h:** o JSON é desde o último restart/deploy. Para 24h contínuas, scrapar `/metrics` com retenção externa (Grafana Cloud, VictoriaMetrics, etc.) — fora do runtime atual.
 
-Rotas normalizam UUIDs/IDs numéricos para `:id` (baixa cardinalidade). `/metrics` e `/api/internal/http-latency` não entram no Histogram.
+Rotas normalizam UUIDs/IDs numéricos para `:id` (baixa cardinalidade). `/metrics`, `/api/internal/http-latency` e `/api/ops/http-latency` não entram no Histogram.
 
 ---
 
