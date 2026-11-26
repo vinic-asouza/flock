@@ -16,13 +16,13 @@ tags: [arquitetura, performance, cache, filas, escalabilidade]
 
 ## 1. 📊 Métricas-Alvo
 
-SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191), calibrados com baseline BR → API `us-west2` (nov/2026).
+SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191), recalibrados após cutover Railway → `us-east4-eqdc4a` (DEV-189; SA compute indisponível).
 
 | Métrica | Target (aspiracional) | Atual / como medir |
 | --- | --- | --- |
-| Latência P95 `/health` (warm) | ≤ 400 ms (pós-região SA); hoje ~300–600 ms em `us-west2` | Admin OPS `/health`, `GET /api/ops/http-latency`, `/api/internal/http-latency` ou `/metrics` |
-| Latência P95 rotas leves autenticadas (`/api/refresh/check`) | ≤ 800 ms (pós-região SA); baseline a coletar após deploy | idem |
-| Latência P95 listagem membros | ≤ 1,5 s (pós-região SA); baseline a coletar | idem |
+| Latência P95 `/health` (warm) | ≤ 300 ms (US East); pré-cutover ~275–370 ms em `us-west2`; pós ~190–210 ms (amostra 26/11) | Admin OPS `/health`, `GET /api/ops/http-latency`, `/api/internal/http-latency` ou `/metrics` |
+| Latência P95 rotas leves autenticadas (`/api/refresh/check`) | ≤ 700 ms (US East); baseline a coletar | idem |
+| Latência P95 listagem membros | ≤ 1,2 s (US East); baseline a coletar | idem |
 | Tempo de build | (a definir) | — |
 | Tamanho do bundle JS | (a definir) | — (sem bundle analyzer) |
 | Export PDF | (a definir) | Síncrono no request — risco sob lista grande |

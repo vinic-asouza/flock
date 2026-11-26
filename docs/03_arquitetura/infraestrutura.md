@@ -1,7 +1,7 @@
 ---
 type: infraestrutura
-ultima_atualizacao: 2026-08-26
-versao: "1.1"
+ultima_atualizacao: 2026-11-26
+versao: "1.2"
 cloud_provider: Railway + Supabase
 tags: [arquitetura, infra, deploy, CI/CD, ambientes]
 ---
@@ -18,7 +18,7 @@ tags: [arquitetura, infra, deploy, CI/CD, ambientes]
 
 | Item | Valor encontrado |
 | --- | --- |
-| Cloud / PaaS app | **Railway** (docs + `start:railway`, trust proxy no Express) |
+| Cloud / PaaS app | **Railway** — compute região **`us-east4-eqdc4a`** (US East / Virginia; DEV-189). Sem região SA no Railway. |
 | Banco / Auth | **Supabase** (PostgreSQL 17 gerenciado + Auth) — projeto `flock-app-01`, região `sa-east-1` |
 | Modelo de deploy | **PaaS Node** (build npm no Railway) e/ou **Docker** local; frontend `output: 'standalone'` comentado (deploy preferido **sem Dockerfile** no Railway) |
 | CDN / Edge / Cloudflare | **Não configurado** no repo (a configurar) |
@@ -38,7 +38,7 @@ flowchart TB
     user["Usuário"]
   end
 
-  subgraph railway ["Railway (Produção — PaaS)"]
+  subgraph railway ["Railway us-east4-eqdc4a (Virginia)"]
     landing_svc["Landing Next.js\n:PORT / start:railway"]
     web_svc["App Next.js\n:PORT / start:railway"]
     api_svc["API Express\n:PORT · webhooks · crons"]
@@ -74,7 +74,7 @@ flowchart TB
   api_svc -.-> slack
 ```
 
-**Notas:** sem CDN/edge documentada; sem Redis; Postgres não é um serviço Railway — é Supabase. Domínios oficiais: `flockapp.com.br` (landing), `painel.flockapp.com.br` (Painel), `api.flockapp.com.br` (API); hosts `*.up.railway.app` permanecem como fallback na transição.
+**Notas:** sem CDN/edge documentada; sem Redis; Postgres não é um serviço Railway — é Supabase. Domínios oficiais: `flockapp.com.br` (landing), `painel.flockapp.com.br` (Painel), `api.flockapp.com.br` (API); hosts `*.up.railway.app` permanecem como fallback na transição. Região Railway oficial: **`us-east4-eqdc4a`** (melhor opção disponível para BR; SA compute inexistente no Railway — DEV-189).
 
 ---
 
