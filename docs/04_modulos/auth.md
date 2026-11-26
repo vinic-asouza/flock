@@ -128,7 +128,7 @@ Usuário de login do produto (não confundir com `members`).
 
 | Cookie | Conteúdo | maxAge | Flags |
 | --- | --- | --- | --- |
-| `flock_access_token` | JWT access | 15 min | HttpOnly; secure+SameSite=None em prod |
+| `flock_access_token` | JWT access | 15 min | HttpOnly; secure+SameSite=Lax em prod (first-party) |
 | `flock_refresh_token` | Refresh | 7 dias | idem |
 | `flock_session` | JSON user (+ às vezes tokens no callback) | 24 h | idem |
 | `flock_active_church_id` | UUID igreja | 30 dias | idem |
@@ -406,7 +406,7 @@ Não há classes `*Exception` tipadas — respostas JSON ad hoc.
 
 🚨 Rotas `/api/refresh/test-cookies` e `test-clear-cookies` sem auth — ver [[03_arquitetura/seguranca]].  
 🚨 Callback grava tokens dentro de `flock_session`.  
-🚨 `SameSite=None` + cookies cross-site sem CSRF app-level.
+🟡 Cookies first-party `SameSite=Lax` em prod (`api.flockapp.com.br`); CSRF app-level ainda melhoria futura.
 
 ---
 
