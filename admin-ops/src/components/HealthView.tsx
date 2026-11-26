@@ -1,9 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Activity, Cog, RefreshCw, Server, Webhook, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  Cog,
+  Gauge,
+  RefreshCw,
+  Server,
+  Webhook,
+  type LucideIcon,
+} from "lucide-react";
 import { opsApi } from "@/services/api";
 import type { OpsHealthResponse, OpsHealthStatus } from "@/types/opsHealth";
+import type { OpsHttpLatencyResponse } from "@/types/opsHttpLatency";
 import { formatOpsReadError } from "@/lib/opsReadErrors";
 import { formatDateTime } from "@/lib/opsFormat";
 import {
@@ -13,6 +22,11 @@ import {
   overallBannerClass,
   staleHealthErrorDetails,
 } from "@/lib/opsHealthLabels";
+import {
+  formatLatencyMs,
+  formatUptimeSeconds,
+  latencyWindowLabel,
+} from "@/lib/opsHttpLatencyLabels";
 import {
   OpsBadge,
   OpsButton,
@@ -77,33 +91,52 @@ function HealthCard({
 
 export function HealthView() {
   const [health, setHealth] = useState<OpsHealthResponse | null>(null);
+  const [latency, setLatency] = useState<OpsHttpLatencyResponse | null>(null);
   const [error, setError] = useState<{ title: string; details?: string } | null>(
     null
   );
+  const [latencyError, setLatencyError] = useState<{
+    title: string;
+    details?: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const load = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await opsApi.getHealth();
-      setHealth(data);
-    } catch (err) {
-      setError(formatOpsReadError(err));
-    } finally {
-      setIsLoading(false);
+    setIsLoading(true);
+    setError(null);
+    setLatencyError(null);
+
+    const [healthResult, latencyResult] = await Promise.allSettled([
+      opsApi.getHealth(),
+      opsApi.getHttpLatency(),
+    ]);
+
+    if (healthResult.status === "fulfilled") {
+      setHealth(healthResult.value);
+    } else {
+      setError(formatOpsReadError(healthResult.reason));
     }
+
+    if (latencyResult.status === "fulfilled") {
+      setLatency(latencyResult.value);
+    } else {
+      setLatencyError(formatOpsReadError(latencyResult.reason));
+    }
+
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  const initialLoading = isLoading && !health && !latency;
+
   return (
     <OpsPage>
       <OpsPageHeader
         title="Saúde"
-        description="Status da API, do Stripe e dos jobs de billing. Somente leitura — suficiente para suporte, sem APM."
+        description="Status da API, do Stripe e dos jobs de billing, com latência HTTP por rota. Somente leitura — suficiente para suporte, sem APM."
         actions={
           <OpsButton
             type="button"
@@ -111,15 +144,15 @@ export function HealthView() {
             disabled={isLoading}
           >
             <RefreshCw
-              className={`h-4 w-4 ${isLoading && health ? "animate-spin" : ""}`}
+              className={`h-4 w-4 ${isLoading && (health || latency) ? "animate-spin" : ""}`}
               aria-hidden
             />
-            {isLoading && health ? "Atualizando…" : "Atualizar"}
+            {isLoading && (health || latency) ? "Atualizando…" : "Atualizar"}
           </OpsButton>
         }
       />
 
-      {isLoading && !health ? (
+      {initialLoading ? (
         <OpsHealthSkeleton />
       ) : (
         <>
@@ -240,6 +273,88 @@ export function HealthView() {
                 </OpsTable>
               </OpsPanel>
             </>
+          ) : null}
+
+          {latencyError ? (
+            <OpsError
+              title={latencyError.title}
+              details={staleHealthErrorDetails(
+                latencyError.details,
+                Boolean(latency)
+              )}
+            />
+          ) : null}
+
+          {latency ? (
+            <OpsPanel title="Latência HTTP" padded={false}>
+              <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 px-4 py-2 text-xs text-muted">
+                <Gauge className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span>{latencyWindowLabel(latency.window)}</span>
+                <span aria-hidden>·</span>
+                <span>Uptime {formatUptimeSeconds(latency.uptime_seconds)}</span>
+                <span aria-hidden>·</span>
+                <span>
+                  {latency.route_count.toLocaleString("pt-BR")} rota
+                  {latency.route_count === 1 ? "" : "s"}
+                </span>
+                <span aria-hidden>·</span>
+                <span>{formatDateTime(latency.generated_at)}</span>
+              </div>
+              <p className="border-b border-gray-100 px-4 py-2 text-xs text-muted">
+                {latency.note}
+              </p>
+              {latency.routes.length === 0 ? (
+                <p className="px-4 py-6 text-sm text-muted">
+                  Ainda não há amostras nesta instância da API. Gere tráfego e
+                  atualize.
+                </p>
+              ) : (
+                <OpsTable embedded>
+                  <OpsTableHead>
+                    <tr>
+                      <OpsTh>Método</OpsTh>
+                      <OpsTh>Rota</OpsTh>
+                      <OpsTh fit>Status</OpsTh>
+                      <OpsTh fit>Amostras</OpsTh>
+                      <OpsTh fit>p50</OpsTh>
+                      <OpsTh fit>p95</OpsTh>
+                    </tr>
+                  </OpsTableHead>
+                  <tbody>
+                    {latency.routes.map((row) => (
+                      <tr
+                        key={`${row.method}:${row.route}:${row.status_code}`}
+                        className="border-b border-gray-50 last:border-0"
+                      >
+                        <OpsTd fit className="font-mono text-xs">
+                          {row.method}
+                        </OpsTd>
+                        <OpsTd className="max-w-[20rem]">
+                          <p
+                            className="truncate font-mono text-xs text-foreground"
+                            title={row.route}
+                          >
+                            {row.route}
+                          </p>
+                        </OpsTd>
+                        <OpsTd fit className="tabular-nums">
+                          {row.status_code}
+                        </OpsTd>
+                        <OpsTd fit className="tabular-nums">
+                          {row.count.toLocaleString("pt-BR")}
+                        </OpsTd>
+                        <OpsTd fit className="tabular-nums">
+                          {formatLatencyMs(row.p50_ms)}
+                        </OpsTd>
+                        <OpsTd fit className="tabular-nums">
+                          {formatLatencyMs(row.p95_ms)}
+                        </OpsTd>
+                      </tr>
+                    ))}
+                  </tbody>
+                </OpsTable>
+              )}
+            </OpsPanel>
           ) : null}
         </>
       )}
