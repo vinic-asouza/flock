@@ -56,7 +56,7 @@ tags: [arquitetura, segurança, auth, OWASP, criptografia]
 | Pending link | UUID | **7 dias** | Cookie `flock_pending_link_token` | — |
 | Public form tokens | `randomBytes(32)` → string ~48 chars | `expires_at` do link | Tabela `public_*_links.token` | N/A |
 
-Flags de cookie (`cookieUtils.ts`): `httpOnly: true` · `secure` em production · `sameSite: 'none'` (prod, cross-origin) / `'lax'` (dev) · `path: '/'`.
+Flags de cookie (`cookieUtils.ts`): `httpOnly: true` · `secure` em production · `sameSite: 'lax'` (first-party: `painel`/`api`/`flockapp.com.br`) · `path: '/'` · host-only no host da API. Override opcional: `COOKIE_SAMESITE=none|lax|strict` (janela de transição).
 
 ### Refresh e revogação
 
@@ -140,10 +140,8 @@ Configuração em `app.ts`: `helmet()` **sem overrides** + CORS custom.
 
 Não há ajuste explícito de CSP/HSTS no repositório — **validar resposta HTTP real em produção** e reforçar se necessário.
 
-🚨 **Sem CSRF token + cookies `SameSite=None` em prod**  
-- Mitigação parcial: CORS allowlist + JSON (preflight).  
-- **Risco:** XSS em origem permitida vira session riding; CSRF clássico limitado por CORS mas não eliminado se mal configurado.  
-- **Correção:** SameSite=Lax se front/API same-site; senão double-submit / header custom obrigatório.
+🟡 **CSRF:** cookies `SameSite=Lax` em prod (API em `api.flockapp.com.br`, Painel em `painel.flockapp.com.br` — mesmo eTLD+1) + CORS allowlist + JSON (preflight).  
+- **Resíduo:** XSS em origem allowlisted ainda pode session-ride; double-submit/header custom permanece melhoria futura.
 
 ---
 
@@ -193,7 +191,7 @@ Frontend app: sem `dangerouslySetInnerHTML` de user content. Landing: JSON-LD vi
 | A04 | Insecure Design | 🟡 | Multi-tenant app-only; links públicos = bearer na URL; hard delete PII; crons no mesmo processo |
 | A05 | Security Misconfiguration | 🟡 | Helmet+CORS; 🚨 rotas `/api/refresh/test-cookies` e `test-clear-cookies` **sem auth**; waitlist sem RL dedicado; CSP custom ausente |
 | A06 | Vulnerable Components | 🟡 | npm packages; **sem CI de audit/`npm audit` no repo** |
-| A07 | Auth/Session Failures | 🟡 | HttpOnly cookies + refresh; RL em login; 🚨 blacklist memória; SameSite=None; sem MFA |
+| A07 | Auth/Session Failures | 🟡 | HttpOnly cookies + refresh; RL em login; 🚨 blacklist memória; SameSite=Lax first-party; sem MFA |
 | A08 | Software/Data Integrity | 🟡 | Webhook Stripe com assinatura; sem CI integrity; imports CSV validados parcialmente |
 | A09 | Logging/Monitoring Failures | 🟡 | `audit_logs` para CRUD; Sentry billing; 🚨 falhas de login/escalação pouco alertadas; ops Slack opcional só billing |
 | A10 | SSRF | ✅ | Poucos fetches server-side a URL de usuário; Slack webhook via env (não input user) |
@@ -207,7 +205,7 @@ Legenda: ✅ Mitigado · 🟡 Parcial · ❌ Não identificado / frágil
 | 1 | Rotas debug de cookies em produção | Alto | Vazamento de sessão | Remover ou `NODE_ENV!=='production'` + token interno |
 | 2 | Blacklist JWT em memória | Alto | Logout ineficaz em scale-out | Store distribuído / revoke Supabase |
 | 3 | Isolamento tenant só no app + service_role | Crítico se bug | Cross-tenant PII | Testes IDOR + defense-in-depth |
-| 4 | SameSite=None sem CSRF app-level | Médio | Session riding via XSS origin | CSRF token / same-site cookies |
+| 4 | CSRF app-level ainda ausente (Lax + CORS) | Baixo–Médio | Session riding via XSS origin allowlisted | Double-submit / header custom |
 | 5 | Hard delete de membros | Médio (LGPD/ops) | Perda + inconsistência docs | Soft + purge |
 | 6 | Session cookie com tokens | Médio | Superfície extra | Só metadata na session |
 | 7 | Waitlist sem RL dedicado | Médio | Spam/DoS leve | express-rate-limit |

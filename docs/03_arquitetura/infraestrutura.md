@@ -74,7 +74,7 @@ flowchart TB
   api_svc -.-> slack
 ```
 
-**Notas:** sem CDN/edge documentada; sem Redis; Postgres não é um serviço Railway — é Supabase. Domínios de exemplo na docs: `flock.com.br` / `app.flock.com.br` / `api.flock.com.br` (podem divergir dos `*.up.railway.app` reais).
+**Notas:** sem CDN/edge documentada; sem Redis; Postgres não é um serviço Railway — é Supabase. Domínios oficiais: `flockapp.com.br` (landing), `painel.flockapp.com.br` (Painel), `api.flockapp.com.br` (API); hosts `*.up.railway.app` permanecem como fallback na transição.
 
 ---
 
@@ -84,7 +84,7 @@ flowchart TB
 | --- | --- | --- | --- | --- |
 | **development** | Dev local | landing `:3000`, Painel `:3001`, Admin OPS `:3002`, API `:4000` | — | — |
 | **staging** | Homologação | (a configurar) — citado só via `NODE_ENV=staging` | (a configurar) | ❌ pipeline não encontrado |
-| **production** | Produção | Docs: `https://flock.com.br`, `https://app.flock.com.br`, `https://api.flock.com.br/api`; Railway: `*.up.railway.app` | tipicamente `main` (não codificado) | Railway GitHub connect (doc) — **sem workflow no repo** |
+| **production** | Produção | `https://flockapp.com.br`, `https://painel.flockapp.com.br`, `https://api.flockapp.com.br/api` (+ `*.up.railway.app` legado) | tipicamente `main` (não codificado) | Railway GitHub connect (doc) — **sem workflow no repo** |
 
 **Local (Docker Compose):** backend `:4000`, frontend mapeado `:3000` (atenção: porta Compose ≠ `npm run dev` do front em `:3001`).
 
@@ -200,7 +200,9 @@ Não há `.env.example` commitado visível (script tenta copiar `backend/.env.ex
 | Variável | Ambiente | Obrigatória | Descrição |
 | --- | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | Backend | ✅ | `sk_test_` / `sk_live_` |
-| `STRIPE_WEBHOOK_SECRET` | Backend | ✅ | `whsec_...` |
+| `STRIPE_WEBHOOK_SECRET` | Backend | ✅ | `whsec_...` (endpoint ativo) |
+| `STRIPE_WEBHOOK_SECRET_LEGACY` | Backend | ⚙️ | Segundo `whsec_...` na transição dual-endpoint (opcional) |
+| `COOKIE_SAMESITE` | Backend | ⚙️ | Override `none\|lax\|strict`; default prod `lax` |
 | `STRIPE_PRICE_ID_M200` | Backend | ✅ | Price plano 200 |
 | `STRIPE_PRICE_ID_M500` | Backend | ✅ | Price plano 500 |
 | `STRIPE_PRICE_ID_M800` | Backend | ✅ | Price plano 800 |
@@ -314,7 +316,7 @@ Não há `/ping` ou `/status` genéricos além dos acima.
 8. **Frontend Dockerfile backups** vs Railway Nixpacks — duas estratégias; `standalone` desligado.
 9. **Sem CDN/WAF** — assets e DDoS dependem só de Railway + rate limit Express.
 10. **Migrations manuais** — risco de drift API × schema (já visto com dump local vs live).
-11. **Domínios mistos** nas docs (`flock.com.br` vs `flockapp.com.br` vs `*.railway.app`) — alinhar DNS oficial.
+11. Host Railway legado (`backend-production-*.up.railway.app`) ativo na transição; cutover final = follow-up.
 12. **Segredos** (`SERVICE_ROLE`, Stripe) só via Variables Railway — nunca no frontend; service_role já corretamente só no backend.
 
 ---

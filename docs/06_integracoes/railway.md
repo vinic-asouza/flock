@@ -39,7 +39,7 @@ tags: [integrações, railway]
 
 | Serviço | ID | Root | Build | Start | Domínios |
 | --- | --- | --- | --- | --- | --- |
-| **backend** | `0127db7f-…` | `/backend` | `npm install && npm run build` | `npm start` | `backend-production-2ec4.up.railway.app` (:4000) |
+| **backend** | `0127db7f-…` | `/backend` | `npm install && npm run build` | `npm start` | `api.flockapp.com.br` + `backend-production-2ec4.up.railway.app` (:4000) |
 | **frontend** | `d1fd82b3-…` | `/frontend` | `npm install && npm run build` | `npm run start:railway` | `frontend-test-production-6b4c.up.railway.app` + **painel.flockapp.com.br** (:8080) |
 | **landing page** | `fff79d81-…` | `/landing` | `npm install && npm run build` | `npm run start:railway` | `landing-page-production-d1c1.up.railway.app` + **flockapp.com.br** (:8080) |
 
@@ -231,9 +231,8 @@ Opcional: `docker-compose.yml` (API com Dockerfile; frontend compose pode estar 
 | --- | --- | --- |
 | `painel.flockapp.com.br` | frontend | Valid · CNAME → `rvjzynfi.up.railway.app` |
 | `flockapp.com.br` | landing | Valid · CNAME apex → `0kexovsh.up.railway.app` |
-| `*.up.railway.app` | cada serviço | Gerenciado Railway |
-
-Backend **sem** custom domain no MCP — API pública = `backend-production-2ec4.up.railway.app` (docs às vezes citam `api.flock.com.br` — **não** observado no Railway atual).
+| `api.flockapp.com.br` | backend | Custom · CNAME → `xr4ct2hl.up.railway.app` (DNS-only) + TXT `_railway-verify.api` |
+| `*.up.railway.app` | cada serviço | Gerenciado Railway (legado da API mantido na transição) |
 
 ### Auto-deploy GitHub
 
@@ -249,16 +248,18 @@ Backend **sem** custom domain no MCP — API pública = `backend-production-2ec4
 | --- | --- | --- | --- |
 | CNAME | `painel` | `rvjzynfi.up.railway.app` | App → frontend |
 | CNAME / ALIAS | `@` (`flockapp.com.br`) | `0kexovsh.up.railway.app` | Landing |
-| CNAME (opcional) | `api` ou similar | <!-- se criar custom domain no backend --> | API amigável |
+| CNAME | `api` | `xr4ct2hl.up.railway.app` | API (`api.flockapp.com.br`, DNS-only) |
+| TXT | `_railway-verify.api` | `railway-verify=…` | Ownership Railway |
 
-**Onde configurar:** <!-- PREENCHER MANUALMENTE: registrador / DNS de flockapp.com.br -->
+**Onde configurar:** Cloudflare zona `flockapp.com.br` (MCP / dashboard).
 
 **Verificar:**
 
 ```bash
 dig CNAME painel.flockapp.com.br
+dig CNAME api.flockapp.com.br
 dig flockapp.com.br
-# Painel: Service → Settings → Networking → Domain → status Verified + cert
+# Railway domain-status / cert Verified
 ```
 
 Railway Dashboard → Domain → **Retry certificate** se TLS falhar.

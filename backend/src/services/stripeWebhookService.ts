@@ -1539,20 +1539,31 @@ export async function processStripeWebhook(req: Request, res: Response): Promise
   const startedAt = Date.now();
   const requestId = req.requestId;
   const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  const webhookSecrets = [
+    process.env.STRIPE_WEBHOOK_SECRET,
+    process.env.STRIPE_WEBHOOK_SECRET_LEGACY,
+  ].filter((s): s is string => Boolean(s));
 
-  if (!webhookSecret) {
+  if (webhookSecrets.length === 0) {
     logError('STRIPE_WEBHOOK_SECRET não configurado');
     res.status(500).json({ error: 'Webhook secret não configurado' });
     return;
   }
 
-  let event: Stripe.Event;
+  let event: Stripe.Event | undefined;
+  let lastError: unknown;
 
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Erro de assinatura';
+  for (const secret of webhookSecrets) {
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig as string, secret);
+      break;
+    } catch (err: unknown) {
+      lastError = err;
+    }
+  }
+
+  if (!event) {
+    const message = lastError instanceof Error ? lastError.message : 'Erro de assinatura';
     logError('Erro ao verificar webhook', message);
     const duration_ms = Date.now() - startedAt;
     billingError({

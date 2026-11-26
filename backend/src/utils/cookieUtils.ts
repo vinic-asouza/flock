@@ -1,5 +1,19 @@
 import { Response } from 'express';
 
+type SameSiteOption = 'none' | 'lax' | 'strict';
+
+/**
+ * Produção first-party (api.* + painel.* no mesmo eTLD+1): Lax.
+ * Override: COOKIE_SAMESITE=none|lax|strict (útil na janela de transição).
+ */
+export const resolveSameSite = (): SameSiteOption => {
+  const fromEnv = process.env.COOKIE_SAMESITE?.toLowerCase();
+  if (fromEnv === 'none' || fromEnv === 'lax' || fromEnv === 'strict') {
+    return fromEnv;
+  }
+  return process.env.NODE_ENV === 'production' ? 'lax' : 'lax';
+};
+
 // Configurações de cookies seguros
 export const cookieConfig = {
   // Nome dos cookies
@@ -15,9 +29,10 @@ export const cookieConfig = {
   security: {
     httpOnly: true, // Não acessível via JavaScript
     secure: process.env.NODE_ENV === 'production', // HTTPS apenas em produção
-    // sameSite: 'none' é necessário para cross-origin (frontend e backend em domínios diferentes)
-    // Quando sameSite é 'none', secure DEVE ser true
-    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'none' | 'lax' | 'strict',
+    // sameSite resolvido em runtime (ver resolveSameSite) — host-only no host da API
+    get sameSite(): SameSiteOption {
+      return resolveSameSite();
+    },
     path: '/', // Disponível em toda a aplicação
   },
   
@@ -34,6 +49,7 @@ export const cookieConfig = {
 export const setPendingLinkToken = (res: Response, token: string): void => {
   res.cookie(cookieConfig.names.pendingLinkToken, token, {
     ...cookieConfig.security,
+    sameSite: resolveSameSite(),
     maxAge: cookieConfig.expiration.pendingLinkToken,
   });
 };
@@ -43,13 +59,14 @@ export const clearPendingLinkToken = (res: Response): void => {
     path: '/',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: resolveSameSite(),
   });
 };
 
 export const setActiveChurchId = (res: Response, churchId: string): void => {
   res.cookie(cookieConfig.names.activeChurchId, churchId, {
     ...cookieConfig.security,
+    sameSite: resolveSameSite(),
     maxAge: cookieConfig.expiration.activeChurchId,
   });
 };
@@ -59,7 +76,7 @@ export const clearActiveChurchId = (res: Response): void => {
     path: '/',
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    sameSite: resolveSameSite(),
   });
 };
 
@@ -67,6 +84,7 @@ export const clearActiveChurchId = (res: Response): void => {
 export const setAccessToken = (res: Response, token: string): void => {
   res.cookie(cookieConfig.names.accessToken, token, {
     ...cookieConfig.security,
+    sameSite: resolveSameSite(),
     maxAge: cookieConfig.expiration.accessToken
   });
 };
@@ -75,6 +93,7 @@ export const setAccessToken = (res: Response, token: string): void => {
 export const setRefreshToken = (res: Response, token: string): void => {
   res.cookie(cookieConfig.names.refreshToken, token, {
     ...cookieConfig.security,
+    sameSite: resolveSameSite(),
     maxAge: cookieConfig.expiration.refreshToken
   });
 };
@@ -83,6 +102,7 @@ export const setRefreshToken = (res: Response, token: string): void => {
 export const setSessionCookie = (res: Response, sessionData: any): void => {
   res.cookie(cookieConfig.names.session, JSON.stringify(sessionData), {
     ...cookieConfig.security,
+    sameSite: resolveSameSite(),
     maxAge: cookieConfig.expiration.session
   });
 };
@@ -111,7 +131,15 @@ export const clearAuthCookies = (res: Response): void => {
       sameSite: 'strict'
     });
     
-    // HTTPS em produção com sameSite: 'none' (cross-origin)
+    // HTTPS em produção com sameSite: 'lax' (first-party)
+    res.clearCookie(cookieName, {
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax'
+    });
+
+    // HTTPS em produção com sameSite: 'none' (legado cross-origin)
     res.clearCookie(cookieName, {
       path: '/',
       httpOnly: true,
@@ -140,8 +168,6 @@ export const getProdCookieConfig = () => {
   return {
     ...cookieConfig.security,
     secure: true, // Apenas HTTPS em produção
-    // sameSite: 'none' é necessário para cross-origin (frontend e backend em domínios diferentes)
-    // Quando sameSite é 'none', secure DEVE ser true
-    sameSite: 'none' as const
+    sameSite: resolveSameSite(),
   };
 };

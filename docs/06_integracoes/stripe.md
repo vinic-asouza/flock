@@ -82,6 +82,7 @@ Obrigatórias no **boot** da API (`validateStripeConfig` em `backend/src/service
 | --- | --- | --- | --- |
 | `STRIPE_SECRET_KEY` | Secret key da API | Dashboard → Developers → API keys → Secret key | Test: `sk_test_` · Prod: `sk_live_` |
 | `STRIPE_WEBHOOK_SECRET` | Valida assinatura `Stripe-Signature` | Dashboard → Developers → Webhooks → endpoint → Signing secret **ou** saída do `stripe listen` | Dev: CLI · Prod: endpoint live |
+| `STRIPE_WEBHOOK_SECRET_LEGACY` | Segundo secret na janela dual-endpoint (API aceita qualquer um) | Signing secret do endpoint antigo | Opcional; remover após desligar o webhook legado |
 | `STRIPE_PRICE_ID_M200` | Price do plano 200 (R$ 29,99/mês no `PLAN_CONFIG`) | Products → produto plano 200 → Price ID | Mesmo modo da secret key |
 | `STRIPE_PRICE_ID_M500` | Price do plano 500 (R$ 59,99) | idem | idem |
 | `STRIPE_PRICE_ID_M800` | Price do plano 800 (R$ 89,99) | idem | idem |
