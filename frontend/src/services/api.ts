@@ -32,6 +32,14 @@ import {
   CalendarParticipant,
   CreateParticipantData
 } from '@/types/calendar';
+import {
+  clearMemberLimitCache as clearMemberLimitCacheStore,
+  getCachedMemberLimit,
+  getMemberLimitInflight,
+  setCachedMemberLimit,
+  setMemberLimitInflight,
+  type MemberLimitPayload,
+} from '@/utils/memberLimitCache';
 
 const ACTIVE_CHURCH_STORAGE_KEY = 'flock_active_church_id';
 
@@ -40,10 +48,14 @@ class ApiService {
 
   setActiveChurchIdClient(churchId: string | null): void {
     if (typeof window === 'undefined') return;
+    const previous = this.getActiveChurchIdClient();
     if (churchId) {
       localStorage.setItem(ACTIVE_CHURCH_STORAGE_KEY, churchId);
     } else {
       localStorage.removeItem(ACTIVE_CHURCH_STORAGE_KEY);
+    }
+    if (previous !== churchId) {
+      clearMemberLimitCacheStore();
     }
   }
 
@@ -845,21 +857,32 @@ class ApiService {
     return response.data.church;
   }
 
-  async getMemberLimit(): Promise<{
-    currentCount: number;
-    /** Pode ser `null` quando o backend serializa Infinity (plano ilimitado/custom). */
-    limit: number | null;
-    remaining: number | null;
-    planType?: string | null;
-    subscriptionStatus?: string | null;
-    hasActiveSubscription: boolean;
-    isPastDue?: boolean;
-    canAdd: boolean;
-    message?: string;
-    percentage: number;
-  }> {
-    const response = await this.api.get('/church/member-limit');
-    return response.data;
+  async getMemberLimit(options?: {
+    force?: boolean;
+  }): Promise<MemberLimitPayload> {
+    const churchId = this.getActiveChurchIdClient();
+    if (!options?.force) {
+      const cached = getCachedMemberLimit(churchId);
+      if (cached) return cached;
+      const pending = getMemberLimitInflight(churchId);
+      if (pending) return pending;
+    }
+
+    const request = this.api
+      .get('/church/member-limit')
+      .then((response) => {
+        const data = response.data as MemberLimitPayload;
+        setCachedMemberLimit(churchId, data);
+        return data;
+      });
+
+    setMemberLimitInflight(churchId, request);
+    return request;
+  }
+
+  /** Invalida cache de limite (ex.: após criar/ativar membro). */
+  clearMemberLimitCache(): void {
+    clearMemberLimitCacheStore();
   }
 
   // Gerenciamento de Conta

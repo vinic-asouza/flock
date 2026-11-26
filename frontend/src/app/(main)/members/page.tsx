@@ -122,15 +122,15 @@ function MembersPageContent() {
   const { congregations, loading: filtersLoading, error: filtersError } = useFiltersData();
 
   // Função para atualizar o limite de membros
-  const updateMemberLimit = useCallback(async () => {
-    const loadLimit = () => apiService.getMemberLimit();
+  const updateMemberLimit = useCallback(async (force = false) => {
+    const loadLimit = () => apiService.getMemberLimit(force ? { force: true } : undefined);
     try {
       let limitData;
       try {
         limitData = await loadLimit();
       } catch {
         await new Promise((resolve) => setTimeout(resolve, 400));
-        limitData = await loadLimit();
+        limitData = await apiService.getMemberLimit({ force: true });
       }
       setMemberLimit({
         currentCount: limitData.currentCount,
@@ -150,10 +150,10 @@ function MembersPageContent() {
     updateMemberLimit();
   }, [updateMemberLimit]);
 
-  // Atualizar limite quando membros forem atualizados
+  // Atualizar limite quando membros forem atualizados (invalida cache)
   useEffect(() => {
     const handleMemberUpdate = () => {
-      updateMemberLimit();
+      void updateMemberLimit(true);
     };
 
     window.addEventListener('memberUpdated', handleMemberUpdate);

@@ -76,11 +76,20 @@ flowchart LR
   db -->|"Dados"| api
   api -->|"Response"| client
 
-  note["In-memory pontual:\nlimites/planos, templates HTML,\nblacklist JWT, stripe sync (browser)"]
+  note["In-memory pontual:\nlimites/planos, templates HTML,\nblacklist JWT, stripe sync +\nmember-limit dedup (browser)"]
   api -.-> note
 ```
 
 *(Diagrama desejável com Redis **não** descreve o estado atual — ver gap abaixo.)*
+
+### Painel — waterfalls mitigados (DEV-190)
+
+| Fluxo | Antes | Depois |
+| --- | --- | --- |
+| `/members` + Header | `member-limit` ×2 | 1 request (TTL 15s + in-flight) |
+| Settings → Plano | `getPlans` ×2 em série | 1 `getPlans` |
+| Settings → Igreja | `GET /church` no mount + pós-save | hydrate de auth; save usa PUT |
+| Home ministérios | `listGroups` após reports | paralelo com reports |
 
 ### Inventário de cache identificado
 
@@ -91,6 +100,7 @@ flowchart LR
 | `templateCache` | HTML de e-mails | Processo | Sem TTL | `templates/templateLoader.ts` |
 | `global.tokenBlacklist` | Access tokens revogados | Até exp do JWT | `setTimeout` | `authController.ts` |
 | `stripe_sync_cache:${churchId}` | Sync Stripe no browser | **5 min** | localStorage | `frontend/.../stripeSyncCache.ts` |
+| `memberLimitCache` (memória) | `GET /church/member-limit` dedup + TTL | **15 s** + in-flight | troca de igreja / `force` / logout | `frontend/.../memberLimitCache.ts` (DEV-190) |
 | Landing `plans` fetch | Planos via API | **ISR revalidate 3600s** | Next fetch cache | `landing/src/services/plans.ts` |
 | Landing images | CDN Next image cache | `minimumCacheTTL: 60` | Config Next | `landing/next.config.ts` |
 
