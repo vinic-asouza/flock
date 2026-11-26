@@ -18,7 +18,11 @@ export const httpRequestDuration = new client.Histogram({
   registers: [register],
 });
 
-const SKIP_PATH_PREFIXES = ['/metrics', '/api/internal/http-latency'];
+const SKIP_PATH_PREFIXES = [
+  '/metrics',
+  '/api/internal/http-latency',
+  '/api/ops/http-latency',
+];
 
 /** Amostras em memória para p50/p95 JSON (complementa o Histogram Prometheus). */
 const MAX_SAMPLES_PER_KEY = 2000;

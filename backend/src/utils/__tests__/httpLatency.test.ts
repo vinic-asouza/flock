@@ -38,9 +38,10 @@ describe('resolveHttpRouteLabel', () => {
 });
 
 describe('shouldSkipHttpLatencyPath', () => {
-  it('skips metrics endpoints', () => {
+  it('skips metrics and latency self-endpoints', () => {
     expect(shouldSkipHttpLatencyPath('/metrics')).toBe(true);
     expect(shouldSkipHttpLatencyPath('/api/internal/http-latency')).toBe(true);
+    expect(shouldSkipHttpLatencyPath('/api/ops/http-latency')).toBe(true);
     expect(shouldSkipHttpLatencyPath('/health')).toBe(false);
   });
 });
