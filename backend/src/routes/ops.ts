@@ -8,6 +8,7 @@ import {
   listOpsChurches,
 } from '../controllers/opsChurchesController';
 import { getOpsHealth } from '../controllers/opsHealthController';
+import { getOpsHttpLatency } from '../controllers/opsHttpLatencyController';
 import {
   listOpsWaitlist,
   patchOpsWaitlist,
@@ -47,6 +48,13 @@ router.get('/overview', opsReadLimiter, authUserOnly, requirePlatformAdmin, getO
 router.get('/churches', opsReadLimiter, authUserOnly, requirePlatformAdmin, listOpsChurches);
 router.get('/churches/:id', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsChurch);
 router.get('/health', opsReadLimiter, authUserOnly, requirePlatformAdmin, getOpsHealth);
+router.get(
+  '/http-latency',
+  opsReadLimiter,
+  authUserOnly,
+  requirePlatformAdmin,
+  getOpsHttpLatency
+);
 router.get('/waitlist', opsReadLimiter, authUserOnly, requirePlatformAdmin, listOpsWaitlist);
 router.patch(
   '/waitlist/:id',

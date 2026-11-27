@@ -11,8 +11,14 @@ import { ActiveFiltersChips } from '@/components/members/ActiveFiltersChips';
 import { CreateMemberModal } from '@/components/members/CreateMemberModal';
 import { EditMemberModal } from '@/components/members/EditMemberModal';
 import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
-import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
-import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
+import { ConfirmSituationChangeModal } from '@/components/members/ConfirmSituationChangeModal';
+import {
+  MemberSituation,
+  MemberSituationFilter,
+  normalizeSituationFilter,
+  resolveMemberSituation,
+  situationToActive,
+} from '@/lib/memberSituation';
 import { ExportMembersModal } from '@/components/members/ExportMembersModal';
 import { ExportMembersCSVModal } from '@/components/members/ExportMembersCSVModal';
 import { MemberImportModal } from '@/components/members/MemberImportModal';
@@ -32,7 +38,7 @@ import toast from 'react-hot-toast';
 
 export type MemberFilters = {
   search: string;
-  status: 'all' | 'active' | 'inactive';
+  status: MemberSituationFilter;
   congregationId: string;
   gender: '' | 'Masculino' | 'Feminino';
   maritalStatus: '' | 'Solteiro' | 'Casado' | 'Divorciado' | 'Viúvo' | 'Outro';
@@ -53,7 +59,7 @@ export type MemberFilters = {
 
 const initialFilters: MemberFilters = {
   search: '',
-  status: 'active',
+  status: 'ativo',
   congregationId: '',
   gender: '',
   maritalStatus: '',
@@ -91,8 +97,8 @@ function MembersPageContent() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deactivateModalOpen, setDeactivateModalOpen] = useState(false);
-  const [reactivateModalOpen, setReactivateModalOpen] = useState(false);
+  const [situationModalOpen, setSituationModalOpen] = useState(false);
+  const [selectedMemberSituation, setSelectedMemberSituation] = useState<MemberSituation>('ativo');
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportCSVModalOpen, setExportCSVModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -115,15 +121,15 @@ function MembersPageContent() {
   const { congregations, loading: filtersLoading, error: filtersError } = useFiltersData();
 
   // Função para atualizar o limite de membros
-  const updateMemberLimit = useCallback(async () => {
-    const loadLimit = () => apiService.getMemberLimit();
+  const updateMemberLimit = useCallback(async (force = false) => {
+    const loadLimit = () => apiService.getMemberLimit(force ? { force: true } : undefined);
     try {
       let limitData;
       try {
         limitData = await loadLimit();
       } catch {
         await new Promise((resolve) => setTimeout(resolve, 400));
-        limitData = await loadLimit();
+        limitData = await apiService.getMemberLimit({ force: true });
       }
       setMemberLimit({
         currentCount: limitData.currentCount,
@@ -143,10 +149,10 @@ function MembersPageContent() {
     updateMemberLimit();
   }, [updateMemberLimit]);
 
-  // Atualizar limite quando membros forem atualizados
+  // Atualizar limite quando membros forem atualizados (invalida cache)
   useEffect(() => {
     const handleMemberUpdate = () => {
-      updateMemberLimit();
+      void updateMemberLimit(true);
     };
 
     window.addEventListener('memberUpdated', handleMemberUpdate);
@@ -173,8 +179,8 @@ function MembersPageContent() {
             filtersToUse.congregationId = congregationIdFromUrl;
           }
           
-          if (statusFromUrl && (statusFromUrl === 'active' || statusFromUrl === 'inactive' || statusFromUrl === 'all')) {
-            filtersToUse.status = statusFromUrl as 'all' | 'active' | 'inactive';
+          if (statusFromUrl) {
+            filtersToUse.status = normalizeSituationFilter(statusFromUrl);
           }
           
           if (!cancelled) {
@@ -242,47 +248,34 @@ function MembersPageContent() {
   //   setDeleteModalOpen(true);
   // }, []);
 
-  const handleDeactivateMember = useCallback((id: string, name: string) => {
+  const handleChangeSituation = useCallback((id: string, name: string, situation?: string, active?: boolean) => {
     setSelectedMemberId(id);
     setSelectedMemberName(name);
-    setDeactivateModalOpen(true);
+    setSelectedMemberSituation(resolveMemberSituation(situation, active));
+    setSituationModalOpen(true);
   }, []);
 
-  // ACHADO 05: usa PATCH /members/:id/status em vez de GET+PUT para evitar race condition.
-  // O endpoint atômico altera apenas o campo 'active', sem risco de sobrescrever edições concorrentes.
-  const handleConfirmDeactivate = useCallback(async () => {
-    if (!selectedMemberId || !selectedMemberName) return;
+  const handleConfirmSituationChange = useCallback(async (nextSituation: MemberSituation) => {
+    if (!selectedMemberId) return;
 
     try {
-      await apiService.setMemberStatus(selectedMemberId, false);
-      updateMemberOptimistic(selectedMemberId, { active: false });
+      const result = await apiService.setMemberStatus(selectedMemberId, { situation: nextSituation });
+      updateMemberOptimistic(selectedMemberId, {
+        active: result.member.active ?? situationToActive(nextSituation),
+        situation: result.member.situation ?? nextSituation,
+        situation_changed_at: result.member.situation_changed_at,
+      });
+      toast.success(result.message || 'Situação atualizada');
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('memberUpdated'));
       }, 100);
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { details?: string; error?: string } }; message?: string };
+      const msg = err?.response?.data?.details || err?.response?.data?.error || err?.message || 'Erro ao alterar situação';
+      toast.error(msg);
       throw error;
     }
-  }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
-
-  const handleReactivateMember = useCallback((id: string, name: string) => {
-    setSelectedMemberId(id);
-    setSelectedMemberName(name);
-    setReactivateModalOpen(true);
-  }, []);
-
-  const handleConfirmReactivate = useCallback(async () => {
-    if (!selectedMemberId || !selectedMemberName) return;
-
-    try {
-      await apiService.setMemberStatus(selectedMemberId, true);
-      updateMemberOptimistic(selectedMemberId, { active: true });
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('memberUpdated'));
-      }, 100);
-    } catch (error) {
-      throw error;
-    }
-  }, [selectedMemberId, selectedMemberName, updateMemberOptimistic]);
+  }, [selectedMemberId, updateMemberOptimistic]);
 
   // Handlers para atualização otimista
   const handleCreateSuccess = useCallback((memberData: { id: string; [key: string]: unknown }) => {
@@ -591,8 +584,7 @@ function MembersPageContent() {
         canEdit={canEdit}
         onView={handleViewMember}
         onEdit={handleEditMember}
-        onDeactivate={handleDeactivateMember}
-        onReactivate={handleReactivateMember}
+        onChangeSituation={handleChangeSituation}
         onExport={handleOpenExport}
         onExportCSV={handleOpenExportCSV}
         viewMode={viewMode}
@@ -622,18 +614,12 @@ function MembersPageContent() {
         onSuccess={handleDeleteSuccess}
       />
 
-      <ConfirmDeactivateModal
-        isOpen={deactivateModalOpen}
-        onClose={() => setDeactivateModalOpen(false)}
+      <ConfirmSituationChangeModal
+        isOpen={situationModalOpen}
+        onClose={() => setSituationModalOpen(false)}
         memberName={selectedMemberName}
-        onConfirm={handleConfirmDeactivate}
-      />
-
-      <ConfirmReactivateModal
-        isOpen={reactivateModalOpen}
-        onClose={() => setReactivateModalOpen(false)}
-        memberName={selectedMemberName}
-        onConfirm={handleConfirmReactivate}
+        currentSituation={selectedMemberSituation}
+        onConfirm={handleConfirmSituationChange}
       />
 
       <ExportMembersModal

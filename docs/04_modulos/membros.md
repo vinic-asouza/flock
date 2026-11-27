@@ -34,7 +34,7 @@ Produto: [[01_produto/visao-do-produto]].
 ### ✅ Este módulo É responsável por:
 
 - CRUD de `members` (tenant-scoped)
-- `PATCH .../status` (`active`) e efeitos (ex.: limpar agenda futura)
+- `PATCH .../status` (`situation` / `active` derivado) e efeitos (cota na reativação; limpar agenda futura ao sair de Ativo)
 - Batch create e import CSV (validate + import)
 - Unicidade de nome/e-mail na igreja; validação Joi do formulário
 - `checkMemberLimit` no create/batch/import/público
@@ -121,7 +121,9 @@ Cadastro oficial do membro no tenant.
 | father_name, mother_name | text | NULL | — | Filiação |
 | children | jsonb | NULL | `[]` | `[{name,birth}]` |
 | baptism_*, admission*, occupation | … | NULL | — | Recebimento / batismo / profissão (não é o questionário pastoral) |
-| active | boolean | NULL | `true` | Conta na quota se true |
+| situation | text | NOT NULL | `ativo` | Situação: ativo, inativo, transferido, desligado, falecido |
+| situation_changed_at | timestamptz | NOT NULL | now() | Última mudança de situação |
+| active | boolean | NULL | `true` | Derivado de situation=ativo; conta na quota se true |
 | created_at | timestamptz | NULL | now() | Criação |
 
 \*Tipos TS incluem `updated_at`; **coluna `updated_at` não existe no schema live** — não filtrar/ordenar por ela no SQL.
@@ -131,7 +133,7 @@ Cadastro oficial do membro no tenant.
 - Pertence a: `churches` (`church_id`), `congregations` (`congregation_id`, **RESTRICT**)
 - Tem muitos: `member_groups`; referenciado por grupos (responsible), calendário, integração (mentor)
 
-**Soft delete:** **não** via `deleted_at`. Inativação = `active=false`. **DELETE = hard delete.**  
+**Soft delete:** **não** via `deleted_at`. Situações não-Ativo ⇒ `active=false`. **DELETE = hard delete.**  
 **Auditoria:** `audit_logs` (entity `member`) + `created_at` na row. O autocadastro pelo link público também grava `create` com `event: public_registration` e `link_name` (o campo `notes` do link). Na aba Histórico, o autor exibido é o nome do link.
 
 ### member_groups

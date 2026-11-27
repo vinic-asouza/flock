@@ -79,6 +79,8 @@ export interface Member {
   name: string;
   birth: string;
   active: boolean;
+  situation?: string;
+  situation_changed_at?: string;
   congregation?: { 
     id: string;
     name: string;

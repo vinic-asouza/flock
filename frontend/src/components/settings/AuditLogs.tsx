@@ -74,7 +74,8 @@ const FIELD_LABELS: Record<string, string> = {
   city: 'Cidade',
   state: 'Estado',
   address: 'Endereço',
-  active: 'Status',
+  active: 'Ativo (derivado)',
+  situation: 'Situação',
   denomination: 'Denominação',
   cnpj: 'CNPJ',
   email_church: 'E-mail da igreja',
@@ -115,7 +116,7 @@ const isMemberListTransfer = (log: AuditLog) =>
   (log.entity === 'church' || log.changes_after?.list_type === 'members');
 
 const FIELDS_BY_ENTITY: Record<string, string[]> = {
-  member: ['name', 'email', 'phone', 'birth', 'gender', 'marital_status', 'occupation', 'city', 'state', 'address', 'active'],
+  member: ['name', 'email', 'phone', 'birth', 'gender', 'marital_status', 'occupation', 'city', 'state', 'address', 'active', 'situation'],
   church: ['name', 'denomination', 'address', 'city', 'state', 'cnpj', 'email_church', 'phone_church'],
   account: ['email', 'phone'],
   congregation: ['name', 'address', 'city', 'state'],
@@ -271,6 +272,16 @@ export default function AuditLogs() {
   const formatFieldValue = (value: unknown, field: string) => {
     if (value === null || value === undefined || value === '') return 'Não informado';
     if (field === 'active') return value ? 'Ativo' : 'Inativo';
+    if (field === 'situation') {
+      const labels: Record<string, string> = {
+        ativo: 'Ativo',
+        inativo: 'Inativo',
+        transferido: 'Transferido',
+        desligado: 'Desligado',
+        falecido: 'Falecido',
+      };
+      return typeof value === 'string' ? labels[value] || value : String(value ?? '—');
+    }
     if (
       (field === 'birth' || field === 'admission_date' || field === 'wedding_date' || field === 'baptism_date') &&
       (typeof value === 'string' || value instanceof Date)

@@ -1,7 +1,7 @@
 ---
 type: performance-escalabilidade
-ultima_atualizacao: 2026-07-13
-versao: "1.0"
+ultima_atualizacao: 2026-11-26
+versao: "1.1"
 cache: sem cache distribuído (apenas in-memory pontual)
 queue: sem fila
 tags: [arquitetura, performance, cache, filas, escalabilidade]
@@ -16,17 +16,46 @@ tags: [arquitetura, performance, cache, filas, escalabilidade]
 
 ## 1. 📊 Métricas-Alvo
 
-Nenhum SLO/SLA formal (P95, bundle budget) foi encontrado no código ou na KB.
+SLO formal ainda não contratado; targets abaixo são **aspiracionais** (DEV-191), recalibrados após cutover Railway → `us-east4-eqdc4a` (DEV-189; SA compute indisponível).
 
-| Métrica | Target | Atual (se conhecido) |
+| Métrica | Target (aspiracional) | Atual / como medir |
 | --- | --- | --- |
-| Latência P95 de API | (a definir) | — (sem APM com SLOs; Sentry traces sample 0.1) |
+| Latência P95 `/health` (warm) | ≤ 300 ms (US East); pré-cutover ~275–370 ms em `us-west2`; pós ~190–210 ms (amostra 26/11) | Admin OPS `/health`, `GET /api/ops/http-latency`, `/api/internal/http-latency` ou `/metrics` |
+| Latência P95 rotas leves autenticadas (`/api/refresh/check`) | ≤ 700 ms (US East); baseline a coletar | idem |
+| Latência P95 listagem membros | ≤ 1,2 s (US East); baseline a coletar | idem |
 | Tempo de build | (a definir) | — |
 | Tamanho do bundle JS | (a definir) | — (sem bundle analyzer) |
 | Export PDF | (a definir) | Síncrono no request — risco sob lista grande |
 | Import CSV | (a definir) | Síncrono; multer ≤ 10 MB em memória |
 
-Observabilidade disponível (não é “target”): Prometheus billing em `/metrics`, Sentry traces, tabela `job_runs`.
+### Observabilidade de latência HTTP (DEV-191)
+
+| Canal | Auth | Uso |
+| --- | --- | --- |
+| Admin OPS `/health` → Latência HTTP | Sessão operador (`PLATFORM_ADMIN_EMAILS`) | UI + `GET /api/ops/http-latency` (mesmo JSON; **sem** `METRICS_TOKEN`) |
+| `GET /metrics` | Header `X-Internal-Token: $METRICS_TOKEN` (ou `?token=`) | Prometheus text; série `http_request_duration_seconds_*` com labels `method`, `route`, `status_code` |
+| `GET /api/internal/http-latency` | Mesmo `METRICS_TOKEN` | JSON com `p50_ms` / `p95_ms` / `count` por rota (até 50), janela = **uptime do processo** |
+| Railway HTTP metrics | Dashboard / MCP | Agregado do serviço (não por rota Express) |
+| Sentry Performance | `SENTRY_DSN` | Traces sample `SENTRY_TRACES_SAMPLE_RATE` (default 0.1) |
+
+**Procedimento (agentes / time):**
+
+1. Preferir Admin OPS local `:3002` → **Saúde** → painel Latência HTTP (operador allowlisted). Em produção API, o snapshot é do processo que atende o request.
+2. Alternativa máquina: confirmar `METRICS_TOKEN` no serviço `backend`. Sem token em prod, `/metrics` e `/api/internal/http-latency` respondem 404.
+3. Gerar tráfego (navegação no Painel ou `curl` com Origin allowlisted).
+4. Consultar resumo via token:
+   ```bash
+   curl -sS -H "X-Internal-Token: $METRICS_TOKEN" \
+     https://api.flockapp.com.br/api/internal/http-latency | jq .
+   ```
+5. Ou scrapar Prometheus:
+   ```bash
+   curl -sS -H "X-Internal-Token: $METRICS_TOKEN" \
+     https://api.flockapp.com.br/metrics | rg 'http_request_duration_seconds'
+   ```
+6. **Janela 24h:** o JSON é desde o último restart/deploy. Para 24h contínuas, scrapar `/metrics` com retenção externa (Grafana Cloud, VictoriaMetrics, etc.) — fora do runtime atual.
+
+Rotas normalizam UUIDs/IDs numéricos para `:id` (baixa cardinalidade). `/metrics`, `/api/internal/http-latency` e `/api/ops/http-latency` não entram no Histogram.
 
 ---
 
@@ -47,11 +76,20 @@ flowchart LR
   db -->|"Dados"| api
   api -->|"Response"| client
 
-  note["In-memory pontual:\nlimites/planos, templates HTML,\nblacklist JWT, stripe sync (browser)"]
+  note["In-memory pontual:\nlimites/planos, templates HTML,\nblacklist JWT, stripe sync +\nmember-limit dedup (browser)"]
   api -.-> note
 ```
 
 *(Diagrama desejável com Redis **não** descreve o estado atual — ver gap abaixo.)*
+
+### Painel — waterfalls mitigados (DEV-190)
+
+| Fluxo | Antes | Depois |
+| --- | --- | --- |
+| `/members` + Header | `member-limit` ×2 | 1 request (TTL 15s + in-flight) |
+| Settings → Plano | `getPlans` ×2 em série | 1 `getPlans` |
+| Settings → Igreja | `GET /church` no mount + pós-save | hydrate de auth; save usa PUT |
+| Home ministérios | `listGroups` após reports | paralelo com reports |
 
 ### Inventário de cache identificado
 
@@ -62,6 +100,7 @@ flowchart LR
 | `templateCache` | HTML de e-mails | Processo | Sem TTL | `templates/templateLoader.ts` |
 | `global.tokenBlacklist` | Access tokens revogados | Até exp do JWT | `setTimeout` | `authController.ts` |
 | `stripe_sync_cache:${churchId}` | Sync Stripe no browser | **5 min** | localStorage | `frontend/.../stripeSyncCache.ts` |
+| `memberLimitCache` (memória) | `GET /church/member-limit` dedup + TTL | **15 s** + in-flight | troca de igreja / `force` / logout | `frontend/.../memberLimitCache.ts` (DEV-190) |
 | Landing `plans` fetch | Planos via API | **ISR revalidate 3600s** | Next fetch cache | `landing/src/services/plans.ts` |
 | Landing images | CDN Next image cache | `minimumCacheTTL: 60` | Config Next | `landing/next.config.ts` |
 

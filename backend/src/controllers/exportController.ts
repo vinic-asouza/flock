@@ -27,6 +27,15 @@ import {
   rowsFromColumnKeys,
 } from '../utils/pdf/listFields';
 import { formatPhoneBR } from '../utils/pdf/format';
+import { isMemberSituation } from '../utils/memberSituation';
+
+function applyMemberStatusFilter(query: any, status: string | undefined) {
+  if (!status || status === 'all' || status === 'todos') return query;
+  if (isMemberSituation(status)) return query.eq('situation', status);
+  if (status === 'active') return query.eq('active', true);
+  if (status === 'inactive') return query.eq('active', false);
+  return query;
+}
 
 export const exportMemberPDF = async (req: AuthRequest, res: Response) => {
   try {
@@ -502,9 +511,7 @@ export const exportMembersList = async (req: AuthRequest, res: Response) => {
       if (filters.search) {
         query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
       }
-      if (filters.status && filters.status !== 'all') {
-        query = query.eq('active', filters.status === 'active');
-      }
+      query = applyMemberStatusFilter(query, filters.status);
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
       }
@@ -1206,13 +1213,7 @@ export const exportMembersListCSV = async (req: AuthRequest, res: Response) => {
         const safeSearch = filters.search.replace(/,/g, '');
         query = query.or(`name.ilike.%${safeSearch}%,phone.ilike.%${safeSearch}%,whatsapp.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
       }
-      if (filters.status && filters.status !== 'all') {
-        if (filters.status === 'active') {
-          query = query.eq('active', true);
-        } else if (filters.status === 'inactive') {
-          query = query.eq('active', false);
-        }
-      }
+      query = applyMemberStatusFilter(query, filters.status);
       if (filters.gender) {
         query = query.eq('gender', filters.gender);
       }

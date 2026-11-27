@@ -56,6 +56,8 @@ export type MemberDetail = {
     status: boolean;
   }>;
   active: boolean;
+  situation?: string;
+  situation_changed_at?: string;
 };
 
 const MEMBER_TABS = ['dados', 'vinculos'] as const;

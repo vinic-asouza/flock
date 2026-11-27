@@ -6,6 +6,7 @@ import {
   integrationStatusLabels,
 } from './integrationLabels';
 import { PdfTableColumn } from './table';
+import { memberSituationLabel } from '../memberSituation';
 
 /** Ordem canônica alinhada aos formulários / modais de export */
 export const MEMBER_FIELD_ORDER = [
@@ -84,7 +85,7 @@ export const memberListFieldLabels: Record<string, string> = {
   phone: 'Telefone',
   whatsapp: 'WhatsApp',
   email: 'Email',
-  active: 'Status',
+  active: 'Situação',
   congregation: 'Congregação',
   admission: 'Recebimento',
   admission_date: 'Data Receb.',
@@ -118,7 +119,7 @@ export const memberCsvFieldLabels: Record<string, string> = {
   phone: 'Telefone',
   whatsapp: 'WhatsApp',
   email: 'Email',
-  active: 'Status',
+  active: 'Situação',
   congregation: 'Congregação',
   admission: 'Tipo de Recebimento',
   admission_date: 'Data de Recebimento',
@@ -261,7 +262,7 @@ export function memberFieldValue(member: any, field: string): string {
     case 'whatsapp':
       return formatPhoneBR(member[field]);
     case 'active':
-      return member.active ? 'Ativo' : 'Inativo';
+      return memberSituationLabel(member.situation, member.active);
     case 'congregation':
       return member.congregation?.name || '—';
     case 'spouse_is_member':
@@ -319,7 +320,7 @@ export function memberCsvFieldValue(member: any, field: string): string {
       return formatted === '—' ? '' : formatted;
     }
     case 'active':
-      return member.active ? 'Ativo' : 'Inativo';
+      return memberSituationLabel(member.situation, member.active);
     case 'congregation':
       return member.congregation?.name ? String(member.congregation.name) : '';
     case 'spouse_is_member':

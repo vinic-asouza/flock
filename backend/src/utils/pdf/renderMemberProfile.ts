@@ -10,6 +10,7 @@ import {
   endPdfResponse,
 } from './index';
 import { calculateAgeSafe, dash, formatDateSafe, formatPhoneBR } from './format';
+import { memberSituationLabel } from '../memberSituation';
 
 function memberIsMemberLabel(
   value: 'sim' | 'nao' | 'falecido' | boolean | null | undefined,
@@ -36,7 +37,11 @@ export function renderMemberProfilePdf(
     title: 'Ficha de Membro',
   });
 
-  drawStatusBadge(ctx, member.active ? 'Ativo' : 'Inativo', member.active ? 'success' : 'muted', {
+  drawStatusBadge(
+    ctx,
+    memberSituationLabel(member.situation, member.active),
+    member.active ? 'success' : 'muted',
+    {
     align: 'center',
   });
   drawHeroName(ctx, member.name || 'Sem nome');

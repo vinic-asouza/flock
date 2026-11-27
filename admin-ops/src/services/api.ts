@@ -5,6 +5,7 @@ import type {
   OpsOverview,
 } from "@/types/opsChurches";
 import type { OpsHealthResponse } from "@/types/opsHealth";
+import type { OpsHttpLatencyResponse } from "@/types/opsHttpLatency";
 import type { OpsWaitlistListItem, OpsWaitlistListResponse } from "@/types/opsWaitlist";
 import type { OpsChurchListQuery } from "@/lib/opsChurchQuery";
 import { toChurchListApiParams } from "@/lib/opsChurchQuery";
@@ -138,6 +139,13 @@ class OpsApiService {
 
   async getHealth(): Promise<OpsHealthResponse> {
     const response = await this.api.get<OpsHealthResponse>("/ops/health");
+    return response.data;
+  }
+
+  async getHttpLatency(): Promise<OpsHttpLatencyResponse> {
+    const response = await this.api.get<OpsHttpLatencyResponse>(
+      "/ops/http-latency"
+    );
     return response.data;
   }
 

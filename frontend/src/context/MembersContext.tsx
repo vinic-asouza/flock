@@ -8,6 +8,8 @@ interface Member {
   name: string;
   birth: string;
   active: boolean;
+  situation?: string;
+  situation_changed_at?: string;
   congregation?: { 
     id: string;
     name: string; 
@@ -94,7 +96,7 @@ export function MembersProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentFilters, setCurrentFilters] = useState<MemberFilters>({
     search: '',
-    status: 'active',
+    status: 'ativo',
     congregationId: '',
     gender: '',
     maritalStatus: '',
@@ -244,8 +246,9 @@ function filtersToApiParams(filters: MemberFilters, sorting?: { sort_by: string;
   const params: Record<string, string | number | boolean | null | undefined> = {};
   
   if (filters.search && filters.search.trim()) params.search = filters.search.trim();
-  if (filters.status === 'active') params.active = true;
-  if (filters.status === 'inactive') params.active = false;
+  if (filters.status && filters.status !== 'all') {
+    params.situation = filters.status;
+  }
   if (filters.congregationId && filters.congregationId.trim()) params.congregation_id = filters.congregationId.trim();
   if (filters.gender && filters.gender.trim()) params.gender = filters.gender.trim();
   if (filters.maritalStatus && filters.maritalStatus.trim()) params.marital_status = filters.maritalStatus.trim();

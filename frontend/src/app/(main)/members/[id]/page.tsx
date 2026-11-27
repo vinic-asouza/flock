@@ -7,21 +7,27 @@ import {
   Download,
   Loader2,
   Pencil,
+  RefreshCw,
   Trash2,
-  UserMinus,
-  UserPlus,
 } from 'lucide-react';
 import { EntityDetailPageHeader } from '@/components/entity-detail';
 import { Button } from '@/components/ui/Button';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import {
   MemberDetailView,
   type MemberDetail,
 } from '@/components/members/MemberDetailView';
 import { EditMemberModal } from '@/components/members/EditMemberModal';
 import { DeleteMemberModal } from '@/components/members/DeleteMemberModal';
-import { ConfirmDeactivateModal } from '@/components/members/ConfirmDeactivateModal';
-import { ConfirmReactivateModal } from '@/components/members/ConfirmReactivateModal';
+import { ConfirmSituationChangeModal } from '@/components/members/ConfirmSituationChangeModal';
 import { useAuth } from '@/context/AuthContext';
+import {
+  memberSituationBadgeVariant,
+  memberSituationLabel,
+  resolveMemberSituation,
+  situationToActive,
+  type MemberSituation,
+} from '@/lib/memberSituation';
 import apiService, { formatApiError } from '@/services/api';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { getNameInitials } from '@/utils/getNameInitials';
@@ -42,8 +48,7 @@ function MemberDetailContent() {
   const [exporting, setExporting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deactivateOpen, setDeactivateOpen] = useState(false);
-  const [reactivateOpen, setReactivateOpen] = useState(false);
+  const [situationOpen, setSituationOpen] = useState(false);
 
   const loadMember = useCallback(async () => {
     if (!memberId) return;
@@ -89,6 +94,27 @@ function MemberDetailContent() {
     }
   };
 
+  const handleConfirmSituationChange = async (nextSituation: MemberSituation) => {
+    if (!member) return;
+    try {
+      const result = await apiService.setMemberStatus(member.id, { situation: nextSituation });
+      setMember((prev) =>
+        prev
+          ? {
+              ...prev,
+              active: result.member.active ?? situationToActive(nextSituation),
+              situation: result.member.situation ?? nextSituation,
+              situation_changed_at: result.member.situation_changed_at,
+            }
+          : prev
+      );
+      toast.success(result.message || 'Situação atualizada');
+    } catch (err) {
+      toast.error(formatApiError(err));
+      throw err;
+    }
+  };
+
   if (!loading && (notFound || !member)) {
     return (
       <div className="space-y-4">
@@ -103,6 +129,10 @@ function MemberDetailContent() {
       </div>
     );
   }
+
+  const situation = member
+    ? resolveMemberSituation(member.situation, member.active)
+    : 'ativo';
 
   return (
     <div className="space-y-4">
@@ -126,15 +156,11 @@ function MemberDetailContent() {
         }
         badge={
           member ? (
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                member.active
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-600'
-              }`}
-            >
-              {member.active ? 'Ativo' : 'Inativo'}
-            </span>
+            <StatusBadge
+              variant={memberSituationBadgeVariant(situation)}
+              label={memberSituationLabel(situation)}
+              size="sm"
+            />
           ) : null
         }
         actions={
@@ -163,29 +189,16 @@ function MemberDetailContent() {
                 <Pencil className="mr-2 h-4 w-4" />
                 Editar
               </Button>
-              {member.active ? (
-                <Button
-                  variant="secondary"
-                  className="min-h-11"
-                  disabled={readOnly}
-                  title={readOnly ? READER_TOOLTIP : undefined}
-                  onClick={() => setDeactivateOpen(true)}
-                >
-                  <UserMinus className="mr-2 h-4 w-4" />
-                  Inativar
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  className="min-h-11"
-                  disabled={readOnly}
-                  title={readOnly ? READER_TOOLTIP : undefined}
-                  onClick={() => setReactivateOpen(true)}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Reativar
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                className="min-h-11"
+                disabled={readOnly}
+                title={readOnly ? READER_TOOLTIP : undefined}
+                onClick={() => setSituationOpen(true)}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Alterar situação
+              </Button>
               <Button
                 variant="ghost"
                 className="min-h-11 text-red-600 hover:text-red-700"
@@ -231,27 +244,12 @@ function MemberDetailContent() {
               router.push('/members');
             }}
           />
-          <ConfirmDeactivateModal
-            isOpen={deactivateOpen}
-            onClose={() => setDeactivateOpen(false)}
+          <ConfirmSituationChangeModal
+            isOpen={situationOpen}
+            onClose={() => setSituationOpen(false)}
             memberName={member.name}
-            onConfirm={async () => {
-              await apiService.setMemberStatus(member.id, false);
-              toast.success('Membro inativado');
-              setDeactivateOpen(false);
-              await loadMember();
-            }}
-          />
-          <ConfirmReactivateModal
-            isOpen={reactivateOpen}
-            onClose={() => setReactivateOpen(false)}
-            memberName={member.name}
-            onConfirm={async () => {
-              await apiService.setMemberStatus(member.id, true);
-              toast.success('Membro reativado');
-              setReactivateOpen(false);
-              await loadMember();
-            }}
+            currentSituation={situation}
+            onConfirm={handleConfirmSituationChange}
           />
         </>
       ) : null}

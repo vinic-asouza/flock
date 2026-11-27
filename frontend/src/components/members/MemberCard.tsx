@@ -1,12 +1,17 @@
 'use client';
 
-import { Eye, Edit, UserMinus, UserPlus, Church, Users } from 'lucide-react';
+import { Eye, Edit, RefreshCw, Church, Users } from 'lucide-react';
 import { formatMemberName } from '@/utils/formatMemberName';
 import { calculateAge } from '@/utils';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { CardHeader } from '@/components/ui/CardHeader';
 import { ContactLinks } from '@/components/ui/ContactLinks';
 import { getCongregationDisplayName } from '@/utils/congregation';
+import {
+  memberSituationBadgeVariant,
+  memberSituationLabel,
+  resolveMemberSituation,
+} from '@/lib/memberSituation';
 
 const READER_TOOLTIP = 'Seu usuário tem permissão apenas de leitura nesta igreja.';
 
@@ -16,6 +21,7 @@ interface MemberCardProps {
     name: string;
     birth: string; // ISO date
     active: boolean;
+    situation?: string;
     congregation?: { name: string; abbreviation?: string | null } | null;
     groups?: Array<{
       id: string;
@@ -32,13 +38,13 @@ interface MemberCardProps {
   canEdit?: boolean;
   onView?: () => void;
   onEdit?: () => void;
-  onDeactivate?: () => void;
-  onReactivate?: () => void;
+  onChangeSituation?: () => void;
 }
 
-export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivate, onReactivate }: MemberCardProps) {
+export function MemberCard({ member, canEdit = true, onView, onEdit, onChangeSituation }: MemberCardProps) {
   const readOnly = canEdit === false;
   const idade = calculateAge(member.birth);
+  const situation = resolveMemberSituation(member.situation, member.active);
   return (
     <div className={`flex flex-col gap-0.5 sm:gap-1 border border-gray-200 rounded-lg px-3 py-2.5 sm:px-6 sm:py-4 md:flex-row md:items-center md:justify-between min-w-0 ${!member.active ? 'bg-gray-100' : 'bg-white'}`}>
       <div className="flex-1 min-w-0">
@@ -46,7 +52,7 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
         <CardHeader
           title={formatMemberName(member.name)}
           badges={[
-            <StatusBadge key="status" variant={member.active ? 'active' : 'inactive'} size="sm" />,
+            <StatusBadge key="status" variant={memberSituationBadgeVariant(situation)} label={memberSituationLabel(situation)} size="sm" />,
             <span key="congregation" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 max-w-full">
               <Church size={12} className="text-gray-600 shrink-0" />
               <span className="truncate">{getCongregationDisplayName(member.congregation) || '—'}</span>
@@ -96,56 +102,34 @@ export function MemberCard({ member, canEdit = true, onView, onEdit, onDeactivat
       </div>
       {/* Ações */}
       <div className="flex flex-wrap gap-1 mt-2 sm:mt-3 md:mt-0 md:ml-4 shrink-0">
-        {member.active ? (
-          <>
-            <button
-              type="button"
-              title="Visualizar"
-              onClick={onView}
-              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
-            >
-              <Eye size={18} />
-            </button>
-            <button
-              type="button"
-              title={readOnly ? READER_TOOLTIP : 'Editar'}
-              onClick={onEdit}
-              disabled={readOnly}
-              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <Edit size={18} />
-            </button>
-            <button
-              type="button"
-              title={readOnly ? READER_TOOLTIP : 'Inativar'}
-              onClick={onDeactivate}
-              disabled={readOnly}
-              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <UserMinus size={18} />
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              title="Visualizar"
-              onClick={onView}
-              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
-            >
-              <Eye size={18} />
-            </button>
-            <button
-              type="button"
-              title={readOnly ? READER_TOOLTIP : 'Reativar'}
-              onClick={onReactivate}
-              disabled={readOnly}
-              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <UserPlus size={18} />
-            </button>
-          </>
+        <button
+          type="button"
+          title="Visualizar"
+          onClick={onView}
+          className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors"
+        >
+          <Eye size={18} />
+        </button>
+        {member.active && (
+          <button
+            type="button"
+            title={readOnly ? READER_TOOLTIP : 'Editar'}
+            onClick={onEdit}
+            disabled={readOnly}
+            className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Edit size={18} />
+          </button>
         )}
+        <button
+          type="button"
+          title={readOnly ? READER_TOOLTIP : 'Alterar situação'}
+          onClick={onChangeSituation}
+          disabled={readOnly}
+          className="inline-flex items-center justify-center min-h-11 min-w-11 rounded hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <RefreshCw size={18} />
+        </button>
       </div>
     </div>
   );

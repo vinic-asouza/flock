@@ -39,6 +39,14 @@ import {
   CalendarParticipant,
   CreateParticipantData
 } from '@/types/calendar';
+import {
+  clearMemberLimitCache as clearMemberLimitCacheStore,
+  getCachedMemberLimit,
+  getMemberLimitInflight,
+  setCachedMemberLimit,
+  setMemberLimitInflight,
+  type MemberLimitPayload,
+} from '@/utils/memberLimitCache';
 
 const ACTIVE_CHURCH_STORAGE_KEY = 'flock_active_church_id';
 
@@ -47,10 +55,14 @@ class ApiService {
 
   setActiveChurchIdClient(churchId: string | null): void {
     if (typeof window === 'undefined') return;
+    const previous = this.getActiveChurchIdClient();
     if (churchId) {
       localStorage.setItem(ACTIVE_CHURCH_STORAGE_KEY, churchId);
     } else {
       localStorage.removeItem(ACTIVE_CHURCH_STORAGE_KEY);
+    }
+    if (previous !== churchId) {
+      clearMemberLimitCacheStore();
     }
   }
 
@@ -370,6 +382,7 @@ class ApiService {
     limit?: number;
     search?: string;
     active?: boolean;
+    situation?: string;
     congregation_id?: string;
     gender?: string;
     marital_status?: string;
@@ -399,7 +412,8 @@ class ApiService {
     if (params.search) queryParams.append('search', params.search);
 
     // Filtros básicos
-    if (params.active !== undefined) queryParams.append('active', params.active.toString());
+    if (params.situation) queryParams.append('situation', params.situation);
+    else if (params.active !== undefined) queryParams.append('active', params.active.toString());
     if (params.congregation_id) queryParams.append('congregation_id', params.congregation_id);
 
     // Filtros demográficos
@@ -790,9 +804,15 @@ class ApiService {
     return response.data;
   }
 
-  // ACHADO 05: endpoint atômico para alterar apenas status active — evita GET+PUT race condition
-  async setMemberStatus(id: string, active: boolean): Promise<{ message: string; member: { id: string; name: string; active: boolean } }> {
-    const response = await this.api.patch(`/members/${id}/status`, { active });
+  // ACHADO 05 / DEV-179: endpoint atômico para situação (ou active compat)
+  async setMemberStatus(
+    id: string,
+    payload: { situation: string } | { active: boolean }
+  ): Promise<{
+    message: string;
+    member: { id: string; name: string; active: boolean; situation?: string; situation_changed_at?: string };
+  }> {
+    const response = await this.api.patch(`/members/${id}/status`, payload);
     return response.data;
   }
 
@@ -853,21 +873,32 @@ class ApiService {
     return response.data.church;
   }
 
-  async getMemberLimit(): Promise<{
-    currentCount: number;
-    /** Pode ser `null` quando o backend serializa Infinity (plano ilimitado/custom). */
-    limit: number | null;
-    remaining: number | null;
-    planType?: string | null;
-    subscriptionStatus?: string | null;
-    hasActiveSubscription: boolean;
-    isPastDue?: boolean;
-    canAdd: boolean;
-    message?: string;
-    percentage: number;
-  }> {
-    const response = await this.api.get('/church/member-limit');
-    return response.data;
+  async getMemberLimit(options?: {
+    force?: boolean;
+  }): Promise<MemberLimitPayload> {
+    const churchId = this.getActiveChurchIdClient();
+    if (!options?.force) {
+      const cached = getCachedMemberLimit(churchId);
+      if (cached) return cached;
+      const pending = getMemberLimitInflight(churchId);
+      if (pending) return pending;
+    }
+
+    const request = this.api
+      .get('/church/member-limit')
+      .then((response) => {
+        const data = response.data as MemberLimitPayload;
+        setCachedMemberLimit(churchId, data);
+        return data;
+      });
+
+    setMemberLimitInflight(churchId, request);
+    return request;
+  }
+
+  /** Invalida cache de limite (ex.: após criar/ativar membro). */
+  clearMemberLimitCache(): void {
+    clearMemberLimitCacheStore();
   }
 
   // Gerenciamento de Conta

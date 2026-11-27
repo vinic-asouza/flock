@@ -3,6 +3,11 @@ import client from 'prom-client';
 const register = new client.Registry();
 client.collectDefaultMetrics({ register, prefix: 'flock_' });
 
+/** Registry compartilhado (billing + HTTP latency). */
+export function getMetricsRegistry(): client.Registry {
+  return register;
+}
+
 export const stripeWebhookTotal = new client.Counter({
   name: 'stripe_webhook_total',
   help: 'Total de webhooks Stripe processados',

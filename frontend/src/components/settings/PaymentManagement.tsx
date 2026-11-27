@@ -31,42 +31,36 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import toast from 'react-hot-toast';
 
-// Carregar planos da API (com fallback)
-const loadPlanNames = async (): Promise<Record<string, string>> => {
+const FALLBACK_PLAN_NAMES: Record<string, string> = {
+  '100': 'Plano 100 Membros',
+  '200': 'Plano 200 Membros',
+  '500': 'Plano 500 Membros',
+  '800': 'Plano 800 Membros',
+};
+
+const FALLBACK_PLAN_PRICES: Record<string, string> = {
+  '100': 'Gratuito',
+  '200': 'R$ 29,99',
+  '500': 'R$ 59,99',
+  '800': 'R$ 89,99',
+};
+
+/** Um único GET /plans → names + prices (evita waterfall de 2 RTTs). */
+const loadPlansCatalog = async (): Promise<{
+  names: Record<string, string>;
+  prices: Record<string, string>;
+}> => {
   try {
     const { plans } = await apiService.getPlans();
     const names: Record<string, string> = {};
-    plans.forEach((plan) => {
-      names[plan.id] = plan.name;
-    });
-    return names;
-  } catch {
-    // Fallback
-    return {
-      '100': 'Plano 100 Membros',
-      '200': 'Plano 200 Membros',
-      '500': 'Plano 500 Membros',
-      '800': 'Plano 800 Membros',
-    };
-  }
-};
-
-const loadPlanPrices = async (): Promise<Record<string, string>> => {
-  try {
-    const { plans } = await apiService.getPlans();
     const prices: Record<string, string> = {};
     plans.forEach((plan) => {
+      names[plan.id] = plan.name;
       prices[plan.id] = plan.priceFormatted;
     });
-    return prices;
+    return { names, prices };
   } catch {
-    // Fallback
-    return {
-      '100': 'Gratuito',
-      '200': 'R$ 29,99',
-      '500': 'R$ 59,99',
-      '800': 'R$ 89,99',
-    };
+    return { names: FALLBACK_PLAN_NAMES, prices: FALLBACK_PLAN_PRICES };
   }
 };
 
@@ -139,15 +133,14 @@ export function PaymentManagement() {
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
 
-  // Carregar planos da API ao montar componente
+  // Carregar planos da API ao montar componente (1 request)
   useEffect(() => {
     const loadPlans = async () => {
-      const names = await loadPlanNames();
-      const prices = await loadPlanPrices();
+      const { names, prices } = await loadPlansCatalog();
       setPlanNamesState(names);
       setPlanPricesState(prices);
     };
-    loadPlans();
+    void loadPlans();
   }, []);
 
   const subscriptionStatus = user?.subscription_status;

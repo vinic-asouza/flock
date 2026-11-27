@@ -3,7 +3,7 @@ type: regras-modulo
 modulo: membros
 ultima_atualizacao: 2026-10-26
 versao: "1.4"
-total_regras: 22
+total_regras: 23
 tags: [regras, modulo:membros]
 ver_tambem:
   - "[[02_regras-de-negocio/regras-gerais]]"
@@ -41,6 +41,7 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 | BR-MEM-020 | Contato mínimo na criação | Restrição | Ativo |
 | BR-MEM-021 | Consentimento de comunicação | Fato | Ativo |
 | BR-MEM-022 | Revisão de duplicidade no autocadastro | Gatilho | Ativo |
+| BR-MEM-023 | Situação do membro e active derivado | Fato | Ativo |
 
 ---
 
@@ -89,14 +90,14 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Depende de:** [[BR-INT-016]]
 
 ### BR-MEM-005: Nascimento active true
-- **Declaração:** Todo membro criado nasce com active=true.
+- **Declaração:** Todo membro criado nasce com situation=`ativo` e active=true.
 - **Tipo:** Fato
-- **Gatilho:** Create API/batch/público
+- **Gatilho:** Create API/batch/público/import
 - **Comportamento esperado:** Ativo no rol
 - **Comportamento em violação:** —
-- **Implementado em:** `memberController.ts`
+- **Implementado em:** `memberController.ts`, `memberImportService.ts`, `publicRegistrationController.ts`
 - **Testado em:** N/A — sem suite dedicada
-- **Depende de:** —
+- **Depende de:** [[BR-MEM-023]]
 
 ### BR-MEM-006: Ministérios do membro válidos
 - **Declaração:** Ministérios associados (`groups[]`) devem existir e pertencer à igreja/congregações dela.
@@ -163,14 +164,14 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 - **Depende de:** [[BR-GEN-028]]
 
 ### BR-MEM-011: Inativação limpa agenda futura
-- **Declaração:** Ao passar de ativo→inativo, remover participações em eventos com start_date ≥ agora.
+- **Declaração:** Ao sair de Situação Ativo (qualquer situação não-Ativo), remover participações em eventos com start_date ≥ agora.
 - **Tipo:** Gatilho
-- **Gatilho:** PATCH status / PUT active false
-- **Comportamento esperado:** Status inativo + cleanup
+- **Gatilho:** PATCH status (situation ≠ ativo)
+- **Comportamento esperado:** active=false + cleanup de agenda futura
 - **Comportamento em violação:** —
-- **Implementado em:** `memberController`
+- **Implementado em:** `memberController.setMemberStatus`
 - **Testado em:** N/A — sem suite dedicada
-- **Depende de:** [[BR-GEN-027]]
+- **Depende de:** [[BR-GEN-027]], [[BR-MEM-023]]
 
 ### 🔄 Regras de Estado / Status
 
@@ -178,20 +179,30 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 
 | Estado Atual | Evento | Próximo | Condição | Quem |
 | --- | --- | --- | --- | --- |
-| active=true | PATCH/PUT inativar | active=false | editor+ | editor+ |
-| active=false | PATCH reativar | active=true | editor+ | editor+ |
+| situation=ativo | PATCH situation ≠ ativo | situação alvo; active=false | editor+ | editor+ |
+| situation≠ativo | PATCH situation=ativo | ativo; active=true | editor+; cabe no plano | editor+ |
 | qualquer | DELETE | (removido) | editor+; mesma church_id | editor+ |
 
 
 ### BR-MEM-012: Contagem só ativos
-- **Declaração:** O limite de plano conta apenas active=true.
+- **Declaração:** O limite de plano conta apenas active=true (equivalente a situation=`ativo`).
 - **Tipo:** Fato
 - **Gatilho:** checkMemberLimit
 - **Comportamento esperado:** Quota correta
 - **Comportamento em violação:** —
 - **Implementado em:** `planLimits.ts`
 - **Testado em:** N/A — sem suite dedicada
-- **Depende de:** [[BR-POL-003]]
+- **Depende de:** [[BR-POL-003]], [[BR-MEM-023]]
+
+### BR-MEM-023: Situação do membro e active derivado
+- **Declaração:** Todo membro tem `situation` ∈ {ativo, inativo, transferido, desligado, falecido}. `active` é derivado (`true` somente se situation=`ativo`). Mudança via PATCH status exige editor+, grava `situation_changed_at`, audita before/after e, na transição → ativo, revalida o limite do plano (403 se não couber). Compat: body `{ active: boolean }` mapeia para Ativo/Inativo.
+- **Tipo:** Fato
+- **Gatilho:** PATCH `/api/members/:id/status`; create/import/público
+- **Comportamento esperado:** Situação e active coerentes; reativação respeita cota
+- **Comportamento em violação:** 400 situation inválida; 403 limite do plano
+- **Implementado em:** `memberSituation.ts`, `memberController.setMemberStatus`, migration `20261123150000_dev_179_member_situation`
+- **Testado em:** `utils/__tests__/memberSituation.test.ts`
+- **Depende de:** [[BR-MEM-012]], [[BR-MEM-011]], [[BR-MEM-009]]
 
 ### 🔗 Regras de Relacionamento
 
@@ -289,9 +300,8 @@ Gerenciar o rol oficial de membros da igreja (CRUD, import, status, autocadastro
 
 ## ⚠️ Regras Inferidas (Aguardando Confirmação)
 
-- 🔍 Reativação via PATCH status não revalida limite do plano.
 - 🔍 Comentário da rota fala soft delete; DELETE é hard delete.
 
 ---
 
-*Atualizado em 2026-10-19 (DEV-157).*
+*Atualizado em 2026-11-23 (DEV-179).*

@@ -227,6 +227,8 @@ export const createMemberViaPublicLink = async (
       duplicate_review_pending: duplicateWarnings.length > 0,
       church_id: churchId,
       active: true,
+      situation: 'ativo',
+      situation_changed_at: new Date().toISOString(),
       congregation_id: congregationId,
       children: normalizedData.children && Array.isArray(normalizedData.children)
         ? normalizedData.children

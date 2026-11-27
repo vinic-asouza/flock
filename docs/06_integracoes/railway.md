@@ -3,8 +3,8 @@ type: integracao
 servico: Railway
 categoria: Hosting
 status: Ativo
-ultima_atualizacao: 2026-08-26
-versao: "1.1"
+ultima_atualizacao: 2026-11-26
+versao: "1.2"
 dashboard_url: https://railway.app/project/301d94a5-48af-4640-b023-86ce13608e2c
 documentacao_oficial: https://docs.railway.com
 tags: [integrações, railway]
@@ -13,7 +13,7 @@ tags: [integrações, railway]
 # Integração — Railway
 
 > Índice: [[06_integracoes/index]] · Infra: [[03_arquitetura/infraestrutura]].  
-> Snapshot MCP Railway em 2026-07-14 (conta `vinisouza.dev@gmail.com`).
+> Snapshot MCP Railway em 2026-11-26 (conta `vinisouza.dev@gmail.com`). Região: DEV-189.
 
 ---
 
@@ -30,20 +30,21 @@ tags: [integrações, railway]
 | Nome | `flock` |
 | Project ID | `301d94a5-48af-4640-b023-86ce13608e2c` |
 | Environment | **production** (`5083b213-863f-4575-879f-56fc1fdf609f`) |
+| Região compute | **`us-east4-eqdc4a`** (US East Metal / Virginia) — 1 réplica por serviço |
 | Staging Railway | **Não existe** (só `production`) |
 | Repo fonte | `vinic-asouza/flock` |
 | Builder | **RAILPACK** (sem `railway.toml` no monorepo) |
 | SDK npm | **Nenhum** — integração via plataforma + scripts `start:railway` |
 
+**Região:** Railway **não** oferece compute na América do Sul. Opções oficiais: `us-west2`, `us-east4-eqdc4a`, `europe-west4-drams3a`, `asia-southeast1-eqsg3a`. Produção Flock usa **US East** (menor RTT típico BR vs CA). Troca via MCP `update-service` → `regions` (ou `railway scale`).
+
 **Serviços:**
 
 | Serviço | ID | Root | Build | Start | Domínios |
 | --- | --- | --- | --- | --- | --- |
-| **backend** | `0127db7f-…` | `/backend` | `npm install && npm run build` | `npm start` | `backend-production-2ec4.up.railway.app` (:4000) |
+| **backend** | `0127db7f-…` | `/backend` | `npm install && npm run build` | `npm start` | `api.flockapp.com.br` + `backend-production-2ec4.up.railway.app` (:4000) |
 | **frontend** | `d1fd82b3-…` | `/frontend` | `npm install && npm run build` | `npm run start:railway` | `frontend-test-production-6b4c.up.railway.app` + **painel.flockapp.com.br** (:8080) |
 | **landing page** | `fff79d81-…` | `/landing` | `npm install && npm run build` | `npm run start:railway` | `landing-page-production-d1c1.up.railway.app` + **flockapp.com.br** (:8080) |
-
-⚠️ Em 2026-07-14 o MCP reportou **status FAILED** e **0 active deployments** nos três serviços (últimos deploys: backend 2025-12-05, frontend 2026-01-16, landing 2026-06-16). Domínios/certs ainda constam ACTIVE — **validar se produção está de fato no ar** e redeployar se necessário.
 
 **Módulos / superfícies:**
 
@@ -231,9 +232,8 @@ Opcional: `docker-compose.yml` (API com Dockerfile; frontend compose pode estar 
 | --- | --- | --- |
 | `painel.flockapp.com.br` | frontend | Valid · CNAME → `rvjzynfi.up.railway.app` |
 | `flockapp.com.br` | landing | Valid · CNAME apex → `0kexovsh.up.railway.app` |
-| `*.up.railway.app` | cada serviço | Gerenciado Railway |
-
-Backend **sem** custom domain no MCP — API pública = `backend-production-2ec4.up.railway.app` (docs às vezes citam `api.flock.com.br` — **não** observado no Railway atual).
+| `api.flockapp.com.br` | backend | Custom · CNAME → `xr4ct2hl.up.railway.app` (DNS-only) + TXT `_railway-verify.api` |
+| `*.up.railway.app` | cada serviço | Gerenciado Railway (legado da API mantido na transição) |
 
 ### Auto-deploy GitHub
 
@@ -249,16 +249,18 @@ Backend **sem** custom domain no MCP — API pública = `backend-production-2ec4
 | --- | --- | --- | --- |
 | CNAME | `painel` | `rvjzynfi.up.railway.app` | App → frontend |
 | CNAME / ALIAS | `@` (`flockapp.com.br`) | `0kexovsh.up.railway.app` | Landing |
-| CNAME (opcional) | `api` ou similar | <!-- se criar custom domain no backend --> | API amigável |
+| CNAME | `api` | `xr4ct2hl.up.railway.app` | API (`api.flockapp.com.br`, DNS-only) |
+| TXT | `_railway-verify.api` | `railway-verify=…` | Ownership Railway |
 
-**Onde configurar:** <!-- PREENCHER MANUALMENTE: registrador / DNS de flockapp.com.br -->
+**Onde configurar:** Cloudflare zona `flockapp.com.br` (MCP / dashboard).
 
 **Verificar:**
 
 ```bash
 dig CNAME painel.flockapp.com.br
+dig CNAME api.flockapp.com.br
 dig flockapp.com.br
-# Painel: Service → Settings → Networking → Domain → status Verified + cert
+# Railway domain-status / cert Verified
 ```
 
 Railway Dashboard → Domain → **Retry certificate** se TLS falhar.

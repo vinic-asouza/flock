@@ -16,6 +16,12 @@ import {
   resolveScopedCongregationFilter,
 } from '../utils/congregationScope';
 import { validateCongregationBelongsToChurch } from '../utils/congregationValidation';
+import {
+  isMemberSituation,
+  MEMBER_SITUATION_LABELS,
+  resolveSituationFromStatusBody,
+  situationWriteFields,
+} from '../utils/memberSituation';
 
 /** Ano e mês civis de uma data só com dia, sem deslocar o fuso. */
 function civilYearMonth(value: string | Date): { year: string; month: string } | null {
@@ -47,6 +53,8 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
     
     // Filtros básicos
     const active = req.query.active !== undefined ? req.query.active === 'true' : undefined;
+    const situationRaw = (req.query.situation as string) || '';
+    const situation = isMemberSituation(situationRaw) ? situationRaw : '';
     const congregation_id = req.query.congregation_id as string || '';
 
     // Filtros por campos específicos
@@ -155,8 +163,10 @@ export const listMembers = async (req: AuthRequest, res: Response) => {
       query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,whatsapp.ilike.%${search}%,document.ilike.%${search}%`);
     }
 
-    // Aplica filtros básicos
-    if (active !== undefined) {
+    // Aplica filtros básicos (situation tem prioridade sobre active legado)
+    if (situation) {
+      query = query.eq('situation', situation);
+    } else if (active !== undefined) {
       query = query.eq('active', active);
     }
 
@@ -639,7 +649,7 @@ export const createMember = async (req: AuthRequest, res: Response) => {
       minor_without_own_contact: Boolean(normalizedData.minor_without_own_contact),
       duplicate_review_pending: false,
       church_id: churchId,
-      active: true,
+      ...situationWriteFields('ativo'),
       // Garantir que children seja um array JSON válido
       children: normalizedData.children && Array.isArray(normalizedData.children) 
         ? normalizedData.children 
@@ -1225,7 +1235,7 @@ export const createBatchMembers = async (req: AuthRequest, res: Response) => {
       return {
         ...normalized,
         church_id: churchId,
-        active: true
+        ...situationWriteFields('ativo'),
       };
     });
 
@@ -2083,11 +2093,11 @@ export const getBirthdaysList = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * ACHADO 05: Altera apenas o status `active` de um membro de forma atômica.
- * Substitui o padrão GET-then-PUT que gerava race condition ao copiar todos os campos.
+ * ACHADO 05 / DEV-179: Altera a situação do membro de forma atômica.
+ * Body: { situation } (preferido) ou { active: boolean } (compat → Ativo/Inativo).
+ * → Ativo revalida limite do plano. Saída de Ativo limpa agenda futura (BR-MEM-011).
  *
  * PATCH /api/members/:id/status
- * Body: { active: boolean }
  */
 export const setMemberStatus = async (req: AuthRequest, res: Response) => {
   try {
@@ -2098,19 +2108,20 @@ export const setMemberStatus = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const churchId = req.church!.churchId;
 
-    if (typeof req.body.active !== 'boolean') {
+    const resolved = resolveSituationFromStatusBody(req.body || {});
+    if (!resolved.ok) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: 'O campo "active" é obrigatório e deve ser um booleano'
+        details: resolved.details,
       });
     }
 
-    const { active } = req.body as { active: boolean };
+    const nextSituation = resolved.situation;
+    const nextActive = nextSituation === 'ativo';
 
-    // Verificar se o membro pertence a esta igreja
     const { data: existing, error: checkError } = await supabase
       .from('members')
-      .select('id, name, active, congregation_id')
+      .select('id, name, active, situation, congregation_id')
       .eq('id', id)
       .eq('church_id', churchId)
       .single();
@@ -2127,26 +2138,56 @@ export const setMemberStatus = async (req: AuthRequest, res: Response) => {
       return res.status(access.status).json(access.body);
     }
 
-    // Atualização atômica — altera APENAS o campo active
+    const previousSituation = isMemberSituation(existing.situation)
+      ? existing.situation
+      : existing.active
+        ? 'ativo'
+        : 'inativo';
+
+    if (previousSituation === nextSituation) {
+      return res.json({
+        message: 'Situação do membro inalterada',
+        member: {
+          id: existing.id,
+          name: existing.name,
+          active: existing.active,
+          situation: previousSituation,
+        },
+      });
+    }
+
+    // Reativação (qualquer não-Ativo → Ativo) revalida cota
+    if (nextActive && !existing.active) {
+      const limitCheck = await checkMemberLimit(churchId, 1);
+      if (!limitCheck.canAdd) {
+        return res.status(403).json({
+          error: 'Limite de membros atingido',
+          details: limitCheck.message || 'Não é possível reativar: limite do plano atingido',
+          currentCount: limitCheck.currentCount,
+          limit: limitCheck.limit,
+        });
+      }
+    }
+
+    const writeFields = situationWriteFields(nextSituation);
     const { data: updated, error: updateError } = await supabase
       .from('members')
-      .update({ active })
+      .update(writeFields)
       .eq('id', id)
       .eq('church_id', churchId)
-      .select('id, name, active')
+      .select('id, name, active, situation, situation_changed_at')
       .single();
 
     if (updateError || !updated) {
-      logError('Erro ao atualizar status do membro:', updateError);
+      logError('Erro ao atualizar situação do membro:', updateError);
       return res.status(500).json({
-        error: 'Erro ao atualizar status do membro',
+        error: 'Erro ao atualizar situação do membro',
         details: updateError?.message
       });
     }
 
-    // R01: replicar o mesmo cleanup de calendário que existia no PUT /members/:id
-    // Se o membro foi inativado (era ativo e agora é false), remover de eventos futuros
-    if (active === false && existing.active === true) {
+    // BR-MEM-011: saída de Ativo remove participações futuras
+    if (existing.active === true && nextActive === false) {
       const now = new Date().toISOString();
       const { data: futureParticipations, error: participationsError } = await supabase
         .from('calendar_participants')
@@ -2179,17 +2220,26 @@ export const setMemberStatus = async (req: AuthRequest, res: Response) => {
       entity: 'member',
       entityId: id,
       action: 'update',
-      changesBefore: { name: existing.name, active: existing.active },
-      changesAfter: { name: updated.name, active }
+      changesBefore: {
+        name: existing.name,
+        active: existing.active,
+        situation: previousSituation,
+      },
+      changesAfter: {
+        name: updated.name,
+        active: updated.active,
+        situation: updated.situation,
+      },
     });
 
+    const label = MEMBER_SITUATION_LABELS[nextSituation];
     res.json({
-      message: `Membro ${active ? 'reativado' : 'desativado'} com sucesso`,
-      member: updated
+      message: `Situação do membro atualizada para ${label}`,
+      member: updated,
     });
 
   } catch (error) {
-    logError('Erro ao alterar status do membro:', error);
+    logError('Erro ao alterar situação do membro:', error);
     res.status(500).json({
       error: 'Erro interno do servidor',
       details: error instanceof Error ? error.message : 'Erro desconhecido'
