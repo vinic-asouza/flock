@@ -286,7 +286,8 @@ export function EventRegistrationsTab({
 }: {
   event: ChurchEvent;
   readOnly: boolean;
-  onChanged?: () => void | Promise<void>;
+  /** Chamado após mutações; recebe o total atual de inscrições (inclui fila). */
+  onChanged?: (registrationCount: number) => void | Promise<void>;
 }) {
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -343,7 +344,7 @@ export function EventRegistrationsTab({
     return base;
   }, [memberOptionsData, memberId, memberLabel, enrolledMemberIds]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<EventRegistration[] | null> => {
     try {
       setLoading(true);
       const firstPage = await apiService.listEventRegistrations(event.id, { page: 1, limit: 100 });
@@ -362,20 +363,22 @@ export function EventRegistrationsTab({
       }
 
       setRegistrations(listed);
+      return listed;
     } catch (error) {
       toast.error(formatApiError(error));
+      return null;
     } finally {
       setLoading(false);
     }
   }, [event.id]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const refreshAll = async () => {
-    await load();
-    await onChanged?.();
+    const listed = await load();
+    if (listed) await onChanged?.(listed.length);
   };
 
   const queue = registrations.filter((r) => r.kind === 'possible_member');
