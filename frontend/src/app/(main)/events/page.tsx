@@ -3,9 +3,11 @@
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { CalendarDays, ChevronRight, Loader2, MapPin, Plus, Users } from 'lucide-react';
+import { CalendarDays, ChevronRight, Loader2, MapPin, Plus, Search, Users } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { EventFormModal } from '@/components/events/EventFormModal';
 import {
   CongregationBadge,
@@ -14,7 +16,7 @@ import {
   formatEventDateTime,
   formatSpots,
 } from '@/components/events/EventUi';
-import { READER_TOOLTIP } from '@/components/events/constants';
+import { EVENT_STATUS_OPTIONS, READER_TOOLTIP } from '@/components/events/constants';
 import {
   EventViewSelector,
   useEventViewParams,
@@ -23,6 +25,8 @@ import { useAuth } from '@/context/AuthContext';
 import apiService, { formatApiError } from '@/services/api';
 import type { ChurchEvent } from '@/types';
 import { getCongregationDisplayName } from '@/utils/congregation';
+
+const STATUS_FILTER_OPTIONS = [{ value: '', label: 'Todos os status' }, ...EVENT_STATUS_OPTIONS];
 
 function EventsHubContent() {
   const { canEdit } = useAuth();
@@ -33,8 +37,16 @@ function EventsHubContent() {
   const [events, setEvents] = useState<ChurchEvent[]>([]);
   const [congregations, setCongregations] = useState<Array<{ value: string; label: string }>>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
 
   const waitingForCongregation = view === 'congregation' && !congregationId;
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => setSearch(searchInput.trim()), 250);
+    return () => window.clearTimeout(handle);
+  }, [searchInput]);
 
   const loadData = useCallback(async () => {
     if (waitingForCongregation) {
@@ -43,10 +55,21 @@ function EventsHubContent() {
       return;
     }
     setLoading(true);
-    const params =
-      view === 'congregation' && congregationId
-        ? { congregation_id: congregationId }
-        : undefined;
+    const params: {
+      congregation_id?: string;
+      status?: string;
+      search?: string;
+      sort_by: string;
+      sort_order: 'asc' | 'desc';
+    } = {
+      sort_by: 'starts_at',
+      sort_order: 'asc',
+    };
+    if (view === 'congregation' && congregationId) {
+      params.congregation_id = congregationId;
+    }
+    if (statusFilter) params.status = statusFilter;
+    if (search) params.search = search;
 
     try {
       const response = await apiService.listEvents(params);
@@ -69,7 +92,7 @@ function EventsHubContent() {
     } finally {
       setLoading(false);
     }
-  }, [congregationId, view, waitingForCongregation]);
+  }, [congregationId, search, statusFilter, view, waitingForCongregation]);
 
   useEffect(() => {
     loadData();
@@ -96,6 +119,24 @@ function EventsHubContent() {
 
       <EventViewSelector />
 
+      <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
+        <Input
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Buscar por nome"
+          aria-label="Buscar eventos por nome"
+          className="min-h-11 text-base"
+          icon={<Search className="h-4 w-4" />}
+        />
+        <Select
+          label=""
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={STATUS_FILTER_OPTIONS}
+          aria-label="Filtrar por status"
+        />
+      </div>
+
       {loading ? (
         <div className="flex items-center justify-center py-16 text-gray-500">
           <Loader2 className="h-6 w-6 animate-spin mr-2" />
@@ -105,9 +146,13 @@ function EventsHubContent() {
         <EventEmptyState text="Selecione uma congregação para ver os eventos desta visão." />
       ) : events.length === 0 ? (
         <EventEmptyState
-          text="Nenhum evento nesta visão. Crie um encontro especial para começar."
+          text={
+            search || statusFilter
+              ? 'Nenhum evento encontrado com estes filtros.'
+              : 'Nenhum evento nesta visão. Crie um encontro especial para começar.'
+          }
           action={
-            !readOnly ? (
+            !readOnly && !search && !statusFilter ? (
               <Button onClick={() => setModalOpen(true)} className="min-h-11">
                 <Plus className="h-4 w-4 mr-2" />
                 Criar evento
