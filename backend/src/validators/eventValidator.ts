@@ -118,14 +118,30 @@ export const replaceEventOrganizersSchema = Joi.object({
 const registrationWhatsapp = Joi.string().trim().min(8).max(30).required().messages({
   'string.empty': 'O WhatsApp é obrigatório',
   'any.required': 'O WhatsApp é obrigatório',
+  'string.min': 'Informe um WhatsApp válido com DDD',
+  'string.max': 'Informe um WhatsApp válido com DDD',
 });
+
+function assertBirthNotInFuture(value: string, helpers: Joi.CustomHelpers) {
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
+    today.getDate()
+  ).padStart(2, '0')}`;
+  if (value > todayIso) {
+    return helpers.error('any.custom');
+  }
+  return value;
+}
 
 const registrationBirthDate = Joi.string()
   .pattern(/^\d{4}-\d{2}-\d{2}$/)
   .required()
+  .custom(assertBirthNotInFuture)
   .messages({
-    'string.pattern.base': 'A data de nascimento deve estar no formato YYYY-MM-DD',
+    'string.pattern.base': 'Informe a data de nascimento no formato válido',
     'any.required': 'A data de nascimento é obrigatória',
+    'string.empty': 'A data de nascimento é obrigatória',
+    'any.custom': 'A data de nascimento não pode ser no futuro',
   });
 
 const registrationFullName = Joi.string().trim().min(2).max(200).required().messages({

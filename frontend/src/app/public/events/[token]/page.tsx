@@ -20,6 +20,10 @@ type LinkInfo = {
   full?: boolean;
 };
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export default function PublicEventPage() {
   const params = useParams();
   const token = params.token as string;
@@ -28,8 +32,13 @@ export default function PublicEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isValid, setIsValid] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    fullName?: string;
+    whatsapp?: string;
+    birthDate?: string;
+  }>({});
   const [linkInfo, setLinkInfo] = useState<LinkInfo | null>(null);
-  const [outcome, setOutcome] = useState<'confirmed' | 'submitted' | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const [fullName, setFullName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -68,18 +77,40 @@ export default function PublicEventPage() {
     })();
   }, [refresh]);
 
+  const validateClient = () => {
+    const next: typeof fieldErrors = {};
+    if (fullName.trim().length < 2) {
+      next.fullName = 'Informe o nome completo';
+    }
+    const digits = whatsapp.replace(/\D/g, '');
+    if (digits.length < 10) {
+      next.whatsapp = 'Informe um WhatsApp válido com DDD';
+    }
+    if (!birthDate) {
+      next.birthDate = 'Informe a data de nascimento';
+    } else if (birthDate > todayIsoDate()) {
+      next.birthDate = 'A data de nascimento não pode ser no futuro';
+    }
+    setFieldErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateClient()) {
+      setError('Corrija os campos destacados para continuar.');
+      return;
+    }
     try {
       setIsSubmitting(true);
       setError(null);
-      const result = await apiService.enrollViaEventPublicLink(token, {
+      await apiService.enrollViaEventPublicLink(token, {
         full_name: fullName,
         whatsapp: whatsapp.replace(/\D/g, ''),
         birth_date: birthDate,
         email: email || undefined,
       });
-      setOutcome(result.outcome === 'confirmed' ? 'confirmed' : 'submitted');
+      setSubmitted(true);
     } catch (err) {
       setError(formatApiError(err));
     } finally {
@@ -95,27 +126,24 @@ export default function PublicEventPage() {
     );
   }
 
-  if (outcome) {
+  if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary/10 to-white p-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg text-center space-y-4">
           <CheckCircle className="mx-auto h-12 w-12 text-emerald-500" />
-          <h1 className="text-xl font-semibold text-gray-900">
-            {outcome === 'confirmed' ? 'Inscrição confirmada' : 'Inscrição enviada'}
-          </h1>
+          <h1 className="text-xl font-semibold text-gray-900">Inscrição enviada</h1>
           <p className="text-sm text-gray-600">
-            {outcome === 'confirmed'
-              ? `Sua inscrição em ${linkInfo?.event_name} foi confirmada para ${linkInfo?.church_name}.`
-              : `Recebemos sua inscrição em ${linkInfo?.event_name} para ${linkInfo?.church_name}.`}
+            Recebemos sua inscrição em {linkInfo?.event_name} para {linkInfo?.church_name}.
           </p>
           <Button
             className="min-h-11 w-full"
             onClick={() => {
-              setOutcome(null);
+              setSubmitted(false);
               setFullName('');
               setWhatsapp('');
               setBirthDate('');
               setEmail('');
+              setFieldErrors({});
               void refresh();
             }}
           >
@@ -148,27 +176,39 @@ export default function PublicEventPage() {
               <span>{error || 'Esta inscrição não está disponível.'}</span>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
               <Input
                 label="Nome completo *"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
+                onChange={(e) => {
+                  setFullName(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, fullName: undefined }));
+                }}
+                error={fieldErrors.fullName}
                 className="text-base"
               />
               <Input
                 label="WhatsApp *"
                 value={whatsapp}
-                onChange={(e) => setWhatsapp(maskPhoneInput(e.target.value))}
-                required
+                onChange={(e) => {
+                  setWhatsapp(maskPhoneInput(e.target.value));
+                  setFieldErrors((prev) => ({ ...prev, whatsapp: undefined }));
+                }}
+                error={fieldErrors.whatsapp}
                 className="text-base"
+                inputMode="tel"
+                autoComplete="tel"
               />
               <Input
                 label="Data de nascimento *"
                 type="date"
                 value={birthDate}
-                onChange={(e) => setBirthDate(e.target.value)}
-                required
+                onChange={(e) => {
+                  setBirthDate(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, birthDate: undefined }));
+                }}
+                error={fieldErrors.birthDate}
+                max={todayIsoDate()}
                 className="text-base"
               />
               <Input

@@ -391,7 +391,7 @@ export const createEventRegistration = async (req: AuthRequest, res: Response) =
         });
       }
       if (result.code === '23505') {
-        return res.status(400).json({
+        return res.status(409).json({
           error: 'Inscrição duplicada',
           details: 'Este membro já está inscrito neste evento',
         });

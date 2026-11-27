@@ -131,6 +131,24 @@ describe('publicEventEnrollSchema / link patch', () => {
     expect(publicEventEnrollSchema.validate({ full_name: 'Maria Souza' }).error).toBeDefined();
   });
 
+  it('rejects short whatsapp with PT-BR message', () => {
+    const { error } = publicEventEnrollSchema.validate({
+      full_name: 'Maria Souza',
+      whatsapp: '123',
+      birth_date: '1990-05-20',
+    });
+    expect(error?.details[0]?.message).toMatch(/WhatsApp válido/i);
+  });
+
+  it('rejects birth_date in the future with PT-BR message', () => {
+    const { error } = publicEventEnrollSchema.validate({
+      full_name: 'Maria Souza',
+      whatsapp: '11999998888',
+      birth_date: '2099-01-01',
+    });
+    expect(error?.details[0]?.message).toMatch(/não pode ser no futuro/i);
+  });
+
   it('requires is_active on link patch', () => {
     expect(patchEventPublicLinkSchema.validate({}).error).toBeDefined();
     expect(patchEventPublicLinkSchema.validate({ is_active: false }).error).toBeUndefined();

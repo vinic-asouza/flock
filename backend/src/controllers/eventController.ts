@@ -262,7 +262,8 @@ export const listEvents = async (req: AuthRequest, res: Response) => {
     )
       ? sort_by_raw
       : 'starts_at';
-    const defaultOrder = sort_by === 'name' ? 'asc' : 'desc';
+    // starts_at / name: próximos e A–Z primeiro; created_at: mais recentes primeiro
+    const defaultOrder = sort_by === 'created_at' ? 'desc' : 'asc';
     const sort_order_raw = (req.query.sort_order as string) || defaultOrder;
     const sort_order = sort_order_raw === 'asc' ? 'asc' : 'desc';
 

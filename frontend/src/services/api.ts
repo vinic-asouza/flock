@@ -1632,6 +1632,8 @@ class ApiService {
     congregation_id?: string;
     status?: string;
     search?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
     page?: number;
     limit?: number;
   }) {
@@ -1639,6 +1641,8 @@ class ApiService {
     if (params?.congregation_id) query.set('congregation_id', params.congregation_id);
     if (params?.status) query.set('status', params.status);
     if (params?.search) query.set('search', params.search);
+    if (params?.sort_by) query.set('sort_by', params.sort_by);
+    if (params?.sort_order) query.set('sort_order', params.sort_order);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     const url = `/events${query.toString() ? `?${query}` : ''}`;

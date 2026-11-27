@@ -13,6 +13,14 @@ import type { ChurchEvent, EventStatus } from '@/types';
 import { EVENT_STATUS_OPTIONS } from './constants';
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from './EventUi';
 
+type FieldErrors = {
+  name?: string;
+  startsAt?: string;
+  endsAt?: string;
+  congregationId?: string;
+  responsibleId?: string;
+};
+
 export function EventFormModal({
   open,
   onClose,
@@ -48,6 +56,8 @@ export function EventFormModal({
   const [ministryOptions, setMinistryOptions] = useState<Array<{ value: string; label: string }>>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [baseline, setBaseline] = useState('');
   const initializedForOpen = useRef(false);
 
   const memberCongregationId = scope === 'one' ? congregationId || null : null;
@@ -55,6 +65,40 @@ export function EventFormModal({
     congregationId: memberCongregationId,
     enabled: open,
   });
+
+  const snapshot = useMemo(
+    () =>
+      JSON.stringify({
+        name,
+        description,
+        startsAt,
+        endsAt,
+        location,
+        scope,
+        congregationId,
+        status,
+        capacity,
+        responsibleId,
+        organizerIds,
+        groupId,
+      }),
+    [
+      name,
+      description,
+      startsAt,
+      endsAt,
+      location,
+      scope,
+      congregationId,
+      status,
+      capacity,
+      responsibleId,
+      organizerIds,
+      groupId,
+    ]
+  );
+
+  const isDirty = Boolean(baseline) && snapshot !== baseline;
 
   useEffect(() => {
     if (!open) {
@@ -64,26 +108,58 @@ export function EventFormModal({
     if (initializedForOpen.current) return;
     initializedForOpen.current = true;
 
-    setName(event?.name || '');
-    setDescription(event?.description || '');
-    setStartsAt(toDateTimeLocalValue(event?.starts_at));
-    setEndsAt(toDateTimeLocalValue(event?.ends_at));
-    setLocation(event?.location || '');
-    setScope(event?.congregation_id ? 'one' : 'all');
-    setCongregationId(event?.congregation_id || defaultCongregationId || congregations[0]?.value || '');
-    setStatus(event?.status || 'draft');
-    setCapacity(event?.capacity != null ? String(event.capacity) : '');
-    setResponsibleId(event?.responsible_id || event?.responsible?.id || '');
-    setResponsibleLabel(event?.responsible?.name || '');
+    const nextName = event?.name || '';
+    const nextDescription = event?.description || '';
+    const nextStartsAt = toDateTimeLocalValue(event?.starts_at);
+    const nextEndsAt = toDateTimeLocalValue(event?.ends_at);
+    const nextLocation = event?.location || '';
+    const nextScope: 'all' | 'one' = event?.congregation_id ? 'one' : 'all';
+    const nextCongregationId =
+      event?.congregation_id || defaultCongregationId || congregations[0]?.value || '';
+    const nextStatus: EventStatus = event?.status || 'draft';
+    const nextCapacity = event?.capacity != null ? String(event.capacity) : '';
+    const nextResponsibleId = event?.responsible_id || event?.responsible?.id || '';
+    const nextResponsibleLabel = event?.responsible?.name || '';
     const organizers = (event?.organizers || []).filter(Boolean) as Array<{ id: string; name: string }>;
-    const ids = organizers.length
+    const nextOrganizerIds = organizers.length
       ? organizers.map((o) => o.id)
       : event?.organizer_ids || [];
-    setOrganizerIds(ids);
-    setOrganizerLabels(Object.fromEntries(organizers.map((o) => [o.id, o.name])));
-    setGroupId(event?.group_id || '');
+    const nextOrganizerLabels = Object.fromEntries(organizers.map((o) => [o.id, o.name]));
+    const nextGroupId = event?.group_id || '';
+
+    setName(nextName);
+    setDescription(nextDescription);
+    setStartsAt(nextStartsAt);
+    setEndsAt(nextEndsAt);
+    setLocation(nextLocation);
+    setScope(nextScope);
+    setCongregationId(nextCongregationId);
+    setStatus(nextStatus);
+    setCapacity(nextCapacity);
+    setResponsibleId(nextResponsibleId);
+    setResponsibleLabel(nextResponsibleLabel);
+    setOrganizerIds(nextOrganizerIds);
+    setOrganizerLabels(nextOrganizerLabels);
+    setGroupId(nextGroupId);
     setOrganizerPick('');
     setSearch('');
+    setFieldErrors({});
+    setBaseline(
+      JSON.stringify({
+        name: nextName,
+        description: nextDescription,
+        startsAt: nextStartsAt,
+        endsAt: nextEndsAt,
+        location: nextLocation,
+        scope: nextScope,
+        congregationId: nextCongregationId,
+        status: nextStatus,
+        capacity: nextCapacity,
+        responsibleId: nextResponsibleId,
+        organizerIds: nextOrganizerIds,
+        groupId: nextGroupId,
+      })
+    );
   }, [open, event, congregations, defaultCongregationId, setSearch]);
 
   useEffect(() => {
@@ -137,8 +213,42 @@ export function EventFormModal({
     [memberOptionsData, responsibleId, organizerIds]
   );
 
-  const handleCongregationChange = (value: string) => {
-    setCongregationId(value);
+  const requestClose = () => {
+    if (saving || deleting) return;
+    if (isDirty && !window.confirm('Descartar alterações não salvas?')) return;
+    onClose();
+  };
+
+  const validate = (): boolean => {
+    const next: FieldErrors = {};
+    if (!name.trim()) next.name = 'Informe o nome do evento';
+    if (!startsAt) next.startsAt = 'Informe a data de início';
+    if (!responsibleId) next.responsibleId = 'Selecione o responsável';
+    if (scope === 'one' && !congregationId) next.congregationId = 'Selecione a congregação';
+
+    const startsIso = fromDateTimeLocalValue(startsAt);
+    const endsIso = fromDateTimeLocalValue(endsAt);
+    if (startsIso && endsIso && endsIso < startsIso) {
+      next.endsAt = 'A data de término deve ser igual ou posterior à data de início';
+    }
+
+    setFieldErrors(next);
+    if (Object.keys(next).length > 0) {
+      toast.error('Corrija os campos destacados antes de salvar');
+      return false;
+    }
+    return true;
+  };
+
+  const confirmClearTeamFields = () => {
+    const hasTeam = Boolean(responsibleId || groupId || organizerIds.length > 0);
+    if (!hasTeam) return true;
+    return window.confirm(
+      'Trocar o escopo limpa responsável, organizadores e ministério. Continuar?'
+    );
+  };
+
+  const clearTeamFields = () => {
     setResponsibleId('');
     setResponsibleLabel('');
     setOrganizerIds([]);
@@ -147,29 +257,29 @@ export function EventFormModal({
     setSearch('');
   };
 
+  const handleCongregationChange = (value: string) => {
+    if (value === congregationId) return;
+    if (!confirmClearTeamFields()) return;
+    clearTeamFields();
+    setCongregationId(value);
+    setFieldErrors((prev) => ({ ...prev, congregationId: undefined, responsibleId: undefined }));
+  };
+
   const handleScopeChange = (value: string) => {
     const next = value === 'one' ? 'one' : 'all';
+    if (next === scope) return;
+    if (!confirmClearTeamFields()) return;
+    clearTeamFields();
     setScope(next);
-    setResponsibleId('');
-    setResponsibleLabel('');
-    setOrganizerIds([]);
-    setOrganizerLabels({});
-    setGroupId('');
     if (next === 'one' && !congregationId) {
       setCongregationId(defaultCongregationId || congregations[0]?.value || '');
     }
   };
 
   const handleSave = async () => {
+    if (!validate()) return;
     const startsIso = fromDateTimeLocalValue(startsAt);
-    if (!name.trim() || !startsIso || !responsibleId) {
-      toast.error('Preencha nome, início e responsável');
-      return;
-    }
-    if (scope === 'one' && !congregationId) {
-      toast.error('Selecione a congregação');
-      return;
-    }
+    if (!startsIso) return;
 
     try {
       setSaving(true);
@@ -189,6 +299,7 @@ export function EventFormModal({
       if (event) await apiService.updateEvent(event.id, payload);
       else await apiService.createEvent(payload);
       toast.success(event ? 'Evento atualizado' : 'Evento criado');
+      setBaseline(snapshot);
       onClose();
       await onSaved();
     } catch (err) {
@@ -220,7 +331,7 @@ export function EventFormModal({
   return (
     <Modal
       isOpen={open}
-      onClose={onClose}
+      onClose={requestClose}
       title={event ? 'Editar evento' : 'Novo evento'}
       footer={
         <div className="flex flex-wrap gap-2 justify-between w-full p-4 sm:p-6">
@@ -233,7 +344,7 @@ export function EventFormModal({
             <span />
           )}
           <div className="flex gap-2 ml-auto">
-            <Button variant="secondary" onClick={onClose} disabled={saving || deleting} className="min-h-11">
+            <Button variant="secondary" onClick={requestClose} disabled={saving || deleting} className="min-h-11">
               Cancelar
             </Button>
             <Button onClick={handleSave} disabled={saving || deleting} className="min-h-11">
@@ -245,7 +356,16 @@ export function EventFormModal({
       }
     >
       <div className="space-y-4 p-4 sm:p-6">
-        <Input label="Nome *" value={name} onChange={(e) => setName(e.target.value)} className="text-base" />
+        <Input
+          label="Nome *"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setFieldErrors((prev) => ({ ...prev, name: undefined }));
+          }}
+          error={fieldErrors.name}
+          className="text-base"
+        />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
           <textarea
@@ -260,14 +380,22 @@ export function EventFormModal({
             label="Início *"
             type="datetime-local"
             value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
+            onChange={(e) => {
+              setStartsAt(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, startsAt: undefined, endsAt: undefined }));
+            }}
+            error={fieldErrors.startsAt}
             className="text-base"
           />
           <Input
             label="Fim"
             type="datetime-local"
             value={endsAt}
-            onChange={(e) => setEndsAt(e.target.value)}
+            onChange={(e) => {
+              setEndsAt(e.target.value);
+              setFieldErrors((prev) => ({ ...prev, endsAt: undefined }));
+            }}
+            error={fieldErrors.endsAt}
             className="text-base"
           />
         </div>
@@ -288,6 +416,7 @@ export function EventFormModal({
             onChange={handleCongregationChange}
             options={congregations}
             placeholder="Selecione"
+            error={fieldErrors.congregationId}
           />
         ) : null}
         <Select
@@ -310,6 +439,7 @@ export function EventFormModal({
           value={responsibleId}
           onChange={(value) => {
             setResponsibleId(value);
+            setFieldErrors((prev) => ({ ...prev, responsibleId: undefined }));
             const match = memberOptionsData.find((m) => m.id === value);
             if (match) setResponsibleLabel(match.name);
             if (value) setOrganizerIds((prev) => prev.filter((id) => id !== value));
@@ -318,6 +448,7 @@ export function EventFormModal({
           searchable
           options={responsibleOptions}
           placeholder="Buscar membro"
+          error={fieldErrors.responsibleId}
         />
         <div className="space-y-2">
           <Select

@@ -35,6 +35,16 @@ function formatBirthDate(value?: string | null) {
   return `${day}/${month}/${year}`;
 }
 
+function maskBirthDate(value?: string | null) {
+  if (!value) return '—';
+  const year = value.split('T')[0].split('-')[0];
+  return year ? `••/••/${year}` : '—';
+}
+
+function maskAge(age?: number | null) {
+  return age == null ? '—' : '•• anos';
+}
+
 function ProfileAvatar({ name, kind }: { name: string; kind: 'member' | 'guest' }) {
   return (
     <span
@@ -72,8 +82,22 @@ function RegistrationKindBadge({ kind }: { kind: EventRegistration['kind'] }) {
   );
 }
 
-function WhatsAppLink({ whatsapp }: { whatsapp?: string | null }) {
+function WhatsAppLink({
+  whatsapp,
+  masked = false,
+}: {
+  whatsapp?: string | null;
+  masked?: boolean;
+}) {
   if (!whatsapp) return null;
+  if (masked || whatsapp.includes('*')) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs leading-tight text-gray-600">
+        <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+        {whatsapp}
+      </span>
+    );
+  }
   const digits = whatsapp.replace(/\D/g, '');
   if (!digits) return null;
   return (
@@ -95,19 +119,21 @@ function ContactLine({
   birth,
   age,
   congregation,
+  masked = false,
 }: {
   whatsapp?: string | null;
   email?: string | null;
   birth?: string | null;
   age?: number | null;
   congregation?: { id: string; name: string; abbreviation?: string | null } | null;
+  masked?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-gray-600">
-      <WhatsAppLink whatsapp={whatsapp} />
-      {email ? <span className="truncate">{email}</span> : null}
-      <span>nasc. {formatBirthDate(birth)}</span>
-      <span>{age ?? '—'} anos</span>
+      <WhatsAppLink whatsapp={whatsapp} masked={masked} />
+      {email && !masked ? <span className="truncate">{email}</span> : null}
+      <span>nasc. {masked ? maskBirthDate(birth) : formatBirthDate(birth)}</span>
+      <span>{masked ? maskAge(age) : `${age ?? '—'} anos`}</span>
       {congregation ? <span>{getCongregationDisplayName(congregation)}</span> : null}
     </div>
   );
@@ -155,10 +181,11 @@ function QueueReviewCard({
         </div>
       </div>
       <ContactLine
-        whatsapp={item.whatsapp}
+        whatsapp={item.whatsapp_masked || item.whatsapp}
         email={item.email}
         birth={item.birth_date}
         age={item.age}
+        masked
       />
       {candidates.length === 0 ? (
         <p className="text-xs text-gray-500">Nenhum candidato no rol para vincular.</p>
@@ -200,11 +227,12 @@ function QueueReviewCard({
                   ) : null}
                 </div>
                 <ContactLine
-                  whatsapp={candidate.whatsapp || candidate.whatsapp_masked}
+                  whatsapp={candidate.whatsapp_masked || candidate.whatsapp}
                   email={candidate.email}
                   birth={candidate.birth}
                   age={candidate.age}
                   congregation={candidate.congregation}
+                  masked
                 />
                 <div className="mt-1 flex flex-wrap gap-1">
                   <MatchSignal ok={Boolean(candidate.signals?.N)} label="Nome" />
@@ -258,7 +286,8 @@ export function EventRegistrationsTab({
 }: {
   event: ChurchEvent;
   readOnly: boolean;
-  onChanged?: () => void | Promise<void>;
+  /** Chamado após mutações; recebe o total atual de inscrições (inclui fila). */
+  onChanged?: (registrationCount: number) => void | Promise<void>;
 }) {
   const [registrations, setRegistrations] = useState<EventRegistration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -315,7 +344,7 @@ export function EventRegistrationsTab({
     return base;
   }, [memberOptionsData, memberId, memberLabel, enrolledMemberIds]);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (): Promise<EventRegistration[] | null> => {
     try {
       setLoading(true);
       const firstPage = await apiService.listEventRegistrations(event.id, { page: 1, limit: 100 });
@@ -334,20 +363,22 @@ export function EventRegistrationsTab({
       }
 
       setRegistrations(listed);
+      return listed;
     } catch (error) {
       toast.error(formatApiError(error));
+      return null;
     } finally {
       setLoading(false);
     }
   }, [event.id]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   const refreshAll = async () => {
-    await load();
-    await onChanged?.();
+    const listed = await load();
+    if (listed) await onChanged?.(listed.length);
   };
 
   const queue = registrations.filter((r) => r.kind === 'possible_member');
@@ -396,6 +427,7 @@ export function EventRegistrationsTab({
   };
 
   const handleRemove = async (id: string) => {
+    if (!window.confirm('Remover esta inscrição?')) return;
     try {
       await apiService.deleteEventRegistration(id);
       toast.success('Inscrição removida');
@@ -404,6 +436,13 @@ export function EventRegistrationsTab({
       toast.error(formatApiError(error));
     }
   };
+
+  const guestMissingHints: string[] = [];
+  if (guestName.trim().length < 2) guestMissingHints.push('nome');
+  if (guestDigits.length < 10) guestMissingHints.push('WhatsApp');
+  if (!guestBirth) guestMissingHints.push('nascimento');
+  const guestCanSubmit =
+    guestMissingHints.length === 0 && !guestWhatsappTaken && !isFull;
 
   return (
     <div className="space-y-4">
@@ -516,11 +555,12 @@ export function EventRegistrationsTab({
                   aria-describedby={guestWhatsappTaken ? 'guest-whatsapp-taken' : undefined}
                 />
                 <Input
-                  label="Nascimento"
+                  label="Nascimento *"
                   type="date"
                   value={guestBirth}
                   onChange={(e) => setGuestBirth(e.target.value)}
                   className="text-base"
+                  max={new Date().toISOString().slice(0, 10)}
                 />
                 <Input
                   label="E-mail (opcional)"
@@ -533,6 +573,10 @@ export function EventRegistrationsTab({
               {guestWhatsappTaken ? (
                 <p id="guest-whatsapp-taken" className="text-sm text-red-600">
                   Já existe um inscrito com este WhatsApp.
+                </p>
+              ) : guestMissingHints.length > 0 ? (
+                <p className="text-sm text-amber-800">
+                  Preencha {guestMissingHints.join(', ')} para adicionar o convidado.
                 </p>
               ) : null}
               <Button
@@ -553,13 +597,7 @@ export function EventRegistrationsTab({
                     toast.error(formatApiError(error));
                   }
                 }}
-                disabled={
-                  guestName.trim().length < 2 ||
-                  guestDigits.length < 10 ||
-                  !guestBirth ||
-                  guestWhatsappTaken ||
-                  isFull
-                }
+                disabled={!guestCanSubmit}
               >
                 Adicionar
               </Button>
@@ -601,6 +639,7 @@ export function EventRegistrationsTab({
                     }
                   }}
                   onDismiss={async () => {
+                    if (!window.confirm('Remover esta inscrição?')) return;
                     try {
                       await apiService.deleteEventRegistration(item.id);
                       toast.success('Inscrição removida da fila');
@@ -663,7 +702,13 @@ export function EventRegistrationsTab({
                       item.kind === 'member'
                         ? item.member?.name || item.display_name || 'Membro'
                         : item.full_name || item.display_name || 'Convidado';
-                    const contact = item.whatsapp || item.member?.whatsapp || null;
+                    const contact = readOnly
+                      ? item.whatsapp_masked ||
+                        item.member?.whatsapp_masked ||
+                        item.whatsapp ||
+                        item.member?.whatsapp ||
+                        null
+                      : item.whatsapp || item.member?.whatsapp || null;
                     return (
                       <li
                         key={item.id}
@@ -681,7 +726,7 @@ export function EventRegistrationsTab({
                               </span>
                               <RegistrationKindBadge kind={item.kind} />
                             </div>
-                            <WhatsAppLink whatsapp={contact} />
+                            <WhatsAppLink whatsapp={contact} masked={readOnly} />
                           </div>
                         </div>
                         {!readOnly ? (

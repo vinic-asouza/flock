@@ -60,10 +60,37 @@ export function EventDetailView({
   const isFull =
     event.capacity != null && (event.registration_count || 0) >= event.capacity;
 
+  const applyRegistrationCount = useCallback((registrationCount: number) => {
+    setEvent((prev) => {
+      const capacity = prev.capacity ?? null;
+      const spots_remaining =
+        capacity == null ? null : Math.max(0, capacity - registrationCount);
+      return {
+        ...prev,
+        registration_count: registrationCount,
+        spots_remaining,
+      };
+    });
+  }, []);
+
   const refreshEvent = useCallback(async () => {
     const next = await apiService.getEvent(event.id);
     setEvent(next);
+    return next;
   }, [event.id]);
+
+  const handleRegistrationsChanged = useCallback(
+    async (registrationCount: number) => {
+      // Atualiza o card de Vagas na hora (lista já reflete o total).
+      applyRegistrationCount(registrationCount);
+      try {
+        await refreshEvent();
+      } catch (err) {
+        toast.error(formatApiError(err));
+      }
+    },
+    [applyRegistrationCount, refreshEvent]
+  );
 
   const loadLink = useCallback(async () => {
     try {
@@ -77,7 +104,7 @@ export function EventDetailView({
 
   useEffect(() => {
     setEvent(initialEvent);
-  }, [initialEvent]);
+  }, [initialEvent.id]); // evita sobrescrever contagem fresca com prop stale do parent
 
   useEffect(() => {
     loadLink();
@@ -241,7 +268,11 @@ export function EventDetailView({
       >
         <Card>
           <h3 className="mb-4 text-sm font-medium text-gray-900">Inscritos</h3>
-          <EventRegistrationsTab event={event} readOnly={readOnly} onChanged={refreshEvent} />
+          <EventRegistrationsTab
+            event={event}
+            readOnly={readOnly}
+            onChanged={handleRegistrationsChanged}
+          />
         </Card>
       </EntityDetailLayout>
 
