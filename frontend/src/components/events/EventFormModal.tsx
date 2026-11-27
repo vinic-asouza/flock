@@ -59,7 +59,6 @@ export function EventFormModal({
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [baseline, setBaseline] = useState('');
   const initializedForOpen = useRef(false);
-  const pruneNoticeRef = useRef(false);
 
   const memberCongregationId = scope === 'one' ? congregationId || null : null;
   const { options: memberOptionsData, setSearch } = useMemberOptions({
@@ -104,12 +103,10 @@ export function EventFormModal({
   useEffect(() => {
     if (!open) {
       initializedForOpen.current = false;
-      pruneNoticeRef.current = false;
       return;
     }
     if (initializedForOpen.current) return;
     initializedForOpen.current = true;
-    pruneNoticeRef.current = false;
 
     const nextName = event?.name || '';
     const nextDescription = event?.description || '';
@@ -195,42 +192,6 @@ export function EventFormModal({
     if (match) setResponsibleLabel(match.name);
   }, [memberOptionsData, responsibleId]);
 
-  // Mantém responsável/ministério se ainda válidos no novo escopo; limpa só o inválido
-  useEffect(() => {
-    if (!open || !initializedForOpen.current) return;
-    if (!pruneNoticeRef.current) {
-      // Ignora o primeiro ciclo após abrir o modal
-      pruneNoticeRef.current = true;
-      return;
-    }
-
-    const cleared: string[] = [];
-    if (memberOptionsData.length > 0) {
-      const memberIds = new Set(memberOptionsData.map((m) => m.id));
-      if (responsibleId && !memberIds.has(responsibleId)) {
-        setResponsibleId('');
-        setResponsibleLabel('');
-        cleared.push('responsável');
-      }
-      if (organizerIds.some((id) => !memberIds.has(id))) {
-        setOrganizerIds((prev) => prev.filter((id) => memberIds.has(id)));
-        cleared.push('organizadores');
-      }
-    }
-    if (groupId && ministryOptions.length > 0) {
-      const ministryIds = new Set(ministryOptions.map((m) => m.value));
-      if (!ministryIds.has(groupId)) {
-        setGroupId('');
-        cleared.push('ministério');
-      }
-    }
-
-    if (cleared.length > 0) {
-      toast(`Campos limpos porque não se aplicam ao novo escopo: ${cleared.join(', ')}.`);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [memberOptionsData, ministryOptions]);
-
   const responsibleOptions = useMemo(() => {
     const base = memberOptionsData
       .filter((m) => !organizerIds.includes(m.id))
@@ -279,13 +240,36 @@ export function EventFormModal({
     return true;
   };
 
+  const confirmClearTeamFields = () => {
+    const hasTeam = Boolean(responsibleId || groupId || organizerIds.length > 0);
+    if (!hasTeam) return true;
+    return window.confirm(
+      'Trocar o escopo limpa responsável, organizadores e ministério. Continuar?'
+    );
+  };
+
+  const clearTeamFields = () => {
+    setResponsibleId('');
+    setResponsibleLabel('');
+    setOrganizerIds([]);
+    setOrganizerLabels({});
+    setGroupId('');
+    setSearch('');
+  };
+
   const handleCongregationChange = (value: string) => {
+    if (value === congregationId) return;
+    if (!confirmClearTeamFields()) return;
+    clearTeamFields();
     setCongregationId(value);
-    setFieldErrors((prev) => ({ ...prev, congregationId: undefined }));
+    setFieldErrors((prev) => ({ ...prev, congregationId: undefined, responsibleId: undefined }));
   };
 
   const handleScopeChange = (value: string) => {
     const next = value === 'one' ? 'one' : 'all';
+    if (next === scope) return;
+    if (!confirmClearTeamFields()) return;
+    clearTeamFields();
     setScope(next);
     if (next === 'one' && !congregationId) {
       setCongregationId(defaultCongregationId || congregations[0]?.value || '');
