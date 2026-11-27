@@ -156,13 +156,13 @@ Gerenciar **encontros especiais** da igreja (congressos, conferências, acampame
 - **Depende de:** BR-EVT-004
 
 ### BR-EVT-012: Privacidade do outcome público
-- **Declaração:** UI pública mostra “Inscrição confirmada” (member) ou “Inscrição enviada” (guest/possible) **sem** revelar detalhes do match. Vagas esgotadas: mensagem dedicada sem form.
+- **Declaração:** UI pública mostra **sempre** “Inscrição enviada” (member, guest ou possible_member), **sem** diferenciar outcomes nem revelar detalhes do match. API pode ainda retornar `confirmed`/`submitted` internamente; a UI não usa essa diferença. Vagas esgotadas: mensagem dedicada sem form. Nascimento futuro é rejeitado com mensagem PT-BR.
 - **Tipo:** Política
 - **Gatilho:** Resposta POST público + página `/public/events/[token]`
-- **Comportamento esperado:** Outcomes opacos
+- **Comportamento esperado:** Outcomes opacos; mensagem única de sucesso
 - **Comportamento em violação:** N/A — vazamento de match é bug
-- **Implementado em:** `publicEventController.ts`, `frontend/.../public/events/[token]/page.tsx`
-- **Testado em:** smoke QA
+- **Implementado em:** `publicEventController.ts`, `eventValidator.ts` (`publicEventEnrollSchema`), `frontend/.../public/events/[token]/page.tsx`
+- **Testado em:** `eventValidator.test.ts`; smoke QA
 - **Depende de:** BR-EVT-010
 
 ### BR-EVT-013: Fila possível membro (resolve)
@@ -178,12 +178,12 @@ Gerenciar **encontros especiais** da igreja (congressos, conferências, acampame
 ### 🔐 Permissões
 
 ### BR-EVT-014: Permissões reader / editor+
-- **Declaração:** GET list/detail/registrations/public-link ≥ reader. Mutações (CRUD evento, organizadores, inscritos, resolve, link) ≥ editor. Módulo disponível em todos os planos.
+- **Declaração:** GET list/detail/registrations/public-link ≥ reader. Mutações (CRUD evento, organizadores, inscritos, resolve, link) ≥ editor. Módulo disponível em todos os planos. Na UI, **reader** vê WhatsApp mascarado na lista de inscritos; a **fila** de possível membro mascara telefone, nascimento e idade para todos os papéis.
 - **Tipo:** Restrição
 - **Gatilho:** Rotas `/api/events*`
-- **Comportamento esperado:** 403 para reader em mutações; UI `canEdit` read-only
+- **Comportamento esperado:** 403 para reader em mutações; UI `canEdit` read-only + máscaras de privacidade
 - **Comportamento em violação:** 403
-- **Implementado em:** `routes/events.ts` + `requireRole`
+- **Implementado em:** `routes/events.ts` + `requireRole`; `EventRegistrationsTab.tsx`
 - **Testado em:** N/A — code review / smoke parcial
 - **Depende de:** BR-POL-005
 
@@ -195,4 +195,5 @@ Superfície de produto v1: **Eventos**. Código `calendar_*` permanece no reposi
 
 ## Histórico
 
-2026-11-02 — BR-EVT-001…014 (DEV-102 implementação inicial).
+2026-11-02 — BR-EVT-001…014 (DEV-102 implementação inicial).  
+2026-11-27 — BR-EVT-012 mensagem pública única; BR-EVT-014 máscaras reader/fila (DEV-175).

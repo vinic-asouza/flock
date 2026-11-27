@@ -125,9 +125,9 @@ Detalhe de contratos: [[03_arquitetura/api-design]].
 
 | Rota | Função |
 | --- | --- |
-| `/events` | Hub + seletor congregação + modal create |
-| `/events/[eventId]` | Detalhe: meta, equipe, vagas, link, inscritos/fila |
-| `/public/events/[token]` | Form público; outcomes opacos; estado lotado |
+| `/events` | Hub + seletor congregação + busca/filtro status + ordem `starts_at` asc + modal create |
+| `/events/[eventId]` | Detalhe: meta, equipe, vagas, link, inscritos/fila (máscaras na fila; reader mascara WhatsApp) |
+| `/public/events/[token]` | Form público; sucesso sempre “Inscrição enviada”; validação PT-BR; estado lotado |
 
 Nav: item **Eventos** (`CalendarDays`) após Congregações, antes de Ensino — sem item Calendário.
 
@@ -144,4 +144,5 @@ Nav: item **Eventos** (`CalendarDays`) após Congregações, antes de Ensino —
 
 ## Histórico
 
-2026-11-02 — Implementação inicial (DEV-102), merge track `major-v1`.
+2026-11-02 — Implementação inicial (DEV-102), merge track `major-v1`.  
+2026-11-27 — Correções de usabilidade (DEV-175): filtros/ordem, validação, máscaras, mensagem pública única.
